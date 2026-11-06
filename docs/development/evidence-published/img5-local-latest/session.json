@@ -329,31 +329,132 @@
     ],
     "not_measured": "GPU completion/residency/Present, mixed-DPI, device teardown"
   },
-  "final_native": {
-    "candidate_sources": "the commit that contains this record (round-6 repairs: retirement sweep runs through this view's window handle so it is not tied to rendering; evidence history per candidate)",
+  "review_round_3_repairs": {
+    "transient_preparation": "PreparationBusy retries are bounded to 20 per demand and then report an explicit limitation; the counter resets on a new view, image or revision. A permanent failure keeps its own message.",
+    "retirement_ownership": "Detailed release ownership is never dropped on a retry cap: fast two-frame sweeps fall back to a slow 30-frame cadence, NotRetained entries are removed, and the shell window-close sweep releases window-owned frames with no remaining consumer.",
+    "regressions": "image_upload covers the transient busy path against the real preparation guard, the permanent missing-source failure and per-pane consumer allocation; image_viewer covers the fast/slow retirement cadence."
+  },
+  "verification": {
+    "final_quality": "PASS: fmt, metadata, dependency checker self-test/check, plan ledger, clippy, workspace tests, workspace build and release viewer/upload/shell build; all exit 0",
+    "independent_gate": "candidate 6a8942d SUCCEEDED (8/8, 1007 tests); this repaired candidate carries its own Gate",
+    "tern_review": "Round 1 on 6a8942d HOLD 2/2; round 2 on 9b26d2f HOLD 3/1; round 3 on a4b41e0 HOLD 2/1 (bounded preparation retry, retention ownership after the retry budget, missing regressions). All are repaired in this candidate and will be re-reviewed."
+  },
+  "review_round_1_repairs": {
+    "B-01": "ConsumerId::allocate gives every viewer/pane a process-unique owner; same-window sharing and last-consumer eviction keep the existing ownership rules.",
+    "B-02": "Replaced/closed frames detach immediately and are evicted only after two presented frames, scheduled through window.on_next_frame chaining; frames still presented elsewhere stay retired and charged.",
+    "A-01": "Tiles are prepared on demand from the viewport/mip demand on the background executor; non-intersecting spans are never built, and pan/zoom/load/revision supersedes and cancels the prior demand.",
+    "A-02": "The shell registers an explicit on_window_should_close teardown that retires the viewer, and Drop detaches every current and retired frame."
+  },
+  "not_claimed": [
+    "Mixed-DPI native migration (both attached displays are 100%)",
+    "Native orientation rendering beyond the admitted Normal class",
+    "8K/16K full detail or random-access codec support",
+    "Rendering readiness/residency/fidelity adoption gates",
+    "GPU transfer duration/completion/residency/Present",
+    "Actual device-loss teardown or retained-payload release",
+    "Runtime media acquisition, Compare, product acceptance, main promotion or release"
+  ],
+  "repair5_native": {
+    "candidate_commit": "8348cd376b19957bf13965e67f4b0e227d43559e",
+    "candidate_sources": "commit 8348cd3 (round-5 repairs: timer-driven retirement polling; DPI-aware viewport invalidation)",
+    "binary": {
+      "path": "C:/dev/cos-build-release/release/examples/image_viewer.exe",
+      "sha256": "sha256:47a93dcb043de2cbf5c53f23a212980db7d717d5b3f3a5d2076792a342410e92"
+    },
+    "release": true,
+    "display_scale": 1.0,
+    "observed": [
+      "Fit 28.2% with the revision-1 magenta marker",
+      "Physical 1:1 100.0%",
+      "Next revision switches to the revision-2 cyan marker without stale tiles",
+      "Maximize recomputes Fit to 56.0%; restore returns to 28.2% with the marker intact",
+      "Settled idle window CPU: 0 ms over a 5 s sample",
+      "Close exits with no diagnostic output"
+    ],
+    "captures": [
+      {
+        "path": "final-native-fit.png",
+        "sha256": "sha256:ebadbaf7021a1f22a17c1a031636ac15699160c67df0749a69457350c15093d2",
+        "width": 1095,
+        "height": 832
+      },
+      {
+        "path": "final-native-1to1.png",
+        "sha256": "sha256:2c2c4a9b93d49183779b89cf01bf3f2baf40c2efbca7ca5add38ddd9613ebad0",
+        "width": 1095,
+        "height": 832
+      },
+      {
+        "path": "final-native-revision2.png",
+        "sha256": "sha256:561d0d8edc4c364e21baf3deeecfdc62e99674a41f051df357902d40bbe2ae7d",
+        "width": 1095,
+        "height": 832
+      },
+      {
+        "path": "final-native-maximized.png",
+        "sha256": "sha256:dad9a7d64aba5b746cfcf45bb8759c95343fffc0c2a31437785578181ff75b69",
+        "width": 3432,
+        "height": 1384
+      }
+    ],
+    "not_measured": "GPU completion/residency/Present, mixed-DPI, device teardown"
+  },
+  "repair6_native": {
+    "candidate_commit": "5dd3c30490c7145ecb3e2d60f1a2d386aa1fe03b",
+    "candidate_sources": "commit 5dd3c30 (round-6 repairs: retirement sweep runs through this view's window handle)",
     "binary": {
       "path": "C:/dev/cos-build-release/release/examples/image_viewer.exe",
       "sha256": "sha256:e02934998948101aa6e9eaf47d801fdfbcb9075744c8f2ef6af4debeb80b570e"
     },
     "release": true,
-    "display_scales": [
+    "display_scale": 1.0,
+    "observed": [
+      "Fit 28.2% and physical 1:1 100.0% with the fixture markers intact",
+      "Next revision switches to the revision-2 cyan marker",
+      "Settled idle window CPU: 46.9 ms over 8 s, 109.4 ms over 10 s (about 1% of one core); wake source not attributed",
+      "Close exits with no diagnostic output"
+    ],
+    "captures": [
       {
-        "name": "MSI MAG341CQ",
-        "width": 3440,
-        "height": 1440,
-        "scale": 1
+        "path": "final-native-fit.png",
+        "sha256": "sha256:ebadbaf7021a1f22a17c1a031636ac15699160c67df0749a69457350c15093d2",
+        "width": 1095,
+        "height": 832
+      },
+      {
+        "path": "final-native-1to1.png",
+        "sha256": "sha256:2c2c4a9b93d49183779b89cf01bf3f2baf40c2efbca7ca5add38ddd9613ebad0",
+        "width": 1095,
+        "height": 832
+      },
+      {
+        "path": "final-native-revision2.png",
+        "sha256": "sha256:561d0d8edc4c364e21baf3deeecfdc62e99674a41f051df357902d40bbe2ae7d",
+        "width": 1095,
+        "height": 832
+      },
+      {
+        "path": "final-native-maximized.png",
+        "sha256": "sha256:dad9a7d64aba5b746cfcf45bb8759c95343fffc0c2a31437785578181ff75b69",
+        "width": 3432,
+        "height": 1384
       }
     ],
-    "invocations": [
-      "image_viewer.exe --fixture",
-      "image_upload.exe --manifest 32"
-    ],
+    "not_measured": "GPU completion/residency/Present, mixed-DPI, device teardown"
+  },
+  "final_native": {
+    "candidate_sources": "the commit that contains this record (round-7 repair: a retired frame is released only after two composed scenes postdate its detach)",
+    "binary": {
+      "path": "C:/dev/cos-build-release/release/examples/image_viewer.exe",
+      "sha256": "sha256:7ea2c42e1af9aef3f439f876aa7a4d83502773394d97adc7685296ec01c53b84"
+    },
+    "release": true,
+    "display_scale": 1.0,
     "observed": [
       "Fit 28.2% with the revision-1 magenta marker; all four quadrants complete",
       "Physical 1:1 100.0% at native window size",
       "Next revision switches to the revision-2 cyan marker at Fit without stale tiles",
-      "Maximize recomputes Fit to 56.0%; restore returns to 28.2% with the marker intact",
-      "Settled idle window CPU: 0 ms over a 5 s sample on the 8348cd3 build and 46.9 ms over 8 s (109.4 ms over 10 s) on this build; no per-frame callback chain remains",
+      "Settled idle window CPU: 62.5 ms over 8 s (about 0.8% of one core); no per-frame callback chain",
       "Close exits with no diagnostic output",
       "IMG4 --manifest 32 exits 0 with one shared retention, one process_quarantine refusal and failures:0"
     ],
@@ -384,31 +485,6 @@
       }
     ],
     "not_measured": "GPU completion/residency/Present, mixed-DPI, device teardown",
-    "retirement_path": "The sweep is scheduled by a background timer and executed through ImageViewer's AnyWindowHandle, so it runs even while the Artifact surface is not being rendered; the window-close hook remains the last boundary."
-  },
-  "review_round_3_repairs": {
-    "transient_preparation": "PreparationBusy retries are bounded to 20 per demand and then report an explicit limitation; the counter resets on a new view, image or revision. A permanent failure keeps its own message.",
-    "retirement_ownership": "Detailed release ownership is never dropped on a retry cap: fast two-frame sweeps fall back to a slow 30-frame cadence, NotRetained entries are removed, and the shell window-close sweep releases window-owned frames with no remaining consumer.",
-    "regressions": "image_upload covers the transient busy path against the real preparation guard, the permanent missing-source failure and per-pane consumer allocation; image_viewer covers the fast/slow retirement cadence."
-  },
-  "verification": {
-    "final_quality": "PASS: fmt, metadata, dependency checker self-test/check, plan ledger, clippy, workspace tests, workspace build and release viewer/upload/shell build; all exit 0",
-    "independent_gate": "candidate 6a8942d SUCCEEDED (8/8, 1007 tests); this repaired candidate carries its own Gate",
-    "tern_review": "Round 1 on 6a8942d HOLD 2/2; round 2 on 9b26d2f HOLD 3/1; round 3 on a4b41e0 HOLD 2/1 (bounded preparation retry, retention ownership after the retry budget, missing regressions). All are repaired in this candidate and will be re-reviewed."
-  },
-  "review_round_1_repairs": {
-    "B-01": "ConsumerId::allocate gives every viewer/pane a process-unique owner; same-window sharing and last-consumer eviction keep the existing ownership rules.",
-    "B-02": "Replaced/closed frames detach immediately and are evicted only after two presented frames, scheduled through window.on_next_frame chaining; frames still presented elsewhere stay retired and charged.",
-    "A-01": "Tiles are prepared on demand from the viewport/mip demand on the background executor; non-intersecting spans are never built, and pan/zoom/load/revision supersedes and cancels the prior demand.",
-    "A-02": "The shell registers an explicit on_window_should_close teardown that retires the viewer, and Drop detaches every current and retired frame."
-  },
-  "not_claimed": [
-    "Mixed-DPI native migration (both attached displays are 100%)",
-    "Native orientation rendering beyond the admitted Normal class",
-    "8K/16K full detail or random-access codec support",
-    "Rendering readiness/residency/fidelity adoption gates",
-    "GPU transfer duration/completion/residency/Present",
-    "Actual device-loss teardown or retained-payload release",
-    "Runtime media acquisition, Compare, product acceptance, main promotion or release"
-  ]
+    "release_gate": "A retired frame is released only after two composed scenes postdate its detach; a hidden window composes none, so its release waits for re-display or the window-close sweep."
+  }
 }

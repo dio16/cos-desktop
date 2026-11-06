@@ -65,6 +65,17 @@ fn retirement_interval(attempts: u8, slow: bool) -> u64 {
     }
 }
 
+/// A retired frame may be released only after two composed scenes postdate its detach.
+fn scene_allows_release(scene_serial: u64, scene_at: u64) -> bool {
+    scene_serial >= scene_at.saturating_add(2)
+}
+
+/// A detached frame plus the paint epoch observed when it was retired.
+struct Retired {
+    frame: Arc<PreparedImage>,
+    scene_at: u64,
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ViewerMode {
     PreviewOnly,
@@ -82,7 +93,9 @@ pub struct ImageViewer {
     demand_id: u64,
     tile_attempts: u8,
     /// Frames detached from this viewer but still reachable from the last presented scene.
-    retiring: Vec<Arc<PreparedImage>>,
+    retiring: Vec<Retired>,
+    /// Paint epochs observed for the current frame; a retirement needs a later composed scene.
+    scene_serial: u64,
     retirement_scheduled: bool,
     retirement_attempts: u8,
     retirement_slow: bool,
@@ -110,7 +123,7 @@ impl ImageViewer {
         Self {
             service: ImageUploadService::global(), current: None, cancel: Cancellation::default(),
             tile_cancel: Cancellation::default(), demand: None, demand_id: 0, tile_attempts: 0,
-            retiring: Vec::new(),
+            retiring: Vec::new(), scene_serial: 0,
             retirement_scheduled: false, retirement_attempts: 0,
             retirement_slow: false,
             serial: 0, view_serial: 0, revision: 0, generation: 0, transform: None,
@@ -206,7 +219,10 @@ impl ImageViewer {
         if !self.service.discard_unpainted(&frame) {
             // Painted frames stay owned past close; the platform destroys the atlas with the
             // window, so no atlas entry is removed while a presented scene may reference it.
-            self.retiring.push(frame);
+            self.retiring.push(Retired {
+                frame,
+                scene_at: self.scene_serial,
+            });
         }
     }
 
@@ -218,7 +234,10 @@ impl ImageViewer {
             return;
         };
         self.service.detach(&frame, self.consumer);
-        self.retiring.push(frame);
+        self.retiring.push(Retired {
+            frame,
+            scene_at: self.scene_serial,
+        });
         self.schedule_retirement(cx);
     }
 
@@ -255,13 +274,19 @@ impl ImageViewer {
 
     fn evict_retired(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         let mut keep = Vec::new();
-        for frame in std::mem::take(&mut self.retiring) {
-            match self.service.evict(&frame, window) {
+        for retired in std::mem::take(&mut self.retiring) {
+            // Two paints after the detach prove a scene composed without this frame has been
+            // presented; a hidden window composes nothing, so its release waits for re-display.
+            if !scene_allows_release(self.scene_serial, retired.scene_at) {
+                keep.push(retired);
+                continue;
+            }
+            match self.service.evict(&retired.frame, window) {
                 Ok(_) | Err(ImageUploadError::NotRetained) => {}
                 Err(error) => {
                     // Another consumer still presents it, or release is not provable yet.
                     self.status = format!("画像の解放を保留: {error}").into();
-                    keep.push(frame);
+                    keep.push(retired);
                 }
             }
         }
@@ -413,7 +438,11 @@ impl Drop for ImageViewer {
         self.cancel.cancel();
         self.tile_cancel.cancel();
         // If the host omitted close, keep the registry/charged bytes; no completion is invented.
-        for frame in self.current.iter().chain(&self.retiring) {
+        for frame in self
+            .current
+            .iter()
+            .chain(self.retiring.iter().map(|retired| &retired.frame))
+        {
             self.service.detach(frame, self.consumer);
         }
     }
@@ -522,10 +551,11 @@ impl Render for ImageViewer {
                 .filter(|message| previous_status.as_ref() != *message);
                 let changed = geometry.as_ref() != Some(&transform) || previous_viewport != bounds;
                 let promote = complete && phase < if preview { 1 } else { 2 };
-                if !changed && !promote && failure.is_none() && !missing {
+                if !changed && !promote && failure.is_none() && !missing && frame.is_none() {
                     return;
                 }
                 let failure_present = failure.is_some();
+                let painted_epoch = frame.is_some();
                 let entity = entity.clone();
                 window.defer(app, move |_, app| {
                     let _ = entity.update(app, |this, cx| {
@@ -555,6 +585,9 @@ impl Render for ImageViewer {
                         }
                         // Repaint only on a real state change; a still-missing tile set is advanced
                         // by tile arrival or the bounded retry timer, never by repaint alone.
+                        if painted_epoch {
+                            this.scene_serial = this.scene_serial.saturating_add(1);
+                        }
                         if changed || promote || failure_present || started || resized {
                             cx.notify();
                         }
@@ -683,5 +716,16 @@ mod tests {
         assert_eq!(retirement_interval(u8::MAX, true), SLOW_RETIREMENT_MILLIS);
         // The flag selects the slow cadence, not a reset attempt counter.
         assert_eq!(retirement_interval(1, true), SLOW_RETIREMENT_MILLIS);
+    }
+
+    #[test]
+    fn a_retired_frame_waits_for_a_later_composed_scene() {
+        // The scene current at detach may still be presented; two later scenes must exist.
+        assert!(!scene_allows_release(0, 0));
+        assert!(!scene_allows_release(1, 0));
+        assert!(scene_allows_release(2, 0));
+        assert!(scene_allows_release(9, 7));
+        // A hidden window composes nothing, so it never releases on time alone.
+        assert!(!scene_allows_release(4, 4));
     }
 }
