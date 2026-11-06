@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "status": "IMPLEMENTED_LOCAL_GATES_PASS_NATIVE_OBSERVED_GATE_AND_REVIEW_PENDING",
+  "task": "MP-IMG4",
+  "contract": "DC-MP-IMG4",
+  "caller_authority": "Tern next-task directive for MP-IMG4 (baseline 669fafca318944066596368e2ca73b37859d1781, implemented on dev on top of 39c5182) under the Caller's resumption instruction and ADR-0014.",
+  "baseline_source_commit": "669fafca318944066596368e2ca73b37859d1781",
+  "profile": {
+    "native": "release",
+    "os": "Windows 10.0.26300.0",
+    "dpi": 96,
+    "debug_note": "The debug profile aborts with a main-thread stack overflow on this host regardless of this change (§19.214); native sets use release."
+  },
+  "implementation": {
+    "ownership": "ConsumerId + attach/detach on the process-wide ImageUploadService; a frame is evictable only when its consumer set is empty.",
+    "eviction": "evict(frame, window) refuses NotRetained, PaintInProgress (paint callback holds the frame), ConsumersRemain, or NotOwnedByWindow, then calls Window::drop_image for every tile, releases a Staged admission or quarantines an in-flight one and asserts transfer termination to free it, removes the frame and prunes idle generation pools.",
+    "window_close": "evict_owned_by(window) sweeps every frame the window owns with no consumer and reports evicted/skipped/images/released.",
+    "lazy_recreation": "A new device generation creates a pool on first use; evicted or stale frames are re-prepared on demand through the existing prepare path, and the paint path reports PaintStatus::Evicted for an evicted identity.",
+    "counters": "evicted_frames, dropped_atlas_images, released_payload_bytes and consumers are added to ImageUploadCounters; retention stays capped at two frames and 32 MiB raster + 32 MiB tile payload."
+  },
+  "native_evidence": {
+    "manifest": {
+      "identities": ["alpha@1", "alpha@2", "beta@1", "gamma@1", "shared@1", "shared@1"],
+      "shared_identity": "shared@1 is prepared once, attached by two consumers, and survives the first detach",
+      "command": "\"C:/dev/cos-build-release/release/examples/image_upload.exe\" --manifest 8",
+      "exit_code": 0,
+      "cycles": 8,
+      "evictions": 48,
+      "atlas_images_dropped": 768,
+      "payload_bytes_released": 805306368,
+      "consumer_gate_refusals": 48,
+      "unexpected_evictions": 0,
+      "max_retained_frames": 2,
+      "resident_reservation_after_every_eviction": 0,
+      "quarantine_after_every_eviction": 0,
+      "final": {"retained": 0, "consumers": 0, "resident": 0, "quarantined": 0, "generation": 9}
+    },
+    "capacity": {"held": 2, "third": "RetainedFrameLimit", "retained": 2},
+    "window_close": {"evicted": 1, "skipped": 0, "images": 16, "released_bytes": 16777216, "retained": 0, "consumers": 0, "resident": 0, "quarantined": 0},
+    "sampled_working_set": {
+      "method": "external PowerShell sampler polling Get-Process WorkingSet64 every 150 ms while the process ran",
+      "samples": 68,
+      "first_bytes": 17416192,
+      "peak_bytes": 131530752,
+      "last_bytes": 131530752,
+      "note": "The last sample is taken while the deliberately retained closing frame still exists immediately before the close sweep; this is a sampled working set, not a sum of declared budgets."
+    },
+    "interactive_regression": {
+      "image": "interactive-evicted-frame-release.png",
+      "claim": "The --fixture probe still loads and paints the 16 tiles, then 'Evict current' reports atlas images=16, released_payload=16777216 B out of 16777216 B with retained_frames=0 and zero reservations; 'Evict owned and close' exits 0."
+    }
+  },
+  "resources_and_owners": [
+    {"resource": "encoded CPU bytes", "owner": "caller-provided Arc<[u8]>; the service holds it only for the duration of prepare", "capacity": "bounded by max_encoded_bytes (16 MiB fixture)", "release": "dropped when prepare returns"},
+    {"resource": "decoded raster", "owner": "media AdmittedUpload inside the retained frame", "capacity": "16 MiB per frame, at most two frames", "release": "release() when staged, or quarantine + transfer-terminated assertion at eviction"},
+    {"resource": "tile payload (RenderImage bytes)", "owner": "PreparedImage tiles retained with the frame", "capacity": "16 MiB per frame (sixteen 1 MiB tiles)", "release": "frame eviction"},
+    {"resource": "GPUI sprite atlas entry", "owner": "the owning window", "capacity": "not observable through the pinned public API", "release": "Window::drop_image per tile during eviction; residency NOT_MEASURED"},
+    {"resource": "GPU dedicated/shared residency", "owner": "the platform and driver", "capacity": "NOT_MEASURED", "release": "not observable; never inferred from paint success"},
+    {"resource": "quarantined/stuck bytes", "owner": "media pool per device generation", "capacity": "64 MiB pool limits", "release": "confirm_transfer_terminated after an assertion, then pool pruning when idle"},
+    {"resource": "upload period allowance", "owner": "process-wide allowance", "capacity": "2 MiB / 8.333 ms", "release": "per-period reset"}
+  ],
+  "not_measured": [
+    "GPU transfer duration, completion, residency and Present (the pinned GPUI exposes no fence, Present-completion or residency signal; complete_upload is never called)",
+    "atlas-entry residency in production (Window::has_image_atlas_entry is test-support only), so eviction is proven by the drop_image call count, not by an atlas inspection",
+    "a real OS/GPU device loss and its integration scenario (MP-REC1 owns that acceptance)",
+    "process private bytes inside the probe (no unsafe/GetProcessMemoryInfo); working set is sampled externally",
+    "MP-REC2 long-run plateau acceptance and MP-IMG5 view/zoom/pan"
+  ],
+  "privacy_review": "The logs contain fixture source ids, counters, byte counts and error tokens only; the capture shows the probe's own fixture image and counters. No path, URL, credential or user document is present."
+}

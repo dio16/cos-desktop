@@ -80,10 +80,29 @@ pub struct UploadRequest {
 pub enum ImageUploadError {
     Cancelled,
     PreparationBusy,
-    StaleDeviceGeneration { requested: u64, current: u64 },
-    SourceRevisionMismatch { key_revision: u64, requested: u64 },
+    /// A consumer still presents this frame; eviction would drop a live resource.
+    ConsumersRemain,
+    /// A paint callback holds the frame; eviction never frees a resource in use.
+    PaintInProgress,
+    /// The frame is not in this process registry (already evicted or never admitted).
+    NotRetained,
+    /// The frame's atlas entries belong to another window.
+    NotOwnedByWindow,
+    /// GPUI refused to remove an atlas entry.
+    AtlasRelease,
+    StaleDeviceGeneration {
+        requested: u64,
+        current: u64,
+    },
+    SourceRevisionMismatch {
+        key_revision: u64,
+        requested: u64,
+    },
     UnverifiableSourceRevision,
-    EncodedInputTooLarge { actual: usize, maximum: usize },
+    EncodedInputTooLarge {
+        actual: usize,
+        maximum: usize,
+    },
     Decode(MediaError),
     Admission(UploadRefusal),
     RetainedFrameLimit,
@@ -123,6 +142,27 @@ pub enum PaintStatus {
     EmptyBounds,
     DifferentWindow,
     AdmissionUnavailable,
+    /// The frame was evicted and must not be painted again.
+    Evicted,
+}
+
+/// What one eviction actually released.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct EvictionOutcome {
+    /// Atlas images removed from the owning window (one per tile).
+    pub dropped_images: usize,
+    /// CPU payload bytes released (a staged release, or a quarantined payload after the
+    /// transfer-terminated assertion).
+    pub released_bytes: u64,
+}
+
+/// What a window-close sweep evicted and what it had to leave retained.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct EvictionSummary {
+    pub evicted_frames: usize,
+    pub skipped_frames: usize,
+    pub dropped_images: usize,
+    pub released_bytes: u64,
 }
 
 /// Read-only progress for one prepared identity.
@@ -157,6 +197,14 @@ pub struct ImageUploadCounters {
     /// contract these are atlas cache hits; a real device loss advances the generation and makes
     /// the frame stale before it can repaint.
     pub repaint_calls: u64,
+    /// Frames whose consumers all detached and whose atlas entries were released by eviction.
+    pub evicted_frames: u64,
+    /// Atlas images removed by eviction (one per tile of every evicted frame).
+    pub dropped_atlas_images: u64,
+    /// CPU payload bytes released after an eviction asserted transfer termination.
+    pub released_payload_bytes: u64,
+    /// Consumers currently attached across every retained frame.
+    pub consumers: usize,
 }
 
 #[derive(Default)]
@@ -247,6 +295,9 @@ struct ServiceInner {
 struct ServiceState {
     pools: Vec<(u64, Arc<UploadPool>)>,
     frames: Vec<Arc<PreparedImage>>,
+    evicted_frames: u64,
+    dropped_atlas_images: u64,
+    released_payload_bytes: u64,
 }
 
 impl ImageUploadService {
@@ -380,7 +431,7 @@ impl ImageUploadService {
         let prepared = Arc::new(PreparedImage {
             identity,
             tiles,
-            admission: Mutex::new(admission),
+            admission: Mutex::new(Some(admission)),
             paint_state: Mutex::new(PaintState {
                 issued,
                 ..PaintState::default()
@@ -413,8 +464,175 @@ impl ImageUploadService {
             .cloned()
     }
 
+    /// Attach one live consumer to a retained frame.
+    ///
+    /// Returns `false` when the frame is no longer retained (already evicted) — a consumer never
+    /// resurrects a released resource.
+    pub fn attach(&self, frame: &Arc<PreparedImage>, consumer: ConsumerId) -> bool {
+        let retained = self
+            .inner
+            .state
+            .lock()
+            .expect("image upload service state")
+            .frames
+            .iter()
+            .any(|candidate| Arc::ptr_eq(candidate, frame));
+        if !retained {
+            return false;
+        }
+        frame
+            .paint_state
+            .lock()
+            .expect("image frame paint state")
+            .consumers
+            .insert(consumer);
+        true
+    }
+
+    /// Detach one consumer. Returns whether this consumer was attached.
+    pub fn detach(&self, frame: &Arc<PreparedImage>, consumer: ConsumerId) -> bool {
+        frame
+            .paint_state
+            .lock()
+            .expect("image frame paint state")
+            .consumers
+            .remove(&consumer)
+    }
+
+    /// How many consumers currently present this frame.
+    pub fn consumers(&self, frame: &Arc<PreparedImage>) -> usize {
+        frame
+            .paint_state
+            .lock()
+            .expect("image frame paint state")
+            .consumers
+            .len()
+    }
+
+    /// Release a frame whose consumers have all detached.
+    ///
+    /// The caller must have stopped painting it: this removes the window's atlas entries, drops
+    /// the admission (a `Staged` payload is released; an already-begun transfer is quarantined),
+    /// then asserts that the transfer is terminated so that quarantined payload can be freed.
+    /// That assertion is the body's only option without a GPU completion signal, and the module
+    /// says so instead of reporting a measured release.
+    pub fn evict(
+        &self,
+        frame: &Arc<PreparedImage>,
+        window: &mut Window,
+    ) -> Result<EvictionOutcome, ImageUploadError> {
+        let mut service = self.inner.state.lock().expect("image upload service state");
+        if !service
+            .frames
+            .iter()
+            .any(|candidate| Arc::ptr_eq(candidate, frame))
+        {
+            return Err(ImageUploadError::NotRetained);
+        }
+        let mut paint_state = match frame.paint_state.try_lock() {
+            Ok(state) => state,
+            Err(std::sync::TryLockError::WouldBlock) => {
+                return Err(ImageUploadError::PaintInProgress);
+            }
+            Err(std::sync::TryLockError::Poisoned(error)) => error.into_inner(),
+        };
+        if !paint_state.consumers.is_empty() {
+            return Err(ImageUploadError::ConsumersRemain);
+        }
+        let mut outcome = EvictionOutcome::default();
+        if let Some(owner) = paint_state.owner_window {
+            if owner != window.window_handle() {
+                return Err(ImageUploadError::NotOwnedByWindow);
+            }
+            for tile in &frame.tiles {
+                window
+                    .drop_image(Arc::clone(&tile.image))
+                    .map_err(|_| ImageUploadError::AtlasRelease)?;
+                outcome.dropped_images = outcome.dropped_images.saturating_add(1);
+            }
+        }
+        paint_state.complete_in_scene = false;
+        let mut admission = frame.admission.lock().expect("image frame admission");
+        if let Some(mut admitted) = admission.take() {
+            let identity = admitted.identity().clone();
+            let bytes = admitted.bytes();
+            if admitted.stage() == UploadStage::Staged {
+                if admitted.release().is_ok() {
+                    outcome.released_bytes = bytes;
+                }
+            } else {
+                // Dropping an in-flight admission quarantines its payload; the assertion below
+                // is what frees it. Nothing here observes GPU completion.
+                drop(admitted);
+                let released = service
+                    .pools
+                    .iter()
+                    .find(|(generation, _)| *generation == identity.device_generation)
+                    .is_some_and(|(_, pool)| pool.confirm_transfer_terminated(&identity).is_ok());
+                if released {
+                    outcome.released_bytes = bytes;
+                }
+            }
+        }
+        drop(admission);
+        service
+            .frames
+            .retain(|candidate| !Arc::ptr_eq(candidate, frame));
+        service.evicted_frames = service.evicted_frames.saturating_add(1);
+        service.dropped_atlas_images = service
+            .dropped_atlas_images
+            .saturating_add(outcome.dropped_images as u64);
+        service.released_payload_bytes = service
+            .released_payload_bytes
+            .saturating_add(outcome.released_bytes);
+        drop(paint_state);
+        prune_idle_pools(&mut service);
+        Ok(outcome)
+    }
+
+    /// Evict every frame this window owns that has no remaining consumer.
+    ///
+    /// Window close calls this before the platform destroys the atlas: frames another window owns
+    /// or that a consumer still presents are left retained and reported as skipped.
+    pub fn evict_owned_by(&self, window: &mut Window) -> EvictionSummary {
+        let handle = window.window_handle();
+        let candidates: Vec<Arc<PreparedImage>> = self
+            .inner
+            .state
+            .lock()
+            .expect("image upload service state")
+            .frames
+            .iter()
+            .filter(|frame| {
+                frame
+                    .paint_state
+                    .try_lock()
+                    .map(|state| state.owner_window == Some(handle) && state.consumers.is_empty())
+                    .unwrap_or(false)
+            })
+            .cloned()
+            .collect();
+        let mut summary = EvictionSummary::default();
+        for frame in candidates {
+            match self.evict(&frame, window) {
+                Ok(outcome) => {
+                    summary.evicted_frames = summary.evicted_frames.saturating_add(1);
+                    summary.dropped_images = summary
+                        .dropped_images
+                        .saturating_add(outcome.dropped_images);
+                    summary.released_bytes = summary
+                        .released_bytes
+                        .saturating_add(outcome.released_bytes);
+                }
+                Err(_) => summary.skipped_frames = summary.skipped_frames.saturating_add(1),
+            }
+        }
+        summary
+    }
+
     /// Release a prepared frame only if no whole image was ever passed to GPUI. Once `paint_image`
-    /// was entered, transfer completion is not observable and the frame must remain retained.
+    /// was entered, transfer completion is not observable and the frame must remain retained
+    /// until it is evicted after its last consumer detaches.
     pub fn discard_unpainted(&self, frame: &Arc<PreparedImage>) -> bool {
         let mut service = self.inner.state.lock().expect("image upload service state");
         let mut paint_state = frame.paint_state.lock().expect("image frame paint state");
@@ -422,6 +640,9 @@ impl ImageUploadService {
             return false;
         }
         let mut admission = frame.admission.lock().expect("image frame admission");
+        let Some(admission) = admission.as_mut() else {
+            return false;
+        };
         if admission.stage() != UploadStage::Staged || admission.release().is_err() {
             return false;
         }
@@ -429,7 +650,6 @@ impl ImageUploadService {
         service
             .frames
             .retain(|candidate| !Arc::ptr_eq(candidate, frame));
-        drop(admission);
         prune_idle_pools(&mut service);
         true
     }
@@ -474,6 +694,20 @@ impl ImageUploadService {
             paint_issued_bytes: allowance.paint_issued_bytes,
             paint_issued_tiles: allowance.paint_issued_tiles,
             repaint_calls: allowance.repaint_calls,
+            evicted_frames: state.evicted_frames,
+            dropped_atlas_images: state.dropped_atlas_images,
+            released_payload_bytes: state.released_payload_bytes,
+            consumers: state
+                .frames
+                .iter()
+                .map(|frame| {
+                    frame
+                        .paint_state
+                        .try_lock()
+                        .map(|state| state.consumers.len())
+                        .unwrap_or(0)
+                })
+                .sum(),
         }
     }
 }
@@ -547,19 +781,34 @@ struct PreparedTile {
     transfer_bytes: u64,
 }
 
+/// One live consumer of a prepared frame: a pane, a surface or a probe view.
+///
+/// Ownership is explicit so a shared frame is released only after its **last** consumer detaches;
+/// a pane closing must not drop a frame another pane still displays.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct ConsumerId(u64);
+
+impl ConsumerId {
+    pub fn new(value: u64) -> Self {
+        Self(value)
+    }
+}
+
 #[derive(Default)]
 struct PaintState {
     owner_window: Option<AnyWindowHandle>,
     issued: Vec<bool>,
     complete_in_scene: bool,
     cancelled_before_upload: bool,
+    /// Consumers currently presenting this frame. Eviction requires this to be empty.
+    consumers: std::collections::BTreeSet<ConsumerId>,
 }
 
 /// An immutable, complete set of tile images tied to one verified source/revision/device identity.
 pub struct PreparedImage {
     identity: UploadIdentity,
     tiles: Vec<PreparedTile>,
-    admission: Mutex<media::AdmittedUpload>,
+    admission: Mutex<Option<media::AdmittedUpload>>,
     paint_state: Mutex<PaintState>,
 }
 
@@ -623,6 +872,10 @@ impl PreparedImage {
             return Ok(PaintStatus::DifferentWindow);
         }
         let mut admission = self.admission.lock().expect("image frame admission");
+        // An evicted frame has no admission left: it must not be painted again.
+        let Some(admission) = admission.as_mut() else {
+            return Ok(PaintStatus::Evicted);
+        };
         let previously_issued = state.issued.iter().filter(|issued| **issued).count();
         for (index, tile) in self.tiles.iter().enumerate() {
             if state.issued[index] {
@@ -1040,6 +1293,70 @@ mod tests {
         ] {
             assert!(!pool_is_idle(4, &usage, &[]));
         }
+    }
+
+    #[test]
+    fn consumers_gate_release_until_the_last_detach() {
+        let service = ImageUploadService::global();
+        let identity = media::UploadIdentity {
+            key: RepresentationKey {
+                source: RepresentationSource::Local {
+                    provenance: media::LocalProvenance::Fixture {
+                        fixture: media::LocalId::new("img4-test").expect("fixture id"),
+                        manifest: media::LocalId::new("img4-manifest").expect("manifest id"),
+                        source: media::LocalId::new("img4-source").expect("source id"),
+                    },
+                    revision: 1,
+                },
+                kind: desktop_protocol::RepresentationKind::Preview,
+                size: media::PixelSize::new(FRAME_EDGE, FRAME_EDGE).expect("frame size"),
+                orientation: media::Orientation::Normal,
+                policy: media::DecodePolicy {
+                    decoder: media::LocalId::new("png-rgb8").expect("decoder id"),
+                    colour: media::LocalId::new("identity-rgb").expect("colour id"),
+                    generation: 1,
+                },
+            },
+            source_revision: 1,
+            device_generation: 7,
+            content_digest: [0u8; 32],
+        };
+        let frame = Arc::new(PreparedImage {
+            identity,
+            tiles: Vec::new(),
+            admission: Mutex::new(None),
+            paint_state: Mutex::new(PaintState::default()),
+        });
+        // A frame nobody retained can never gain a consumer.
+        assert!(!service.attach(&frame, ConsumerId::new(1)));
+        service
+            .inner
+            .state
+            .lock()
+            .expect("image upload service state")
+            .frames
+            .push(Arc::clone(&frame));
+        let first = ConsumerId::new(1);
+        let second = ConsumerId::new(2);
+        assert!(service.attach(&frame, first));
+        assert!(service.attach(&frame, second));
+        assert_eq!(service.consumers(&frame), 2);
+        assert!(service.detach(&frame, first));
+        // The shared frame survives one pane closing: the second consumer still holds it.
+        assert_eq!(service.consumers(&frame), 1);
+        assert!(service.detach(&frame, second));
+        assert_eq!(service.consumers(&frame), 0);
+        // Detaching twice is reported, not silently accepted.
+        assert!(!service.detach(&frame, second));
+        // A detached frame is still retained until an eviction runs on the owning window.
+        assert!(service.counters().retained_frames >= 1);
+        service
+            .inner
+            .state
+            .lock()
+            .expect("image upload service state")
+            .frames
+            .retain(|candidate| !Arc::ptr_eq(candidate, &frame));
     }
 
     #[test]

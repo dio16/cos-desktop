@@ -5,9 +5,10 @@
 //! `media::decode_for_upload` and the reusable desktop-gpui whole-image tile path. No Runtime,
 //! artifact success, GPU completion, Present or residency result is fabricated.
 use std::sync::Arc;
+use std::time::Duration;
 
 use desktop_gpui::image_upload::{
-    FRAME_EDGE, ImageUploadError, ImageUploadService, PaintStatus, UploadRequest,
+    ConsumerId, FRAME_EDGE, ImageUploadError, ImageUploadService, PaintStatus, UploadRequest,
 };
 use gpui::prelude::*;
 use gpui::{
@@ -21,6 +22,22 @@ use media::{
 
 const MAX_FIXTURE_ENCODED_BYTES: usize = 16 * 1024 * 1024;
 const DISPLAY_EDGE: f32 = 480.0;
+/// Fixed manifest for the eviction loop: two revisions of one source, two further sources, and one
+/// identity repeated so a single frame is attached by two consumers.
+const MANIFEST: [(&str, u64); 6] = [
+    ("alpha", 1),
+    ("alpha", 2),
+    ("beta", 1),
+    ("gamma", 1),
+    ("shared", 1),
+    ("shared", 1),
+];
+
+#[derive(Clone, Copy)]
+enum Mode {
+    Fixture,
+    Manifest(u32),
+}
 
 struct ImageUploadProbe {
     service: ImageUploadService,
@@ -35,6 +52,8 @@ struct ImageUploadProbe {
     /// The last paint result reported to the user. Paint callbacks must not mutate view state,
     /// so a differing message is deferred to the next frame instead of written during paint.
     paint_message: SharedString,
+    /// This view's single consumer identity: the frame is evictable only after it detaches.
+    consumer: ConsumerId,
 }
 
 impl ImageUploadProbe {
@@ -42,6 +61,7 @@ impl ImageUploadProbe {
         self.cancel.cancel();
         if next_revision || self.source_revision == 0 {
             if let Some(previous) = self.current.take() {
+                self.service.detach(&previous, self.consumer);
                 self.service.discard_unpainted(&previous);
             }
             self.source_revision = self.source_revision.saturating_add(1);
@@ -85,11 +105,17 @@ impl ImageUploadProbe {
                 this.pending = false;
                 match result {
                     Ok(frame) => {
-                        this.current = Some(frame);
-                        this.status = format!(
-                            "Fixture revision {revision}, device generation {generation}: verified PNG admitted; tiles are issued only by GPUI paint callbacks"
-                        )
-                        .into();
+                        // The view presents this frame: eviction must wait for this consumer.
+                        if this.service.attach(&frame, this.consumer) {
+                            this.current = Some(frame);
+                            this.status = format!(
+                                "Fixture revision {revision}, device generation {generation}: verified PNG admitted; tiles are issued only by GPUI paint callbacks"
+                            )
+                            .into();
+                        } else {
+                            this.status =
+                                "Fixture unavailable: the prepared frame is no longer retained".into();
+                        }
                     }
                     Err(ImageUploadError::Cancelled | ImageUploadError::Decode(MediaError::Cancelled)) => {
                         this.status = "Fixture: cancelled; no complete frame published".into();
@@ -108,10 +134,10 @@ impl ImageUploadProbe {
         self.cancel.cancel();
         self.request_serial = self.request_serial.saturating_add(1);
         self.pending = false;
-        let discarded = self
-            .current
-            .as_ref()
-            .is_some_and(|frame| self.service.discard_unpainted(frame));
+        let discarded = self.current.as_ref().is_some_and(|frame| {
+            self.service.detach(frame, self.consumer);
+            self.service.discard_unpainted(frame)
+        });
         if discarded {
             self.current = None;
             self.status =
@@ -153,10 +179,11 @@ impl ImageUploadProbe {
         self.pending = false;
         // A frame whose tiles were already issued cannot be released, so it stays in the view and
         // its next paint reports the stale-generation refusal instead of silently disappearing.
-        if let Some(previous) = self.current.clone()
-            && self.service.discard_unpainted(&previous)
-        {
-            self.current = None;
+        if let Some(previous) = self.current.clone() {
+            self.service.detach(&previous, self.consumer);
+            if self.service.discard_unpainted(&previous) {
+                self.current = None;
+            }
         }
         self.device_generation = self.device_generation.saturating_add(1);
         // Cancel any in-flight preparation, but give the retained frame a live token so its next
@@ -168,6 +195,296 @@ impl ImageUploadProbe {
         )
         .into();
         cx.notify();
+    }
+
+    /// Drive the fixed manifest: load → present → switch → evict → load another, repeated.
+    ///
+    /// Every identity comes from `MANIFEST`; the last two entries share one (source, revision) so a
+    /// shared frame is attached by two consumers and must survive the first detach. Counters and
+    /// outcomes are printed as JSON lines so a harness can bind them to an execution.
+    fn start_manifest(&mut self, cycles: u32, cx: &mut Context<Self>) {
+        let background = cx.background_executor().clone();
+        let service = self.service.clone();
+        self.pending = true;
+        self.status = format!(
+            "Manifest: {cycles} cycles over {} fixed identities (one shared by two consumers)",
+            MANIFEST.len()
+        )
+        .into();
+        self.task = Some(cx.spawn(async move |this, cx| {
+            for cycle in 0..cycles {
+                for (index, (source, revision)) in MANIFEST.iter().copied().enumerate() {
+                    let generation = this
+                        .update(cx, |this, _| this.device_generation)
+                        .unwrap_or(1);
+                    let Ok(request) = fixture_request_for(source, revision, generation) else {
+                        continue;
+                    };
+                    let bytes = background
+                        .spawn(async move {
+                            let cancel = Cancellation::default();
+                            generate_fixture_png(revision, &cancel).map(Arc::<[u8]>::from)
+                        })
+                        .await;
+                    let Ok(bytes) = bytes else { continue };
+                    let Ok(frame) = service
+                        .prepare_encoded(&background, request, bytes, Cancellation::default())
+                        .await
+                    else {
+                        continue;
+                    };
+                    let shared = MANIFEST
+                        .get(index + 1)
+                        .is_some_and(|next| *next == (source, revision));
+                    let consumers = [ConsumerId::new(1), ConsumerId::new(2)];
+                    let attached = this
+                        .update(cx, |this, cx| {
+                            let mut attached = service.attach(&frame, consumers[0]);
+                            if shared {
+                                attached &= service.attach(&frame, consumers[1]);
+                            }
+                            if attached {
+                                this.current = Some(frame.clone());
+                                this.source_revision = revision;
+                                cx.notify();
+                            }
+                            attached
+                        })
+                        .unwrap_or(false);
+                    if !attached {
+                        continue;
+                    }
+                    // Failure injection 1: eviction while a consumer is still attached must refuse.
+                    let attached_consumers = service.consumers(&frame);
+                    let refusal = this.update_in(cx, |this, window, _| {
+                        let _ = this;
+                        service.evict(&frame, window)
+                    });
+                    match refusal {
+                        Ok(Ok(_)) => println!(
+                            "{{\"event\":\"img4-evict-unexpected\",\"cycle\":{cycle},\"index\":{index}}}"
+                        ),
+                        Ok(Err(error)) => println!(
+                            "{{\"event\":\"img4-evict-refused\",\"cycle\":{cycle},\"index\":{index},\"error\":\"{error:?}\",\"attached_consumers\":{attached_consumers},\"retained\":{}}}",
+                            service.counters().retained_frames,
+                        ),
+                        Err(_) => println!(
+                            "{{\"event\":\"img4-evict-refused\",\"cycle\":{cycle},\"index\":{index},\"error\":\"view_gone\"}}"
+                        ),
+                    }
+                    // Let the canvas paint the frame at least once before it is switched away.
+                    background.timer(Duration::from_millis(120)).await;
+                    let evicted = this.update_in(cx, |this, window, cx| {
+                        service.detach(&frame, consumers[0]);
+                        if shared {
+                            service.detach(&frame, consumers[1]);
+                        }
+                        this.current = None;
+                        cx.notify();
+                        let outcome = service.evict(&frame, window);
+                        (outcome, service.counters(), this.device_generation)
+                    });
+                    match evicted {
+                        Ok((Ok(outcome), counters, generation)) => println!(
+                            "{{\"event\":\"img4-evict\",\"cycle\":{cycle},\"index\":{index},\"source\":\"{source}\",\"revision\":{revision},\"generation\":{generation},\"shared\":{shared},\"images\":{},\"released_bytes\":{},\"retained\":{},\"consumers\":{},\"staging\":{},\"in_flight\":{},\"resident\":{},\"quarantined\":{},\"evicted_frames\":{},\"dropped_images\":{},\"released_total\":{}}}",
+                            outcome.dropped_images,
+                            outcome.released_bytes,
+                            counters.retained_frames,
+                            counters.consumers,
+                            counters.staging_reservation_bytes,
+                            counters.in_flight_reservation_bytes,
+                            counters.resident_reservation_bytes,
+                            counters.quarantined_staging_bytes
+                                + counters.quarantined_in_flight_bytes
+                                + counters.quarantined_resident_bytes,
+                            counters.evicted_frames,
+                            counters.dropped_atlas_images,
+                            counters.released_payload_bytes,
+                        ),
+                        Ok((Err(error), counters, generation)) => println!(
+                            "{{\"event\":\"img4-evict-refused\",\"cycle\":{cycle},\"index\":{index},\"source\":\"{source}\",\"revision\":{revision},\"generation\":{generation},\"error\":\"{error:?}\",\"retained\":{},\"consumers\":{}}}",
+                            counters.retained_frames, counters.consumers,
+                        ),
+                        Err(_) => break,
+                    }
+                }
+                // One logical generation change per cycle: the previous pool must not survive and
+                // the next pass must recreate resources lazily.
+                let _ = this.update(cx, |this, cx| this.advance_logical_generation(cx));
+                let counters = service.counters();
+                println!(
+                    "{{\"event\":\"img4-cycle\",\"cycle\":{cycle},\"retained\":{},\"consumers\":{},\"staging\":{},\"in_flight\":{},\"resident\":{},\"quarantined\":{},\"evicted_frames\":{},\"dropped_images\":{},\"released_bytes\":{}}}",
+                    counters.retained_frames,
+                    counters.consumers,
+                    counters.staging_reservation_bytes,
+                    counters.in_flight_reservation_bytes,
+                    counters.resident_reservation_bytes,
+                    counters.quarantined_staging_bytes
+                        + counters.quarantined_in_flight_bytes
+                        + counters.quarantined_resident_bytes,
+                    counters.evicted_frames,
+                    counters.dropped_atlas_images,
+                    counters.released_payload_bytes,
+                );
+            }
+            // Failure injection 2: two retained frames fill the bound, so a third is refused.
+            let generation = this
+                .update(cx, |this, _| this.device_generation)
+                .unwrap_or(1);
+            let mut held = Vec::new();
+            for source in ["cap-a", "cap-b"] {
+                let Ok(request) = fixture_request_for(source, 1, generation) else {
+                    continue;
+                };
+                let bytes = background
+                    .spawn(async move {
+                        let cancel = Cancellation::default();
+                        generate_fixture_png(1, &cancel).map(Arc::<[u8]>::from)
+                    })
+                    .await;
+                let Ok(bytes) = bytes else { continue };
+                if let Ok(frame) = service
+                    .prepare_encoded(&background, request, bytes, Cancellation::default())
+                    .await
+                {
+                    held.push(frame);
+                }
+            }
+            let third = fixture_request_for("cap-c", 1, generation).ok();
+            let third_result = match third {
+                Some(request) => {
+                    let bytes = background
+                        .spawn(async move {
+                            let cancel = Cancellation::default();
+                            generate_fixture_png(1, &cancel).map(Arc::<[u8]>::from)
+                        })
+                        .await;
+                    match bytes {
+                        Ok(bytes) => service
+                            .prepare_encoded(&background, request, bytes, Cancellation::default())
+                            .await
+                            .map(|_| ()),
+                        Err(error) => Err(ImageUploadError::Decode(error)),
+                    }
+                }
+                None => Err(ImageUploadError::InvalidEncodedInputLimit),
+            };
+            println!(
+                "{{\"event\":\"img4-capacity\",\"held\":{},\"third\":\"{}\",\"retained\":{}}}",
+                held.len(),
+                match &third_result {
+                    Ok(()) => "admitted".to_owned(),
+                    Err(error) => format!("{error:?}"),
+                },
+                service.counters().retained_frames,
+            );
+            let _ = this.update_in(cx, |_, window, _| {
+                for frame in &held {
+                    let _ = service.evict(frame, window);
+                }
+            });
+            // One frame is deliberately left retained so the close sweep has something to release.
+            let generation = this
+                .update(cx, |this, _| this.device_generation)
+                .unwrap_or(1);
+            if let (Ok(request), Ok(bytes)) = (
+                fixture_request_for("closing", 1, generation),
+                background
+                    .spawn(async move {
+                        let cancel = Cancellation::default();
+                        generate_fixture_png(1, &cancel).map(Arc::<[u8]>::from)
+                    })
+                    .await,
+            ) && let Ok(frame) = service
+                .prepare_encoded(&background, request, bytes, Cancellation::default())
+                .await
+            {
+                let attached = this
+                    .update(cx, |this, cx| {
+                        let attached = service.attach(&frame, ConsumerId::new(1));
+                        if attached {
+                            this.current = Some(frame);
+                            cx.notify();
+                        }
+                        attached
+                    })
+                    .unwrap_or(false);
+                if attached {
+                    background.timer(Duration::from_millis(120)).await;
+                }
+            }
+            let summary = this
+                .update_in(cx, |this, window, cx| {
+                    this.close_with_sweep(window, cx);
+                    let counters = service.counters();
+                    println!(
+                        "{{\"event\":\"img4-summary\",\"retained\":{},\"consumers\":{},\"resident\":{},\"quarantined\":{},\"generation\":{}}}",
+                        counters.retained_frames,
+                        counters.consumers,
+                        counters.resident_reservation_bytes,
+                        counters.quarantined_staging_bytes
+                            + counters.quarantined_in_flight_bytes
+                            + counters.quarantined_resident_bytes,
+                        this.device_generation,
+                    );
+                });
+            let _ = summary;
+        }));
+        cx.notify();
+    }
+
+    /// Evict the frame this view presents: detach first, then release the atlas entries and the
+    /// CPU payload. A refusal re-attaches the frame so nothing is lost silently.
+    fn evict_current(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        let Some(frame) = self.current.clone() else {
+            self.status = "Evict unavailable: no prepared image identity".into();
+            cx.notify();
+            return;
+        };
+        self.service.detach(&frame, self.consumer);
+        match self.service.evict(&frame, window) {
+            Ok(outcome) => {
+                self.current = None;
+                self.status = format!(
+                    "Evicted: atlas images={} released_payload={} B out of {} B; GPU residency NOT_MEASURED",
+                    outcome.dropped_images,
+                    outcome.released_bytes,
+                    FRAME_EDGE as u64 * FRAME_EDGE as u64 * 4
+                )
+                .into();
+            }
+            Err(error) => {
+                self.service.attach(&frame, self.consumer);
+                self.status =
+                    format!("Eviction refused: {error:?}; the frame stays retained and displayed")
+                        .into();
+            }
+        }
+        cx.notify();
+    }
+
+    /// Close the window through the ownership sweep: every frame this window owns with no
+    /// consumer is evicted before the window disappears.
+    fn close_with_sweep(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        if let Some(frame) = self.current.take() {
+            self.service.detach(&frame, self.consumer);
+        }
+        let summary = self.service.evict_owned_by(window);
+        let counters = self.service.counters();
+        eprintln!(
+            "event=img4-window-close evicted={} skipped={} images={} released_bytes={} retained={} consumers={} resident={} quarantined={}",
+            summary.evicted_frames,
+            summary.skipped_frames,
+            summary.dropped_images,
+            summary.released_bytes,
+            counters.retained_frames,
+            counters.consumers,
+            counters.resident_reservation_bytes,
+            counters.quarantined_staging_bytes
+                + counters.quarantined_in_flight_bytes
+                + counters.quarantined_resident_bytes
+        );
+        cx.quit();
     }
 }
 
@@ -251,6 +568,9 @@ impl Render for ImageUploadProbe {
                         Ok(PaintStatus::AdmissionUnavailable) => {
                             Some("Paint deferred: process allowance or upload admission unavailable".to_owned())
                         }
+                        Ok(PaintStatus::Evicted) => {
+                            Some("Paint refused: the frame was evicted and is no longer retained".to_owned())
+                        }
                         Err(error) => Some(format!("GPUI paint unavailable: {error}")),
                     };
                     if let Some(message) = message
@@ -291,7 +611,9 @@ impl Render for ImageUploadProbe {
                 .child(button("Load next revision", !pending, cx.listener(|this, _, _, cx| this.start_load(true, cx))))
                 .child(button("Reuse exact identity", !pending, cx.listener(|this, _, _, cx| this.reuse_current(cx))))
                 .child(button("Cancel", true, cx.listener(|this, _, _, cx| this.cancel(cx))))
-                .child(button("Advance logical generation", true, cx.listener(|this, _, _, cx| this.advance_logical_generation(cx)))))
+                .child(button("Advance logical generation", true, cx.listener(|this, _, _, cx| this.advance_logical_generation(cx))))
+                .child(button("Evict current", !pending, cx.listener(|this, _, window, cx| this.evict_current(window, cx))))
+                .child(button("Evict owned and close", true, cx.listener(|this, _, window, cx| this.close_with_sweep(window, cx)))))
             .child(status)
             .child(div().flex().flex_row().gap_4()
                 .child(frame_canvas)
@@ -326,12 +648,22 @@ fn button(
 }
 
 fn fixture_request(revision: u64, generation: u64) -> Result<UploadRequest, MediaError> {
+    fixture_request_for("landmark-png", revision, generation)
+}
+
+/// One request for a named fixture source: the manifest uses distinct source ids so each entry is
+/// a distinct identity, and a repeated (source, revision) pair is a genuinely shared frame.
+fn fixture_request_for(
+    source: &str,
+    revision: u64,
+    generation: u64,
+) -> Result<UploadRequest, MediaError> {
     let key = RepresentationKey {
         source: media::RepresentationSource::Local {
             provenance: LocalProvenance::Fixture {
                 fixture: LocalId::new("img3-s2")?,
                 manifest: LocalId::new("generated-v1")?,
-                source: LocalId::new("landmark-png")?,
+                source: LocalId::new(source)?,
             },
             revision,
         },
@@ -494,11 +826,21 @@ fn crc32_table() -> &'static [u32; 256] {
 
 fn main() {
     let mut args = std::env::args().skip(1);
-    if args.next().as_deref() != Some("--fixture") || args.next().is_some() {
-        eprintln!("Usage: cargo run --locked -p cos-desktop --example image_upload -- --fixture");
-        std::process::exit(2);
-    }
-    gpui_platform::application().run(|cx: &mut App| {
+    let mode = match args.next().as_deref() {
+        Some("--fixture") if args.next().is_none() => Mode::Fixture,
+        Some("--manifest") => Mode::Manifest(
+            args.next()
+                .and_then(|value| value.parse::<u32>().ok())
+                .unwrap_or(2),
+        ),
+        _ => {
+            eprintln!(
+                "Usage: cargo run --locked -p cos-desktop --example image_upload -- --fixture\n       cargo run --locked -p cos-desktop --example image_upload -- --manifest [cycles]"
+            );
+            std::process::exit(2);
+        }
+    };
+    gpui_platform::application().run(move |cx: &mut App| {
         cx.on_window_closed(|cx, _| {
             if cx.windows().is_empty() {
                 cx.quit();
@@ -515,8 +857,8 @@ fn main() {
                 }),
                 ..Default::default()
             },
-            |_, cx| {
-                cx.new(|_| ImageUploadProbe {
+            move |_, cx| {
+                let probe = cx.new(|_| ImageUploadProbe {
                     service: ImageUploadService::global(),
                     status:
                         "Fixture mode only. Load to generate/decode the deterministic RGB8 PNG."
@@ -529,7 +871,12 @@ fn main() {
                     device_generation: 1,
                     pending: false,
                     paint_message: SharedString::default(),
-                })
+                    consumer: ConsumerId::new(1),
+                });
+                if let Mode::Manifest(cycles) = mode {
+                    probe.update(cx, |this, cx| this.start_manifest(cycles, cx));
+                }
+                probe
             },
         );
         if opened.is_err() {

@@ -1,0 +1,2 @@
+event=img4-window-close evicted=1 skipped=0 images=16 released_bytes=16777216 retained=0 consumers=0 resident=0 quarantined=0
+event=img3-fixture-probe-exit Runtime-not-started
