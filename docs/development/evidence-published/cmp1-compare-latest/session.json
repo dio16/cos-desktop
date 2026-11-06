@@ -22,17 +22,17 @@
   },
   "trace_pilot": {
     "file": "cmp1-trace-shared-pilot.jsonl (private, 1.1 MiB)",
-    "sha256": "sha256:daef3dc1550b63d5cdf2ec032126b961d3ec4e1052a608411325157478edc766",
+    "sha256": "sha256:3398967a83fdd7dfb3117fd23be8a31ec9d191712aa59549f5b73dac8062683a",
     "executed_binary": "examples/compare.exe",
-    "executed_binary_sha256": "sha256:f2a4d54b07ddf778c7d0c7dbf030cb2033945e04601ed55dc631b38d5b95983a",
+    "executed_binary_sha256": "sha256:9f32c03e0f8d8eb1991fb2ff291893f419153ee3e6e353e54cca35953835ae15",
     "trace_after_binary_build": true,
     "variant": "shared",
     "ready": true,
-    "warmup_ms": 199,
+    "warmup_ms": 177,
     "settled": true,
     "cancel_probe_stage": 3,
     "refusals": 0,
-    "rows": 1963,
+    "rows": 1964,
     "decode_calls": 1,
     "reuse_calls": 0,
     "retained_frames": 1,
@@ -58,7 +58,7 @@
   "captures": [
     {
       "path": "captures/01-linked-fit.png",
-      "sha256": "sha256:879ab8c5a968d45249df150d9d10a12cacb29253d8afd65364e386f32e723fae",
+      "sha256": "sha256:92a54c64dcce9f0549ee96983e3a119cd12a44d3aaffadf23326b47d0adcff2f",
       "width": 1275,
       "height": 932,
       "step": "01-linked-fit",
@@ -82,7 +82,8 @@
         "B側を変更",
         "比較を閉じる",
         "Fixture: A側候補の消失",
-        "Fixture: 同じ候補の再出現"
+        "Fixture: 同じ候補の再出現",
+        "Fixture: 診断値"
       ],
       "focused": [
         "MP-CMP1 Compare local fixture 1"
@@ -90,7 +91,7 @@
     },
     {
       "path": "captures/02-linked-1to1-pan-a.png",
-      "sha256": "sha256:1f398753357a0e024ce417c1e3fb151bbc924bdf0e814a8c342216a8318b5ad0",
+      "sha256": "sha256:e2737c7daa1ae24eee9ba0875d67fe2cf3e109684d186ab5443f29a0ce1956cd",
       "width": 1275,
       "height": 932,
       "step": "02-linked-1to1-pan-a",
@@ -114,7 +115,8 @@
         "B側を変更",
         "比較を閉じる",
         "Fixture: A側候補の消失",
-        "Fixture: 同じ候補の再出現"
+        "Fixture: 同じ候補の再出現",
+        "Fixture: 診断値"
       ],
       "focused": [
         "MP-CMP1 Compare local fixture 1",
@@ -123,7 +125,7 @@
     },
     {
       "path": "captures/03-unlinked-pan-b.png",
-      "sha256": "sha256:882326ae31c38a68ca178eece17e81204d49426e521bbc102e5e59ffcbae2bd6",
+      "sha256": "sha256:6f9fa8cdceb1bc20a32ee07c503dce4786475cbe99b59c53172cdccdadd1ae02",
       "width": 1275,
       "height": 932,
       "step": "03-unlinked-pan-b",
@@ -147,7 +149,8 @@
         "B側を変更",
         "比較を閉じる",
         "Fixture: A側候補の消失",
-        "Fixture: 同じ候補の再出現"
+        "Fixture: 同じ候補の再出現",
+        "Fixture: 診断値"
       ],
       "focused": [
         "MP-CMP1 Compare local fixture 1",
@@ -156,7 +159,7 @@
     },
     {
       "path": "captures/04-unlinked-pair-fit.png",
-      "sha256": "sha256:fb74e1e0a390f3e1c95425cab95705f311726789e7e129111f8f39313f2cc0c4",
+      "sha256": "sha256:4ea6a8aac849e460e86c5dbb46ab57d59ddd84fef1915a7916e8c4786e4a3aa4",
       "width": 1275,
       "height": 932,
       "step": "04-unlinked-pair-fit",
@@ -180,7 +183,8 @@
         "B側を変更",
         "比較を閉じる",
         "Fixture: A側候補の消失",
-        "Fixture: 同じ候補の再出現"
+        "Fixture: 同じ候補の再出現",
+        "Fixture: 診断値"
       ],
       "focused": [
         "MP-CMP1 Compare local fixture 1",
@@ -189,7 +193,7 @@
     },
     {
       "path": "captures/05-swap.png",
-      "sha256": "sha256:85138c0c330324501af7a508487cacaf71f8abf868238a8ee01522b1a197dec8",
+      "sha256": "sha256:06f7e02ea376cbf059b1e1dcc9f49ad29338d875e8939a98dfbd75f4e2ba882f",
       "width": 1275,
       "height": 932,
       "step": "05-swap",
@@ -213,7 +217,8 @@
         "B側を変更",
         "比較を閉じる",
         "Fixture: A側候補の消失",
-        "Fixture: 同じ候補の再出現"
+        "Fixture: 同じ候補の再出現",
+        "Fixture: 診断値"
       ],
       "focused": [
         "MP-CMP1 Compare local fixture 1",
@@ -222,7 +227,7 @@
     },
     {
       "path": "captures/06-plain-select.png",
-      "sha256": "sha256:c4f6d4006a3d6435747ff913182284d093735777d97bff5fafd93c076af15000",
+      "sha256": "sha256:08546882a72bd82d202ab9a224724c7379c5efbb7b7c9c324b820db829f16833",
       "width": 1275,
       "height": 932,
       "step": "06-plain-select",
@@ -246,7 +251,8 @@
         "B側を変更",
         "比較を閉じる",
         "Fixture: A側候補の消失",
-        "Fixture: 同じ候補の再出現"
+        "Fixture: 同じ候補の再出現",
+        "Fixture: 診断値"
       ],
       "focused": [
         "MP-CMP1 Compare local fixture 1",
@@ -255,7 +261,7 @@
     },
     {
       "path": "captures/07-disappear.png",
-      "sha256": "sha256:388a146dba460a578d3fd8f20935de42f42702bbe99a8695e56befa5d4b6557f",
+      "sha256": "sha256:de50bd5835c218687627b6121c406e3da6390b9c566a06ec8a085ed9fc36689e",
       "width": 1275,
       "height": 932,
       "step": "07-disappear",
@@ -279,7 +285,8 @@
         "B側を変更",
         "比較を閉じる",
         "Fixture: A側候補の消失",
-        "Fixture: 同じ候補の再出現"
+        "Fixture: 同じ候補の再出現",
+        "Fixture: 診断値"
       ],
       "focused": [
         "MP-CMP1 Compare local fixture 1",
@@ -288,11 +295,11 @@
     },
     {
       "path": "captures/08-swap-with-unavailable-side.png",
-      "sha256": "sha256:058823f4b0508ab43eeb8cfca1b4314cecf996b35b19d833ab5c36204ac52b91",
+      "sha256": "sha256:fc8efff6f3ddf486537030c2b2a9f314b2e6ebc31f9b45fcc417acaf57fafdb5",
       "width": 1275,
       "height": 932,
       "step": "08-swap-with-unavailable-side",
-      "exercised": "swap while one side is unavailable keeps the available picture attached",
+      "exercised": "swap keeps the available picture and the reason that belongs to the unavailable candidate",
       "pane_groups": [
         "Candidate A",
         "Candidate B"
@@ -312,7 +319,8 @@
         "B側を変更",
         "比較を閉じる",
         "Fixture: A側候補の消失",
-        "Fixture: 同じ候補の再出現"
+        "Fixture: 同じ候補の再出現",
+        "Fixture: 診断値"
       ],
       "focused": [
         "MP-CMP1 Compare local fixture 1",
@@ -321,7 +329,7 @@
     },
     {
       "path": "captures/09-reappear.png",
-      "sha256": "sha256:3a0de9ad9ce54066673a42ab469ee07b201b1dfe2a9a4526152ae5ff2863a25d",
+      "sha256": "sha256:240469c6b98a84be8feabf599de07b9efc2fd39112c3249c2652e1fcf2939de9",
       "width": 1275,
       "height": 932,
       "step": "09-reappear",
@@ -345,7 +353,8 @@
         "B側を変更",
         "比較を閉じる",
         "Fixture: A側候補の消失",
-        "Fixture: 同じ候補の再出現"
+        "Fixture: 同じ候補の再出現",
+        "Fixture: 診断値"
       ],
       "focused": [
         "MP-CMP1 Compare local fixture 1",
@@ -354,7 +363,7 @@
     },
     {
       "path": "captures/10-side-change-a-to-c.png",
-      "sha256": "sha256:a6874b5f6bd2fd12ace6dc597a6f304919042590307731d00ac8453ac625290b",
+      "sha256": "sha256:fcc423c7cf640702265a7214b0d4adae829248d9a60df96e65f97c6a883a3b9d",
       "width": 1275,
       "height": 932,
       "step": "10-side-change-a-to-c",
@@ -378,7 +387,8 @@
         "B側を変更",
         "比較を閉じる",
         "Fixture: A側候補の消失",
-        "Fixture: 同じ候補の再出現"
+        "Fixture: 同じ候補の再出現",
+        "Fixture: 診断値"
       ],
       "focused": [
         "MP-CMP1 Compare local fixture 1",
@@ -386,49 +396,50 @@
       ]
     },
     {
-      "path": "captures/11-viewed-withheld-before-close.png",
-      "sha256": "sha256:e9aa108cf51914754bdafa51279b7f367b9e838b59e343a8615b1201d5a237ff",
+      "path": "captures/11-diagnostics-pair-open.png",
+      "sha256": "sha256:058e2b2ebd68bdf2fc9f14b745af3706919cc8da3aa38f83910aeb4f129af336",
       "width": 1275,
       "height": 932,
-      "step": "11-viewed-withheld-before-close",
-      "exercised": "the Viewed candidate (the pair's A side) leaves the projection",
+      "step": "11-diagnostics-pair-open",
+      "exercised": "retention counters while the pair is open",
       "pane_groups": [
-        "Candidate A",
+        "Candidate C (cyan marker)",
         "Candidate B"
       ],
       "pane_texts": [
-        "画像を利用できません: この候補は現在閲覧できる情報に含まれていません。参照を保持しています。",
-        "画像は未表示です",
+        "ローカル画像・実験用タイル表示。GPU完了・常駐量・本番の画質受入は未計測。",
+        "物理表示倍率 25.8% / DIP変換 1.00 / 画像全体を表示",
         "ローカル画像・実験用タイル表示。GPU完了・常駐量・本番の画質受入は未計測。",
         "物理表示倍率 25.8% / DIP変換 1.00 / 画像全体を表示"
       ],
       "controls": [
         "全体表示 (0)",
         "物理ピクセル1:1 (1)",
-        "連動を解除",
+        "連動する",
         "A/Bを交換",
         "A側を変更",
         "B側を変更",
         "比較を閉じる",
         "Fixture: A側候補の消失",
-        "Fixture: 同じ候補の再出現"
+        "Fixture: 同じ候補の再出現",
+        "Fixture: 診断値"
       ],
       "focused": [
         "MP-CMP1 Compare local fixture 1",
-        "Fixture: A側候補の消失"
+        "Fixture: 診断値"
       ]
     },
     {
-      "path": "captures/12-close-withheld-viewed.png",
-      "sha256": "sha256:e3efb67962d45d5cf13aa489efd6d840dbf19a7cd79da8879a8dc57d3cf64df8",
+      "path": "captures/12-diagnostics-after-close.png",
+      "sha256": "sha256:963007f29ce29a66ee1434f58b0bb0ad2f3ce337b42d2c4af56911b4ffa7f765",
       "width": 1275,
       "height": 932,
-      "step": "12-close-withheld-viewed",
-      "exercised": "closing states the withheld reason instead of keeping a stale picture",
+      "step": "12-diagnostics-after-close",
+      "exercised": "after close no panes hold a frame: one consumer remains because the viewer shows it",
       "pane_groups": [],
       "pane_texts": [
-        "画像を利用できません: この候補は現在閲覧できる情報に含まれていません。",
-        "画像は未表示です"
+        "ローカル画像・実験用タイル表示。GPU完了・常駐量・本番の画質受入は未計測。",
+        "物理表示倍率 27.1% / DIP変換 1.00 / 画像全体を表示"
       ],
       "controls": [
         "全体表示 (0)",
@@ -437,15 +448,17 @@
         "縮小 (-)",
         "全画面 / 復帰 (F11)",
         "Fixture: A側候補の消失",
-        "Fixture: 同じ候補の再出現"
+        "Fixture: 同じ候補の再出現",
+        "Fixture: 診断値"
       ],
       "focused": [
-        "MP-CMP1 Compare local fixture 1"
+        "MP-CMP1 Compare local fixture 1",
+        "Fixture: 診断値"
       ]
     },
     {
       "path": "captures/13-restore-before.png",
-      "sha256": "sha256:0533005d7017ce606a93442de95f4fcc46a77c63847a2582e575b6725f0ff0d5",
+      "sha256": "sha256:96ef59b0ff9a8dc8b2e8059b9a98040e2aedf04217603895e41ce39a56c48f21",
       "width": 1275,
       "height": 932,
       "step": "13-restore-before",
@@ -469,7 +482,8 @@
         "B側を変更",
         "比較を閉じる",
         "Fixture: A側候補の消失",
-        "Fixture: 同じ候補の再出現"
+        "Fixture: 同じ候補の再出現",
+        "Fixture: 診断値"
       ],
       "focused": [
         "MP-CMP1 Compare local fixture 1",
@@ -478,7 +492,7 @@
     },
     {
       "path": "captures/14-restore-after.png",
-      "sha256": "sha256:89670dd31b92fca58aa8cea187912763d8b321c2c3559b63ae0650f5df9f8e0b",
+      "sha256": "sha256:9d6d70eb975e0d8ef5c9cf92807c6bf34a608df4245acf6e77f73dd79a4e285f",
       "width": 1275,
       "height": 932,
       "step": "14-restore-after",
@@ -502,7 +516,8 @@
         "B側を変更",
         "比較を閉じる",
         "Fixture: A側候補の消失",
-        "Fixture: 同じ候補の再出現"
+        "Fixture: 同じ候補の再出現",
+        "Fixture: 診断値"
       ],
       "focused": [
         "MP-CMP1 Compare local fixture 1",
@@ -511,7 +526,7 @@
     },
     {
       "path": "captures/15-viewed-outside-pair.png",
-      "sha256": "sha256:3b7f07aea0d9bf7f78f009227f8fcaf2c61fc33c37ddd4af073893eec20493be",
+      "sha256": "sha256:52f465aef39cdc74ec8d51563a93a108fcaf21720209a270ee1d8ff07ce16024",
       "width": 1275,
       "height": 932,
       "step": "15-viewed-outside-pair",
@@ -535,7 +550,8 @@
         "B側を変更",
         "比較を閉じる",
         "Fixture: A側候補の消失",
-        "Fixture: 同じ候補の再出現"
+        "Fixture: 同じ候補の再出現",
+        "Fixture: 診断値"
       ],
       "focused": [
         "MP-CMP1 Compare local fixture 1",
@@ -544,7 +560,7 @@
     },
     {
       "path": "captures/16-close-shows-viewed-c.png",
-      "sha256": "sha256:4111693207a62809a0e9526f3461754cd81762a8763978a8f349fc1cd59cc270",
+      "sha256": "sha256:055c463639e89455753bab2988dd0abb2ac813015723db595662afc2b79b7bf1",
       "width": 1275,
       "height": 932,
       "step": "16-close-shows-viewed-c",
@@ -561,21 +577,109 @@
         "縮小 (-)",
         "全画面 / 復帰 (F11)",
         "Fixture: A側候補の消失",
-        "Fixture: 同じ候補の再出現"
+        "Fixture: 同じ候補の再出現",
+        "Fixture: 診断値"
       ],
       "focused": [
         "MP-CMP1 Compare local fixture 1"
+      ]
+    },
+    {
+      "path": "captures/17-viewed-withheld-before-close.png",
+      "sha256": "sha256:efded9c24772be91f4bd22e8be6959cac1af7aa74b821d87138a97471f1cef08",
+      "width": 1275,
+      "height": 932,
+      "step": "17-viewed-withheld-before-close",
+      "exercised": "the Viewed candidate leaves the projection",
+      "pane_groups": [
+        "Candidate A",
+        "Candidate B"
+      ],
+      "pane_texts": [
+        "画像を利用できません: この候補は現在閲覧できる情報に含まれていません。参照を保持しています。",
+        "画像は未表示です",
+        "ローカル画像・実験用タイル表示。GPU完了・常駐量・本番の画質受入は未計測。",
+        "物理表示倍率 25.8% / DIP変換 1.00 / 画像全体を表示"
+      ],
+      "controls": [
+        "全体表示 (0)",
+        "物理ピクセル1:1 (1)",
+        "連動を解除",
+        "A/Bを交換",
+        "A側を変更",
+        "B側を変更",
+        "比較を閉じる",
+        "Fixture: A側候補の消失",
+        "Fixture: 同じ候補の再出現",
+        "Fixture: 診断値"
+      ],
+      "focused": [
+        "MP-CMP1 Compare local fixture 1",
+        "Fixture: A側候補の消失"
+      ]
+    },
+    {
+      "path": "captures/18-close-withheld-viewed.png",
+      "sha256": "sha256:64e17abac6db2a9e874f386e36f89d59083e3ca5d821b89f2948eefd1d9d3d3d",
+      "width": 1275,
+      "height": 932,
+      "step": "18-close-withheld-viewed",
+      "exercised": "closing states the withheld reason instead of a stale picture",
+      "pane_groups": [],
+      "pane_texts": [
+        "画像を利用できません: この候補は現在閲覧できる情報に含まれていません。",
+        "画像は未表示です"
+      ],
+      "controls": [
+        "全体表示 (0)",
+        "物理ピクセル1:1 (1)",
+        "拡大 (+)",
+        "縮小 (-)",
+        "全画面 / 復帰 (F11)",
+        "Fixture: A側候補の消失",
+        "Fixture: 同じ候補の再出現",
+        "Fixture: 診断値"
+      ],
+      "focused": [
+        "MP-CMP1 Compare local fixture 1"
+      ]
+    },
+    {
+      "path": "captures/19-post-close-reappearance.png",
+      "sha256": "sha256:f6753ccd80481ea4e464a011b4b236380ff2548988a3f11028471901eed978dc",
+      "width": 1275,
+      "height": 932,
+      "step": "19-post-close-reappearance",
+      "exercised": "after close the reappearing Viewed candidate is re-acquired into the standalone viewer",
+      "pane_groups": [],
+      "pane_texts": [
+        "画像を利用できません: この画像は現在の保持状態と両立しないため表示できません。",
+        "画像は未表示です"
+      ],
+      "controls": [
+        "全体表示 (0)",
+        "物理ピクセル1:1 (1)",
+        "拡大 (+)",
+        "縮小 (-)",
+        "全画面 / 復帰 (F11)",
+        "Fixture: A側候補の消失",
+        "Fixture: 同じ候補の再出現",
+        "Fixture: 診断値"
+      ],
+      "focused": [
+        "MP-CMP1 Compare local fixture 1",
+        "Fixture: 同じ候補の再出現"
       ]
     }
   ],
   "source_files": [
     {
       "path": "crates/desktop-gpui/src/compare_view.rs",
-      "sha256": "sha256:0c11d8aa41b81a8894a652950f97d2bac4e0a746a1ae1b25646cde1d4746321c"
+      "sha256": "sha256:810345b0dc7e1340728987d77c5bf756c5bd07bca9b625c3acdaeb4e91430b62"
     },
     {
       "path": "crates/desktop-gpui/src/image_viewer.rs",
-      "sha256": "sha256:460d36c0bea71c9b2b75e169071ace3fcb49a0f3b57d8a39f87eb8f0c6877e29"
+      "sha256": "sha256:5bc1fb913153ea694d421ec80b110bbda8214d0532b92d4d9cbc63186d71045a"
     },
     {
       "path": "crates/desktop-gpui/src/image_upload.rs",
@@ -587,7 +691,7 @@
     },
     {
       "path": "crates/desktop-gpui/src/lib.rs",
-      "sha256": "sha256:c99a7b38af32a6ed0d750d2f6ed1a88bd79b3d21e2e72a539166afea18c87317"
+      "sha256": "sha256:38a09b04adf9ccf2ce432057c13892d4790229bd9eeb6af58829bdeb650700a6"
     },
     {
       "path": "crates/ui-model/src/lib.rs",
@@ -595,7 +699,7 @@
     },
     {
       "path": "apps/desktop/examples/compare.rs",
-      "sha256": "sha256:cea5fcd5851dbead10bf4a2552d57e0f29adadd53cc1d9ae295da6fa1d6c835e"
+      "sha256": "sha256:54a485b6cf5c21d3cb960a9b24b3c7a1f3d256ce7a322ad0d6702bbef34070ff"
     },
     {
       "path": "apps/desktop/examples/support/image_fixture.rs",
@@ -603,13 +707,13 @@
     },
     {
       "path": "docs/development/TESTING.md",
-      "sha256": "sha256:2a1fa9c36fe84ef586b30d26f948c87301546e12d16d42b98c5d49c56c6db818"
+      "sha256": "sha256:0946588e87bb49c02f66943a9cc100aceba9eff4bec12fdf95c5e14e01c673cd"
     }
   ],
   "binaries": [
     {
       "release_output": "examples/compare.exe",
-      "sha256": "sha256:f2a4d54b07ddf778c7d0c7dbf030cb2033945e04601ed55dc631b38d5b95983a"
+      "sha256": "sha256:9f32c03e0f8d8eb1991fb2ff291893f419153ee3e6e353e54cca35953835ae15"
     },
     {
       "release_output": "cos-desktop.exe",

@@ -59,7 +59,7 @@ impl Render for Demo {
                             .border_1()
                             .child("画像を閉じて終了")
                             .on_click(cx.listener(|this, _, window, cx| {
-                                this.viewer.update(cx, |viewer, _| viewer.close());
+                                this.viewer.update(cx, |viewer, cx| viewer.close(cx));
                                 window.remove_window();
                             })),
                     ),
@@ -102,7 +102,7 @@ fn main() {
                 let viewer = cx.new(|cx| ImageViewer::new(mode, window, cx));
                 let weak = viewer.downgrade();
                 window.on_window_should_close(cx, move |_window, cx| {
-                    let _ = weak.update(cx, |viewer, _| viewer.close());
+                    let _ = weak.update(cx, |viewer, cx| viewer.close(cx));
                     true
                 });
                 cx.new(|cx| {

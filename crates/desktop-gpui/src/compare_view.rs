@@ -60,6 +60,9 @@ pub struct CompareView {
     panes: [Entity<ImageViewer>; 2],
     labels: [SharedString; 2],
     available: [bool; 2],
+    /// Why a side has no picture. It moves with the candidate on swap, so an unavailable
+    /// side keeps its own reason instead of falling back to a generic one.
+    side_reason: [Option<SharedString>; 2],
     held_sides: [bool; 2],
     linked: bool,
     shared_camera: ViewCamera,
@@ -103,6 +106,7 @@ impl CompareView {
             linked: true,
             active: 0,
             shared_camera: ViewCamera::default(),
+            side_reason: [None, None],
             available: [true; 2],
             held_sides: [true; 2],
             controls: std::array::from_fn(|index| {
@@ -264,6 +268,7 @@ impl CompareView {
     pub fn unavailable(&mut self, side: CompareSide, reason: SharedString, cx: &mut Context<Self>) {
         self.side_cancel[side.index()].cancel();
         self.pane_serial[side.index()] = self.pane_serial[side.index()].saturating_add(1);
+        self.side_reason[side.index()] = Some(reason.clone());
         self.panes[side.index()].update(cx, |pane, cx| pane.unavailable(reason, cx));
     }
 
@@ -289,6 +294,15 @@ impl CompareView {
         // swapped side must not look like a reappearance to the next `set_projection` call: that
         // transition would withdraw the picture the swap just attached.
         self.available.swap(0, 1);
+        self.side_reason.swap(0, 1);
+        for index in 0..2 {
+            // The side that just received no picture states why that candidate has none.
+            if frames[1 - index].is_none()
+                && let Some(reason) = self.side_reason[index].clone()
+            {
+                self.panes[index].update(cx, |pane, cx| pane.unavailable(reason, cx));
+            }
+        }
         self.panes[self.active]
             .read(cx)
             .focus_handle()
@@ -379,7 +393,12 @@ impl CompareView {
     ) -> bool {
         self.side_cancel[side.index()].cancel();
         self.pane_serial[side.index()] = self.pane_serial[side.index()].saturating_add(1);
-        self.panes[side.index()].update(cx, |pane, cx| pane.present_prepared(frame, window, cx))
+        let attached = self.panes[side.index()]
+            .update(cx, |pane, cx| pane.present_prepared(frame, window, cx));
+        if attached {
+            self.side_reason[side.index()] = None;
+        }
+        attached
     }
 
     fn cancel_inputs(&mut self) {
@@ -456,7 +475,7 @@ impl CompareView {
         self.cancel_inputs();
         for pane in &self.panes {
             pane.update(cx, |pane, cx| {
-                pane.close();
+                pane.close(cx);
                 pane.set_camera(ViewCamera::default(), cx);
             });
         }

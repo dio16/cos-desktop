@@ -910,7 +910,7 @@ impl Shell {
         let closing_viewer = artifact_viewer.downgrade();
         let closing_compare = compare_view.downgrade();
         window.on_window_should_close(cx, move |window, cx| {
-            let _ = closing_viewer.update(cx, |viewer, _| viewer.close());
+            let _ = closing_viewer.update(cx, |viewer, cx| viewer.close(cx));
             let _ = closing_compare.update(cx, |view, cx| view.close(cx));
             // Last safe boundary: frames this window owned with no remaining consumer are released
             // here, after which the platform destroys the window's atlas.

@@ -93,7 +93,7 @@ struct CompareDemo {
     viewer: Entity<ImageViewer>,
     selected: usize,
     candidate_focus: FocusHandle,
-    fixture_focus: [FocusHandle; 2],
+    fixture_focus: [FocusHandle; 3],
     missing: Option<usize>,
     missing_frame: Option<Arc<desktop_gpui::image_upload::PreparedImage>>,
     closed: bool,
@@ -560,7 +560,7 @@ fn start_trace(cx: &mut Context<CompareDemo>, variant: &'static str) {
             .await;
         let _ = this.update_in(cx, |this, window, cx| {
             this.compare.update(cx, |view, cx| view.close(cx));
-            this.viewer.update(cx, |viewer, _| viewer.close());
+            this.viewer.update(cx, |viewer, cx| viewer.close(cx));
             let _ = desktop_gpui::image_upload::ImageUploadService::global().evict_owned_by(window);
             window.remove_window();
         });
@@ -581,7 +581,7 @@ impl CompareDemo {
         let shared = self.share_treatment && requests[0].key == requests[1].key;
         let retained = self.viewer.read(cx).prepared();
         if retained.is_none() {
-            self.viewer.update(cx, |viewer, _| viewer.close());
+            self.viewer.update(cx, |viewer, cx| viewer.close(cx));
         }
         self.compare.update(cx, |view, cx| {
             view.set_labels(indexes.map(|i| SharedString::from(CANDIDATES[i].name)), cx);
@@ -685,50 +685,7 @@ impl CompareDemo {
             }
             SelectionEffect::CompareSideB => self.load_pair(window, cx),
             SelectionEffect::ViewedOnly => {
-                let pane = self.presentation.compare_pair().and_then(|pair| {
-                    pair.iter()
-                        .position(|candidate| candidate_index(candidate) == index)
-                });
-                let frame = pane.and_then(|pane| self.compare.read(cx).frames(cx)[pane].clone());
-                // The Viewed candidate can sit outside the pair (D-7): it is a local choice, not a
-                // Compare member, so its own local input is acquired instead of reporting the
-                // absence of a pair frame. A refused or over-bound preparation stays an explicit
-                // unavailable result and never shows another candidate's picture.
-                let own = if frame.is_none() {
-                    image_fixture::fixture_request_for(
-                        CANDIDATES[index].source,
-                        CANDIDATES[index].revision,
-                        1,
-                    )
-                    .ok()
-                } else {
-                    None
-                };
-                let revision = CANDIDATES[index].revision;
-                self.viewer.update(cx, |viewer, cx| {
-                    if previous_viewed != Some(index) {
-                        viewer.set_camera(ViewCamera::default(), cx);
-                    }
-                    if let Some(frame) = frame {
-                        viewer.present_prepared(frame, window, cx);
-                    } else if let Some(request) = own {
-                        if !viewer
-                            .prepared()
-                            .is_some_and(|prepared| prepared.identity().key == request.key)
-                        {
-                            viewer.load_generated(request, window, cx, move |cancel| {
-                                image_fixture::generate_fixture_png(revision, cancel)
-                                    .map(Arc::<[u8]>::from)
-                            });
-                        }
-                    } else {
-                        viewer.unavailable(
-                            "画像を利用できません: 閲覧中の候補のローカル入力を準備できません。"
-                                .into(),
-                            cx,
-                        );
-                    }
-                });
+                self.show_viewed(index, previous_viewed != Some(index), window, cx);
                 self.status =
                     "閲覧中の候補だけを変更しました。比較するA/Bと正式な採用結果は変わりません。"
                         .into();
@@ -752,6 +709,60 @@ impl CompareDemo {
             }
         }
         cx.notify();
+    }
+
+    /// Present one candidate in the standalone viewer. A Viewed candidate may sit outside the
+    /// pair (D-7) and may be the only reference left after Compare closed, so its own local input
+    /// is acquired instead of reporting the absence of a pair frame. A refused or over-bound
+    /// preparation stays an explicit unavailable result and never shows another candidate's
+    /// picture.
+    fn show_viewed(
+        &mut self,
+        index: usize,
+        reset_camera: bool,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        let pane = self.presentation.compare_pair().and_then(|pair| {
+            pair.iter()
+                .position(|candidate| candidate_index(candidate) == index)
+        });
+        let frame = pane.and_then(|pane| {
+            (self.missing != Some(index)).then(|| self.compare.read(cx).frames(cx)[pane].clone())?
+        });
+        let own = if frame.is_none() {
+            image_fixture::fixture_request_for(
+                CANDIDATES[index].source,
+                CANDIDATES[index].revision,
+                1,
+            )
+            .ok()
+        } else {
+            None
+        };
+        let revision = CANDIDATES[index].revision;
+        self.viewer.update(cx, |viewer, cx| {
+            if reset_camera {
+                viewer.set_camera(ViewCamera::default(), cx);
+            }
+            if let Some(frame) = frame {
+                viewer.present_prepared(frame, window, cx);
+            } else if let Some(request) = own {
+                if !viewer
+                    .prepared()
+                    .is_some_and(|prepared| prepared.identity().key == request.key)
+                {
+                    viewer.load_generated(request, window, cx, move |cancel| {
+                        image_fixture::generate_fixture_png(revision, cancel).map(Arc::<[u8]>::from)
+                    });
+                }
+            } else {
+                viewer.unavailable(
+                    "画像を利用できません: 閲覧中の候補のローカル入力を準備できません。".into(),
+                    cx,
+                );
+            }
+        });
     }
 
     fn disappear(&mut self, cx: &mut Context<Self>) {
@@ -788,18 +799,55 @@ impl CompareDemo {
                     CompareSide::B
                 }
             });
-        if let Some(side) = side {
-            let restored = self.missing_frame.take().is_some_and(|frame| {
-                self.compare.update(cx, |view, cx| {
-                    view.present_prepared(side, frame, window, cx)
-                })
-            });
-            if !restored {
-                self.load_side(side, window, cx);
+        match side {
+            Some(side) => {
+                let restored = self.missing_frame.take().is_some_and(|frame| {
+                    self.compare.update(cx, |view, cx| {
+                        view.present_prepared(side, frame, window, cx)
+                    })
+                });
+                if !restored {
+                    self.load_side(side, window, cx);
+                }
+            }
+            // Compare is closed, so the reference lives on in the standalone viewer alone: a
+            // reappearing Viewed candidate is acquired there instead of being left unavailable
+            // (ADR-0010 D-6).
+            None => {
+                self.missing_frame = None;
+                if self.presentation.viewed().map(candidate_index) == Some(index) {
+                    self.show_viewed(index, false, window, cx);
+                }
             }
         }
         self.status =
             "Fixture: 同じ候補が再出現。参照とペインの変換を維持して画像を再取得します。".into();
+        cx.notify();
+    }
+
+    /// Retention is a diagnostic fact, never a Compare badge (ADR-0015 Q14): the experiment
+    /// reports the service counters on request so a closed surface can prove its entries were
+    /// released instead of waiting for window teardown.
+    fn report_counters(&mut self, cx: &mut Context<Self>) {
+        let counters = desktop_gpui::image_upload::ImageUploadService::global().counters();
+        let rows = self
+            .compare
+            .read(cx)
+            .frames(cx)
+            .iter()
+            .filter(|frame| frame.is_some())
+            .count();
+        self.status = format!(
+            "診断: retained_frames={} consumers={} pane_frames={} cpu={} B packed={} B decode_calls={} reuse_calls={}",
+            counters.retained_frames,
+            counters.consumers,
+            rows,
+            counters.cpu_retained_bytes,
+            counters.packed_retained_bytes,
+            counters.decode_calls,
+            counters.reuse_calls
+        )
+        .into();
         cx.notify();
     }
 
@@ -831,7 +879,15 @@ impl Render for CompareDemo {
             .on_action(cx.listener(|this, _: &CandidateActivate, window, cx| this.select(this.selected, window, cx)))
             .child("Compare — 明示的なローカル画像の比較実験。実行基盤・GPU完了・Presentの証拠ではありません。")
             .child("正式な採用結果: このローカル実験にはありません（表示専用）")
-            .child(self.status.clone())
+            // The status line is the experiment's only narration, so it is exposed as a labelled
+            // group: a screen reader must be able to read it, and the native check reads it too.
+            .child(
+                div()
+                    .id("compare-status")
+                    .role(Role::Group)
+                    .aria_label(self.status.clone())
+                    .child(self.status.clone()),
+            )
             .child(div().flex_1().min_h_0().child(if self.closed { self.viewer.clone().into_any_element() } else { self.compare.clone().into_any_element() }))
             .child(div().id("fixture-candidates").role(Role::Group).aria_label("候補一覧。左右キーで移動、Enterで選択")
                 .key_context("FixtureCandidates").track_focus(&self.candidate_focus).flex().gap_2()
@@ -846,21 +902,37 @@ impl Render for CompareDemo {
                             move |_, window, cx| { let _ = this.update(cx, |this, cx| this.select(index, window, cx)); }
                         })
                 })))
-            .child(div().flex().gap_2().children((0..2).map(|index| {
-                let label = if index == 0 { "Fixture: A側候補の消失" } else { "Fixture: 同じ候補の再出現" };
+            .child(div().flex().gap_2().children((0..3).map(|index| {
+                let label = match index {
+                    0 => "Fixture: A側候補の消失",
+                    1 => "Fixture: 同じ候補の再出現",
+                    _ => "Fixture: 診断値",
+                };
                 div().id(("fixture-availability", index)).role(Role::Button).aria_label(label)
                     .key_context("FixtureAvailability").track_focus(&self.fixture_focus[index]).p_2().border_1().child(label)
                     .on_action(cx.listener(move |this, _: &CandidateActivate, window, cx| {
-                        if index == 0 { this.disappear(cx); } else { this.reappear(window, cx); }
+                        match index {
+                            0 => this.disappear(cx),
+                            1 => this.reappear(window, cx),
+                            _ => this.report_counters(cx),
+                        }
                         cx.stop_propagation();
                     }))
                     .on_click(cx.listener(move |this, _, window, cx| {
-                        if index == 0 { this.disappear(cx); } else { this.reappear(window, cx); }
+                        match index {
+                            0 => this.disappear(cx),
+                            1 => this.reappear(window, cx),
+                            _ => this.report_counters(cx),
+                        }
                     }))
                     .on_a11y_action(AccessibleAction::Click, {
                         let this = cx.entity().downgrade();
                         move |_, window, cx| { let _ = this.update(cx, |this, cx| {
-                            if index == 0 { this.disappear(cx); } else { this.reappear(window, cx); }
+                            match index {
+                                0 => this.disappear(cx),
+                                1 => this.reappear(window, cx),
+                                _ => this.report_counters(cx),
+                            }
                         }); }
                     })
             })))
@@ -1035,7 +1107,7 @@ fn open_compare_window(
             let weak_viewer = viewer.downgrade();
             window.on_window_should_close(cx, move |window, cx| {
                 let _ = weak_compare.update(cx, |view, cx| view.close(cx));
-                let _ = weak_viewer.update(cx, |viewer, _| viewer.close());
+                let _ = weak_viewer.update(cx, |viewer, cx| viewer.close(cx));
                 let _ =
                     desktop_gpui::image_upload::ImageUploadService::global().evict_owned_by(window);
                 true
