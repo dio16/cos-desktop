@@ -53,6 +53,20 @@ const MAX_RETAINED_FRAMES: usize = 2;
 /// generation. It matches the ratified 64 MiB staging/in-flight budget: once it is reached, new
 /// work is refused rather than any unproven payload being released.
 pub const PROCESS_QUARANTINE_CAP_BYTES: u64 = 64 * 1024 * 1024;
+static QUARANTINE_CAPACITY: std::sync::OnceLock<u64> = std::sync::OnceLock::new();
+
+/// Set the process-wide quarantine capacity before the service is first used.
+///
+/// The ratified default is PROCESS_QUARANTINE_CAP_BYTES; an operator or a probe may select a
+/// smaller value so the boundary can be exercised. Returns false once it has been set.
+pub fn set_quarantine_capacity(bytes: u64) -> bool {
+    QUARANTINE_CAPACITY.set(bytes).is_ok()
+}
+
+/// The effective process-wide quarantine capacity.
+pub fn quarantine_capacity() -> u64 {
+    *QUARANTINE_CAPACITY.get_or_init(|| PROCESS_QUARANTINE_CAP_BYTES)
+}
 const FRAME_RGBA8_BYTES: u64 = FRAME_EDGE as u64 * FRAME_EDGE as u64 * 4;
 const STAGING_LIMIT_BYTES: u64 = FRAME_RGBA8_BYTES * MAX_RETAINED_FRAMES as u64;
 
@@ -159,8 +173,9 @@ pub enum PaintStatus {
 /// What one eviction actually released.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct EvictionOutcome {
-    /// Atlas images removed from the owning window (one per tile).
-    pub dropped_images: usize,
+    /// Window::drop_image calls made (one per tile). GPUI accepts a drop for an entry that does
+    /// not exist, so this is a call count, not a proven removal count.
+    pub drop_calls: usize,
     /// CPU payload bytes released because the admission had never begun a transfer.
     pub released_bytes: u64,
     /// CPU payload bytes left charged to the quarantine because a transfer had already begun and
@@ -176,7 +191,7 @@ pub struct EvictionSummary {
     /// Frames this window owns that could not be released in this sweep: a consumer still
     /// presents them, or a paint callback held them.
     pub skipped_frames: usize,
-    pub dropped_images: usize,
+    pub drop_calls: usize,
     pub released_bytes: u64,
     pub quarantined_bytes: u64,
     /// Frames whose paint state was locked by a callback during the sweep: their owning window
@@ -219,8 +234,9 @@ pub struct ImageUploadCounters {
     pub repaint_calls: u64,
     /// Frames whose consumers all detached and whose atlas entries were released by eviction.
     pub evicted_frames: u64,
-    /// Atlas images removed by eviction (one per tile of every evicted frame).
-    pub dropped_atlas_images: u64,
+    /// Window::drop_image calls made by eviction (one per tile of every evicted frame); a call
+    /// count, not a proven removal count.
+    pub atlas_drop_calls: u64,
     /// CPU payload bytes released because the admission had never begun a transfer.
     pub released_payload_bytes: u64,
     /// Payload bytes currently quarantined across every device generation.
@@ -319,7 +335,7 @@ struct ServiceState {
     pools: Vec<(u64, Arc<UploadPool>)>,
     frames: Vec<Arc<PreparedImage>>,
     evicted_frames: u64,
-    dropped_atlas_images: u64,
+    atlas_drop_calls: u64,
     released_payload_bytes: u64,
     quarantined_payload_bytes: u64,
 }
@@ -401,15 +417,6 @@ impl ImageUploadService {
             return Err(ImageUploadError::Cancelled);
         }
         validate_request(&request)?;
-        {
-            let service = self.inner.state.lock().expect("image upload service state");
-            if service.quarantined_payload_bytes >= PROCESS_QUARANTINE_CAP_BYTES {
-                return Err(ImageUploadError::QuarantineBudgetExhausted {
-                    retained: service.quarantined_payload_bytes,
-                    cap: PROCESS_QUARANTINE_CAP_BYTES,
-                });
-            }
-        }
         if verified.size().width() != FRAME_EDGE
             || verified.size().height() != FRAME_EDGE
             || verified.raster().rgba.len() as u64 != FRAME_RGBA8_BYTES
@@ -422,7 +429,11 @@ impl ImageUploadService {
             device_generation: request.device_generation,
             content_digest: verified.content_digest(),
         };
-        let pool = {
+        // One process-wide admission decision: live staging/in-flight reservations of **every**
+        // generation plus the quarantine ledger are summed under the service lock, and the
+        // admission itself happens inside that lock, so two generations cannot each pass a
+        // per-pool check and together exceed the process budget.
+        let admission = {
             let mut state = self.inner.state.lock().expect("image upload service state");
             if let Some(existing) = state.frames.iter().find(|frame| frame.identity == identity) {
                 return Ok(Arc::clone(existing));
@@ -431,7 +442,36 @@ impl ImageUploadService {
                 return Err(ImageUploadError::RetainedFrameLimit);
             }
             prune_idle_pools(&mut state);
-            state
+            // Per-category totals across **every** generation. A pool's own limit is per pool, so
+            // without this sum two generations could each hold 32 MiB under a 64 MiB budget. The
+            // quarantine ledger is tracked separately; its payloads are already the stuck bytes of
+            // their pools, so adding it here would double count them.
+            let mut staging_total = 0u64;
+            let mut in_flight_total = 0u64;
+            for (_, pool) in &state.pools {
+                let usage = pool.usage();
+                staging_total = staging_total
+                    .saturating_add(usage.staging)
+                    .saturating_add(usage.staging_stuck);
+                in_flight_total = in_flight_total
+                    .saturating_add(usage.in_flight)
+                    .saturating_add(usage.in_flight_stuck);
+            }
+            let capacity = quarantine_capacity();
+            let retained = state
+                .quarantined_payload_bytes
+                .max(staging_total)
+                .max(in_flight_total);
+            if retained.saturating_add(FRAME_RGBA8_BYTES) > capacity
+                || staging_total.saturating_add(FRAME_RGBA8_BYTES) > capacity
+                || in_flight_total.saturating_add(FRAME_RGBA8_BYTES) > capacity
+            {
+                return Err(ImageUploadError::QuarantineBudgetExhausted {
+                    retained,
+                    cap: capacity,
+                });
+            }
+            let pool = state
                 .pools
                 .iter()
                 .find(|(generation, _)| *generation == request.device_generation)
@@ -446,16 +486,16 @@ impl ImageUploadService {
                         .pools
                         .push((request.device_generation, Arc::clone(&pool)));
                     pool
-                })
+                });
+            admit_upload(
+                &verified,
+                identity.clone(),
+                request.current_device_generation,
+                &pool,
+                cancel,
+            )
+            .map_err(ImageUploadError::Admission)?
         };
-        let admission = admit_upload(
-            &verified,
-            identity.clone(),
-            request.current_device_generation,
-            &pool,
-            cancel,
-        )
-        .map_err(ImageUploadError::Admission)?;
         let tiles = build_tiles(&verified, cancel)?;
         if cancel.is_cancelled() {
             return Err(ImageUploadError::Cancelled);
@@ -524,7 +564,10 @@ impl ImageUploadService {
                 _ => paint_state.owner_window = Some(window),
             }
         }
-        paint_state.consumers.insert(consumer)
+        // Re-attaching the same consumer is idempotent: the frame is retained and that consumer
+        // already owns it, so the call reports success rather than a spurious failure.
+        paint_state.consumers.insert(consumer);
+        true
     }
 
     /// Detach one consumer. Returns whether this consumer was attached.
@@ -593,10 +636,10 @@ impl ImageUploadService {
         {
             let retained = service.quarantined_payload_bytes;
             let bytes = admission.bytes();
-            if retained.saturating_add(bytes) > PROCESS_QUARANTINE_CAP_BYTES {
+            if retained.saturating_add(bytes) > quarantine_capacity() {
                 return Err(ImageUploadError::QuarantineBudgetExhausted {
                     retained,
-                    cap: PROCESS_QUARANTINE_CAP_BYTES,
+                    cap: quarantine_capacity(),
                 });
             }
         }
@@ -608,7 +651,7 @@ impl ImageUploadService {
                 window
                     .drop_image(Arc::clone(&tile.image))
                     .map_err(|_| ImageUploadError::AtlasRelease)?;
-                outcome.dropped_images = outcome.dropped_images.saturating_add(1);
+                outcome.drop_calls = outcome.drop_calls.saturating_add(1);
             }
         }
         paint_state.complete_in_scene = false;
@@ -635,9 +678,9 @@ impl ImageUploadService {
             .frames
             .retain(|candidate| !Arc::ptr_eq(candidate, frame));
         service.evicted_frames = service.evicted_frames.saturating_add(1);
-        service.dropped_atlas_images = service
-            .dropped_atlas_images
-            .saturating_add(outcome.dropped_images as u64);
+        service.atlas_drop_calls = service
+            .atlas_drop_calls
+            .saturating_add(outcome.drop_calls as u64);
         service.released_payload_bytes = service
             .released_payload_bytes
             .saturating_add(outcome.released_bytes);
@@ -684,9 +727,7 @@ impl ImageUploadService {
             match self.evict(&frame, window) {
                 Ok(outcome) => {
                     summary.evicted_frames = summary.evicted_frames.saturating_add(1);
-                    summary.dropped_images = summary
-                        .dropped_images
-                        .saturating_add(outcome.dropped_images);
+                    summary.drop_calls = summary.drop_calls.saturating_add(outcome.drop_calls);
                     summary.released_bytes = summary
                         .released_bytes
                         .saturating_add(outcome.released_bytes);
@@ -770,10 +811,10 @@ impl ImageUploadService {
             paint_issued_tiles: allowance.paint_issued_tiles,
             repaint_calls: allowance.repaint_calls,
             evicted_frames: state.evicted_frames,
-            dropped_atlas_images: state.dropped_atlas_images,
+            atlas_drop_calls: state.atlas_drop_calls,
             released_payload_bytes: state.released_payload_bytes,
             quarantined_payload_bytes: state.quarantined_payload_bytes,
-            quarantine_capacity_bytes: PROCESS_QUARANTINE_CAP_BYTES,
+            quarantine_capacity_bytes: quarantine_capacity(),
             consumers: state
                 .frames
                 .iter()
@@ -1415,6 +1456,8 @@ mod tests {
             .push(Arc::clone(&frame));
         let first = ConsumerId::new(1);
         let second = ConsumerId::new(2);
+        assert!(service.attach(&frame, first, None));
+        // Re-attaching the same consumer is idempotent success, not a spurious failure.
         assert!(service.attach(&frame, first, None));
         assert!(service.attach(&frame, second, None));
         assert_eq!(service.consumers(&frame), 2);

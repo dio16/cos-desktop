@@ -8,8 +8,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use desktop_gpui::image_upload::{
-    ConsumerId, FRAME_EDGE, ImageUploadError, ImageUploadService, PROCESS_QUARANTINE_CAP_BYTES,
-    PaintStatus, UploadRequest,
+    ConsumerId, FRAME_EDGE, ImageUploadError, ImageUploadService, PaintStatus, UploadRequest,
 };
 use gpui::prelude::*;
 use gpui::{
@@ -36,7 +35,8 @@ const MANIFEST: [(&str, u64); 5] = [
 #[derive(Clone, Copy)]
 enum Mode {
     Fixture,
-    Manifest,
+    /// Capacity in bytes for the process-wide quarantine ladder.
+    Manifest(u64),
 }
 
 struct ImageUploadProbe {
@@ -206,7 +206,9 @@ impl ImageUploadProbe {
     /// eviction and every further prepare must then be refused with `QuarantineBudgetExhausted`.
     /// The shared identity comes first, so the retention-after-one-detach rule is exercised before
     /// the budget fills. The probe exits non-zero if any expectation is violated.
-    fn start_manifest(&mut self, cx: &mut Context<Self>) {
+    fn start_manifest(&mut self, capacity_bytes: u64, cx: &mut Context<Self>) {
+        // Must be set before the first render reads the capacity.
+        let _ = desktop_gpui::image_upload::set_quarantine_capacity(capacity_bytes);
         let background = cx.background_executor().clone();
         let service = self.service.clone();
         self.pending = true;
@@ -253,6 +255,9 @@ impl ImageUploadProbe {
                 println!("{{\"event\":\"img4-prepaint-missing\"}}");
             }
             'outer: for (index, (source, revision)) in MANIFEST.iter().copied().enumerate() {
+                // One generation per identity keeps each pool distinct, so the bound under test is
+                // the process-wide aggregate rather than a single pool's allowance.
+                let _ = this.update(cx, |this, cx| this.advance_logical_generation(cx));
                 let generation = this.update(cx, |this, _| this.device_generation).unwrap_or(1);
                 let request = match fixture_request_for(source, revision, generation) {
                     Ok(request) => request,
@@ -388,8 +393,8 @@ impl ImageUploadProbe {
                     Ok(Ok(outcome)) => {
                         evictions = evictions.saturating_add(1);
                         println!(
-                            "{{\"event\":\"img4-evict\",\"index\":{index},\"source\":\"{source}\",\"revision\":{revision},\"shared\":{shared},\"painted\":{painted},\"images\":{},\"released_bytes\":{},\"quarantined_bytes\":{},\"retained\":{},\"quarantine_ledger\":{}}}",
-                            outcome.dropped_images,
+                            "{{\"event\":\"img4-evict\",\"index\":{index},\"source\":\"{source}\",\"revision\":{revision},\"shared\":{shared},\"painted\":{painted},\"drop_calls\":{},\"released_bytes\":{},\"quarantined_bytes\":{},\"retained\":{},\"quarantine_ledger\":{}}}",
+                            outcome.drop_calls,
                             outcome.released_bytes,
                             outcome.quarantined_bytes,
                             service.counters().retained_frames,
@@ -426,6 +431,7 @@ impl ImageUploadProbe {
                 || cap_refusals != 1
                 || shared_retentions != 1
                 || !ledger_positive
+                || counters.quarantine_capacity_bytes != capacity_bytes
                 || failures != 0
             {
                 failures = failures.saturating_add(1);
@@ -433,7 +439,7 @@ impl ImageUploadProbe {
             println!(
                 "{{\"event\":\"img4-quarantine\",\"evictions\":{evictions},\"cap_refusals\":{cap_refusals},\"shared_retentions\":{shared_retentions},\"ledger\":{},\"capacity\":{},\"retained\":{}}}",
                 counters.quarantined_payload_bytes,
-                PROCESS_QUARANTINE_CAP_BYTES,
+                counters.quarantine_capacity_bytes,
                 counters.retained_frames,
             );
             let swept = this.update_in(cx, |this, window, cx| {
@@ -481,7 +487,7 @@ impl ImageUploadProbe {
                 self.current = None;
                 self.status = format!(
                     "Evicted: atlas images={} released_staged={} B quarantined={} B (in-flight transfer stays retained; no measured termination); GPU residency NOT_MEASURED",
-                    outcome.dropped_images,
+                    outcome.drop_calls,
                     outcome.released_bytes,
                     outcome.quarantined_bytes,
                 )
@@ -515,7 +521,7 @@ impl ImageUploadProbe {
             summary.evicted_frames,
             summary.skipped_frames,
             summary.unattributed_frames,
-            summary.dropped_images,
+            summary.drop_calls,
             summary.released_bytes,
             counters.retained_frames,
             counters.consumers,
@@ -869,10 +875,15 @@ fn main() {
     let mut args = std::env::args().skip(1);
     let mode = match args.next().as_deref() {
         Some("--fixture") if args.next().is_none() => Mode::Fixture,
-        Some("--manifest") if args.next().is_none() => Mode::Manifest,
+        Some("--manifest") => Mode::Manifest(
+            args.next()
+                .and_then(|value| value.parse::<u64>().ok())
+                .unwrap_or(32)
+                .saturating_mul(1024 * 1024),
+        ),
         _ => {
             eprintln!(
-                "Usage: cargo run --locked -p cos-desktop --example image_upload -- --fixture\n       cargo run --locked -p cos-desktop --example image_upload -- --manifest"
+                "Usage: cargo run --locked -p cos-desktop --example image_upload -- --fixture\n       cargo run --locked -p cos-desktop --example image_upload -- --manifest [capacity_mib]"
             );
             std::process::exit(2);
         }
@@ -910,8 +921,8 @@ fn main() {
                     paint_message: SharedString::default(),
                     consumer: ConsumerId::new(1),
                 });
-                if let Mode::Manifest = mode {
-                    probe.update(cx, |this, cx| this.start_manifest(cx));
+                if let Mode::Manifest(capacity_bytes) = mode {
+                    probe.update(cx, |this, cx| this.start_manifest(capacity_bytes, cx));
                 }
                 probe
             },

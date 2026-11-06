@@ -1,5 +1,0 @@
-{"event":"img4-shared-retained","index":0,"detached":true,"consumers":1}
-{"event":"img4-evict","index":0,"source":"shared","revision":1,"shared":true,"painted":true,"images":16,"released_bytes":0,"quarantined_bytes":16777216,"retained":1,"quarantine_ledger":16777216}
-{"event":"img4-prepare-refused","index":1,"reason":"pool_budget","quarantine_ledger":16777216}
-{"event":"img4-quarantine","evictions":1,"cap_refusals":1,"shared_retentions":1,"ledger":16777216,"capacity":67108864,"retained":1}
-{"event":"img4-close","prepaint":true,"evicted":1,"skipped":0,"unattributed":0,"retained":0,"consumers":0,"quarantine_ledger":16777216,"failures":0}
