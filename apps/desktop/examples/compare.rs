@@ -964,6 +964,10 @@ fn open_compare_window(
                                 .presentation
                                 .compare_pair()
                                 .map(|pair| [candidate_index(&pair[0]), candidate_index(&pair[1])]);
+                            // D-4: a held reference that left the projection is unavailable. The
+                            // picture the standalone viewer still holds for it is stale and must not
+                            // survive the close.
+                            let viewed_withheld = viewed_index.is_some_and(|index| this.missing == Some(index));
                             this.presentation.close_compare();
                             view_entity.update(cx, |view, cx| {
                                 let frames = view.frames(cx);
@@ -974,15 +978,22 @@ fn open_compare_window(
                                         .position(|candidate| *candidate == index)?;
                                     frames[pane].clone()
                                 });
-                                if let Some(frame) = viewed_frame {
-                                    this.viewer.update(cx, |viewer, cx| {
+                                match (viewed_withheld, viewed_frame) {
+                                    (true, _) => this.viewer.update(cx, |viewer, cx| {
+                                        viewer.unavailable(
+                                            "画像を利用できません: この候補は現在閲覧できる情報に含まれていません。".into(),
+                                            cx,
+                                        );
+                                    }),
+                                    (false, Some(frame)) => this.viewer.update(cx, |viewer, cx| {
                                         viewer.present_prepared(frame, window, cx);
-                                    });
+                                    }),
+                                    // A Viewed candidate outside the pair keeps the frame its own
+                                    // local selection already loaded; closing Compare must not
+                                    // replace a valid picture with an unavailable result, and a
+                                    // refused or over-bound preparation already states its reason.
+                                    (false, None) => {}
                                 }
-                                // A Viewed candidate outside the pair keeps the frame its own local
-                                // selection already loaded; closing Compare must not replace a
-                                // valid picture with an unavailable result, and a refused or
-                                // over-bound preparation already states its own reason.
                             });
                             this.closed = true;
                             this.status = format!(

@@ -5,6 +5,8 @@
   "contract": "DC-MP-CMP1",
   "status": "LOCAL_TWO_PANE_COMPARE_IMPLEMENTED_NATIVE_OBSERVED_REPAIRED",
   "source_parent": "b8aa19c",
+  "predecessor_commit": "76bff2330282a214be021dcb5fbff8e516bea6fa",
+  "review_round": 3,
   "authority": "Caller-directed completion of the implementation plan; ADR-0015 UX-01 decisions; development on dev.",
   "scope": "Local two-pane Compare over the existing admitted 2048x2048 noninterlaced RGB8 PNG class, plus the fixed R5 trace harness exercised once in the shared variant. Production media acquisition, the R5 reuse/fairness matrix and product acceptance remain NOT_RUN.",
   "representations": {
@@ -20,10 +22,13 @@
   },
   "trace_pilot": {
     "file": "cmp1-trace-shared-pilot.jsonl (private, 1.1 MiB)",
-    "sha256": "sha256:75e26e293eed0b82ce08c7de5762ecfc6cc2220e4f8d92634216762ae6f535e0",
+    "sha256": "sha256:daef3dc1550b63d5cdf2ec032126b961d3ec4e1052a608411325157478edc766",
+    "executed_binary": "examples/compare.exe",
+    "executed_binary_sha256": "sha256:f2a4d54b07ddf778c7d0c7dbf030cb2033945e04601ed55dc631b38d5b95983a",
+    "trace_after_binary_build": true,
     "variant": "shared",
     "ready": true,
-    "warmup_ms": 115,
+    "warmup_ms": 199,
     "settled": true,
     "cancel_probe_stage": 3,
     "refusals": 0,
@@ -254,7 +259,7 @@
       "width": 1275,
       "height": 932,
       "step": "07-disappear",
-      "exercised": "the fixture projection drops candidate B; that pane states its own reason",
+      "exercised": "the fixture projection drops a side; that pane states its own reason",
       "pane_groups": [
         "Candidate B",
         "Candidate A"
@@ -320,7 +325,7 @@
       "width": 1275,
       "height": 932,
       "step": "09-reappear",
-      "exercised": "a reappearance after several identities reports the retained bound explicitly",
+      "exercised": "a reappearance after a swap restores that side at its previous transform",
       "pane_groups": [
         "Candidate A",
         "Candidate B"
@@ -381,12 +386,70 @@
       ]
     },
     {
-      "path": "captures/11-restore-before.png",
+      "path": "captures/11-viewed-withheld-before-close.png",
+      "sha256": "sha256:e9aa108cf51914754bdafa51279b7f367b9e838b59e343a8615b1201d5a237ff",
+      "width": 1275,
+      "height": 932,
+      "step": "11-viewed-withheld-before-close",
+      "exercised": "the Viewed candidate (the pair's A side) leaves the projection",
+      "pane_groups": [
+        "Candidate A",
+        "Candidate B"
+      ],
+      "pane_texts": [
+        "画像を利用できません: この候補は現在閲覧できる情報に含まれていません。参照を保持しています。",
+        "画像は未表示です",
+        "ローカル画像・実験用タイル表示。GPU完了・常駐量・本番の画質受入は未計測。",
+        "物理表示倍率 25.8% / DIP変換 1.00 / 画像全体を表示"
+      ],
+      "controls": [
+        "全体表示 (0)",
+        "物理ピクセル1:1 (1)",
+        "連動を解除",
+        "A/Bを交換",
+        "A側を変更",
+        "B側を変更",
+        "比較を閉じる",
+        "Fixture: A側候補の消失",
+        "Fixture: 同じ候補の再出現"
+      ],
+      "focused": [
+        "MP-CMP1 Compare local fixture 1",
+        "Fixture: A側候補の消失"
+      ]
+    },
+    {
+      "path": "captures/12-close-withheld-viewed.png",
+      "sha256": "sha256:e3efb67962d45d5cf13aa489efd6d840dbf19a7cd79da8879a8dc57d3cf64df8",
+      "width": 1275,
+      "height": 932,
+      "step": "12-close-withheld-viewed",
+      "exercised": "closing states the withheld reason instead of keeping a stale picture",
+      "pane_groups": [],
+      "pane_texts": [
+        "画像を利用できません: この候補は現在閲覧できる情報に含まれていません。",
+        "画像は未表示です"
+      ],
+      "controls": [
+        "全体表示 (0)",
+        "物理ピクセル1:1 (1)",
+        "拡大 (+)",
+        "縮小 (-)",
+        "全画面 / 復帰 (F11)",
+        "Fixture: A側候補の消失",
+        "Fixture: 同じ候補の再出現"
+      ],
+      "focused": [
+        "MP-CMP1 Compare local fixture 1"
+      ]
+    },
+    {
+      "path": "captures/13-restore-before.png",
       "sha256": "sha256:0533005d7017ce606a93442de95f4fcc46a77c63847a2582e575b6725f0ff0d5",
       "width": 1275,
       "height": 932,
-      "step": "11-restore-before",
-      "exercised": "fresh process: side A is panned at 1:1 and its reference disappears",
+      "step": "13-restore-before",
+      "exercised": "a fresh process: side A is panned at 1:1 and its reference disappears",
       "pane_groups": [
         "Candidate A",
         "Candidate B"
@@ -414,11 +477,11 @@
       ]
     },
     {
-      "path": "captures/12-restore-after.png",
+      "path": "captures/14-restore-after.png",
       "sha256": "sha256:89670dd31b92fca58aa8cea187912763d8b321c2c3559b63ae0650f5df9f8e0b",
       "width": 1275,
       "height": 932,
-      "step": "12-restore-after",
+      "step": "14-restore-after",
       "exercised": "the same candidate returns at its previous physical 1:1 transform",
       "pane_groups": [
         "Candidate A",
@@ -447,12 +510,12 @@
       ]
     },
     {
-      "path": "captures/13-viewed-outside-pair.png",
+      "path": "captures/15-viewed-outside-pair.png",
       "sha256": "sha256:3b7f07aea0d9bf7f78f009227f8fcaf2c61fc33c37ddd4af073893eec20493be",
       "width": 1275,
       "height": 932,
-      "step": "13-viewed-outside-pair",
-      "exercised": "plain selection makes Candidate C the Viewed choice outside the A/B pair",
+      "step": "15-viewed-outside-pair",
+      "exercised": "a plain selection makes Candidate C the Viewed choice outside the A/B pair",
       "pane_groups": [
         "Candidate A",
         "Candidate B"
@@ -480,11 +543,11 @@
       ]
     },
     {
-      "path": "captures/14-close-shows-viewed-c.png",
+      "path": "captures/16-close-shows-viewed-c.png",
       "sha256": "sha256:4111693207a62809a0e9526f3461754cd81762a8763978a8f349fc1cd59cc270",
       "width": 1275,
       "height": 932,
-      "step": "14-close-shows-viewed-c",
+      "step": "16-close-shows-viewed-c",
       "exercised": "closing returns to the standalone viewer with Candidate C visible",
       "pane_groups": [],
       "pane_texts": [
@@ -508,11 +571,11 @@
   "source_files": [
     {
       "path": "crates/desktop-gpui/src/compare_view.rs",
-      "sha256": "sha256:ec6e35c803f38c1310c7287d4bf248a4a5435e11404bb96c2e78639d6eee2c0d"
+      "sha256": "sha256:0c11d8aa41b81a8894a652950f97d2bac4e0a746a1ae1b25646cde1d4746321c"
     },
     {
       "path": "crates/desktop-gpui/src/image_viewer.rs",
-      "sha256": "sha256:7c1b1548183ee6059f5d867621203da51d50b00256309f4a2f36691a0ed42093"
+      "sha256": "sha256:460d36c0bea71c9b2b75e169071ace3fcb49a0f3b57d8a39f87eb8f0c6877e29"
     },
     {
       "path": "crates/desktop-gpui/src/image_upload.rs",
@@ -532,7 +595,7 @@
     },
     {
       "path": "apps/desktop/examples/compare.rs",
-      "sha256": "sha256:80d575f70b50dcbe2defb1dcba0f6fe8ecdafd75824bd751f9d0dbaa32a8ca1f"
+      "sha256": "sha256:cea5fcd5851dbead10bf4a2552d57e0f29adadd53cc1d9ae295da6fa1d6c835e"
     },
     {
       "path": "apps/desktop/examples/support/image_fixture.rs",
@@ -546,7 +609,7 @@
   "binaries": [
     {
       "release_output": "examples/compare.exe",
-      "sha256": "sha256:8fda12340ecaff8daf95a6b017d57c7318fab4f817d63140a0863c7257b1da77"
+      "sha256": "sha256:f2a4d54b07ddf778c7d0c7dbf030cb2033945e04601ed55dc631b38d5b95983a"
     },
     {
       "release_output": "cos-desktop.exe",

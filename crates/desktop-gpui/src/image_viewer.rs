@@ -540,7 +540,7 @@ impl ImageViewer {
                     }
                     // Keep the demand so an unchanged viewport does not retry every frame.
                     Err(error) => {
-                        this.status = format!("画像の表示を制限: {error}").into();
+                        this.status = format!("画像の表示を制限: {}", error.limitation()).into();
                         cx.notify();
                     }
                 }
