@@ -286,10 +286,10 @@
     "not_measured": "GPU completion/residency/Present, mixed-DPI, device teardown"
   },
   "final_native": {
-    "candidate_sources": "the commit that contains this record (round-4 repairs: repaint only on state change, demand identity, persistent slow retirement cadence, resize invalidation)",
+    "candidate_sources": "the commit that contains this record (round-5 repairs: timer-driven retirement polling instead of per-frame callbacks; DPI-aware viewport invalidation before the next request)",
     "binary": {
       "path": "C:/dev/cos-build-release/release/examples/image_viewer.exe",
-      "sha256": "sha256:2834d6bfa4bc2ead8bfd30ea0b13fcdf9f2861452cb3abd7e25ba8b455f7a4b5"
+      "sha256": "sha256:47a93dcb043de2cbf5c53f23a212980db7d717d5b3f3a5d2076792a342410e92"
     },
     "release": true,
     "display_scales": [
@@ -309,6 +309,7 @@
       "Physical 1:1 100.0% at native window size",
       "Next revision switches to the revision-2 cyan marker at Fit without stale tiles",
       "Maximize recomputes Fit to 56.0%; restore returns to 28.2% with the marker intact and no blank viewport after the viewport-change invalidation",
+      "Settled idle window: 0 ms of process CPU time over a 5 s sample, so retirement polling no longer requests a frame every cycle",
       "Close exits with no diagnostic output",
       "IMG4 --manifest 32 exits 0 with one shared retention, one process_quarantine refusal and failures:0"
     ],

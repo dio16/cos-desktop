@@ -1513,6 +1513,9 @@ fn rgba_tile_to_bgra(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Serializes the two tests that hold the process preparation guard.
+    static PREPARATION_SERIAL: Mutex<()> = Mutex::new(());
     #[test]
     fn a_tile_with_padded_rows_is_refused_by_the_smallest_period_cap() {
         let span = TileSpan {
@@ -1831,6 +1834,7 @@ mod tests {
 
     #[test]
     fn a_concurrent_preparation_is_reported_as_busy() {
+        let _serial = PREPARATION_SERIAL.lock().expect("test serialization");
         let service = ImageUploadService::global();
         let frame = demand_frame(0);
         let image = Bounds::new(point(px(0.0), px(0.0)), size(px(2048.0), px(2048.0)));
@@ -1845,6 +1849,7 @@ mod tests {
 
     #[test]
     fn a_frame_without_a_retained_source_cannot_prepare_tiles() {
+        let _serial = PREPARATION_SERIAL.lock().expect("test serialization");
         let service = ImageUploadService::global();
         let frame = demand_frame(0);
         let image = Bounds::new(point(px(0.0), px(0.0)), size(px(2048.0), px(2048.0)));

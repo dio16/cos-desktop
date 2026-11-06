@@ -48,21 +48,20 @@ pub fn bind_keys(cx: &mut App) {
     ]);
 }
 
-/// First retirement sweeps run two frames apart, which is the shortest gap that can outlive the
-/// scene that referenced the frame.
-const FAST_RETIREMENT_FRAMES: u8 = 2;
-/// Later sweeps are slow so a delayed last-detach is still collected without per-frame churn.
-const SLOW_RETIREMENT_FRAMES: u8 = 30;
-/// Number of fast sweeps before falling back to the slow cadence.
+/// Fast retirement polls run shortly after a release, then one persistent slow cadence applies so
+/// a delayed last-detach is still collected without waking an idle window every frame.
+const FAST_RETIREMENT_MILLIS: u64 = 40;
+const SLOW_RETIREMENT_MILLIS: u64 = 500;
+/// Number of fast sweeps before the slow cadence takes over for good.
 const FAST_RETIREMENT_SWEEPS: u8 = 8;
 /// Bound on consecutive transient tile-preparation retries for one viewport demand.
 const TILE_RETRY_LIMIT: u8 = 20;
 
-fn retirement_delay(attempts: u8, slow: bool) -> u8 {
+fn retirement_interval(attempts: u8, slow: bool) -> u64 {
     if !slow && attempts <= FAST_RETIREMENT_SWEEPS {
-        FAST_RETIREMENT_FRAMES
+        FAST_RETIREMENT_MILLIS
     } else {
-        SLOW_RETIREMENT_FRAMES
+        SLOW_RETIREMENT_MILLIS
     }
 }
 
@@ -85,6 +84,7 @@ pub struct ImageViewer {
     /// Frames detached from this viewer but still reachable from the last presented scene.
     retiring: Vec<Arc<PreparedImage>>,
     retirement_scheduled: bool,
+    retirement_due: bool,
     retirement_attempts: u8,
     retirement_slow: bool,
     serial: u64,
@@ -92,6 +92,7 @@ pub struct ImageViewer {
     revision: u64,
     generation: u64,
     transform: Option<ViewTransform>,
+    dpi: f64,
     viewport: Bounds<Pixels>,
     focus: FocusHandle,
     drag: Option<gpui::Point<Pixels>>,
@@ -108,9 +109,10 @@ impl ImageViewer {
             service: ImageUploadService::global(), current: None, cancel: Cancellation::default(),
             tile_cancel: Cancellation::default(), demand: None, demand_id: 0, tile_attempts: 0,
             retiring: Vec::new(),
-            retirement_scheduled: false, retirement_attempts: 0, retirement_slow: false,
+            retirement_scheduled: false, retirement_due: false, retirement_attempts: 0,
+            retirement_slow: false,
             serial: 0, view_serial: 0, revision: 0, generation: 0, transform: None,
-            viewport: Bounds::default(), focus: cx.focus_handle().tab_stop(true), drag: None,
+            dpi: 0.0, viewport: Bounds::default(), focus: cx.focus_handle().tab_stop(true), drag: None,
             mode, phase: 0, status: "画像を利用できません: 認可済みの画像入力がありません。実行基盤からの取得は未対応です。".into(),
             palette: Palette { scheme: ContrastScheme::Normal, colors: NORMAL_COLORS }, consumer: ConsumerId::allocate(),
         }
@@ -128,7 +130,7 @@ impl ImageViewer {
     pub fn load_generated(
         &mut self,
         request: UploadRequest,
-        window: &mut Window,
+        _window: &mut Window,
         cx: &mut Context<Self>,
         source: impl FnOnce(&Cancellation) -> Result<Arc<[u8]>, MediaError> + Send + 'static,
     ) {
@@ -137,7 +139,7 @@ impl ImageViewer {
         self.demand = None;
         self.tile_attempts = 0;
         self.serial = self.serial.saturating_add(1);
-        self.release_current(window, cx);
+        self.release_current(cx);
         self.revision = request.source_revision;
         self.generation = request.current_device_generation;
         self.phase = 0;
@@ -209,43 +211,38 @@ impl ImageViewer {
     /// Detach at once so no later scene adds these tiles, then drop the atlas entries only after
     /// two presented frames can no longer reference them. A frame another consumer still presents
     /// stays retired and is retried by the next sweep.
-    fn release_current(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+    fn release_current(&mut self, cx: &mut Context<Self>) {
         let Some(frame) = self.current.take() else {
             return;
         };
         self.service.detach(&frame, self.consumer);
         self.retiring.push(frame);
-        self.schedule_retirement(window, cx, FAST_RETIREMENT_FRAMES);
+        self.schedule_retirement(cx);
     }
 
-    fn schedule_retirement(&mut self, window: &Window, cx: &mut Context<Self>, frames: u8) {
-        if self.retirement_scheduled || self.retiring.is_empty() {
+    /// Wait on a background timer, never on a chain of frame callbacks: an idle window must not be
+    /// woken every frame just to poll a frame it cannot evict yet.
+    fn schedule_retirement(&mut self, cx: &mut Context<Self>) {
+        if self.retirement_scheduled || self.retirement_due || self.retiring.is_empty() {
             return;
         }
         self.retirement_scheduled = true;
-        let entity = cx.entity().downgrade();
-        let left = std::rc::Rc::new(std::cell::Cell::new(frames.max(1)));
-        Self::arm_retirement(window, entity, left);
-    }
-
-    /// Wait `frames` presented frames, then run one retirement sweep.
-    fn arm_retirement(
-        window: &Window,
-        entity: gpui::WeakEntity<Self>,
-        left: std::rc::Rc<std::cell::Cell<u8>>,
-    ) {
-        window.on_next_frame(move |window, cx| {
-            if left.get() > 1 {
-                left.set(left.get() - 1);
-                Self::arm_retirement(window, entity.clone(), std::rc::Rc::clone(&left));
-                return;
-            }
-            let _ = entity.update_in(cx, |this, window, cx| {
+        let interval = retirement_interval(self.retirement_attempts, self.retirement_slow);
+        cx.spawn(async move |this, cx| {
+            cx.background_executor()
+                .timer(std::time::Duration::from_millis(interval))
+                .await;
+            let _ = this.update(cx, |this, cx| {
                 this.retirement_scheduled = false;
-                this.evict_retired(window, cx);
+                if this.retiring.is_empty() {
+                    return;
+                }
+                // One deferred frame, from which the sweep can run with a window.
+                this.retirement_due = true;
                 cx.notify();
             });
-        });
+        })
+        .detach();
     }
 
     fn evict_retired(&mut self, window: &mut Window, cx: &mut Context<Self>) {
@@ -273,8 +270,7 @@ impl ImageViewer {
         if self.retirement_attempts > FAST_RETIREMENT_SWEEPS {
             self.retirement_slow = true;
         }
-        let delay = retirement_delay(self.retirement_attempts, self.retirement_slow);
-        self.schedule_retirement(window, cx, delay);
+        self.schedule_retirement(cx);
     }
 
     /// Prepare only the tiles this viewport needs; a newer viewport supersedes the demand.
@@ -417,6 +413,10 @@ impl Drop for ImageViewer {
 
 impl Render for ImageViewer {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        if std::mem::take(&mut self.retirement_due) {
+            // The timer decided a sweep is due; this deferred callback supplies the window.
+            cx.defer_in(window, |this, window, cx| this.evict_retired(window, cx));
+        }
         let palette = self.palette;
         let scale = self
             .transform
@@ -528,18 +528,21 @@ impl Render for ImageViewer {
                         if (this.serial, this.view_serial) != demand {
                             return;
                         }
-                        let resized = this.viewport != bounds;
-                        let started =
-                            missing && needed.is_some_and(|needed| this.request_tiles(needed, cx));
-                        this.transform = Some(transform);
-                        this.viewport = bounds;
+                        let resized =
+                            this.viewport != bounds || (this.dpi - dpi).abs() > f64::EPSILON;
                         if resized {
-                            // A resize/DPI change invalidates the previous viewport's tile demand.
+                            // Viewport/DPI change first invalidates the previous viewport's demand,
+                            // so the new request is never cancelled right after it starts.
                             this.view_serial = this.view_serial.saturating_add(1);
                             this.tile_cancel.cancel();
                             this.demand = None;
                             this.tile_attempts = 0;
                         }
+                        let started =
+                            missing && needed.is_some_and(|needed| this.request_tiles(needed, cx));
+                        this.transform = Some(transform);
+                        this.viewport = bounds;
+                        this.dpi = dpi;
                         if promote {
                             this.phase += 1;
                         }
@@ -663,18 +666,18 @@ mod tests {
     use super::*;
 
     #[test]
-    fn retirement_sweeps_switch_from_fast_to_slow_without_stopping() {
+    fn retirement_polls_switch_from_fast_to_slow_without_stopping() {
         for attempt in 1..=FAST_RETIREMENT_SWEEPS {
-            assert_eq!(retirement_delay(attempt, false), FAST_RETIREMENT_FRAMES);
+            assert_eq!(retirement_interval(attempt, false), FAST_RETIREMENT_MILLIS);
         }
         // Once the fast budget is spent the slow cadence persists; it never returns to fast while
         // a frame is still waiting for release.
         assert_eq!(
-            retirement_delay(FAST_RETIREMENT_SWEEPS + 1, true),
-            SLOW_RETIREMENT_FRAMES
+            retirement_interval(FAST_RETIREMENT_SWEEPS + 1, true),
+            SLOW_RETIREMENT_MILLIS
         );
-        assert_eq!(retirement_delay(u8::MAX, true), SLOW_RETIREMENT_FRAMES);
+        assert_eq!(retirement_interval(u8::MAX, true), SLOW_RETIREMENT_MILLIS);
         // The flag selects the slow cadence, not a reset attempt counter.
-        assert_eq!(retirement_delay(1, true), SLOW_RETIREMENT_FRAMES);
+        assert_eq!(retirement_interval(1, true), SLOW_RETIREMENT_MILLIS);
     }
 }
