@@ -440,25 +440,31 @@ impl CompareView {
                             if this.pane_serial[target] != pane_serial[target] {
                                 continue;
                             }
-                            attached |= this.panes[target].update(cx, |pane, cx| {
+                            let presented = this.panes[target].update(cx, |pane, cx| {
                                 pane.present_prepared(Arc::clone(&frame), window, cx)
                             });
+                            if presented {
+                                // The preparing reason no longer describes this side.
+                                this.side_reason[target] = None;
+                            }
+                            attached |= presented;
                         }
                         if attached {
                             unclaimed = None;
                         }
                     }
                     Err(error) => {
+                        let reason: SharedString =
+                            format!("画像を利用できません: {}", error.limitation()).into();
                         for target in targets {
                             if this.pane_serial[target] != pane_serial[target] {
                                 continue;
                             }
-                            this.panes[target].update(cx, |pane, cx| {
-                                pane.unavailable(
-                                    format!("画像を利用できません: {}", error.limitation()).into(),
-                                    cx,
-                                )
-                            });
+                            // The settled refusal replaces the preparing reason, so a later swap
+                            // carries the reason that actually applies to this candidate.
+                            this.side_reason[target] = Some(reason.clone());
+                            let reason = reason.clone();
+                            this.panes[target].update(cx, |pane, cx| pane.unavailable(reason, cx));
                         }
                     }
                 }

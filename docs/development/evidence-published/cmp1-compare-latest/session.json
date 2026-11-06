@@ -22,17 +22,17 @@
   },
   "trace_pilot": {
     "file": "cmp1-trace-shared-pilot.jsonl (private, 1.1 MiB)",
-    "sha256": "sha256:3398967a83fdd7dfb3117fd23be8a31ec9d191712aa59549f5b73dac8062683a",
+    "sha256": "sha256:bc2fd14439c976faf00056e291d5325615efd5b70dcf89547112faac7d4fb89b",
     "executed_binary": "examples/compare.exe",
-    "executed_binary_sha256": "sha256:9f32c03e0f8d8eb1991fb2ff291893f419153ee3e6e353e54cca35953835ae15",
+    "executed_binary_sha256": "sha256:74ebdb6f7d9c4437a91842a53d260fbc96fc5fec29fb8d54cf01c392b50367eb",
     "trace_after_binary_build": true,
     "variant": "shared",
     "ready": true,
-    "warmup_ms": 177,
+    "warmup_ms": 119,
     "settled": true,
     "cancel_probe_stage": 3,
     "refusals": 0,
-    "rows": 1964,
+    "rows": 1967,
     "decode_calls": 1,
     "reuse_calls": 0,
     "retained_frames": 1,
@@ -58,7 +58,7 @@
   "captures": [
     {
       "path": "captures/01-linked-fit.png",
-      "sha256": "sha256:92a54c64dcce9f0549ee96983e3a119cd12a44d3aaffadf23326b47d0adcff2f",
+      "sha256": "sha256:84b861dcee525c4e36a502e0168d198072e4e0a1c07bff4803cff857545ef970",
       "width": 1275,
       "height": 932,
       "step": "01-linked-fit",
@@ -85,13 +85,11 @@
         "Fixture: 同じ候補の再出現",
         "Fixture: 診断値"
       ],
-      "focused": [
-        "MP-CMP1 Compare local fixture 1"
-      ]
+      "focused": []
     },
     {
       "path": "captures/02-linked-1to1-pan-a.png",
-      "sha256": "sha256:e2737c7daa1ae24eee9ba0875d67fe2cf3e109684d186ab5443f29a0ce1956cd",
+      "sha256": "sha256:17a9298ce6c527dd8c4162861a9df08d8a6715ecfd47766ce43048d7e7825b99",
       "width": 1275,
       "height": 932,
       "step": "02-linked-1to1-pan-a",
@@ -118,10 +116,7 @@
         "Fixture: 同じ候補の再出現",
         "Fixture: 診断値"
       ],
-      "focused": [
-        "MP-CMP1 Compare local fixture 1",
-        "比較するA側の画像。0: 全体、1: 物理等倍、+/-: 拡大縮小、矢印: 移動、F11: 全画面、Escape: 復帰"
-      ]
+      "focused": []
     },
     {
       "path": "captures/03-unlinked-pan-b.png",
@@ -431,11 +426,11 @@
     },
     {
       "path": "captures/12-diagnostics-after-close.png",
-      "sha256": "sha256:963007f29ce29a66ee1434f58b0bb0ad2f3ce337b42d2c4af56911b4ffa7f765",
+      "sha256": "sha256:51611709ff7e71918c5e12be66eb3ac8bd88de2d4517942229b92acd0f13d92e",
       "width": 1275,
       "height": 932,
       "step": "12-diagnostics-after-close",
-      "exercised": "after close no panes hold a frame: one consumer remains because the viewer shows it",
+      "exercised": "after close the panes hold nothing; the viewer keeps one entry",
       "pane_groups": [],
       "pane_texts": [
         "ローカル画像・実験用タイル表示。GPU完了・常駐量・本番の画質受入は未計測。",
@@ -614,8 +609,7 @@
         "Fixture: 診断値"
       ],
       "focused": [
-        "MP-CMP1 Compare local fixture 1",
-        "Fixture: A側候補の消失"
+        "MP-CMP1 Compare local fixture 1"
       ]
     },
     {
@@ -650,7 +644,7 @@
       "width": 1275,
       "height": 932,
       "step": "19-post-close-reappearance",
-      "exercised": "after close the reappearing Viewed candidate is re-acquired into the standalone viewer",
+      "exercised": "after close the reappearing Viewed candidate is re-acquired from its own input",
       "pane_groups": [],
       "pane_texts": [
         "画像を利用できません: この画像は現在の保持状態と両立しないため表示できません。",
@@ -667,23 +661,22 @@
         "Fixture: 診断値"
       ],
       "focused": [
-        "MP-CMP1 Compare local fixture 1",
-        "Fixture: 同じ候補の再出現"
+        "MP-CMP1 Compare local fixture 1"
       ]
     }
   ],
   "source_files": [
     {
       "path": "crates/desktop-gpui/src/compare_view.rs",
-      "sha256": "sha256:810345b0dc7e1340728987d77c5bf756c5bd07bca9b625c3acdaeb4e91430b62"
+      "sha256": "sha256:9883a8620a9a81d7afbd39100b6f06143e4ca9954b27d238e60d2a58a477fb01"
     },
     {
       "path": "crates/desktop-gpui/src/image_viewer.rs",
-      "sha256": "sha256:5bc1fb913153ea694d421ec80b110bbda8214d0532b92d4d9cbc63186d71045a"
+      "sha256": "sha256:247eaf02200107522c41955257e40bf7022f3771393ea610ef9bfcc4b3550dfc"
     },
     {
       "path": "crates/desktop-gpui/src/image_upload.rs",
-      "sha256": "sha256:4d0e1587dfc6f64952c9382a7e9f12e90fe65055f503bafba58949c964c7b384"
+      "sha256": "sha256:918d3cc84ebf115b781abfe40ea9da255f03e6850e6695da6690cde50498f8d3"
     },
     {
       "path": "crates/desktop-gpui/src/view_transform.rs",
@@ -691,7 +684,7 @@
     },
     {
       "path": "crates/desktop-gpui/src/lib.rs",
-      "sha256": "sha256:38a09b04adf9ccf2ce432057c13892d4790229bd9eeb6af58829bdeb650700a6"
+      "sha256": "sha256:822697510a481e0ddae373e9dc569e4267bb8eb9f621ed47cd7042452725980a"
     },
     {
       "path": "crates/ui-model/src/lib.rs",
@@ -699,7 +692,7 @@
     },
     {
       "path": "apps/desktop/examples/compare.rs",
-      "sha256": "sha256:54a485b6cf5c21d3cb960a9b24b3c7a1f3d256ce7a322ad0d6702bbef34070ff"
+      "sha256": "sha256:28ca2a392e9186de1e3ec6cb50776e30d1d9b24713b2d6d01f4045aa8354df4f"
     },
     {
       "path": "apps/desktop/examples/support/image_fixture.rs",
@@ -713,7 +706,7 @@
   "binaries": [
     {
       "release_output": "examples/compare.exe",
-      "sha256": "sha256:9f32c03e0f8d8eb1991fb2ff291893f419153ee3e6e353e54cca35953835ae15"
+      "sha256": "sha256:74ebdb6f7d9c4437a91842a53d260fbc96fc5fec29fb8d54cf01c392b50367eb"
     },
     {
       "release_output": "cos-desktop.exe",

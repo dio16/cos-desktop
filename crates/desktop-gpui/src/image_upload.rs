@@ -79,6 +79,7 @@ static PROCESS_PREPARATION: LazyLock<PreparationQueue> = LazyLock::new(Preparati
 static PROCESS_SERVICE: LazyLock<ImageUploadService> = LazyLock::new(|| ImageUploadService {
     inner: Arc::new(ServiceInner {
         state: Mutex::new(ServiceState::default()),
+        window_frames: Mutex::new(std::collections::HashMap::new()),
     }),
 });
 
@@ -463,6 +464,8 @@ pub struct ImageUploadService {
 
 struct ServiceInner {
     state: Mutex<ServiceState>,
+    /// Composed frames reported by each window's root view.
+    window_frames: Mutex<std::collections::HashMap<u64, u64>>,
 }
 
 #[derive(Default)]
@@ -1120,6 +1123,22 @@ impl ImageUploadService {
 
     /// Return bounded admission and paint-call counters. Resident fields are reservations only;
     /// none of these fields measures GPU memory or completion.
+    /// Records one composed frame for `window`. Only a window root reports this, so one report is
+    /// one frame however many viewers paint inside it. A closed pane composes nothing, so this is
+    /// the release proof it cannot produce itself.
+    pub fn note_composed_frame(&self, window: u64) -> u64 {
+        let mut frames = self.inner.window_frames.lock().expect("window frames");
+        let entry = frames.entry(window).or_insert(0);
+        *entry = entry.saturating_add(1);
+        *entry
+    }
+
+    /// Composed frames observed for `window` so far.
+    pub fn composed_frames(&self, window: u64) -> u64 {
+        let frames = self.inner.window_frames.lock().expect("window frames");
+        frames.get(&window).copied().unwrap_or(0)
+    }
+
     pub fn counters(&self) -> ImageUploadCounters {
         let state = self.inner.state.lock().expect("image upload service state");
         let mut staging = 0u64;
@@ -2211,6 +2230,7 @@ mod tests {
         let service = ImageUploadService {
             inner: Arc::new(ServiceInner {
                 state: Mutex::new(ServiceState::default()),
+                window_frames: Mutex::new(std::collections::HashMap::new()),
             }),
         };
         let cancellation = Cancellation::default();

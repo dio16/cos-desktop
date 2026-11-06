@@ -871,6 +871,10 @@ fn candidate_index(candidate: &ViewedCandidate) -> usize {
 
 impl Render for CompareDemo {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        // One report per composed frame: panes that already left the draw tree use this
+        // counter as their release proof.
+        let _ = desktop_gpui::image_upload::ImageUploadService::global()
+            .note_composed_frame(window.window_handle().window_id().as_u64());
         div().size_full().p_3().bg(rgb(0x20242a)).text_color(rgb(0xf0f0f0)).flex().flex_col().gap_2()
             .on_action(cx.listener(|_, _: &DemoNext, window, cx| window.focus_next(cx)))
             .on_action(cx.listener(|_, _: &DemoPrevious, window, cx| window.focus_prev(cx)))
@@ -1040,6 +1044,10 @@ fn open_compare_window(
                             // picture the standalone viewer still holds for it is stale and must not
                             // survive the close.
                             let viewed_withheld = viewed_index.is_some_and(|index| this.missing == Some(index));
+                            // After close a reappearing candidate is re-acquired from its own input,
+                            // so the pair's spare frame would only add ownership the counters cannot
+                            // show (round-4 review A-02).
+                            this.missing_frame = None;
                             this.presentation.close_compare();
                             view_entity.update(cx, |view, cx| {
                                 let frames = view.frames(cx);

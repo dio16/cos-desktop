@@ -117,11 +117,9 @@ pub struct ImageViewer {
     retiring: Vec<Retired>,
     /// Paint epochs observed for the current frame; a retirement needs a later composed scene.
     scene_serial: u64,
-    /// Window frames still to count after this pane left the draw tree. A closed pane composes
-    /// nothing itself, so the host window's frames replace the scenes that could still reference
-    /// its atlas entries.
-    window_frame_gate: u8,
-    frame_gate_armed: bool,
+    /// Set once this pane left the draw tree: its releases then count the scenes a viewer still
+    /// being drawn composes in the same window.
+    release_by_window_scene: bool,
     complete_in_scene: bool,
     retirement_scheduled: bool,
     retirement_attempts: u8,
@@ -152,7 +150,7 @@ impl ImageViewer {
         Self {
             service: ImageUploadService::global(), current: None, cancel: Cancellation::default(),
             tile_cancel: Cancellation::default(), demand: None, demand_id: 0, tile_attempts: 0,
-            retiring: Vec::new(), scene_serial: 0, window_frame_gate: 0, frame_gate_armed: false,
+            retiring: Vec::new(), scene_serial: 0, release_by_window_scene: false,
             retirement_scheduled: false, retirement_attempts: 0,
             retirement_slow: false,
             serial: 0, view_serial: 0, revision: 0, generation: 0, transform: None,
@@ -383,6 +381,10 @@ impl ImageViewer {
     /// Call before removing the owning view/window. A painted payload is never released here: the
     /// scene that referenced it may still be presented and there is no completion signal. Frames
     /// that never reached the atlas are released through the existing unpainted path.
+    fn window_id(&self) -> u64 {
+        self.window.window_id().as_u64()
+    }
+
     pub fn close(&mut self, cx: &mut Context<Self>) {
         self.complete_in_scene = false;
         self.cancel.cancel();
@@ -395,38 +397,15 @@ impl ImageViewer {
         self.service.detach(&frame, self.consumer);
         if !self.service.discard_unpainted(&frame) {
             // A painted frame is never released here: a presented scene may still reference its
-            // atlas entries. This pane leaves the draw tree, so its own scene counter freezes;
-            // the host window's next two composed frames replace those scenes instead, which is a
-            // presentation fact rather than an assumed GPU completion.
+            // atlas entries. This pane leaves the draw tree and composes nothing more, so the
+            // proof becomes the scenes a viewer still being drawn composes in this window.
+            self.release_by_window_scene = true;
             self.retiring.push(Retired {
                 frame,
-                scene_at: self.scene_serial,
+                scene_at: self.service.composed_frames(self.window_id()),
             });
-            self.window_frame_gate = self.window_frame_gate.saturating_add(2);
-            self.arm_window_frame_gate(cx);
             self.schedule_retirement(cx);
         }
-    }
-
-    /// Counts one host-window frame per call and re-arms itself until the gate is spent, so a
-    /// closed pane's retired entries reach the ordinary sweep instead of waiting for window close.
-    fn arm_window_frame_gate(&mut self, cx: &mut Context<Self>) {
-        if self.window_frame_gate == 0 || self.frame_gate_armed {
-            return;
-        }
-        self.frame_gate_armed = true;
-        let handle = self.window;
-        let entity = cx.entity().downgrade();
-        let _ = handle.update(cx, move |_, window, _cx| {
-            window.on_next_frame(move |_, cx| {
-                let _ = entity.update(cx, |this, cx| {
-                    this.frame_gate_armed = false;
-                    this.scene_serial = this.scene_serial.saturating_add(1);
-                    this.window_frame_gate = this.window_frame_gate.saturating_sub(1);
-                    this.arm_window_frame_gate(cx);
-                });
-            });
-        });
     }
 
     /// Detach at once so no later scene adds these tiles, then drop the atlas entries only after
@@ -478,10 +457,17 @@ impl ImageViewer {
 
     fn evict_retired(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         let mut keep = Vec::new();
+        // A live pane proves release with its own composed scenes; a closed pane, which composes
+        // nothing, uses the scenes a viewer still being drawn reports for the same window.
+        let scene_serial = if self.release_by_window_scene {
+            self.service.composed_frames(self.window_id())
+        } else {
+            self.scene_serial
+        };
         for retired in std::mem::take(&mut self.retiring) {
             // Two paints after the detach prove a scene composed without this frame has been
             // presented; a hidden window composes nothing, so its release waits for re-display.
-            if !scene_allows_release(self.scene_serial, retired.scene_at) {
+            if !scene_allows_release(scene_serial, retired.scene_at) {
                 keep.push(retired);
                 continue;
             }

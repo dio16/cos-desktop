@@ -2931,6 +2931,10 @@ impl EntityInputHandler for Shell {
 }
 impl Render for Shell {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        // One report per composed frame: panes that already left the draw tree use this
+        // counter as their release proof.
+        let _ = image_upload::ImageUploadService::global()
+            .note_composed_frame(window.window_handle().window_id().as_u64());
         let surface = self
             .workbench
             .as_ref()
