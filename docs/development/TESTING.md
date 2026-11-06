@@ -155,6 +155,16 @@ Keep each result explicit and separate: `NOT_IMPLEMENTED`, `NOT_RUN`, and `NOT_M
 
 Native smoke and UI regression evidence are separate from Golden Creative Workflow acceptance. Golden Workflow is a product acceptance activity; native smoke does not complete or substitute for it. Likewise, fixture/mock verification is separate from Runtime caller acceptance. When an external Runtime evidence report exists, cite that report for Runtime claims; local test results alone cannot establish caller acceptance.
 
+### 6.1 MP-IMG5 local image viewer
+
+Use `cargo run --locked --release -p cos-desktop --example image_viewer -- --fixture` for the explicitly labelled 2048×2048 RGB8 PNG experiment; use `--preview` instead to exercise the bounded preview-only capability. The source admission is unchanged: neither invocation qualifies 8K/16K full detail, Runtime acquisition or the production tiling adoption gates.
+
+- Exercise Fit (`0`), physical 1:1 (`1`, unavailable in preview-only mode), `+`/`-`, pointer-anchored wheel zoom, drag/arrow pan, edge clamping, resize, fullscreen (`F11`) and Escape. Check actual pixels and window/focus restoration, not just the scale label.
+- Load the next revision while work is pending and after painting. The prior revision must not reappear; retained-payload exhaustion is an explicit unavailable result, not an automatic fallback or a claimed release.
+- Check the real shell's Artifact surface separately: without an authorized input it must remain unavailable, never display the generated experiment as a Runtime artifact.
+- Record the actual display scale/topology, fixture identity, binary/source identity, screenshots, keyboard/pointer inputs and clean close. Absent mixed-DPI, fullscreen or GPU evidence stays `NOT_RUN`/`NOT_MEASURED`; tests of geometry do not qualify the native DPI matrix.
+- Regression coverage lives in `view_transform` and `crates/media/tests/upload_admission.rs`; the former covers anchor/clamp/DPI/orientation/visible-tile boundaries, and the latter checks mip pixels, identity, unsupported levels and cancellation.
+
 ## 7. Deferred and external evidence
 
 - **Golden Creative Workflow** end-to-end product acceptance requires its separately approved workflow and real Runtime integration.

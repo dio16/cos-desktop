@@ -845,3 +845,53 @@ fn an_identity_whose_digest_does_not_match_the_pixels_is_refused() {
     let usage = pool.usage();
     assert_eq!((usage.staging, usage.resident), (0, 0));
 }
+#[test]
+fn mip_levels_average_original_pixels_and_admit_only_matching_representation_identity() {
+    let _guard = heavy();
+    let source = verified_approved();
+    let mip = source.mip(4, &Cancellation::default()).expect("level four");
+    assert_eq!(mip.size(), PixelSize::new(128, 128).expect("size"));
+    assert_eq!(mip.class(), source.class());
+    // Source fixture is (x % 251, y % 241, 90, 255); level four averages each
+    // 16x16 source footprint directly, with nearest/ties-up integer rounding.
+    let expected = [8, 8, 90, 255];
+    assert_eq!(&mip.raster().rgba[..4], &expected);
+    assert_ne!(mip.content_digest(), source.content_digest());
+
+    let mut derived_identity = identity_for(9, 3, &mip);
+    derived_identity.key.size = mip.size();
+    let pool = std::sync::Arc::new(UploadPool::new(one_frame_budget()));
+    let mut admitted = admit_upload(
+        &mip,
+        derived_identity.clone(),
+        3,
+        &pool,
+        &Cancellation::default(),
+    )
+    .expect("matching derivative identity");
+    admitted.release().expect("release");
+
+    let mut wrong_identity = derived_identity;
+    wrong_identity.key.size = source.size();
+    let pool = std::sync::Arc::new(UploadPool::new(one_frame_budget()));
+    assert!(matches!(
+        admit_upload(&mip, wrong_identity, 3, &pool, &Cancellation::default()),
+        Err(UploadRefusal::WrongLayout)
+    ));
+}
+
+#[test]
+fn mip_refuses_unsupported_level_and_observes_cancellation() {
+    let _guard = heavy();
+    let source = verified_approved();
+    assert_eq!(
+        source.mip(5, &Cancellation::default()).unwrap_err(),
+        MediaError::InvalidMetadata
+    );
+    let cancelled = Cancellation::default();
+    cancelled.cancel();
+    assert_eq!(
+        source.mip(1, &cancelled).unwrap_err(),
+        MediaError::Cancelled
+    );
+}

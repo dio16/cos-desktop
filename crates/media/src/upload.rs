@@ -56,9 +56,77 @@ impl VerifiedRaster {
     pub fn size(&self) -> PixelSize {
         self.raster.size
     }
-    /// SHA-256 of the decoded bytes, computed once at decode time.
+    /// SHA-256 of the decoded bytes, computed once when this representation is created.
     pub fn content_digest(&self) -> [u8; 32] {
         self.content_digest
+    }
+
+    /// Derive a power-of-two mip representation from the original verified RGBA8 pixels.
+    ///
+    /// `class` remains proof about the decoded 2048×2048 source, not this derivative; `size`,
+    /// `raster().rgba`, and `content_digest()` describe the returned representation. Pixel values
+    /// are treated as raw RGBA8 samples: this operation makes no ICC or colour-fidelity claim.
+    /// Levels 0 through 4 produce 2048, 1024, 512, 256, and 128 square pixels respectively.
+    /// Every nonzero level uses exact integer area averaging over each source footprint, rounded
+    /// to nearest (ties upward), including alpha. Each level is computed directly from this raster.
+    pub fn mip(&self, level: u8, cancel: &Cancellation) -> Result<VerifiedRaster, MediaError> {
+        let shift = u32::from(level);
+        if level > 4
+            || self.raster.size
+                != PixelSize::new(APPROVED_EDGE, APPROVED_EDGE)
+                    .map_err(|_| MediaError::InvalidMetadata)?
+        {
+            return Err(MediaError::InvalidMetadata);
+        }
+        cancel.check()?;
+        if level == 0 {
+            return Ok(self.clone());
+        }
+
+        let edge = APPROVED_EDGE >> shift;
+        let size = PixelSize::new(edge, edge).map_err(|_| MediaError::InvalidMetadata)?;
+        let pixel_count = (edge as usize)
+            .checked_mul(edge as usize)
+            .ok_or(MediaError::TooLarge)?;
+        let byte_count = pixel_count.checked_mul(4).ok_or(MediaError::TooLarge)?;
+        let mut rgba = Vec::new();
+        rgba.try_reserve_exact(byte_count)
+            .map_err(|_| MediaError::Allocation)?;
+        rgba.resize(byte_count, 0);
+
+        let source_edge = APPROVED_EDGE as usize;
+        let scale = 1usize << shift;
+        let area = (scale * scale) as u64;
+        for y in 0..edge as usize {
+            cancel.check()?;
+            for x in 0..edge as usize {
+                let mut sums = [0u64; 4];
+                for dy in 0..scale {
+                    let source_row = (y * scale + dy) * source_edge;
+                    for dx in 0..scale {
+                        let offset = (source_row + x * scale + dx) * 4;
+                        for (channel, sum) in sums.iter_mut().enumerate() {
+                            *sum += u64::from(self.raster.rgba[offset + channel]);
+                        }
+                    }
+                }
+                let target = (y * edge as usize + x) * 4;
+                for (channel, sum) in sums.into_iter().enumerate() {
+                    rgba[target + channel] = ((sum + area / 2) / area) as u8;
+                }
+            }
+        }
+        cancel.check()?;
+        let content_digest = digest_of(&rgba);
+        Ok(VerifiedRaster {
+            raster: DecodedRaster {
+                size,
+                format: self.raster.format,
+                rgba,
+            },
+            class: self.class,
+            content_digest,
+        })
     }
 }
 

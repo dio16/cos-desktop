@@ -27,6 +27,7 @@ mod dock;
 mod flow;
 mod help;
 pub mod image_upload;
+pub mod image_viewer;
 mod inspector;
 mod intervention;
 mod list_cursor;
@@ -39,6 +40,7 @@ mod stop;
 pub mod tokens;
 mod trace;
 pub mod upload_budget;
+pub mod view_transform;
 use contrast::{ContrastState, contrast_probe_worker};
 use shell_style::TextSpec;
 use stop::{ReadCompletion, ReadFailure, ReceiptData, ReceiptFeedback, StopProgress, StopTracker};
@@ -143,6 +145,7 @@ pub fn rail_edge_index(len: usize, edge: RailEdge) -> Option<usize> {
 }
 
 pub fn bind_keys(cx: &mut App) {
+    image_viewer::bind_keys(cx);
     cx.bind_keys([
         KeyBinding::new("ctrl-1", Artifact, None),
         KeyBinding::new("ctrl-2", Compare, None),
@@ -683,6 +686,7 @@ pub struct Shell {
     export_trace: Option<String>,
     preview_trace: String,
     workbench: Option<Workbench>,
+    artifact_viewer: Entity<image_viewer::ImageViewer>,
     /// Derived display text with its publication identity, revalidated on render.
     cache: DisplayCache,
     error: Option<String>,
@@ -876,6 +880,9 @@ impl Shell {
             probe_window: window.window_handle().window_id().as_u64(),
             handle,
             desktop_version: Arc::clone(&desktop_version),
+            artifact_viewer: cx.new(|cx| {
+                image_viewer::ImageViewer::new(image_viewer::ViewerMode::PreviewOnly, window, cx)
+            }),
             support_state: SupportPreviewState::default(),
             support_focus: cx.focus_handle().tab_stop(true),
             diagnostics_focus: cx.focus_handle().tab_stop(true),
@@ -2885,6 +2892,8 @@ impl Render for Shell {
         let colors = self.contrast.colors();
         let scheme = self.contrast.scheme();
         let palette = contrast::Palette { scheme, colors };
+        self.artifact_viewer
+            .update(cx, |viewer, cx| viewer.set_palette(palette, cx));
         let body_text = TextSpec::ui(&self.tokens, TextStyle::Body);
         let xs_text = TextSpec::ui(&self.tokens, TextStyle::Xs);
         let rail_width = shell_style::rail_width(&self.tokens);
@@ -5195,17 +5204,16 @@ impl Render for Shell {
                                     .when(surface == Surface::Compare, |element| {
                                         element.child(compare_panel)
                                     })
-                                    .when(
-                                        surface != Surface::Flow && surface != Surface::Compare,
-                                        |element| {
+                                    .when(surface == Surface::Artifact, |element| {
                                             element.child(
                                                 div()
                                                     .w_full()
                                                     .min_w_0()
                                                     .flex_1()
                                                     .flex()
-                                                    .items_center()
-                                                    .justify_center()
+                                                    .flex_col()
+                                                    .min_h_0()
+                                                    .overflow_hidden()
                                                     .child(
                                                         // The owner-approved read-only text exposure:
                                                         // the central statement is a named value, not
@@ -5222,7 +5230,8 @@ impl Render for Shell {
                                                             .w_full()
                                                             .min_w_0()
                                                             .child(surface_content),
-                                                    ),
+                                                    )
+                                                    .child(self.artifact_viewer.clone()),
                                             )
                                         },
                                     ),
