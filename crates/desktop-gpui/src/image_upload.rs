@@ -1392,29 +1392,53 @@ mod tests {
 
     #[test]
     fn the_process_budget_boundary_is_inclusive_and_per_axis() {
-        let capacity = 32 * 1024 * 1024;
-        let frame = FRAME_RGBA8_BYTES;
-        // Below the boundary, exactly at it, and one byte over.
-        assert_eq!(budget_breach(0, 0, 0, capacity, frame), None);
+        let capacity = 4096u64;
+        let incoming = 1024u64;
+        // The largest total that still admits `incoming` bytes exactly at the cap.
+        let exact = capacity - incoming;
+        let over = exact + 1;
+        for axis in 0..3 {
+            let below = match axis {
+                0 => (exact - 1, 0, 0),
+                1 => (0, exact - 1, 0),
+                _ => (0, 0, exact - 1),
+            };
+            let at = match axis {
+                0 => (exact, 0, 0),
+                1 => (0, exact, 0),
+                _ => (0, 0, exact),
+            };
+            let beyond = match axis {
+                0 => (over, 0, 0),
+                1 => (0, over, 0),
+                _ => (0, 0, over),
+            };
+            assert_eq!(
+                budget_breach(below.0, below.1, below.2, capacity, incoming),
+                None,
+                "axis {axis}: below the boundary is allowed"
+            );
+            assert_eq!(
+                budget_breach(at.0, at.1, at.2, capacity, incoming),
+                None,
+                "axis {axis}: exactly at the boundary is allowed"
+            );
+            assert_eq!(
+                budget_breach(beyond.0, beyond.1, beyond.2, capacity, incoming),
+                Some(over),
+                "axis {axis}: one byte over the boundary is refused"
+            );
+        }
+        // All three axes exactly at the cap still admit; the largest axis is what gets reported.
         assert_eq!(
-            budget_breach(frame, frame, 0, capacity, frame),
+            budget_breach(exact, exact, exact, capacity, incoming),
             None,
-            "an admission that lands exactly on the cap is allowed"
+            "three axes exactly at the cap still admit"
         );
         assert_eq!(
-            budget_breach(2 * frame, frame, 0, capacity, frame),
-            Some(2 * frame),
-            "the staging axis alone can block an admission"
-        );
-        assert_eq!(
-            budget_breach(frame, 2 * frame, 0, capacity, frame),
-            Some(2 * frame),
-            "the in-flight axis alone can block an admission"
-        );
-        assert_eq!(
-            budget_breach(frame, frame, 3 * frame, capacity, frame),
-            Some(3 * frame),
-            "the quarantine ledger can block an admission on its own"
+            budget_breach(exact, over, 0, capacity, incoming),
+            Some(over),
+            "the reported figure is the largest axis"
         );
     }
 

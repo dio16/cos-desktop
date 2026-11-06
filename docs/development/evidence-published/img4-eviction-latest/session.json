@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "status": "IMPLEMENTED_LOCAL_GATES_PASS_NATIVE_OBSERVED_GATE_AND_REVIEW_PENDING_REPAIRED_AFTER_ROUND_4",
+  "status": "IMPLEMENTED_LOCAL_GATES_PASS_NATIVE_OBSERVED_GATE_AND_REVIEW_PENDING_REPAIRED_AFTER_ROUND_5",
   "task": "MP-IMG4",
   "contract": "DC-MP-IMG4",
   "caller_authority": "Tern next-task directive for MP-IMG4 (baseline 669fafca318944066596368e2ca73b37859d1781) under the Caller's resumption instruction and ADR-0014. Round-1 to round-3 review repairs are included.",
@@ -145,5 +145,8 @@
     "A-01: the stale Rustdoc that described a generation-based quarantine release now states the current rule — an in-flight payload stays charged for the life of the process or until a real device teardown can be proven",
     "A-02: the close-sweep success condition includes unattributed_frames == 0, and the budget boundary is pinned by a unit regression test (the_process_budget_boundary_is_inclusive_and_per_axis) covering below, exactly at, and over the cap on each of the three axes"
   ],
-  "test_count": 998
+  "test_count": 998,
+  "round_5_review_repairs": [
+    "A-01 (round 5): the boundary regression test now checks each axis independently — staging, in-flight and the quarantine ledger — at below, exactly at and one byte over the cap, and keeps the combined case; the earlier version set staging and in-flight together and had no equal-cap case for the ledger"
+  ]
 }
