@@ -214,7 +214,7 @@
     "candidate_sources": "worktree at 9b26d2fe plus the round-2 repairs (retry on PreparationBusy, close without synchronous atlas release, bounded retirement retry, NotRetained cleanup), committed as the next candidate",
     "binary": {
       "path": "C:/dev/cos-build-release/release/examples/image_viewer.exe",
-      "sha256": "sha256:5289f4efd5c8d67ae4a4f382ac8446a683a9cd5fd876e5f23893edd6c63c034f"
+      "sha256": "sha256:fc2e0c8d3c871ce1291c56e48c750ea06b7cd2f174c6d36df0581cd9739bbf0e"
     },
     "release": true,
     "display_scale": 1.0,
@@ -226,30 +226,36 @@
     ],
     "captures": [
       {
-        "path": "repair-native-fit.png",
+        "path": "repair2-native-fit.png",
         "sha256": "sha256:ebadbaf7021a1f22a17c1a031636ac15699160c67df0749a69457350c15093d2",
         "width": 1095,
         "height": 832
       },
       {
-        "path": "repair-native-1to1.png",
+        "path": "repair2-native-1to1.png",
         "sha256": "sha256:2c2c4a9b93d49183779b89cf01bf3f2baf40c2efbca7ca5add38ddd9613ebad0",
         "width": 1095,
         "height": 832
       },
       {
-        "path": "repair-native-revision2.png",
+        "path": "repair2-native-revision2.png",
         "sha256": "sha256:561d0d8edc4c364e21baf3deeecfdc62e99674a41f051df357902d40bbe2ae7d",
         "width": 1095,
         "height": 832
       }
     ],
+    "pixel_identity": "These captures are byte-identical to the round-2 repair run, so the retry/retirement changes altered no rendered pixels.",
     "not_measured": "GPU completion/residency/Present, mixed-DPI, device teardown"
+  },
+  "review_round_3_repairs": {
+    "transient_preparation": "PreparationBusy retries are bounded to 20 per demand and then report an explicit limitation; the counter resets on a new view, image or revision. A permanent failure keeps its own message.",
+    "retirement_ownership": "Detailed release ownership is never dropped on a retry cap: fast two-frame sweeps fall back to a slow 30-frame cadence, NotRetained entries are removed, and the shell window-close sweep releases window-owned frames with no remaining consumer.",
+    "regressions": "image_upload covers the transient busy path against the real preparation guard, the permanent missing-source failure and per-pane consumer allocation; image_viewer covers the fast/slow retirement cadence."
   },
   "verification": {
     "final_quality": "PASS: fmt, metadata, dependency checker self-test/check, plan ledger, clippy, workspace tests, workspace build and release viewer/upload/shell build; all exit 0",
     "independent_gate": "candidate 6a8942d SUCCEEDED (8/8, 1007 tests); this repaired candidate carries its own Gate",
-    "tern_review": "Round 1 on 6a8942d HOLD 2/2; round 2 on 9b26d2f HOLD 3/1 (preparation retry, close-path atlas ordering, retirement retry/NotRetained, evidence binding). All four are repaired in this candidate and will be re-reviewed."
+    "tern_review": "Round 1 on 6a8942d HOLD 2/2; round 2 on 9b26d2f HOLD 3/1; round 3 on a4b41e0 HOLD 2/1 (bounded preparation retry, retention ownership after the retry budget, missing regressions). All are repaired in this candidate and will be re-reviewed."
   },
   "review_round_1_repairs": {
     "B-01": "ConsumerId::allocate gives every viewer/pane a process-unique owner; same-window sharing and last-consumer eviction keep the existing ownership rules.",

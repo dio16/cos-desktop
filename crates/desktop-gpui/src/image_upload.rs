@@ -1830,6 +1830,33 @@ mod tests {
     }
 
     #[test]
+    fn a_concurrent_preparation_is_reported_as_busy() {
+        let service = ImageUploadService::global();
+        let frame = demand_frame(0);
+        let image = Bounds::new(point(px(0.0), px(0.0)), size(px(2048.0), px(2048.0)));
+        let demand = frame.demand(image, image, 0);
+        // Holding the process preparation guard models another viewer decoding at the same time.
+        let _guard = PROCESS_PREPARATION.lock().expect("preparation guard");
+        assert!(matches!(
+            service.prepare_visible_now(&frame, &demand, &Cancellation::default()),
+            Err(ImageUploadError::PreparationBusy)
+        ));
+    }
+
+    #[test]
+    fn a_frame_without_a_retained_source_cannot_prepare_tiles() {
+        let service = ImageUploadService::global();
+        let frame = demand_frame(0);
+        let image = Bounds::new(point(px(0.0), px(0.0)), size(px(2048.0), px(2048.0)));
+        let demand = frame.demand(image, image, 0);
+        // A permanent configuration failure is distinct from the transient busy result.
+        assert!(matches!(
+            service.prepare_visible_now(&frame, &demand, &Cancellation::default()),
+            Err(ImageUploadError::InvalidRasterLayout)
+        ));
+    }
+
+    #[test]
     fn allocated_consumers_are_unique_per_pane() {
         let first = ConsumerId::allocate();
         let second = ConsumerId::allocate();
