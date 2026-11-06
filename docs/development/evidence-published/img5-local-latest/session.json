@@ -443,18 +443,17 @@
     "not_measured": "GPU completion/residency/Present, mixed-DPI, device teardown"
   },
   "final_native": {
-    "candidate_sources": "the commit that contains this record (round-7 repair: a retired frame is released only after two composed scenes postdate its detach)",
+    "candidate_sources": "commit 3b1d162 (round-8 repair: the paint epoch advances for scenes without an image)",
     "binary": {
       "path": "C:/dev/cos-build-release/release/examples/image_viewer.exe",
-      "sha256": "sha256:7ea2c42e1af9aef3f439f876aa7a4d83502773394d97adc7685296ec01c53b84"
+      "sha256": "sha256:24b7dd739a670a1e3e81ca7171f747dd93aa9ea805f82f7915725385b5ab21d9"
     },
     "release": true,
     "display_scale": 1.0,
     "observed": [
-      "Fit 28.2% with the revision-1 magenta marker; all four quadrants complete",
-      "Physical 1:1 100.0% at native window size",
-      "Next revision switches to the revision-2 cyan marker at Fit without stale tiles",
-      "Settled idle window CPU: 62.5 ms over 8 s (about 0.8% of one core); no per-frame callback chain",
+      "Fit 28.2% and physical 1:1 100.0% with the fixture markers intact",
+      "Next revision switches to the revision-2 cyan marker",
+      "After three consecutive loads the viewer reports an explicit unavailable state. The refusal reason is now Admission(BudgetExceeded) from the quarantined pool budget rather than RetainedFrameLimit from the registry cap, so the retired frames were released and only the unproven transfer bytes remain charged",
       "Close exits with no diagnostic output",
       "IMG4 --manifest 32 exits 0 with one shared retention, one process_quarantine refusal and failures:0"
     ],
@@ -482,9 +481,17 @@
         "sha256": "sha256:dad9a7d64aba5b746cfcf45bb8759c95343fffc0c2a31437785578181ff75b69",
         "width": 3432,
         "height": 1384
+      },
+      {
+        "path": "final-native-refused.png",
+        "sha256": "sha256:ed5ee6a4fc3356b4f4e78aec15e81984aa3a4dd3963da240a272a9118b590e2d",
+        "width": 1095,
+        "height": 832
       }
     ],
     "not_measured": "GPU completion/residency/Present, mixed-DPI, device teardown",
-    "release_gate": "A retired frame is released only after two composed scenes postdate its detach; a hidden window composes none, so its release waits for re-display or the window-close sweep."
+    "release_gate": "A retired frame is released only after two composed scenes postdate its detach; a hidden window composes none, so its release waits for re-display or the window-close sweep.",
+    "candidate_commit": "3b1d1620c3f10af791004ddfdec7f1577ec9e4e3",
+    "recovery_boundary": "Registry entries are released once two composed scenes postdate the detach. Quarantined transfer bytes still stay charged because no termination proof exists; that cap is the ratified bound, not a frozen release gate."
   }
 }
