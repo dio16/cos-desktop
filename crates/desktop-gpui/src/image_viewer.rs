@@ -58,8 +58,8 @@ const FAST_RETIREMENT_SWEEPS: u8 = 8;
 /// Bound on consecutive transient tile-preparation retries for one viewport demand.
 const TILE_RETRY_LIMIT: u8 = 20;
 
-fn retirement_delay(attempts: u8) -> u8 {
-    if attempts <= FAST_RETIREMENT_SWEEPS {
+fn retirement_delay(attempts: u8, slow: bool) -> u8 {
+    if !slow && attempts <= FAST_RETIREMENT_SWEEPS {
         FAST_RETIREMENT_FRAMES
     } else {
         SLOW_RETIREMENT_FRAMES
@@ -80,11 +80,13 @@ pub struct ImageViewer {
     /// Cancellation owned by the current viewport tile demand.
     tile_cancel: Cancellation,
     demand: Option<TileDemand>,
+    demand_id: u64,
     tile_attempts: u8,
     /// Frames detached from this viewer but still reachable from the last presented scene.
     retiring: Vec<Arc<PreparedImage>>,
     retirement_scheduled: bool,
     retirement_attempts: u8,
+    retirement_slow: bool,
     serial: u64,
     view_serial: u64,
     revision: u64,
@@ -104,8 +106,9 @@ impl ImageViewer {
     pub fn new(mode: ViewerMode, _window: &Window, cx: &mut Context<Self>) -> Self {
         Self {
             service: ImageUploadService::global(), current: None, cancel: Cancellation::default(),
-            tile_cancel: Cancellation::default(), demand: None, tile_attempts: 0, retiring: Vec::new(),
-            retirement_scheduled: false, retirement_attempts: 0,
+            tile_cancel: Cancellation::default(), demand: None, demand_id: 0, tile_attempts: 0,
+            retiring: Vec::new(),
+            retirement_scheduled: false, retirement_attempts: 0, retirement_slow: false,
             serial: 0, view_serial: 0, revision: 0, generation: 0, transform: None,
             viewport: Bounds::default(), focus: cx.focus_handle().tab_stop(true), drag: None,
             mode, phase: 0, status: "画像を利用できません: 認可済みの画像入力がありません。実行基盤からの取得は未対応です。".into(),
@@ -260,28 +263,34 @@ impl ImageViewer {
         self.retiring = keep;
         if self.retiring.is_empty() {
             self.retirement_attempts = 0;
+            self.retirement_slow = false;
             return;
         }
         // This viewer keeps the release responsibility for as long as it lives: a fast sweep while
-        // the conflict is likely to clear, then a slow one so a later last-detach is still collected
-        // instead of leaving the frame in the registry. The window close sweep is the last boundary.
+        // the conflict is likely to clear, then one persistent slow cadence so a later last-detach
+        // is still collected. The window close sweep is the last boundary.
         self.retirement_attempts = self.retirement_attempts.saturating_add(1);
-        let delay = retirement_delay(self.retirement_attempts);
-        if delay == SLOW_RETIREMENT_FRAMES {
-            self.retirement_attempts = 0;
+        if self.retirement_attempts > FAST_RETIREMENT_SWEEPS {
+            self.retirement_slow = true;
         }
+        let delay = retirement_delay(self.retirement_attempts, self.retirement_slow);
         self.schedule_retirement(window, cx, delay);
     }
 
     /// Prepare only the tiles this viewport needs; a newer viewport supersedes the demand.
-    fn request_tiles(&mut self, demand: TileDemand, cx: &mut Context<Self>) {
+    ///
+    /// Returns whether new work was started. A still-missing set after the retry budget is
+    /// advanced by a one-second timer, never by repainting the frame.
+    fn request_tiles(&mut self, demand: TileDemand, cx: &mut Context<Self>) -> bool {
         let Some(frame) = self.current.clone() else {
-            return;
+            return false;
         };
         if self.demand.as_ref() == Some(&demand) {
-            return;
+            return false;
         }
         self.demand = Some(demand.clone());
+        self.demand_id = self.demand_id.wrapping_add(1);
+        let demand_id = self.demand_id;
         self.tile_cancel.cancel();
         self.tile_cancel = Cancellation::default();
         let (serial, view_serial) = (self.serial, self.view_serial);
@@ -293,16 +302,17 @@ impl ImageViewer {
         );
         cx.spawn(async move |this, cx| {
             let outcome = task.await;
-            // A concurrent preparation is transient: wait briefly, then let the same demand be
-            // requested again from the next paint instead of stalling the viewport for good.
             let busy = matches!(outcome, Err(ImageUploadError::PreparationBusy));
             if busy {
                 cx.background_executor()
                     .timer(std::time::Duration::from_millis(50))
                     .await;
             }
+            let mut limit = false;
             let _ = this.update(cx, |this, cx| {
-                if (this.serial, this.view_serial) != (serial, view_serial) {
+                if (this.serial, this.view_serial, this.demand_id)
+                    != (serial, view_serial, demand_id)
+                {
                     return;
                 }
                 match outcome {
@@ -316,11 +326,10 @@ impl ImageViewer {
                         this.tile_attempts = this.tile_attempts.saturating_add(1);
                         if this.tile_attempts > TILE_RETRY_LIMIT {
                             this.status =
-                                "画像の準備が混み合っています。表示を切り替えると再試行します。"
-                                    .into();
+                                "画像の準備が混み合っています。自動で再試行します。".into();
+                            limit = true;
                             cx.notify();
                         } else {
-                            // Re-request from the next paint after the short wait.
                             this.demand = None;
                             cx.notify();
                         }
@@ -332,8 +341,24 @@ impl ImageViewer {
                     }
                 }
             });
+            if limit {
+                cx.background_executor()
+                    .timer(std::time::Duration::from_secs(1))
+                    .await;
+                let _ = this.update(cx, |this, cx| {
+                    if (this.serial, this.view_serial, this.demand_id)
+                        != (serial, view_serial, demand_id)
+                    {
+                        return;
+                    }
+                    this.tile_attempts = 0;
+                    this.demand = None;
+                    cx.notify();
+                });
+            }
         })
         .detach();
+        true
     }
 
     fn change(&mut self, operation: impl FnOnce(&mut ViewTransform), cx: &mut Context<Self>) {
@@ -496,24 +521,36 @@ impl Render for ImageViewer {
                 if !changed && !promote && failure.is_none() && !missing {
                     return;
                 }
+                let failure_present = failure.is_some();
                 let entity = entity.clone();
                 window.defer(app, move |_, app| {
                     let _ = entity.update(app, |this, cx| {
                         if (this.serial, this.view_serial) != demand {
                             return;
                         }
-                        if missing && let Some(needed) = needed {
-                            this.request_tiles(needed, cx);
-                        }
+                        let resized = this.viewport != bounds;
+                        let started =
+                            missing && needed.is_some_and(|needed| this.request_tiles(needed, cx));
                         this.transform = Some(transform);
                         this.viewport = bounds;
+                        if resized {
+                            // A resize/DPI change invalidates the previous viewport's tile demand.
+                            this.view_serial = this.view_serial.saturating_add(1);
+                            this.tile_cancel.cancel();
+                            this.demand = None;
+                            this.tile_attempts = 0;
+                        }
                         if promote {
                             this.phase += 1;
                         }
                         if let Some(message) = failure {
                             this.status = message.into();
                         }
-                        cx.notify();
+                        // Repaint only on a real state change; a still-missing tile set is advanced
+                        // by tile arrival or the bounded retry timer, never by repaint alone.
+                        if changed || promote || failure_present || started || resized {
+                            cx.notify();
+                        }
                     });
                 });
             },
@@ -628,13 +665,16 @@ mod tests {
     #[test]
     fn retirement_sweeps_switch_from_fast_to_slow_without_stopping() {
         for attempt in 1..=FAST_RETIREMENT_SWEEPS {
-            assert_eq!(retirement_delay(attempt), FAST_RETIREMENT_FRAMES);
+            assert_eq!(retirement_delay(attempt, false), FAST_RETIREMENT_FRAMES);
         }
-        // The slow cadence keeps trying: an exhausted fast budget must not release ownership.
+        // Once the fast budget is spent the slow cadence persists; it never returns to fast while
+        // a frame is still waiting for release.
         assert_eq!(
-            retirement_delay(FAST_RETIREMENT_SWEEPS + 1),
+            retirement_delay(FAST_RETIREMENT_SWEEPS + 1, true),
             SLOW_RETIREMENT_FRAMES
         );
-        assert_eq!(retirement_delay(u8::MAX), SLOW_RETIREMENT_FRAMES);
+        assert_eq!(retirement_delay(u8::MAX, true), SLOW_RETIREMENT_FRAMES);
+        // The flag selects the slow cadence, not a reset attempt counter.
+        assert_eq!(retirement_delay(1, true), SLOW_RETIREMENT_FRAMES);
     }
 }
