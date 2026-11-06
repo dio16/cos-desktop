@@ -480,9 +480,17 @@ impl ImageUploadService {
             if state.frames.len() >= MAX_RETAINED_FRAMES {
                 return Err(ImageUploadError::RetainedFrameLimit);
             }
-            let incoming = FRAME_RGBA8_BYTES + if mips { 0 } else { FRAME_RGBA8_BYTES };
-            if retained_cpu_bytes(&state).saturating_add(incoming) > STAGING_LIMIT_BYTES * 2 {
-                return Err(ImageUploadError::RetainedFrameLimit);
+            // Count actual raster and packed-tile owners before extending the viewer pyramid. The
+            // whole-frame route keeps its pool-level refusal so its bounded-refusal evidence is
+            // unchanged; only a viewer frame (or an existing mip owner) uses this CPU ceiling.
+            if mips
+                || !state.quarantined_views.is_empty()
+                || state.frames.iter().any(|frame| frame.has_mips)
+            {
+                let incoming = FRAME_RGBA8_BYTES + if mips { 0 } else { FRAME_RGBA8_BYTES };
+                if retained_cpu_bytes(&state).saturating_add(incoming) > STAGING_LIMIT_BYTES * 2 {
+                    return Err(ImageUploadError::RetainedFrameLimit);
+                }
             }
             prune_idle_pools(&mut state);
             // Per-category totals across **every** generation. A pool's own limit is per pool, so
