@@ -11,16 +11,14 @@ pub(crate) fn tooltip(
     text: SharedString,
     style: TextSpec,
     max_width: Pixels,
-    scheme: crate::contrast::ContrastScheme,
-    colors: crate::contrast::ShellColors,
+    palette: crate::contrast::Palette,
     cx: &mut App,
 ) -> AnyView {
     cx.new(|_| Explanation {
         text,
         style,
         max_width,
-        scheme,
-        colors,
+        palette,
     })
     .into()
 }
@@ -29,12 +27,14 @@ struct Explanation {
     text: SharedString,
     style: TextSpec,
     max_width: Pixels,
-    scheme: crate::contrast::ContrastScheme,
-    colors: crate::contrast::ShellColors,
+    palette: crate::contrast::Palette,
 }
 
 impl Render for Explanation {
     fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+        let surface = self
+            .palette
+            .color(0x24272c, self.palette.colors.raised_face);
         self.style
             .clone()
             .apply(div())
@@ -44,17 +44,11 @@ impl Render for Explanation {
             .max_w(self.max_width)
             .p_3()
             .border_1()
-            .border_color(rgb(self.colors.border))
-            .bg(rgb(crate::contrast::role_color(
-                self.scheme,
-                0x24272c,
-                self.colors.raised_face,
-            )))
-            .text_color(rgb(crate::contrast::readable_text(
-                &self.colors,
-                self.colors.text,
-                crate::contrast::role_color(self.scheme, 0x24272c, self.colors.raised_face),
-            )))
+            .border_color(rgb(self.palette.colors.border))
+            .bg(rgb(surface))
+            .text_color(rgb(self
+                .palette
+                .readable(self.palette.colors.text, surface)))
             .child(self.text.clone())
     }
 }

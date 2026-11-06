@@ -201,8 +201,7 @@ impl Shell {
                             )),
                             style.clone(),
                             width,
-                            scheme,
-                            colors,
+                            palette,
                             cx,
                         )
                     }

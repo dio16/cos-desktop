@@ -245,14 +245,7 @@ impl Shell {
                         let style = xs_text.clone();
                         let width = crate::shell_style::inspector_width(&self.tokens);
                         move |_, cx| {
-                            crate::help::tooltip(
-                                help.clone(),
-                                style.clone(),
-                                width,
-                                scheme,
-                                colors,
-                                cx,
-                            )
+                            crate::help::tooltip(help.clone(), style.clone(), width, palette, cx)
                         }
                     })
                     .px_2()
@@ -338,8 +331,7 @@ impl Shell {
                         SharedString::from(text),
                         style.clone(),
                         width,
-                        scheme,
-                        colors,
+                        palette,
                         cx,
                     )
                 }
@@ -464,14 +456,7 @@ impl Shell {
                     let style = xs_text.clone();
                     let width = crate::shell_style::inspector_width(&self.tokens);
                     move |_, cx| {
-                        crate::help::tooltip(
-                            detail_help.clone(),
-                            style.clone(),
-                            width,
-                            scheme,
-                            colors,
-                            cx,
-                        )
+                        crate::help::tooltip(detail_help.clone(), style.clone(), width, palette, cx)
                     }
                 })
                 .key_context("InterventionStrip")

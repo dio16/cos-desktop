@@ -3260,7 +3260,7 @@ impl Render for Shell {
                             .aria_description(help)
                             .tooltip({
                                 let style = xs_text.clone();
-                                move |_, cx| help::tooltip(help.into(), style.clone(), inspector_width, scheme, colors, cx)
+                                move |_, cx| help::tooltip(help.into(), style.clone(), inspector_width, palette, cx)
                             })
                             .px_4()
                             .py_2()
@@ -3304,7 +3304,7 @@ impl Render for Shell {
                             .aria_description(help)
                             .tooltip({
                                 let style = xs_text.clone();
-                                move |_, cx| help::tooltip(help.into(), style.clone(), inspector_width, scheme, colors, cx)
+                                move |_, cx| help::tooltip(help.into(), style.clone(), inspector_width, palette, cx)
                             })
                             .px_4()
                             .py_2()
@@ -3343,7 +3343,7 @@ impl Render for Shell {
                             .aria_description("比較画面を閉じ、閲覧中の候補の画面に戻ります。正式な採用結果は変更しません。")
                             .tooltip({
                                 let style = xs_text.clone();
-                                move |_, cx| help::tooltip("比較画面を閉じ、閲覧中の候補の画面に戻ります。正式な採用結果は変更しません。".into(), style.clone(), inspector_width, scheme, colors, cx)
+                                move |_, cx| help::tooltip("比較画面を閉じ、閲覧中の候補の画面に戻ります。正式な採用結果は変更しません。".into(), style.clone(), inspector_width, palette, cx)
                             })
                             .px_4()
                             .py_2()
@@ -3443,8 +3443,7 @@ impl Render for Shell {
                             description.into(),
                             style.clone(),
                             inspector_width,
-                            scheme,
-                            colors,
+                            palette,
                             cx,
                         )
                     }
@@ -4046,8 +4045,7 @@ impl Render for Shell {
                         stop_description.clone(),
                         style.clone(),
                         inspector_width,
-                        scheme,
-                        colors,
+                        palette,
                         cx,
                     )
                 }
@@ -4139,14 +4137,7 @@ impl Render for Shell {
                 let text = SharedString::new(Arc::clone(&reconcile_description));
                 let style = xs_text.clone();
                 move |_, cx| {
-                    help::tooltip(
-                        text.clone(),
-                        style.clone(),
-                        inspector_width,
-                        scheme,
-                        colors,
-                        cx,
-                    )
+                    help::tooltip(text.clone(), style.clone(), inspector_width, palette, cx)
                 }
             })
             .track_focus(&self.reconcile_focus)
@@ -4230,8 +4221,7 @@ impl Render for Shell {
                                         text.clone(),
                                         style.clone(),
                                         inspector_width,
-                                        scheme,
-                                        colors,
+                                        palette,
                                         cx,
                                     )
                                 }
@@ -4284,8 +4274,7 @@ impl Render for Shell {
                                         detail.into(),
                                         style.clone(),
                                         inspector_width,
-                                        scheme,
-                                        colors,
+                                        palette,
                                         cx,
                                     )
                                 }
@@ -4514,8 +4503,7 @@ impl Render for Shell {
                                 candidate_help.into(),
                                 style.clone(),
                                 inspector_width,
-                                scheme,
-                                colors,
+                                palette,
                                 cx,
                             )
                         }
@@ -4905,7 +4893,7 @@ impl Render for Shell {
             },
         );
 
-        let palette_overlay = self.palette_overlay(&palette_facts, scheme, colors, cx);
+        let palette_overlay = self.palette_overlay(&palette_facts, palette, cx);
 
         div()
             .id("cos-shell")
@@ -5647,7 +5635,7 @@ impl Render for Shell {
                             .aria_description(description)
                             .tooltip({
                                 let style = xs_text.clone();
-                                move |_, cx| help::tooltip(description.into(), style.clone(), inspector_width, scheme, colors, cx)
+                                move |_, cx| help::tooltip(description.into(), style.clone(), inspector_width, palette, cx)
                             })
                             .track_focus(&self.surface_focus[index])
                             .px_5()

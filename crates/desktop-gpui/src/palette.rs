@@ -476,13 +476,14 @@ impl Shell {
     pub(super) fn palette_overlay(
         &mut self,
         facts: &Facts,
-        scheme: crate::contrast::ContrastScheme,
-        colors: crate::contrast::ShellColors,
+        palette: crate::contrast::Palette,
         cx: &mut Context<Self>,
     ) -> AnyElement {
         if !self.palette_open {
             return div().into_any_element();
         }
+        let scheme = palette.scheme;
+        let colors = palette.colors;
         let entries = entries(facts);
         let outcome = palette::search(&self.palette_query, &entries);
         let hits = match &outcome {
@@ -555,8 +556,7 @@ impl Shell {
                             SharedString::from(text),
                             style.clone(),
                             width,
-                            scheme,
-                            colors,
+                            palette,
                             cx,
                         )
                     }
