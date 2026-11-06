@@ -49,6 +49,10 @@ pub const PERIOD_DURATION: Duration = Duration::from_nanos(8_333_333);
 const ROW_PITCH_ALIGNMENT: u64 = 256;
 /// Two frames retain 64 MiB total: decoded RGBA plus packed tile bytes for each.
 const MAX_RETAINED_FRAMES: usize = 2;
+/// Process-wide cap for payloads quarantined after an unproven transfer, across every device
+/// generation. It matches the ratified 64 MiB staging/in-flight budget: once it is reached, new
+/// work is refused rather than any unproven payload being released.
+pub const PROCESS_QUARANTINE_CAP_BYTES: u64 = 64 * 1024 * 1024;
 const FRAME_RGBA8_BYTES: u64 = FRAME_EDGE as u64 * FRAME_EDGE as u64 * 4;
 const STAGING_LIMIT_BYTES: u64 = FRAME_RGBA8_BYTES * MAX_RETAINED_FRAMES as u64;
 
@@ -90,6 +94,12 @@ pub enum ImageUploadError {
     NotOwnedByWindow,
     /// GPUI refused to remove an atlas entry.
     AtlasRelease,
+    /// Quarantined payloads already occupy the process-wide quarantine allowance, so neither a
+    /// new admission nor another in-flight release can be accepted.
+    QuarantineBudgetExhausted {
+        retained: u64,
+        cap: u64,
+    },
     StaleDeviceGeneration {
         requested: u64,
         current: u64,
@@ -169,6 +179,10 @@ pub struct EvictionSummary {
     pub dropped_images: usize,
     pub released_bytes: u64,
     pub quarantined_bytes: u64,
+    /// Frames whose paint state was locked by a callback during the sweep: their owning window
+    /// cannot be attributed safely, so they are reported separately instead of being charged to
+    /// this window's skipped count.
+    pub unattributed_frames: usize,
 }
 
 /// Read-only progress for one prepared identity.
@@ -207,10 +221,11 @@ pub struct ImageUploadCounters {
     pub evicted_frames: u64,
     /// Atlas images removed by eviction (one per tile of every evicted frame).
     pub dropped_atlas_images: u64,
-    /// CPU payload bytes released after an eviction asserted transfer termination.
+    /// CPU payload bytes released because the admission had never begun a transfer.
     pub released_payload_bytes: u64,
-    /// Bytes released by `release_terminated_generation` for a superseded device generation.
-    pub asserted_release_bytes: u64,
+    /// Payload bytes currently quarantined across every device generation.
+    pub quarantined_payload_bytes: u64,
+    pub quarantine_capacity_bytes: u64,
     /// Consumers currently attached across every retained frame.
     pub consumers: usize,
 }
@@ -306,7 +321,7 @@ struct ServiceState {
     evicted_frames: u64,
     dropped_atlas_images: u64,
     released_payload_bytes: u64,
-    asserted_release_bytes: u64,
+    quarantined_payload_bytes: u64,
 }
 
 impl ImageUploadService {
@@ -386,6 +401,15 @@ impl ImageUploadService {
             return Err(ImageUploadError::Cancelled);
         }
         validate_request(&request)?;
+        {
+            let service = self.inner.state.lock().expect("image upload service state");
+            if service.quarantined_payload_bytes >= PROCESS_QUARANTINE_CAP_BYTES {
+                return Err(ImageUploadError::QuarantineBudgetExhausted {
+                    retained: service.quarantined_payload_bytes,
+                    cap: PROCESS_QUARANTINE_CAP_BYTES,
+                });
+            }
+        }
         if verified.size().width() != FRAME_EDGE
             || verified.size().height() != FRAME_EDGE
             || verified.raster().rgba.len() as u64 != FRAME_RGBA8_BYTES
@@ -479,7 +503,12 @@ impl ImageUploadService {
     /// `evict` takes, so a concurrent eviction can never remove the frame between the check and
     /// the registration. Returns `false` when the frame is no longer retained (already evicted) —
     /// a consumer never resurrects a released resource.
-    pub fn attach(&self, frame: &Arc<PreparedImage>, consumer: ConsumerId) -> bool {
+    pub fn attach(
+        &self,
+        frame: &Arc<PreparedImage>,
+        consumer: ConsumerId,
+        window: Option<AnyWindowHandle>,
+    ) -> bool {
         let service = self.inner.state.lock().expect("image upload service state");
         if !service
             .frames
@@ -488,12 +517,14 @@ impl ImageUploadService {
         {
             return false;
         }
-        frame
-            .paint_state
-            .lock()
-            .expect("image frame paint state")
-            .consumers
-            .insert(consumer)
+        let mut paint_state = frame.paint_state.lock().expect("image frame paint state");
+        if let Some(window) = window {
+            match paint_state.owner_window {
+                Some(owner) if owner != window => return false,
+                _ => paint_state.owner_window = Some(window),
+            }
+        }
+        paint_state.consumers.insert(consumer)
     }
 
     /// Detach one consumer. Returns whether this consumer was attached.
@@ -551,6 +582,24 @@ impl ImageUploadService {
             return Err(ImageUploadError::ConsumersRemain);
         }
         let mut outcome = EvictionOutcome::default();
+        // A payload whose transfer already began cannot be released safely, so eviction is refused
+        // before any atlas entry is dropped once the process-wide quarantine is full.
+        if let Some(admission) = frame
+            .admission
+            .lock()
+            .expect("image frame admission")
+            .as_ref()
+            && admission.stage() != UploadStage::Staged
+        {
+            let retained = service.quarantined_payload_bytes;
+            let bytes = admission.bytes();
+            if retained.saturating_add(bytes) > PROCESS_QUARANTINE_CAP_BYTES {
+                return Err(ImageUploadError::QuarantineBudgetExhausted {
+                    retained,
+                    cap: PROCESS_QUARANTINE_CAP_BYTES,
+                });
+            }
+        }
         if let Some(owner) = paint_state.owner_window {
             if owner != window.window_handle() {
                 return Err(ImageUploadError::NotOwnedByWindow);
@@ -573,10 +622,12 @@ impl ImageUploadService {
             } else {
                 // Dropping an in-flight admission quarantines its payload and keeps it charged to
                 // the pool. `drop_image` only removes an atlas entry; it does not prove the GPU
-                // stopped reading the bytes, so eviction never frees them here. The release
-                // condition is a superseded device generation, asserted by the caller.
+                // stopped reading the bytes, so eviction never frees them. The process-wide ledger
+                // bounds how much may stay retained and refuses new work at the cap.
                 drop(admitted);
                 outcome.quarantined_bytes = bytes;
+                service.quarantined_payload_bytes =
+                    service.quarantined_payload_bytes.saturating_add(bytes);
             }
         }
         drop(admission);
@@ -603,13 +654,14 @@ impl ImageUploadService {
     /// without a number that says so; the caller must detach its own consumers before closing.
     pub fn evict_owned_by(&self, window: &mut Window) -> EvictionSummary {
         let handle = window.window_handle();
-        let (candidates, blocked): (Vec<Arc<PreparedImage>>, usize) = {
+        let (candidates, blocked, unattributed): (Vec<Arc<PreparedImage>>, usize, usize) = {
             let service = self.inner.state.lock().expect("image upload service state");
             let mut candidates = Vec::new();
             let mut blocked = 0usize;
+            let mut unattributed = 0usize;
             for frame in &service.frames {
                 let Ok(state) = frame.paint_state.try_lock() else {
-                    blocked = blocked.saturating_add(1);
+                    unattributed = unattributed.saturating_add(1);
                     continue;
                 };
                 if state.owner_window != Some(handle) {
@@ -621,10 +673,11 @@ impl ImageUploadService {
                     blocked = blocked.saturating_add(1);
                 }
             }
-            (candidates, blocked)
+            (candidates, blocked, unattributed)
         };
         let mut summary = EvictionSummary {
             skipped_frames: blocked,
+            unattributed_frames: unattributed,
             ..EvictionSummary::default()
         };
         for frame in candidates {
@@ -645,37 +698,6 @@ impl ImageUploadService {
             }
         }
         summary
-    }
-
-    /// Assert that every quarantined payload of a **superseded** device generation has terminated,
-    /// releasing those bytes.
-    ///
-    /// `generation` must be strictly older than `current_generation`, and no retained frame may
-    /// still belong to it; otherwise nothing is released. This is the only release condition for a
-    /// payload whose transfer had begun, because the pinned GPUI exposes no completion signal:
-    /// the caller can justify it only from the generation contract (a superseded generation's GPU
-    /// objects are no longer valid), never from a paint success. Returns the bytes released.
-    pub fn release_terminated_generation(&self, generation: u64, current_generation: u64) -> u64 {
-        if generation >= current_generation {
-            return 0;
-        }
-        let mut service = self.inner.state.lock().expect("image upload service state");
-        if service
-            .frames
-            .iter()
-            .any(|frame| frame.identity.device_generation == generation)
-        {
-            return 0;
-        }
-        let mut released = 0u64;
-        for (pool_generation, pool) in &service.pools {
-            if *pool_generation == generation {
-                released = released.saturating_add(pool.confirm_generation_terminated(generation));
-            }
-        }
-        service.asserted_release_bytes = service.asserted_release_bytes.saturating_add(released);
-        prune_idle_pools(&mut service);
-        released
     }
 
     /// Release a prepared frame only if no whole image was ever passed to GPUI. Once `paint_image`
@@ -750,7 +772,8 @@ impl ImageUploadService {
             evicted_frames: state.evicted_frames,
             dropped_atlas_images: state.dropped_atlas_images,
             released_payload_bytes: state.released_payload_bytes,
-            asserted_release_bytes: state.asserted_release_bytes,
+            quarantined_payload_bytes: state.quarantined_payload_bytes,
+            quarantine_capacity_bytes: PROCESS_QUARANTINE_CAP_BYTES,
             consumers: state
                 .frames
                 .iter()
@@ -1382,7 +1405,7 @@ mod tests {
             paint_state: Mutex::new(PaintState::default()),
         });
         // A frame nobody retained can never gain a consumer.
-        assert!(!service.attach(&frame, ConsumerId::new(1)));
+        assert!(!service.attach(&frame, ConsumerId::new(1), None));
         service
             .inner
             .state
@@ -1392,8 +1415,8 @@ mod tests {
             .push(Arc::clone(&frame));
         let first = ConsumerId::new(1);
         let second = ConsumerId::new(2);
-        assert!(service.attach(&frame, first));
-        assert!(service.attach(&frame, second));
+        assert!(service.attach(&frame, first, None));
+        assert!(service.attach(&frame, second, None));
         assert_eq!(service.consumers(&frame), 2);
         assert!(service.detach(&frame, first));
         // The shared frame survives one pane closing: the second consumer still holds it.

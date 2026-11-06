@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "status": "IMPLEMENTED_LOCAL_GATES_PASS_NATIVE_OBSERVED_GATE_AND_REVIEW_PENDING_REPAIRED_AFTER_ROUND_1",
+  "status": "IMPLEMENTED_LOCAL_GATES_PASS_NATIVE_OBSERVED_GATE_AND_REVIEW_PENDING_REPAIRED_AFTER_ROUND_2",
   "task": "MP-IMG4",
   "contract": "DC-MP-IMG4",
-  "caller_authority": "Tern next-task directive for MP-IMG4 (baseline 669fafca318944066596368e2ca73b37859d1781) under the Caller's resumption instruction and ADR-0014. Round-1 review repairs are included in this record.",
+  "caller_authority": "Tern next-task directive for MP-IMG4 (baseline 669fafca318944066596368e2ca73b37859d1781) under the Caller's resumption instruction and ADR-0014. Round-1 and round-2 review repairs are included.",
   "baseline_source_commit": "669fafca318944066596368e2ca73b37859d1781",
   "profile": {
     "native": "release",
@@ -11,71 +11,67 @@
     "dpi": 96,
     "debug_note": "The debug profile aborts with a main-thread stack overflow on this host regardless of this change (§19.214); native sets use release."
   },
-  "round_1_review_repairs": [
-    "B-01: eviction no longer asserts transfer termination after drop_image; an in-flight payload stays quarantined and charged, and is released only by a superseded device generation (release_terminated_generation), which also refuses the current generation",
-    "B-02: discard_unpainted enforces the same consumer-ownership rule as evict, so a shared frame cannot be released while another consumer presents it",
-    "B-03: the window-close sweep counts frames this window owns that could not be released (consumer still present or paint in flight) as skipped instead of silently ignoring them",
-    "A-01: attach registers its consumer in the same service lock section evict uses, so a concurrent eviction cannot destroy the frame between the registry check and the registration",
-    "A-02: the manifest now checks paint progress through the frame's own scene flag instead of a fixed sleep, detaches only one of the two shared consumers and requires the remaining one to block eviction natively, and exits non-zero on any violated expectation"
+  "round_2_review_repairs": [
+    "B-01: no release is inferred from an integer generation change any more. release_terminated_generation and its media counterpart were removed; an in-flight payload stays quarantined and charged, and no code path frees it without a measured termination, so the honest outcome is retention until process exit or a future device-teardown proof",
+    "B-02: a process-wide quarantine ledger (PROCESS_QUARANTINE_CAP_BYTES, 64 MiB) spans every device generation; a new admission is refused with QuarantineBudgetExhausted once it is full, and an eviction that would exceed it is refused before any atlas entry is dropped",
+    "B-03: attach binds the owning window before the first paint, so a frame prepared and attached but never painted is collected by the close sweep; a frame whose paint state is locked during the sweep is reported as unattributed instead of being charged to this window",
+    "A-01: the manifest counts every setup, decode, prepare and attach failure, requires the exact ConsumersRemain reason at both consumer gates, and exits non-zero on any mismatch",
+    "A-02: unattributed lock contention is a separate counter in EvictionSummary and the close log"
   ],
   "implementation": {
-    "ownership": "ConsumerId + attach/detach on the process-wide ImageUploadService; a frame is evictable only when its consumer set is empty, and every release path enforces that rule.",
-    "eviction": "evict(frame, window) refuses NotRetained, PaintInProgress, ConsumersRemain or NotOwnedByWindow, then calls Window::drop_image for every tile, releases a never-uploaded admission, or quarantines an in-flight admission and keeps it charged, removes the frame and prunes idle generation pools.",
-    "release_condition": "release_terminated_generation(generation, current) releases quarantined payloads only for a generation strictly older than the current one and only when no retained frame still belongs to it; the current generation is refused and returns 0.",
-    "window_close": "evict_owned_by(window) sweeps every frame the window owns, reports evicted/skipped/images/released/quarantined bytes, and counts consumer-held frames as skipped.",
-    "lazy_recreation": "A new device generation creates a pool on first use, an evicted or stale frame is re-prepared on demand, and painting an evicted identity returns PaintStatus::Evicted.",
-    "counters": "evicted_frames, dropped_atlas_images, released_payload_bytes, asserted_release_bytes and consumers extend ImageUploadCounters; the media pool exposes confirm_generation_terminated and the existing frame cap (two frames, 32 MiB raster + 32 MiB tile payload) is unchanged."
+    "ownership": "ConsumerId + attach/detach; attach also records the owning window, so ownership exists before the first paint. Every release path (evict, discard_unpainted, close sweep) enforces an empty consumer set.",
+    "eviction": "evict refuses NotRetained, PaintInProgress, ConsumersRemain, NotOwnedByWindow and QuarantineBudgetExhausted, then removes every tile from the owning window's atlas, releases a never-uploaded admission, or quarantines an in-flight one against the process ledger.",
+    "quarantine": "quarantined payloads stay charged to their generation's pool and to the process ledger; no generation-number assertion releases them. When the ledger or the pool's staging/in-flight allowance is exhausted, new work is refused explicitly.",
+    "window_close": "evict_owned_by sweeps frames the window owns (including pre-paint frames bound by attach), reports evicted/skipped/unattributed/images/released/quarantined, and never silently drops a frame.",
+    "lazy_recreation": "a new device generation creates a pool on first use and resources are re-prepared on demand; an evicted identity paints PaintStatus::Evicted, and a quarantined identity is refused as DuplicateRepresentation until a safe release exists."
   },
   "native_evidence": {
     "manifest": {
-      "identities": ["alpha@1", "alpha@2", "beta@1", "gamma@1", "shared@1", "shared@1"],
-      "shared_identity": "shared@1 is prepared once, attached by two consumers, must survive the first detach, and is evicted only after the second",
-      "command": "\"C:/dev/cos-build-release/release/examples/image_upload.exe\" --manifest 8",
+      "order": ["shared@1 (two consumers)", "alpha@1", "alpha@2", "beta@1", "gamma@1"],
+      "command": "\"C:/dev/cos-build-release/release/examples/image_upload.exe\" --manifest",
       "exit_code": 0,
-      "cycles": 8,
-      "evictions": 48,
-      "painted_before_eviction": 48,
-      "atlas_images_dropped": 768,
-      "consumer_gate_refusals": 48,
-      "shared_consumer_retentions": 8,
-      "generation_release_events": 48,
-      "unexpected_events": 0,
-      "quarantined_bytes_per_eviction": 16777216,
-      "max_concurrent_quarantine_bytes": 50331648,
-      "asserted_release_bytes": 805306368,
-      "retained_after_each_eviction": 0,
-      "final": {"retained": 0, "consumers": 0, "resident": 0, "quarantined": 50331648, "asserted_release": 805306368, "generation": 49, "failures": 0}
+      "failures": 0,
+      "shared_consumer_retentions": 1,
+      "evictions": 1,
+      "atlas_images_dropped": 16,
+      "painted_before_eviction": true,
+      "consumer_gate_refusals_at_both_stages": true,
+      "quarantined_bytes": 16777216,
+      "quarantine_ledger_after_eviction": 16777216,
+      "quarantine_ledger_capacity": 67108864,
+      "next_prepare_refusal": "Admission(BudgetExceeded) because the retained unproven payload occupies the pool's staging/in-flight allowance",
+      "prepaint_frame_swept_at_close": {"evicted": 1, "skipped": 0, "unattributed": 0, "images": 16, "released_bytes": 16777216},
+      "final": {"retained": 0, "consumers": 0, "quarantine_ledger": 16777216, "failures": 0},
+      "ledger_note": "the pool reports quarantine per resource category, so one 16 MiB payload reads as 50,331,648 B summed across staging, in-flight and resident; each category has its own 64 MiB limit"
     },
-    "capacity": {"held": 2, "third": "RetainedFrameLimit", "retained": 2, "expected_refusal": true},
-    "window_close": {"evicted": 1, "skipped": 0, "images": 16, "released_bytes": 0, "retained": 0, "consumers": 0, "resident": 0, "quarantined": 50331648},
     "sampled_working_set": {
-      "method": "external PowerShell sampler polling Get-Process WorkingSet64 every 150 ms while the process ran",
-      "samples": 97,
-      "first_bytes": 22306816,
-      "peak_bytes": 140251136,
-      "last_bytes": 140251136,
-      "note": "Sampled working set for one run immediately before exit; not a sum of declared budgets and not a GPU figure."
+      "method": "external PowerShell sampler polling Get-Process WorkingSet64 every 150 ms",
+      "samples": 5,
+      "first_bytes": 16343040,
+      "peak_bytes": 150863872,
+      "last_bytes": 150863872,
+      "note": "short run; the peak includes the retained payload and the PNG generation buffer, so it is a sampled working set for one execution, not a budget sum"
     },
     "interactive": {
-      "captures": ["interactive-evicted-frame-quarantine.png", "interactive-generation-asserted-release.png"],
-      "claim": "Evict current reports atlas images=16, released_staged=0 B, quarantined=16777216 B and retained_frames=0; advancing the logical generation then reports asserted_release=16777216 B. Evict owned and close exits 0. No stale tile is displayed after eviction."
+      "captures": ["interactive-evicted-frame-quarantine.png", "interactive-retained-payload-refusal.png"],
+      "claim": "Evict current reports atlas images=16, released_staged=0 B, quarantined=16777216 B with retained_frames=0. Reloading the same identity afterwards is refused with Admission(DuplicateRepresentation), because its payload is still retained and no completion was measured. Evict owned and close exits 0."
     }
   },
   "resources_and_owners": [
-    {"resource": "encoded CPU bytes", "owner": "caller-provided Arc<[u8]> for the duration of prepare", "capacity": "max_encoded_bytes (16 MiB fixture)", "release": "dropped when prepare returns", "generation": "n/a"},
-    {"resource": "decoded raster", "owner": "media AdmittedUpload inside the retained frame", "capacity": "16 MiB per frame, at most two frames", "release": "staged: release() at eviction; in-flight: quarantine, then a superseded-generation assertion", "generation": "identity device generation"},
-    {"resource": "tile payload (RenderImage bytes)", "owner": "PreparedImage tiles", "capacity": "16 MiB per frame (sixteen 1 MiB tiles)", "release": "frame eviction", "generation": "identity device generation"},
-    {"resource": "GPUI sprite atlas entry", "owner": "owning window", "capacity": "not observable through the pinned public API", "release": "Window::drop_image per tile at eviction", "generation": "owning window"},
-    {"resource": "GPU dedicated/shared residency", "owner": "platform and driver", "capacity": "NOT_MEASURED", "release": "not observable; never inferred from paint success", "generation": "driver"},
-    {"resource": "quarantined/stuck bytes", "owner": "media pool of one device generation", "capacity": "64 MiB per category", "release": "superseded-generation assertion, then pool pruning when idle", "generation": "pool device generation"},
+    {"resource": "encoded CPU bytes", "owner": "caller-provided Arc<[u8]> for one prepare", "capacity": "max_encoded_bytes", "release": "dropped when prepare returns", "generation": "n/a"},
+    {"resource": "decoded raster", "owner": "media AdmittedUpload inside the frame, or the pool's quarantine after an eviction", "capacity": "16 MiB per frame; process quarantine ledger 64 MiB", "release": "staged: release() at eviction; in-flight: never released without a measured termination (retained until process exit or MP-REC1 teardown proof)", "generation": "identity generation; the ledger is process-wide"},
+    {"resource": "tile payload (RenderImage bytes)", "owner": "PreparedImage tiles", "capacity": "16 MiB per frame", "release": "frame eviction", "generation": "identity generation"},
+    {"resource": "GPUI sprite atlas entry", "owner": "owning window, bound at attach or first paint", "capacity": "not observable in the public API", "release": "Window::drop_image per tile at eviction", "generation": "owning window"},
+    {"resource": "GPU dedicated/shared residency", "owner": "platform and driver", "capacity": "NOT_MEASURED", "release": "not observable", "generation": "driver"},
+    {"resource": "quarantined/stuck bytes", "owner": "media pool per generation, bounded by the process ledger", "capacity": "64 MiB per pool category, 64 MiB process ledger", "release": "no measured release path; new work refused at the cap", "generation": "pool generation + process ledger"},
     {"resource": "upload period allowance", "owner": "process-wide allowance", "capacity": "2 MiB / 8.333 ms", "release": "per-period reset", "generation": "n/a"}
   ],
   "not_measured": [
-    "GPU transfer duration, completion, residency and Present (the pinned GPUI exposes no fence, Present-completion or residency signal; complete_upload is never called)",
+    "GPU transfer duration, completion, residency and Present (no fence/Present/residency signal in the pinned GPUI)",
     "atlas-entry residency in production (Window::has_image_atlas_entry is test-support only)",
-    "a real OS/GPU device loss and its integration scenario (MP-REC1)",
+    "a real OS/GPU device loss, its teardown proof and the recovery integration (MP-REC1); that proof is the only candidate release path for retained payloads",
     "process private bytes inside the probe (no unsafe/GetProcessMemoryInfo); working set is sampled externally",
     "MP-REC2 long-run plateau acceptance and MP-IMG5 view/zoom/pan"
   ],
-  "privacy_review": "The logs contain fixture source ids, counters, byte counts and error tokens only; the captures show the probe's own fixture image and counters. No path, URL, credential or user document is present."
+  "privacy_review": "Logs carry fixture source ids, counters, byte counts and error tokens only; captures show the probe's own fixture and counters. No path, URL, credential or user document is present."
 }

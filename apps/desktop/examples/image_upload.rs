@@ -8,7 +8,8 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use desktop_gpui::image_upload::{
-    ConsumerId, FRAME_EDGE, ImageUploadError, ImageUploadService, PaintStatus, UploadRequest,
+    ConsumerId, FRAME_EDGE, ImageUploadError, ImageUploadService, PROCESS_QUARANTINE_CAP_BYTES,
+    PaintStatus, UploadRequest,
 };
 use gpui::prelude::*;
 use gpui::{
@@ -24,19 +25,18 @@ const MAX_FIXTURE_ENCODED_BYTES: usize = 16 * 1024 * 1024;
 const DISPLAY_EDGE: f32 = 480.0;
 /// Fixed manifest for the eviction loop: two revisions of one source, two further sources, and one
 /// identity repeated so a single frame is attached by two consumers.
-const MANIFEST: [(&str, u64); 6] = [
+const MANIFEST: [(&str, u64); 5] = [
+    ("shared", 1),
     ("alpha", 1),
     ("alpha", 2),
     ("beta", 1),
     ("gamma", 1),
-    ("shared", 1),
-    ("shared", 1),
 ];
 
 #[derive(Clone, Copy)]
 enum Mode {
     Fixture,
-    Manifest(u32),
+    Manifest,
 }
 
 struct ImageUploadProbe {
@@ -95,7 +95,7 @@ impl ImageUploadProbe {
         });
         self.task = Some(cx.spawn(async move |this, cx| {
             let result = task.await;
-            let _ = this.update(cx, |this, cx| {
+            let _ = this.update_in(cx, |this, window, cx| {
                 if this.request_serial != serial {
                     if let Ok(frame) = result {
                         cleanup_service.discard_unpainted(&frame);
@@ -106,7 +106,7 @@ impl ImageUploadProbe {
                 match result {
                     Ok(frame) => {
                         // The view presents this frame: eviction must wait for this consumer.
-                        if this.service.attach(&frame, this.consumer) {
+                        if this.service.attach(&frame, this.consumer, Some(window.window_handle())) {
                             this.current = Some(frame);
                             this.status = format!(
                                 "Fixture revision {revision}, device generation {generation}: verified PNG admitted; tiles are issued only by GPUI paint callbacks"
@@ -190,330 +190,276 @@ impl ImageUploadProbe {
         // Cancel any in-flight preparation, but give the retained frame a live token so its next
         // paint reports the stale-generation refusal rather than a cancellation.
         self.cancel = Cancellation::default();
-        // The superseded generation is the only release condition for a quarantined payload.
-        let released = self
-            .service
-            .release_terminated_generation(previous, self.device_generation);
+        let _ = previous;
         self.status = format!(
-            "Logical device generation advanced to {} (no hardware device reset performed); previous frame is now stale; asserted_release={released} B",
+            "Logical device generation advanced to {} (no hardware device reset performed); previous frame is now stale; any quarantined payload stays retained (no GPU completion signal)",
             self.device_generation
         )
         .into();
         cx.notify();
     }
 
-    /// Drive the fixed manifest: load → present → switch → evict → load another, repeated.
+    /// Drive the fixed manifest plus the process-wide quarantine ladder.
     ///
-    /// Every identity comes from `MANIFEST`; the last two entries share one (source, revision) so a
-    /// shared frame is attached by two consumers and must survive the first detach. Counters and
-    /// outcomes are printed as JSON lines so a harness can bind them to an execution.
-    fn start_manifest(&mut self, cycles: u32, cx: &mut Context<Self>) {
+    /// Eviction keeps every in-flight payload quarantined because the pinned GPUI exposes no
+    /// completion signal, so the run continues until the 64 MiB process ledger is full: the next
+    /// eviction and every further prepare must then be refused with `QuarantineBudgetExhausted`.
+    /// The shared identity comes first, so the retention-after-one-detach rule is exercised before
+    /// the budget fills. The probe exits non-zero if any expectation is violated.
+    fn start_manifest(&mut self, cx: &mut Context<Self>) {
         let background = cx.background_executor().clone();
         let service = self.service.clone();
         self.pending = true;
-        self.status = format!(
-            "Manifest: {cycles} cycles over {} fixed identities (one shared by two consumers)",
-            MANIFEST.len()
-        )
-        .into();
+        self.status =
+            "Manifest: fixed identities until the process quarantine ledger is full".into();
         self.task = Some(cx.spawn(async move |this, cx| {
-            // Any expectation violated in this run makes the process exit non-zero.
             let mut failures = 0u32;
-            for cycle in 0..cycles {
-                for (index, (source, revision)) in MANIFEST.iter().copied().enumerate() {
-                    let generation = this
-                        .update(cx, |this, _| this.device_generation)
-                        .unwrap_or(1);
-                    let Ok(request) = fixture_request_for(source, revision, generation) else {
-                        continue;
-                    };
-                    let bytes = background
-                        .spawn(async move {
-                            let cancel = Cancellation::default();
-                            generate_fixture_png(revision, &cancel).map(Arc::<[u8]>::from)
-                        })
-                        .await;
-                    let Ok(bytes) = bytes else { continue };
-                    let Ok(frame) = service
-                        .prepare_encoded(&background, request, bytes, Cancellation::default())
-                        .await
-                    else {
-                        continue;
-                    };
-                    let shared = MANIFEST
-                        .get(index + 1)
-                        .is_some_and(|next| *next == (source, revision));
-                    let consumers = [ConsumerId::new(1), ConsumerId::new(2)];
-                    let attached = this
-                        .update(cx, |this, cx| {
-                            let mut attached = service.attach(&frame, consumers[0]);
-                            if shared {
-                                attached &= service.attach(&frame, consumers[1]);
-                            }
-                            if attached {
-                                this.current = Some(frame.clone());
-                                this.source_revision = revision;
-                                cx.notify();
-                            }
-                            attached
-                        })
-                        .unwrap_or(false);
-                    if !attached {
-                        continue;
-                    }
-                    // Paint progress, not a fixed sleep: wait until the scene reports the frame
-                    // composed, up to one second. GPU Present stays unmeasured.
-                    let mut painted = false;
-                    for _ in 0..40 {
-                        if frame.progress().complete_in_scene {
-                            painted = true;
-                            break;
-                        }
-                        background.timer(Duration::from_millis(25)).await;
-                    }
-                    if !painted {
-                        failures = failures.saturating_add(1);
-                        println!(
-                            "{{\"event\":\"img4-paint-missing\",\"cycle\":{cycle},\"index\":{index}}}"
-                        );
-                    }
-                    // Failure injection 1: eviction while a consumer is still attached must refuse.
-                    let attached_consumers = service.consumers(&frame);
-                    let refusal = this.update_in(cx, |this, window, _| {
-                        let _ = this;
-                        service.evict(&frame, window)
-                    });
-                    match refusal {
-                        Ok(Ok(_)) => {
-                            failures = failures.saturating_add(1);
-                            println!(
-                                "{{\"event\":\"img4-evict-unexpected\",\"cycle\":{cycle},\"index\":{index}}}"
-                            );
-                        }
-                        Ok(Err(error)) => println!(
-                            "{{\"event\":\"img4-evict-refused\",\"cycle\":{cycle},\"index\":{index},\"error\":\"{error:?}\",\"attached_consumers\":{attached_consumers},\"retained\":{}}}",
-                            service.counters().retained_frames,
-                        ),
-                        Err(_) => {
-                            failures = failures.saturating_add(1);
-                            println!(
-                                "{{\"event\":\"img4-evict-unexpected\",\"cycle\":{cycle},\"index\":{index},\"reason\":\"view_gone\"}}"
-                            );
-                        }
-                    }
-                    // Failure injection 2 (shared identity only): after ONE consumer detaches, the
-                    // remaining consumer must still hold the frame.
-                    if shared {
-                        let detached = this
-                            .update(cx, |_, _| service.detach(&frame, consumers[1]))
-                            .unwrap_or(false);
-                        let refusal = this.update_in(cx, |this, window, _| {
-                            let _ = this;
-                            service.evict(&frame, window)
-                        });
-                        match refusal {
-                            Ok(Ok(_)) => {
-                                failures = failures.saturating_add(1);
-                                println!(
-                                    "{{\"event\":\"img4-shared-unexpected\",\"cycle\":{cycle},\"index\":{index}}}"
-                                );
-                            }
-                            Ok(Err(error)) => println!(
-                                "{{\"event\":\"img4-shared-retained\",\"cycle\":{cycle},\"index\":{index},\"detached\":{detached},\"error\":\"{error:?}\",\"consumers\":{},\"retained\":{}}}",
-                                service.consumers(&frame),
-                                service.counters().retained_frames,
-                            ),
-                            Err(_) => {
-                                failures = failures.saturating_add(1);
-                                println!(
-                                    "{{\"event\":\"img4-shared-unexpected\",\"cycle\":{cycle},\"index\":{index},\"reason\":\"view_gone\"}}"
-                                );
-                            }
-                        }
-                    }
-                    let evicted = this.update_in(cx, |this, window, cx| {
-                        service.detach(&frame, consumers[0]);
-                        this.current = None;
-                        cx.notify();
-                        let outcome = service.evict(&frame, window);
-                        (outcome, service.counters(), this.device_generation)
-                    });
-                    match evicted {
-                        Ok((Ok(outcome), counters, generation)) => println!(
-                            "{{\"event\":\"img4-evict\",\"cycle\":{cycle},\"index\":{index},\"source\":\"{source}\",\"revision\":{revision},\"generation\":{generation},\"shared\":{shared},\"painted\":{painted},\"images\":{},\"released_bytes\":{},\"quarantined_bytes\":{},\"retained\":{},\"consumers\":{},\"staging\":{},\"in_flight\":{},\"resident\":{},\"quarantined\":{},\"evicted_frames\":{},\"dropped_images\":{},\"released_total\":{},\"asserted_release\":{}}}",
-                            outcome.dropped_images,
-                            outcome.released_bytes,
-                            outcome.quarantined_bytes,
-                            counters.retained_frames,
-                            counters.consumers,
-                            counters.staging_reservation_bytes,
-                            counters.in_flight_reservation_bytes,
-                            counters.resident_reservation_bytes,
-                            counters.quarantined_staging_bytes
-                                + counters.quarantined_in_flight_bytes
-                                + counters.quarantined_resident_bytes,
-                            counters.evicted_frames,
-                            counters.dropped_atlas_images,
-                            counters.released_payload_bytes,
-                            counters.asserted_release_bytes,
-                        ),
-                        Ok((Err(error), counters, generation)) => {
-                            failures = failures.saturating_add(1);
-                            println!(
-                                "{{\"event\":\"img4-evict-refused-unexpected\",\"cycle\":{cycle},\"index\":{index},\"source\":\"{source}\",\"revision\":{revision},\"generation\":{generation},\"error\":\"{error:?}\",\"retained\":{},\"consumers\":{}}}",
-                                counters.retained_frames, counters.consumers,
-                            );
-                        }
-                        Err(_) => {
-                            failures = failures.saturating_add(1);
-                            break;
-                        }
-                    }
-                    // A superseded generation is the only release condition for a payload whose
-                    // transfer had begun: the generation contract invalidates its GPU objects.
-                    // Advancing per frame keeps the quarantine inside the declared pool budget.
-                    let previous = this
-                        .update(cx, |this, _| this.device_generation)
-                        .unwrap_or(1);
-                    let _ = this.update(cx, |this, cx| this.advance_logical_generation(cx));
-                    let current = this
-                        .update(cx, |this, _| this.device_generation)
-                        .unwrap_or(previous + 1);
-                    let asserted = service.release_terminated_generation(previous, current);
-                    let refused_current = service.release_terminated_generation(current, current);
-                    if refused_current != 0 {
-                        failures = failures.saturating_add(1);
-                    }
-                    println!(
-                        "{{\"event\":\"img4-generation-release\",\"cycle\":{cycle},\"index\":{index},\"previous\":{previous},\"current\":{current},\"released_bytes\":{asserted},\"current_refused\":{refused_current}}}"
-                    );
-                }
-                let counters = service.counters();
-                println!(
-                    "{{\"event\":\"img4-cycle\",\"cycle\":{cycle},\"retained\":{},\"consumers\":{},\"staging\":{},\"in_flight\":{},\"resident\":{},\"quarantined\":{},\"evicted_frames\":{},\"dropped_images\":{},\"released_payload_bytes\":{},\"asserted_release\":{}}}",
-                    counters.retained_frames,
-                    counters.consumers,
-                    counters.staging_reservation_bytes,
-                    counters.in_flight_reservation_bytes,
-                    counters.resident_reservation_bytes,
-                    counters.quarantined_staging_bytes
-                        + counters.quarantined_in_flight_bytes
-                        + counters.quarantined_resident_bytes,
-                    counters.evicted_frames,
-                    counters.dropped_atlas_images,
-                    counters.released_payload_bytes,
-                    counters.asserted_release_bytes,
-                );
-            }
-            // Failure injection 2: two retained frames fill the bound, so a third is refused.
-            let generation = this
-                .update(cx, |this, _| this.device_generation)
-                .unwrap_or(1);
-            let mut held = Vec::new();
-            for source in ["cap-a", "cap-b"] {
-                let Ok(request) = fixture_request_for(source, 1, generation) else {
-                    continue;
-                };
+            let mut evictions = 0u32;
+            let mut cap_refusals = 0u32;
+            let mut shared_retentions = 0u32;
+            // B-03: a frame prepared and attached but never painted is owned through the attach
+            // binding, so the close sweep must collect it even though no atlas entry exists yet.
+            let mut prepaint_ready = false;
+            if let Ok(request) = fixture_request_for(
+                "closing",
+                1,
+                this.update(cx, |this, _| this.device_generation).unwrap_or(1),
+            ) {
                 let bytes = background
                     .spawn(async move {
                         let cancel = Cancellation::default();
                         generate_fixture_png(1, &cancel).map(Arc::<[u8]>::from)
                     })
                     .await;
-                let Ok(bytes) = bytes else { continue };
-                if let Ok(frame) = service
+                if let Ok(bytes) = bytes
+                    && let Ok(frame) = service
+                        .prepare_encoded(&background, request, bytes, Cancellation::default())
+                        .await
+                {
+                    prepaint_ready = this
+                        .update_in(cx, |this, window, _| {
+                            let handle = window.window_handle();
+                            let consumer = ConsumerId::new(9);
+                            let attached = service.attach(&frame, consumer, Some(handle));
+                            service.detach(&frame, consumer);
+                            let _ = this;
+                            attached
+                        })
+                        .unwrap_or(false);
+                }
+            }
+            if !prepaint_ready {
+                failures = failures.saturating_add(1);
+                println!("{{\"event\":\"img4-prepaint-missing\"}}");
+            }
+            'outer: for (index, (source, revision)) in MANIFEST.iter().copied().enumerate() {
+                let generation = this.update(cx, |this, _| this.device_generation).unwrap_or(1);
+                let request = match fixture_request_for(source, revision, generation) {
+                    Ok(request) => request,
+                    Err(error) => {
+                        failures = failures.saturating_add(1);
+                        println!(
+                            "{{\"event\":\"img4-setup-failed\",\"index\":{index},\"detail\":\"{error:?}\"}}"
+                        );
+                        break;
+                    }
+                };
+                let bytes = match background
+                    .spawn(async move {
+                        let cancel = Cancellation::default();
+                        generate_fixture_png(revision, &cancel).map(Arc::<[u8]>::from)
+                    })
+                    .await
+                {
+                    Ok(bytes) => bytes,
+                    Err(error) => {
+                        failures = failures.saturating_add(1);
+                        println!(
+                            "{{\"event\":\"img4-setup-failed\",\"index\":{index},\"detail\":\"{error:?}\"}}"
+                        );
+                        break;
+                    }
+                };
+                let frame = match service
                     .prepare_encoded(&background, request, bytes, Cancellation::default())
                     .await
                 {
-                    held.push(frame);
-                }
-            }
-            let third = fixture_request_for("cap-c", 1, generation).ok();
-            let third_result = match third {
-                Some(request) => {
-                    let bytes = background
-                        .spawn(async move {
-                            let cancel = Cancellation::default();
-                            generate_fixture_png(1, &cancel).map(Arc::<[u8]>::from)
-                        })
-                        .await;
-                    match bytes {
-                        Ok(bytes) => service
-                            .prepare_encoded(&background, request, bytes, Cancellation::default())
-                            .await
-                            .map(|_| ()),
-                        Err(error) => Err(ImageUploadError::Decode(error)),
+                    Ok(frame) => frame,
+                    Err(ImageUploadError::QuarantineBudgetExhausted { retained, cap }) => {
+                        cap_refusals = cap_refusals.saturating_add(1);
+                        println!(
+                            "{{\"event\":\"img4-prepare-refused\",\"index\":{index},\"reason\":\"process_quarantine\",\"retained\":{retained},\"cap\":{cap}}}"
+                        );
+                        break 'outer;
                     }
-                }
-                None => Err(ImageUploadError::InvalidEncodedInputLimit),
-            };
-            let capacity_ok = held.len() == 2
-                && matches!(&third_result, Err(ImageUploadError::RetainedFrameLimit));
-            if !capacity_ok {
-                failures = failures.saturating_add(1);
-            }
-            println!(
-                "{{\"event\":\"img4-capacity\",\"held\":{},\"third\":\"{}\",\"retained\":{},\"expected_refusal\":{capacity_ok}}}",
-                held.len(),
-                match &third_result {
-                    Ok(()) => "admitted".to_owned(),
-                    Err(error) => format!("{error:?}"),
-                },
-                service.counters().retained_frames,
-            );
-            let _ = this.update_in(cx, |_, window, _| {
-                for frame in &held {
-                    let _ = service.evict(frame, window);
-                }
-            });
-            // One frame is deliberately left retained so the close sweep has something to release.
-            let generation = this
-                .update(cx, |this, _| this.device_generation)
-                .unwrap_or(1);
-            if let (Ok(request), Ok(bytes)) = (
-                fixture_request_for("closing", 1, generation),
-                background
-                    .spawn(async move {
-                        let cancel = Cancellation::default();
-                        generate_fixture_png(1, &cancel).map(Arc::<[u8]>::from)
-                    })
-                    .await,
-            ) && let Ok(frame) = service
-                .prepare_encoded(&background, request, bytes, Cancellation::default())
-                .await
-            {
+                    Err(ImageUploadError::Admission(media::UploadRefusal::BudgetExceeded {
+                        ..
+                    })) => {
+                        // The retained, unproven payloads already occupy the pool's staging and
+                        // in-flight allowance, so new work is refused rather than releasing them.
+                        cap_refusals = cap_refusals.saturating_add(1);
+                        println!(
+                            "{{\"event\":\"img4-prepare-refused\",\"index\":{index},\"reason\":\"pool_budget\",\"quarantine_ledger\":{}}}",
+                            service.counters().quarantined_payload_bytes
+                        );
+                        break 'outer;
+                    }
+                    Err(error) => {
+                        failures = failures.saturating_add(1);
+                        println!(
+                            "{{\"event\":\"img4-setup-failed\",\"index\":{index},\"detail\":\"{error:?}\"}}"
+                        );
+                        break;
+                    }
+                };
+                // The first identity is presented by two consumers; a repeated identity would be
+                // refused by the pool while its payload is quarantined (unreclaimed key).
+                let shared = index == 0;
+                let consumers = [ConsumerId::new(1), ConsumerId::new(2)];
                 let attached = this
-                    .update(cx, |this, cx| {
-                        let attached = service.attach(&frame, ConsumerId::new(1));
+                    .update_in(cx, |this, window, cx| {
+                        let handle = window.window_handle();
+                        let mut attached = service.attach(&frame, consumers[0], Some(handle));
+                        if shared {
+                            attached &= service.attach(&frame, consumers[1], Some(handle));
+                        }
                         if attached {
-                            this.current = Some(frame);
+                            this.current = Some(frame.clone());
+                            this.source_revision = revision;
                             cx.notify();
                         }
                         attached
                     })
                     .unwrap_or(false);
-                if attached {
-                    background.timer(Duration::from_millis(120)).await;
+                if !attached {
+                    failures = failures.saturating_add(1);
+                    println!(
+                        "{{\"event\":\"img4-attach-failed\",\"index\":{index}}}"
+                    );
+                    break;
+                }
+                // Wait for the frame's own scene-composed flag instead of a fixed sleep. GPU
+                // Present stays unmeasured.
+                let mut painted = false;
+                for _ in 0..40 {
+                    if frame.progress().complete_in_scene {
+                        painted = true;
+                        break;
+                    }
+                    background.timer(Duration::from_millis(25)).await;
+                }
+                if !painted {
+                    failures = failures.saturating_add(1);
+                    println!("{{\"event\":\"img4-paint-missing\",\"index\":{index}}}");
+                }
+                let refusal = this.update_in(cx, |_, window, _| service.evict(&frame, window));
+                if !matches!(refusal, Ok(Err(ImageUploadError::ConsumersRemain))) {
+                    failures = failures.saturating_add(1);
+                    println!("{{\"event\":\"img4-consumer-gate-failed\",\"index\":{index}}}");
+                }
+                if shared {
+                    let detached = this
+                        .update(cx, |_, _| service.detach(&frame, consumers[1]))
+                        .unwrap_or(false);
+                    let refusal = this.update_in(cx, |_, window, _| service.evict(&frame, window));
+                    match refusal {
+                        Ok(Err(ImageUploadError::ConsumersRemain)) => {
+                            shared_retentions = shared_retentions.saturating_add(1);
+                            println!(
+                                "{{\"event\":\"img4-shared-retained\",\"index\":{index},\"detached\":{detached},\"consumers\":{}}}",
+                                service.consumers(&frame)
+                            );
+                        }
+                        _ => {
+                            failures = failures.saturating_add(1);
+                            println!(
+                                "{{\"event\":\"img4-shared-failed\",\"index\":{index},\"detached\":{detached}}}"
+                            );
+                        }
+                    }
+                }
+                let evicted = this.update_in(cx, |this, window, cx| {
+                    service.detach(&frame, consumers[0]);
+                    this.current = None;
+                    cx.notify();
+                    service.evict(&frame, window)
+                });
+                match evicted {
+                    Ok(Ok(outcome)) => {
+                        evictions = evictions.saturating_add(1);
+                        println!(
+                            "{{\"event\":\"img4-evict\",\"index\":{index},\"source\":\"{source}\",\"revision\":{revision},\"shared\":{shared},\"painted\":{painted},\"images\":{},\"released_bytes\":{},\"quarantined_bytes\":{},\"retained\":{},\"quarantine_ledger\":{}}}",
+                            outcome.dropped_images,
+                            outcome.released_bytes,
+                            outcome.quarantined_bytes,
+                            service.counters().retained_frames,
+                            service.counters().quarantined_payload_bytes,
+                        );
+                    }
+                    Ok(Err(ImageUploadError::QuarantineBudgetExhausted { retained, cap })) => {
+                        cap_refusals = cap_refusals.saturating_add(1);
+                        println!(
+                            "{{\"event\":\"img4-evict-refused-cap\",\"index\":{index},\"retained\":{retained},\"cap\":{cap},\"frames\":{}}}",
+                            service.counters().retained_frames
+                        );
+                        break 'outer;
+                    }
+                    Ok(Err(error)) => {
+                        failures = failures.saturating_add(1);
+                        println!(
+                            "{{\"event\":\"img4-evict-refused-unexpected\",\"index\":{index},\"error\":\"{error:?}\"}}"
+                        );
+                        break;
+                    }
+                    Err(_) => {
+                        failures = failures.saturating_add(1);
+                        break;
+                    }
                 }
             }
-            let summary = this
-                .update_in(cx, |this, window, cx| {
-                    this.close_with_sweep(window, cx);
-                    let counters = service.counters();
+            let counters = service.counters();
+            // Structural expectations: at least one eviction quarantined a payload, the very next
+            // prepare was refused because of the retained bytes, the shared identity survived one
+            // detach, and nothing unproven was released.
+            let ledger_positive = counters.quarantined_payload_bytes > 0;
+            if evictions < 1
+                || cap_refusals != 1
+                || shared_retentions != 1
+                || !ledger_positive
+                || failures != 0
+            {
+                failures = failures.saturating_add(1);
+            }
+            println!(
+                "{{\"event\":\"img4-quarantine\",\"evictions\":{evictions},\"cap_refusals\":{cap_refusals},\"shared_retentions\":{shared_retentions},\"ledger\":{},\"capacity\":{},\"retained\":{}}}",
+                counters.quarantined_payload_bytes,
+                PROCESS_QUARANTINE_CAP_BYTES,
+                counters.retained_frames,
+            );
+            let swept = this.update_in(cx, |this, window, cx| {
+                let summary = this.close_with_sweep(window, cx);
+                (summary, service.counters())
+            });
+            match swept {
+                Ok((summary, counters)) => {
+                    if !prepaint_ready || summary.evicted_frames != 1 || summary.skipped_frames != 0
+                    {
+                        failures = failures.saturating_add(1);
+                    }
                     println!(
-                        "{{\"event\":\"img4-summary\",\"retained\":{},\"consumers\":{},\"resident\":{},\"quarantined\":{},\"asserted_release\":{},\"generation\":{},\"failures\":{failures}}}",
+                        "{{\"event\":\"img4-close\",\"prepaint\":{prepaint_ready},\"evicted\":{},\"skipped\":{},\"unattributed\":{},\"retained\":{},\"consumers\":{},\"quarantine_ledger\":{},\"failures\":{failures}}}",
+                        summary.evicted_frames,
+                        summary.skipped_frames,
+                        summary.unattributed_frames,
                         counters.retained_frames,
                         counters.consumers,
-                        counters.resident_reservation_bytes,
-                        counters.quarantined_staging_bytes
-                            + counters.quarantined_in_flight_bytes
-                            + counters.quarantined_resident_bytes,
-                        counters.asserted_release_bytes,
-                        this.device_generation,
+                        counters.quarantined_payload_bytes,
                     );
-                });
-            let _ = summary;
-            // A violated expectation is a failed observation, not a pass with a warning.
+                }
+                Err(_) => {
+                    failures = failures.saturating_add(1);
+                }
+            }
             if failures > 0 {
                 std::process::exit(1);
             }
@@ -534,7 +480,7 @@ impl ImageUploadProbe {
             Ok(outcome) => {
                 self.current = None;
                 self.status = format!(
-                    "Evicted: atlas images={} released_staged={} B quarantined={} B (in-flight transfer; released only by a superseded generation); GPU residency NOT_MEASURED",
+                    "Evicted: atlas images={} released_staged={} B quarantined={} B (in-flight transfer stays retained; no measured termination); GPU residency NOT_MEASURED",
                     outcome.dropped_images,
                     outcome.released_bytes,
                     outcome.quarantined_bytes,
@@ -542,7 +488,8 @@ impl ImageUploadProbe {
                 .into();
             }
             Err(error) => {
-                self.service.attach(&frame, self.consumer);
+                self.service
+                    .attach(&frame, self.consumer, Some(window.window_handle()));
                 self.status =
                     format!("Eviction refused: {error:?}; the frame stays retained and displayed")
                         .into();
@@ -553,16 +500,21 @@ impl ImageUploadProbe {
 
     /// Close the window through the ownership sweep: every frame this window owns with no
     /// consumer is evicted before the window disappears.
-    fn close_with_sweep(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+    fn close_with_sweep(
+        &mut self,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> desktop_gpui::image_upload::EvictionSummary {
         if let Some(frame) = self.current.take() {
             self.service.detach(&frame, self.consumer);
         }
         let summary = self.service.evict_owned_by(window);
         let counters = self.service.counters();
         eprintln!(
-            "event=img4-window-close evicted={} skipped={} images={} released_bytes={} retained={} consumers={} resident={} quarantined={}",
+            "event=img4-window-close evicted={} skipped={} unattributed={} images={} released_bytes={} retained={} consumers={} resident={} quarantined={}",
             summary.evicted_frames,
             summary.skipped_frames,
+            summary.unattributed_frames,
             summary.dropped_images,
             summary.released_bytes,
             counters.retained_frames,
@@ -573,6 +525,7 @@ impl ImageUploadProbe {
                 + counters.quarantined_resident_bytes
         );
         cx.quit();
+        summary
     }
 }
 
@@ -701,7 +654,7 @@ impl Render for ImageUploadProbe {
                 .child(button("Cancel", true, cx.listener(|this, _, _, cx| this.cancel(cx))))
                 .child(button("Advance logical generation", true, cx.listener(|this, _, _, cx| this.advance_logical_generation(cx))))
                 .child(button("Evict current", !pending, cx.listener(|this, _, window, cx| this.evict_current(window, cx))))
-                .child(button("Evict owned and close", true, cx.listener(|this, _, window, cx| this.close_with_sweep(window, cx)))))
+                .child(button("Evict owned and close", true, cx.listener(|this, _, window, cx| { let _ = this.close_with_sweep(window, cx); }))))
             .child(status)
             .child(div().flex().flex_row().gap_4()
                 .child(frame_canvas)
@@ -916,14 +869,10 @@ fn main() {
     let mut args = std::env::args().skip(1);
     let mode = match args.next().as_deref() {
         Some("--fixture") if args.next().is_none() => Mode::Fixture,
-        Some("--manifest") => Mode::Manifest(
-            args.next()
-                .and_then(|value| value.parse::<u32>().ok())
-                .unwrap_or(2),
-        ),
+        Some("--manifest") if args.next().is_none() => Mode::Manifest,
         _ => {
             eprintln!(
-                "Usage: cargo run --locked -p cos-desktop --example image_upload -- --fixture\n       cargo run --locked -p cos-desktop --example image_upload -- --manifest [cycles]"
+                "Usage: cargo run --locked -p cos-desktop --example image_upload -- --fixture\n       cargo run --locked -p cos-desktop --example image_upload -- --manifest"
             );
             std::process::exit(2);
         }
@@ -961,8 +910,8 @@ fn main() {
                     paint_message: SharedString::default(),
                     consumer: ConsumerId::new(1),
                 });
-                if let Mode::Manifest(cycles) = mode {
-                    probe.update(cx, |this, cx| this.start_manifest(cycles, cx));
+                if let Mode::Manifest = mode {
+                    probe.update(cx, |this, cx| this.start_manifest(cx));
                 }
                 probe
             },
