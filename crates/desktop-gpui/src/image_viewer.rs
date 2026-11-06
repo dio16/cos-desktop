@@ -71,10 +71,19 @@ fn scene_allows_release(scene_serial: u64, scene_at: u64) -> bool {
     scene_serial >= scene_at.saturating_add(2)
 }
 
-/// A detached frame plus the paint epoch observed when it was retired.
+/// Which counter a retired frame's reference value came from. A live pane retires with its own
+/// composed-scene count; a pane that left the draw tree retires with the window's composed-frame
+/// count. The two counters are never compared with each other.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum ReleaseClock {
+    Pane(u64),
+    Window(u64),
+}
+
+/// A detached frame plus the clock reading observed when it was retired.
 struct Retired {
     frame: Arc<PreparedImage>,
-    scene_at: u64,
+    clock: ReleaseClock,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -117,9 +126,6 @@ pub struct ImageViewer {
     retiring: Vec<Retired>,
     /// Paint epochs observed for the current frame; a retirement needs a later composed scene.
     scene_serial: u64,
-    /// Set once this pane left the draw tree: its releases then count the scenes a viewer still
-    /// being drawn composes in the same window.
-    release_by_window_scene: bool,
     complete_in_scene: bool,
     retirement_scheduled: bool,
     retirement_attempts: u8,
@@ -150,7 +156,7 @@ impl ImageViewer {
         Self {
             service: ImageUploadService::global(), current: None, cancel: Cancellation::default(),
             tile_cancel: Cancellation::default(), demand: None, demand_id: 0, tile_attempts: 0,
-            retiring: Vec::new(), scene_serial: 0, release_by_window_scene: false,
+            retiring: Vec::new(), scene_serial: 0,
             retirement_scheduled: false, retirement_attempts: 0,
             retirement_slow: false,
             serial: 0, view_serial: 0, revision: 0, generation: 0, transform: None,
@@ -399,10 +405,9 @@ impl ImageViewer {
             // A painted frame is never released here: a presented scene may still reference its
             // atlas entries. This pane leaves the draw tree and composes nothing more, so the
             // proof becomes the scenes a viewer still being drawn composes in this window.
-            self.release_by_window_scene = true;
             self.retiring.push(Retired {
                 frame,
-                scene_at: self.service.composed_frames(self.window_id()),
+                clock: ReleaseClock::Window(self.service.composed_frames(self.window_id())),
             });
             self.schedule_retirement(cx);
         }
@@ -419,7 +424,7 @@ impl ImageViewer {
         self.service.detach(&frame, self.consumer);
         self.retiring.push(Retired {
             frame,
-            scene_at: self.scene_serial,
+            clock: ReleaseClock::Pane(self.scene_serial),
         });
         self.schedule_retirement(cx);
     }
@@ -457,17 +462,17 @@ impl ImageViewer {
 
     fn evict_retired(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         let mut keep = Vec::new();
-        // A live pane proves release with its own composed scenes; a closed pane, which composes
-        // nothing, uses the scenes a viewer still being drawn reports for the same window.
-        let scene_serial = if self.release_by_window_scene {
-            self.service.composed_frames(self.window_id())
-        } else {
-            self.scene_serial
-        };
+        let window_scenes = self.service.composed_frames(self.window_id());
         for retired in std::mem::take(&mut self.retiring) {
-            // Two paints after the detach prove a scene composed without this frame has been
-            // presented; a hidden window composes nothing, so its release waits for re-display.
-            if !scene_allows_release(scene_serial, retired.scene_at) {
+            // Each entry is compared only with the counter that produced its reading: a live pane
+            // with its own composed scenes, a pane that left the draw tree with the window's.
+            // Two later scenes prove the frame cannot appear in what is presented next; a hidden
+            // window composes nothing, so its release waits for re-display.
+            let released = match retired.clock {
+                ReleaseClock::Pane(scene_at) => scene_allows_release(self.scene_serial, scene_at),
+                ReleaseClock::Window(frame_at) => scene_allows_release(window_scenes, frame_at),
+            };
+            if !released {
                 keep.push(retired);
                 continue;
             }

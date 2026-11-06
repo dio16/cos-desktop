@@ -1133,6 +1133,13 @@ impl ImageUploadService {
         *entry
     }
 
+    /// Forgets a window's frame ledger. Called at window teardown, after the window's frames are
+    /// handled, so a long-lived process does not accumulate one entry per created window.
+    pub fn forget_window(&self, window: u64) {
+        let mut frames = self.inner.window_frames.lock().expect("window frames");
+        frames.remove(&window);
+    }
+
     /// Composed frames observed for `window` so far.
     pub fn composed_frames(&self, window: u64) -> u64 {
         let frames = self.inner.window_frames.lock().expect("window frames");

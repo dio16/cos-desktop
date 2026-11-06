@@ -914,7 +914,9 @@ impl Shell {
             let _ = closing_compare.update(cx, |view, cx| view.close(cx));
             // Last safe boundary: frames this window owned with no remaining consumer are released
             // here, after which the platform destroys the window's atlas.
-            let _ = image_upload::ImageUploadService::global().evict_owned_by(window);
+            let service = image_upload::ImageUploadService::global();
+            let _ = service.evict_owned_by(window);
+            service.forget_window(window.window_handle().window_id().as_u64());
             true
         });
         Self {

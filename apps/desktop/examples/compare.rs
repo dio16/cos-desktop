@@ -561,7 +561,9 @@ fn start_trace(cx: &mut Context<CompareDemo>, variant: &'static str) {
         let _ = this.update_in(cx, |this, window, cx| {
             this.compare.update(cx, |view, cx| view.close(cx));
             this.viewer.update(cx, |viewer, cx| viewer.close(cx));
-            let _ = desktop_gpui::image_upload::ImageUploadService::global().evict_owned_by(window);
+            let service = desktop_gpui::image_upload::ImageUploadService::global();
+            let _ = service.evict_owned_by(window);
+            service.forget_window(window.window_handle().window_id().as_u64());
             window.remove_window();
         });
     })
