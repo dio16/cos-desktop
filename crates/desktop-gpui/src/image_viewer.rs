@@ -364,7 +364,9 @@ impl ImageViewer {
                         }.into();
                     }
                     Ok(_) => this.status = "画像を利用できません: 保持されていない画像です。".into(),
-                    Err(error) => this.status = format!("画像を利用できません: {error}").into(),
+                    Err(error) => {
+                        this.status = format!("画像を利用できません: {}", error.limitation()).into();
+                    }
                 }
                 cx.notify();
             });

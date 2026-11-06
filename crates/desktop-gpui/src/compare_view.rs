@@ -285,6 +285,10 @@ impl CompareView {
                 }),
             }
         }
+        // The projection's availability follows the candidate that now sits in each pane, so the
+        // swapped side must not look like a reappearance to the next `set_projection` call: that
+        // transition would withdraw the picture the swap just attached.
+        self.available.swap(0, 1);
         self.panes[self.active]
             .read(cx)
             .focus_handle()
@@ -432,7 +436,7 @@ impl CompareView {
                             }
                             this.panes[target].update(cx, |pane, cx| {
                                 pane.unavailable(
-                                    format!("画像を利用できません: {error}").into(),
+                                    format!("画像を利用できません: {}", error.limitation()).into(),
                                     cx,
                                 )
                             });

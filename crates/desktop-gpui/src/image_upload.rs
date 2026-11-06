@@ -137,6 +137,38 @@ pub enum ImageUploadError {
     InvalidEncodedInputLimit,
 }
 
+impl ImageUploadError {
+    /// One user-facing sentence for a refused local preparation. The variant name stays in
+    /// diagnostics; a picture surface states a state, not an enum (ADR-0015 Q13). The match is
+    /// exhaustive so a new refusal cannot reach a surface unworded.
+    pub fn limitation(&self) -> &'static str {
+        match self {
+            Self::Cancelled => "この画像の準備は取り消されました。",
+            Self::PreparationBusy => "他の画像の準備中です。少し待ってから再試行してください。",
+            Self::ConsumersRemain => "この画像はまだ他の表示が使用しています。",
+            Self::PaintInProgress => "この画像は描画中のため解放できません。",
+            Self::NotRetained => "この画像は保持されていません。",
+            Self::NotOwnedByWindow => "この画像は別のウィンドウが所有しています。",
+            Self::AtlasRelease => "この画像の解放に失敗しました。",
+            Self::QuarantineBudgetExhausted { .. } => {
+                "保持上限に達したため、この画像を保持できません。"
+            }
+            Self::StaleDeviceGeneration { .. } => {
+                "表示先の世代が変わりました。画像を取得し直してください。"
+            }
+            Self::SourceRevisionMismatch { .. } => "要求した画像版と一致しません。",
+            Self::UnverifiableSourceRevision => "画像版を確認できません。",
+            Self::EncodedInputTooLarge { .. } => "画像データが許容上限を超えています。",
+            Self::Decode(_) => "画像を復号できません。",
+            Self::Admission(_) => "この画像は現在の保持状態と両立しないため表示できません。",
+            Self::RetainedFrameLimit => "保持上限に達したため、この画像を保持できません。",
+            Self::InvalidRasterLayout => "画像の形式が検証済みの範囲外です。",
+            Self::Allocation => "画像の作業領域を確保できません。",
+            Self::InvalidEncodedInputLimit => "画像の入力上限設定が不正です。",
+        }
+    }
+}
+
 impl std::fmt::Display for ImageUploadError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{self:?}")

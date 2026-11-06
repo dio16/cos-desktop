@@ -690,15 +690,41 @@ impl CompareDemo {
                         .position(|candidate| candidate_index(candidate) == index)
                 });
                 let frame = pane.and_then(|pane| self.compare.read(cx).frames(cx)[pane].clone());
+                // The Viewed candidate can sit outside the pair (D-7): it is a local choice, not a
+                // Compare member, so its own local input is acquired instead of reporting the
+                // absence of a pair frame. A refused or over-bound preparation stays an explicit
+                // unavailable result and never shows another candidate's picture.
+                let own = if frame.is_none() {
+                    image_fixture::fixture_request_for(
+                        CANDIDATES[index].source,
+                        CANDIDATES[index].revision,
+                        1,
+                    )
+                    .ok()
+                } else {
+                    None
+                };
+                let revision = CANDIDATES[index].revision;
                 self.viewer.update(cx, |viewer, cx| {
                     if previous_viewed != Some(index) {
                         viewer.set_camera(ViewCamera::default(), cx);
                     }
                     if let Some(frame) = frame {
                         viewer.present_prepared(frame, window, cx);
+                    } else if let Some(request) = own {
+                        if !viewer
+                            .prepared()
+                            .is_some_and(|prepared| prepared.identity().key == request.key)
+                        {
+                            viewer.load_generated(request, window, cx, move |cancel| {
+                                image_fixture::generate_fixture_png(revision, cancel)
+                                    .map(Arc::<[u8]>::from)
+                            });
+                        }
                     } else {
                         viewer.unavailable(
-                            "画像を利用できません: 閲覧中の候補の保持済み画像がありません。".into(),
+                            "画像を利用できません: 閲覧中の候補のローカル入力を準備できません。"
+                                .into(),
                             cx,
                         );
                     }
@@ -903,10 +929,19 @@ fn open_compare_window(
                                         )
                                     })
                                 });
+                                let missing = this.missing;
+                                let available = this.presentation.compare_pair().map(|pair| {
+                                    pair.each_ref().map(|candidate| {
+                                        missing != Some(candidate_index(candidate))
+                                    })
+                                });
                                 view_entity.update(cx, |view, cx| {
                                     view.swap_resources(window, cx);
-                                    if let Some(labels) = labels {
-                                        view.set_labels(labels, cx);
+                                    // The host re-states the projection on its next render; doing it
+                                    // here keeps the example's contract the same as the shell's and
+                                    // pins that a swap never withdraws the picture it just attached.
+                                    if let (Some(labels), Some(available)) = (labels, available) {
+                                        view.set_projection(labels, available, cx);
                                     }
                                 });
                                 cx.notify();
@@ -943,15 +978,11 @@ fn open_compare_window(
                                     this.viewer.update(cx, |viewer, cx| {
                                         viewer.present_prepared(frame, window, cx);
                                     });
-                                } else {
-                                    this.viewer.update(cx, |viewer, cx| {
-                                        viewer.unavailable(
-                                            "Viewed candidate has no retained prepared frame"
-                                                .into(),
-                                            cx,
-                                        )
-                                    });
                                 }
+                                // A Viewed candidate outside the pair keeps the frame its own local
+                                // selection already loaded; closing Compare must not replace a
+                                // valid picture with an unavailable result, and a refused or
+                                // over-bound preparation already states its own reason.
                             });
                             this.closed = true;
                             this.status = format!(

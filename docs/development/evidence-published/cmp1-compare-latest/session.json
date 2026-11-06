@@ -249,47 +249,14 @@
       ]
     },
     {
-      "path": "captures/07-side-change-a-to-c.png",
-      "sha256": "sha256:100b584bb1f2d36f7abd8d95c8f9d373989b714a3e05330caee49c638cc9f2a6",
+      "path": "captures/07-disappear.png",
+      "sha256": "sha256:388a146dba460a578d3fd8f20935de42f42702bbe99a8695e56befa5d4b6557f",
       "width": 1275,
       "height": 932,
-      "step": "07-side-change-a-to-c",
-      "exercised": "side A replaced by Candidate C; link kept, pair reset to Fit",
+      "step": "07-disappear",
+      "exercised": "the fixture projection drops candidate B; that pane states its own reason",
       "pane_groups": [
-        "Candidate C (cyan marker)",
-        "Candidate A"
-      ],
-      "pane_texts": [
-        "ローカル画像・実験用タイル表示。GPU完了・常駐量・本番の画質受入は未計測。",
-        "物理表示倍率 25.8% / DIP変換 1.00 / 画像全体を表示",
-        "ローカル画像・実験用タイル表示。GPU完了・常駐量・本番の画質受入は未計測。",
-        "物理表示倍率 25.8% / DIP変換 1.00 / 画像全体を表示"
-      ],
-      "controls": [
-        "全体表示 (0)",
-        "物理ピクセル1:1 (1)",
-        "連動する",
-        "A/Bを交換",
-        "A側を変更",
-        "B側を変更",
-        "比較を閉じる",
-        "Fixture: A側候補の消失",
-        "Fixture: 同じ候補の再出現"
-      ],
-      "focused": [
-        "MP-CMP1 Compare local fixture 1",
-        "候補一覧。左右キーで移動、Enterで選択"
-      ]
-    },
-    {
-      "path": "captures/08-disappear.png",
-      "sha256": "sha256:d4aa405a5a222b6e7c7dfbf91bb81ecdf840155748c33e01732cc80a478412ee",
-      "width": 1275,
-      "height": 932,
-      "step": "08-disappear",
-      "exercised": "pane A unavailable with its own reason; reference kept",
-      "pane_groups": [
-        "Candidate C (cyan marker)",
+        "Candidate B",
         "Candidate A"
       ],
       "pane_texts": [
@@ -315,19 +282,52 @@
       ]
     },
     {
+      "path": "captures/08-swap-with-unavailable-side.png",
+      "sha256": "sha256:058823f4b0508ab43eeb8cfca1b4314cecf996b35b19d833ab5c36204ac52b91",
+      "width": 1275,
+      "height": 932,
+      "step": "08-swap-with-unavailable-side",
+      "exercised": "swap while one side is unavailable keeps the available picture attached",
+      "pane_groups": [
+        "Candidate A",
+        "Candidate B"
+      ],
+      "pane_texts": [
+        "ローカル画像・実験用タイル表示。GPU完了・常駐量・本番の画質受入は未計測。",
+        "物理表示倍率 25.8% / DIP変換 1.00 / 画像全体を表示",
+        "画像を利用できません: この候補は現在閲覧できる情報に含まれていません。",
+        "画像は未表示です"
+      ],
+      "controls": [
+        "全体表示 (0)",
+        "物理ピクセル1:1 (1)",
+        "連動する",
+        "A/Bを交換",
+        "A側を変更",
+        "B側を変更",
+        "比較を閉じる",
+        "Fixture: A側候補の消失",
+        "Fixture: 同じ候補の再出現"
+      ],
+      "focused": [
+        "MP-CMP1 Compare local fixture 1",
+        "比較するB側の画像。0: 全体、1: 物理等倍、+/-: 拡大縮小、矢印: 移動、F11: 全画面、Escape: 復帰"
+      ]
+    },
+    {
       "path": "captures/09-reappear.png",
-      "sha256": "sha256:f65012e1d669005d8a071263497f3012353919d70ff1f07bd246568aa82ef404",
+      "sha256": "sha256:3a0de9ad9ce54066673a42ab469ee07b201b1dfe2a9a4526152ae5ff2863a25d",
       "width": 1275,
       "height": 932,
       "step": "09-reappear",
-      "exercised": "reappearance after several replacements is explicit",
+      "exercised": "a reappearance after several identities reports the retained bound explicitly",
       "pane_groups": [
-        "Candidate C (cyan marker)",
-        "Candidate A"
+        "Candidate A",
+        "Candidate B"
       ],
       "pane_texts": [
-        "画像を利用できません: RetainedFrameLimit",
-        "画像は未表示です",
+        "ローカル画像・実験用タイル表示。GPU完了・常駐量・本番の画質受入は未計測。",
+        "物理表示倍率 25.8% / DIP変換 1.00 / 画像全体を表示",
         "ローカル画像・実験用タイル表示。GPU完了・常駐量・本番の画質受入は未計測。",
         "物理表示倍率 25.8% / DIP変換 1.00 / 画像全体を表示"
       ],
@@ -348,12 +348,45 @@
       ]
     },
     {
-      "path": "captures/10-restore-before.png",
+      "path": "captures/10-side-change-a-to-c.png",
+      "sha256": "sha256:a6874b5f6bd2fd12ace6dc597a6f304919042590307731d00ac8453ac625290b",
+      "width": 1275,
+      "height": 932,
+      "step": "10-side-change-a-to-c",
+      "exercised": "side A replaced by Candidate C; link kept, pair reset to Fit",
+      "pane_groups": [
+        "Candidate C (cyan marker)",
+        "Candidate B"
+      ],
+      "pane_texts": [
+        "ローカル画像・実験用タイル表示。GPU完了・常駐量・本番の画質受入は未計測。",
+        "物理表示倍率 25.8% / DIP変換 1.00 / 画像全体を表示",
+        "ローカル画像・実験用タイル表示。GPU完了・常駐量・本番の画質受入は未計測。",
+        "物理表示倍率 25.8% / DIP変換 1.00 / 画像全体を表示"
+      ],
+      "controls": [
+        "全体表示 (0)",
+        "物理ピクセル1:1 (1)",
+        "連動する",
+        "A/Bを交換",
+        "A側を変更",
+        "B側を変更",
+        "比較を閉じる",
+        "Fixture: A側候補の消失",
+        "Fixture: 同じ候補の再出現"
+      ],
+      "focused": [
+        "MP-CMP1 Compare local fixture 1",
+        "候補一覧。左右キーで移動、Enterで選択"
+      ]
+    },
+    {
+      "path": "captures/11-restore-before.png",
       "sha256": "sha256:0533005d7017ce606a93442de95f4fcc46a77c63847a2582e575b6725f0ff0d5",
       "width": 1275,
       "height": 932,
-      "step": "10-restore-before",
-      "exercised": "fresh process: A panned at 1:1, then the reference disappears",
+      "step": "11-restore-before",
+      "exercised": "fresh process: side A is panned at 1:1 and its reference disappears",
       "pane_groups": [
         "Candidate A",
         "Candidate B"
@@ -381,12 +414,12 @@
       ]
     },
     {
-      "path": "captures/11-restore-after.png",
+      "path": "captures/12-restore-after.png",
       "sha256": "sha256:89670dd31b92fca58aa8cea187912763d8b321c2c3559b63ae0650f5df9f8e0b",
       "width": 1275,
       "height": 932,
-      "step": "11-restore-after",
-      "exercised": "fresh process: the same candidate returns at its previous transform",
+      "step": "12-restore-after",
+      "exercised": "the same candidate returns at its previous physical 1:1 transform",
       "pane_groups": [
         "Candidate A",
         "Candidate B"
@@ -412,20 +445,78 @@
         "MP-CMP1 Compare local fixture 1",
         "Fixture: 同じ候補の再出現"
       ]
+    },
+    {
+      "path": "captures/13-viewed-outside-pair.png",
+      "sha256": "sha256:3b7f07aea0d9bf7f78f009227f8fcaf2c61fc33c37ddd4af073893eec20493be",
+      "width": 1275,
+      "height": 932,
+      "step": "13-viewed-outside-pair",
+      "exercised": "plain selection makes Candidate C the Viewed choice outside the A/B pair",
+      "pane_groups": [
+        "Candidate A",
+        "Candidate B"
+      ],
+      "pane_texts": [
+        "ローカル画像・実験用タイル表示。GPU完了・常駐量・本番の画質受入は未計測。",
+        "物理表示倍率 100.0% / DIP変換 1.00 / 画像の一部を切り抜いて表示",
+        "ローカル画像・実験用タイル表示。GPU完了・常駐量・本番の画質受入は未計測。",
+        "物理表示倍率 100.0% / DIP変換 1.00 / 画像の一部を切り抜いて表示"
+      ],
+      "controls": [
+        "全体表示 (0)",
+        "物理ピクセル1:1 (1)",
+        "連動を解除",
+        "A/Bを交換",
+        "A側を変更",
+        "B側を変更",
+        "比較を閉じる",
+        "Fixture: A側候補の消失",
+        "Fixture: 同じ候補の再出現"
+      ],
+      "focused": [
+        "MP-CMP1 Compare local fixture 1",
+        "候補一覧。左右キーで移動、Enterで選択"
+      ]
+    },
+    {
+      "path": "captures/14-close-shows-viewed-c.png",
+      "sha256": "sha256:4111693207a62809a0e9526f3461754cd81762a8763978a8f349fc1cd59cc270",
+      "width": 1275,
+      "height": 932,
+      "step": "14-close-shows-viewed-c",
+      "exercised": "closing returns to the standalone viewer with Candidate C visible",
+      "pane_groups": [],
+      "pane_texts": [
+        "ローカル画像・実験用タイル表示。GPU完了・常駐量・本番の画質受入は未計測。",
+        "物理表示倍率 27.1% / DIP変換 1.00 / 画像全体を表示"
+      ],
+      "controls": [
+        "全体表示 (0)",
+        "物理ピクセル1:1 (1)",
+        "拡大 (+)",
+        "縮小 (-)",
+        "全画面 / 復帰 (F11)",
+        "Fixture: A側候補の消失",
+        "Fixture: 同じ候補の再出現"
+      ],
+      "focused": [
+        "MP-CMP1 Compare local fixture 1"
+      ]
     }
   ],
   "source_files": [
     {
       "path": "crates/desktop-gpui/src/compare_view.rs",
-      "sha256": "sha256:991743e44ee1e7c4204caf9c33a9505b4401fe57954f27c64e49f49c5f008e22"
+      "sha256": "sha256:ec6e35c803f38c1310c7287d4bf248a4a5435e11404bb96c2e78639d6eee2c0d"
     },
     {
       "path": "crates/desktop-gpui/src/image_viewer.rs",
-      "sha256": "sha256:4896acbf0a6252016c89e02dcf8dade9f35350e78114f5a611de0e895c774313"
+      "sha256": "sha256:7c1b1548183ee6059f5d867621203da51d50b00256309f4a2f36691a0ed42093"
     },
     {
       "path": "crates/desktop-gpui/src/image_upload.rs",
-      "sha256": "sha256:81eb3b948137dd7c43c3fa8a6f94e190848f86968e0f91af7050b86f0c6d2106"
+      "sha256": "sha256:4d0e1587dfc6f64952c9382a7e9f12e90fe65055f503bafba58949c964c7b384"
     },
     {
       "path": "crates/desktop-gpui/src/view_transform.rs",
@@ -441,7 +532,7 @@
     },
     {
       "path": "apps/desktop/examples/compare.rs",
-      "sha256": "sha256:2cde84a548e1e1633a7831b7b47bfa4915ecf76e242ca633fc55d494d418c87e"
+      "sha256": "sha256:80d575f70b50dcbe2defb1dcba0f6fe8ecdafd75824bd751f9d0dbaa32a8ca1f"
     },
     {
       "path": "apps/desktop/examples/support/image_fixture.rs",
@@ -449,13 +540,13 @@
     },
     {
       "path": "docs/development/TESTING.md",
-      "sha256": "sha256:ed944175f47a375afb74a482dfb1f98ea65f2d4d5839340886997331dc1cd079"
+      "sha256": "sha256:2a1fa9c36fe84ef586b30d26f948c87301546e12d16d42b98c5d49c56c6db818"
     }
   ],
   "binaries": [
     {
       "release_output": "examples/compare.exe",
-      "sha256": "sha256:0d2fa636004d943a78c33893bba2a8f9d960f5c5af92d6f408a5b38186884a24"
+      "sha256": "sha256:8fda12340ecaff8daf95a6b017d57c7318fab4f817d63140a0863c7257b1da77"
     },
     {
       "release_output": "cos-desktop.exe",
@@ -465,8 +556,8 @@
   "verification": {
     "local_quality": "fmt: exit 0; metadata: exit 0; dependency-rules-self-test: exit 0; dependency-rules: exit 0; plan-ledger: exit 0; clippy: exit 0; tests: exit 0; build: exit 0; workspace tests passed: 1019",
     "focused_regressions": "cargo test -p desktop-gpui --lib image_upload: 17 passed (admission, reuse, sharing, counters, pool pruning)",
-    "independent_gate": "this candidate awaits its own Gate",
-    "external_review": "this candidate awaits its Tern round"
+    "independent_gate": "first candidate 7fe5bad: Gate 92249c9f SUCCEEDED 8/8 with cleanup complete; this repaired candidate awaits its own Gate",
+    "external_review": "round 1 on 7fe5bad: PASS 1 / 1 / 0 HOLD; both findings are repaired in this candidate and observed natively"
   },
   "reviews": {
     "ui": {
@@ -479,6 +570,16 @@
         "a pane camera event no longer claims the interaction origin, so pair-wide controls cannot move the focus Swap returns to"
       ],
       "retained": "the trace keeps its frozen before-input scene sampling documented in scene_sample_order"
+    },
+    "external_round_1": {
+      "verdict": "PASS 1 / 1 / 0, VERDICT HOLD",
+      "blocking": [
+        "closing Compare with a Viewed candidate outside the pair could not restore that candidate (ADR-0010 D-7); repaired by acquiring its own local input and keeping the loaded picture on close"
+      ],
+      "actionable": [
+        "a swap with one unavailable side could withdraw the picture it had just attached; repaired by swapping availability with the frames and restating the projection after a swap"
+      ],
+      "additional_repair": "refused local preparations now state a user-facing sentence instead of a raw variant name (ADR-0015 Q13)"
     },
     "resources": {
       "findings": 1,
