@@ -472,6 +472,7 @@ impl Render for ImageViewer {
         let geometry = self.transform.clone();
         let phase = self.phase;
         let preview = self.mode == ViewerMode::PreviewOnly;
+        let pending_release = !self.retiring.is_empty();
         let entity = cx.entity().downgrade();
         let demand = (self.serial, self.view_serial);
         let previous_viewport = self.viewport;
@@ -551,11 +552,16 @@ impl Render for ImageViewer {
                 .filter(|message| previous_status.as_ref() != *message);
                 let changed = geometry.as_ref() != Some(&transform) || previous_viewport != bounds;
                 let promote = complete && phase < if preview { 1 } else { 2 };
-                if !changed && !promote && failure.is_none() && !missing && frame.is_none() {
+                if !changed
+                    && !promote
+                    && failure.is_none()
+                    && !missing
+                    && frame.is_none()
+                    && !pending_release
+                {
                     return;
                 }
                 let failure_present = failure.is_some();
-                let painted_epoch = frame.is_some();
                 let entity = entity.clone();
                 window.defer(app, move |_, app| {
                     let _ = entity.update(app, |this, cx| {
@@ -585,9 +591,10 @@ impl Render for ImageViewer {
                         }
                         // Repaint only on a real state change; a still-missing tile set is advanced
                         // by tile arrival or the bounded retry timer, never by repaint alone.
-                        if painted_epoch {
-                            this.scene_serial = this.scene_serial.saturating_add(1);
-                        }
+                        // Every composed scene counts, including one with no current image: the
+                        // retired frame cannot appear in it, so an empty scene still proves the
+                        // old reference is gone.
+                        this.scene_serial = this.scene_serial.saturating_add(1);
                         if changed || promote || failure_present || started || resized {
                             cx.notify();
                         }
