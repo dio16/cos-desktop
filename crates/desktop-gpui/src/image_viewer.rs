@@ -48,6 +48,10 @@ pub fn bind_keys(cx: &mut App) {
     ]);
 }
 
+/// Frames still presented by another consumer are re-checked for this many two-frame sweeps
+/// before this viewer stops holding an extra reference to them.
+const RETIREMENT_RETRIES: u8 = 8;
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ViewerMode {
     PreviewOnly,
@@ -65,6 +69,7 @@ pub struct ImageViewer {
     /// Frames detached from this viewer but still reachable from the last presented scene.
     retiring: Vec<Arc<PreparedImage>>,
     retirement_scheduled: bool,
+    retirement_attempts: u8,
     serial: u64,
     view_serial: u64,
     revision: u64,
@@ -85,7 +90,7 @@ impl ImageViewer {
         Self {
             service: ImageUploadService::global(), current: None, cancel: Cancellation::default(),
             tile_cancel: Cancellation::default(), demand: None, retiring: Vec::new(),
-            retirement_scheduled: false,
+            retirement_scheduled: false, retirement_attempts: 0,
             serial: 0, view_serial: 0, revision: 0, generation: 0, transform: None,
             viewport: Bounds::default(), focus: cx.focus_handle().tab_stop(true), drag: None,
             mode, phase: 0, status: "画像を利用できません: 認可済みの画像入力がありません。実行基盤からの取得は未対応です。".into(),
@@ -163,14 +168,23 @@ impl ImageViewer {
         cx.notify();
     }
 
-    /// Call before removing the owning view/window. Issued payloads remain quarantined, not freed.
-    pub fn close(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+    /// Call before removing the owning view/window. A painted payload is never released here: the
+    /// scene that referenced it may still be presented and there is no completion signal. Frames
+    /// that never reached the atlas are released through the existing unpainted path.
+    pub fn close(&mut self) {
         self.cancel.cancel();
         self.tile_cancel.cancel();
         self.demand = None;
         self.serial = self.serial.saturating_add(1);
-        self.release_current(window, cx);
-        self.evict_retired(window);
+        let Some(frame) = self.current.take() else {
+            return;
+        };
+        self.service.detach(&frame, self.consumer);
+        if !self.service.discard_unpainted(&frame) {
+            // Painted frames stay owned past close; the platform destroys the atlas with the
+            // window, so no atlas entry is removed while a presented scene may reference it.
+            self.retiring.push(frame);
+        }
     }
 
     /// Detach at once so no later scene adds these tiles, then drop the atlas entries only after
@@ -196,22 +210,40 @@ impl ImageViewer {
             window.on_next_frame(move |_window, cx| {
                 let _ = entity.update_in(cx, |this, window, cx| {
                     this.retirement_scheduled = false;
-                    this.evict_retired(window);
+                    this.evict_retired(window, cx);
                     cx.notify();
                 });
             });
         });
     }
 
-    fn evict_retired(&mut self, window: &mut Window) {
+    fn evict_retired(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        let mut keep = Vec::new();
         for frame in std::mem::take(&mut self.retiring) {
-            if let Err(error) = self.service.evict(&frame, window) {
-                // Consumers elsewhere still present it, or release is not provable yet: keep the
-                // reference rather than dropping it, and report the bounded limitation.
-                self.retiring.push(frame);
-                self.status = format!("画像の解放を保留: {error}").into();
+            match self.service.evict(&frame, window) {
+                Ok(_) | Err(ImageUploadError::NotRetained) => {}
+                Err(error) => {
+                    // Another consumer still presents it, or release is not provable yet.
+                    self.status = format!("画像の解放を保留: {error}").into();
+                    keep.push(frame);
+                }
             }
         }
+        self.retiring = keep;
+        if self.retiring.is_empty() {
+            self.retirement_attempts = 0;
+            return;
+        }
+        self.retirement_attempts = self.retirement_attempts.saturating_add(1);
+        if self.retirement_attempts > RETIREMENT_RETRIES {
+            // The registry still owns the frame for its remaining consumers; dropping our extra
+            // reference strands nothing and stops an unbounded per-frame retry.
+            self.status = "画像の解放は別の表示が終わるまで保留されます。".into();
+            self.retiring.clear();
+            self.retirement_attempts = 0;
+            return;
+        }
+        self.schedule_retirement(window, cx);
     }
 
     /// Prepare only the tiles this viewport needs; a newer viewport supersedes the demand.
@@ -234,6 +266,14 @@ impl ImageViewer {
         );
         cx.spawn(async move |this, cx| {
             let outcome = task.await;
+            // A concurrent preparation is transient: wait briefly, then let the same demand be
+            // requested again from the next paint instead of stalling the viewport for good.
+            let busy = matches!(outcome, Err(ImageUploadError::PreparationBusy));
+            if busy {
+                cx.background_executor()
+                    .timer(std::time::Duration::from_millis(50))
+                    .await;
+            }
             let _ = this.update(cx, |this, cx| {
                 if (this.serial, this.view_serial) != (serial, view_serial) {
                     return;
@@ -244,6 +284,10 @@ impl ImageViewer {
                         cx.notify();
                     }
                     Err(ImageUploadError::Cancelled) => {}
+                    Err(ImageUploadError::PreparationBusy) if busy => {
+                        this.demand = None;
+                        cx.notify();
+                    }
                     // Keep the demand so an unchanged viewport does not retry every frame.
                     Err(error) => {
                         this.status = format!("画像の表示を制限: {error}").into();

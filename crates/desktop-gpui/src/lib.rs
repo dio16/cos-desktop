@@ -881,8 +881,8 @@ impl Shell {
         // The shell owns the window lifecycle: retiring the viewer and its atlas entries is an
         // explicit step before the platform destroys the window, never an implicit Drop.
         let closing_viewer = artifact_viewer.downgrade();
-        window.on_window_should_close(cx, move |window, cx| {
-            let _ = closing_viewer.update(cx, |viewer, cx| viewer.close(window, cx));
+        window.on_window_should_close(cx, move |_window, cx| {
+            let _ = closing_viewer.update(cx, |viewer, _| viewer.close());
             true
         });
         Self {

@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "task": "MP-IMG5",
+  "candidate_commit": "9b26d2fee9b28ac132631440ca3aaa6d89c265bc",
+  "producer": "Refine 0.3.1",
+  "gate_id": "dddc890c-ca48-4e2b-9ad7-e8354cf3ae84",
+  "gate_label": "cos-desktop-img5-9b26d2fe-r3",
+  "state": "SUCCEEDED",
+  "request_sha256": "sha256:83ca141d69a3bc62e7a379708984686ba7a346040167fcd8cb25726c34274b4d",
+  "terminal_state_sha256": "sha256:eaca1899f124602f3f9aee7a5836127a2ede4466722c23be087947fcaa3ace21",
+  "candidate_sha256": "sha256:fb9f4cdfb500dce4a420d9e1032f9dd6bdcfaba30e05e5bee5a4a7816dd81388",
+  "verification": {
+    "fmt": "PASS, exit 0",
+    "metadata": "PASS, exit 0",
+    "dependency_rules_self_test": "PASS, exit 0",
+    "dependency_rules": "PASS, exit 0",
+    "plan_ledger": "PASS, exit 0",
+    "clippy": "PASS, exit 0",
+    "workspace_tests": "PASS, exit 0; 1007 passed",
+    "workspace_build": "PASS, exit 0"
+  },
+  "cleanup": "complete",
+  "owner_alive": false,
+  "recovery_required": false,
+  "integrity": "Native gate verify exit 0; the whole integrity report was unchanged after the approved successful-Gate scratch disposal",
+  "native_preflight": "UNKNOWN retained with zero failures; standing Caller scope applied",
+  "superseded_by": "The round-2 review required further repairs (transient preparation retry, close-path atlas ordering, bounded retirement retry). This Gate remains immutable evidence for its own commit.",
+  "acceptance_boundary": "Technical Gate result only; it is not GPU completion/residency/Present evidence, product acceptance, main promotion or release."
+}
