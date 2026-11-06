@@ -3,7 +3,7 @@
   "date": "2026-11-07",
   "task": "MP-IMG5",
   "contract": "DC-MP-IMG5",
-  "status": "LOCAL_INPUT_IMPLEMENTED_NATIVE_OBSERVED_LOCAL_QUALITY_PASS_GATE_REVIEW_PENDING",
+  "status": "LOCAL_INPUT_IMPLEMENTED_NATIVE_OBSERVED_REPAIRED_FOR_ROUND2",
   "source_parent": "9af1183fe0bb1eef88204c46120d10570cd7089b",
   "authority": "Caller-directed completion of the implementation plan; Tern whole-task MP-IMG5 directive; development remains on dev.",
   "taskern_packet_sha256": "sha256:161db9103b577c6c5efba8e64f360a2195a5c3a4629c9e1df88432a4a8af1e86",
@@ -207,9 +207,15 @@
     }
   ],
   "verification": {
-    "final_quality": "PASS: fmt, metadata, dependency checker self-test/check, plan ledger, clippy, workspace tests (1007 passed), workspace build and release viewer/upload/shell build; all exit 0",
-    "independent_gate": "PENDING",
-    "tern_review": "PENDING"
+    "final_quality": "PASS: fmt, metadata, dependency checker self-test/check, plan ledger, clippy, workspace tests, workspace build and release viewer/upload/shell build; all exit 0",
+    "independent_gate": "candidate 6a8942d SUCCEEDED (8/8, 1007 tests); this repaired candidate carries its own Gate",
+    "tern_review": "Round 1 on 6a8942d HOLD: 2 BLOCKING (per-window consumer identity; atlas release before the painted scene stopped referencing it) and 2 ACTIONABLE (preparation not viewport-driven; Drop/window teardown not connected). All four are repaired in this candidate and will be re-reviewed."
+  },
+  "review_round_1_repairs": {
+    "B-01": "ConsumerId::allocate gives every viewer/pane a process-unique owner; same-window sharing and last-consumer eviction keep the existing ownership rules.",
+    "B-02": "Replaced/closed frames detach immediately and are evicted only after two presented frames, scheduled through window.on_next_frame chaining; frames still presented elsewhere stay retired and charged.",
+    "A-01": "Tiles are prepared on demand from the viewport/mip demand on the background executor; non-intersecting spans are never built, and pan/zoom/load/revision supersedes and cancels the prior demand.",
+    "A-02": "The shell registers an explicit on_window_should_close teardown that retires the viewer, and Drop detaches every current and retired frame."
   },
   "not_claimed": [
     "Mixed-DPI native migration (both attached displays are 100%)",

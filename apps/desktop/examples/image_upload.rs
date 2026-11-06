@@ -238,7 +238,7 @@ impl ImageUploadProbe {
                     prepaint_ready = this
                         .update_in(cx, |this, window, _| {
                             let handle = window.window_handle();
-                            let consumer = ConsumerId::new(9);
+                            let consumer = ConsumerId::allocate();
                             let attached = service.attach(&frame, consumer, Some(handle));
                             service.detach(&frame, consumer);
                             let _ = this;
@@ -317,7 +317,7 @@ impl ImageUploadProbe {
                 // The first identity is presented by two consumers; a repeated identity would be
                 // refused by the pool while its payload is quarantined (unreclaimed key).
                 let shared = index == 0;
-                let consumers = [ConsumerId::new(1), ConsumerId::new(2)];
+                let consumers = [ConsumerId::allocate(), ConsumerId::allocate()];
                 let attached = this
                     .update_in(cx, |this, window, cx| {
                         let handle = window.window_handle();
@@ -742,7 +742,7 @@ fn main() {
                     device_generation: 1,
                     pending: false,
                     paint_message: SharedString::default(),
-                    consumer: ConsumerId::new(1),
+                    consumer: ConsumerId::allocate(),
                 });
                 if let Mode::Manifest(capacity_bytes) = mode {
                     probe.update(cx, |this, cx| this.start_manifest(capacity_bytes, cx));

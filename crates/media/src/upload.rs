@@ -41,7 +41,7 @@ pub enum SourceClass {
 /// check it.
 #[derive(Clone, Debug)]
 pub struct VerifiedRaster {
-    raster: DecodedRaster,
+    raster: Arc<DecodedRaster>,
     class: SourceClass,
     content_digest: [u8; 32],
 }
@@ -119,11 +119,11 @@ impl VerifiedRaster {
         cancel.check()?;
         let content_digest = digest_of(&rgba);
         Ok(VerifiedRaster {
-            raster: DecodedRaster {
+            raster: Arc::new(DecodedRaster {
                 size,
                 format: self.raster.format,
                 rgba,
-            },
+            }),
             class: self.class,
             content_digest,
         })
@@ -179,7 +179,7 @@ pub fn decode_for_upload(
     }
     let content_digest = digest_of(&raster.rgba);
     Ok(VerifiedRaster {
-        raster,
+        raster: Arc::new(raster),
         class: SourceClass::StillPng8Rgb2048,
         content_digest,
     })
@@ -263,7 +263,7 @@ struct PoolState {
 #[derive(Debug)]
 struct OrphanedTransfer {
     identity: UploadIdentity,
-    raster: DecodedRaster,
+    raster: Arc<DecodedRaster>,
 }
 
 /// Read-only description of what is held for abandoned transfers.
@@ -388,7 +388,7 @@ impl UploadPool {
 pub struct AdmittedUpload {
     /// The CPU payload, held for the whole admission, so the reservation describes bytes that
     /// exist.
-    raster: Option<DecodedRaster>,
+    raster: Option<Arc<DecodedRaster>>,
     identity: UploadIdentity,
     stage: UploadStage,
     bytes: u64,
@@ -406,7 +406,7 @@ impl AdmittedUpload {
         self.bytes
     }
     pub fn raster(&self) -> Option<&DecodedRaster> {
-        self.raster.as_ref()
+        self.raster.as_deref()
     }
     pub fn stride_bytes(&self) -> Result<u32, UploadRefusal> {
         self.raster
@@ -615,7 +615,7 @@ pub fn admit_upload(
     })?;
 
     Ok(AdmittedUpload {
-        raster: Some(verified.raster.clone()),
+        raster: Some(Arc::clone(&verified.raster)),
         identity,
         stage: UploadStage::Staged,
         bytes,

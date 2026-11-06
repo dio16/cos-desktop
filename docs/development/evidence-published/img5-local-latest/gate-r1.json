@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "task": "MP-IMG5",
+  "candidate_commit": "6a8942d4d420ca9b96ce5217e59840edaf4a1a3c",
+  "producer": "Refine 0.3.1",
+  "gate_id": "70b10f56-ddd3-43e6-b405-643fbd80f63a",
+  "gate_label": "cos-desktop-img5-6a8942d4-r1",
+  "state": "SUCCEEDED",
+  "request_sha256": "sha256:ecc90370af3b99139a70e8bca621f5f035c3225661150b59de02a4fc3f82c855",
+  "terminal_state_sha256": "sha256:2ba40f5282eb9614426bd67b0e9ea1422cee786614fff93ed4cb811559ded4fe",
+  "candidate_sha256": "sha256:3b4e9856d5209642d9cdaf7716f9d02a24696de4553b8a3943d3d6d5e7c6b0d0",
+  "duration_ms": 467654,
+  "verification": {
+    "fmt": "PASS, exit 0",
+    "metadata": "PASS, exit 0",
+    "dependency_rules_self_test": "PASS, exit 0",
+    "dependency_rules": "PASS, exit 0",
+    "plan_ledger": "PASS, exit 0",
+    "clippy": "PASS, exit 0",
+    "workspace_tests": "PASS, exit 0; 1007 passed",
+    "workspace_build": "PASS, exit 0"
+  },
+  "independence": "Pinned full commit in a detached checkout; fresh dedicated external target; no implementation executor",
+  "fresh_build_binary_sha256": "sha256:ecc4fd3e9bd83147820e65a9c27ce41f1820d25c2a29b4cb9051c3406a85ab74",
+  "native_preflight": "UNKNOWN retained, no FAIL; standing Caller authority and qualified local runtime evidence applied to the bounded request; full commit existence observed separately",
+  "cleanup": "complete",
+  "owner_alive": false,
+  "recovery_required": false,
+  "integrity": "Native gate verify exit 0 before and after approved scratch disposal; entire integrity report unchanged, including all 8 private check-log bindings",
+  "caller_storage": "Only this successful Gate's exact work/repo and fresh target removed after retaining source through dev and origin/dev, binary identity, config/request and private evidence. A generated test junction was unlinked without traversal before the zero-reparse scan. Gate authority, observations and private logs retained; no historical/failed records removed.",
+  "acceptance_boundary": "Technical Gate result only; does not prove GPU completion/residency/Present, production full-detail adoption, Runtime integration, product acceptance, main promotion or release. Raw authority/logs remain private."
+}

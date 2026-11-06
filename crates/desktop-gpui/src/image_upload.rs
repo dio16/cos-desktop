@@ -361,9 +361,9 @@ impl ImageUploadService {
         self.prepare_with_mips(background, request, cancel, source, None)
     }
 
-    /// Local viewer path: preview-only prepares 512→128; experimental detail prepares 2048→128.
-    /// Unused higher-resolution tiles are never allocated for the preview-only capability.
-    /// It does not widen source admission or establish large-image tile/residency capability.
+    /// Decode the admitted source off-thread. Viewer tiles are prepared only for later viewport
+    /// demand; preview-only restricts that demand to levels 2–4 without preparing detail.
+    /// This does not widen source admission or establish large-image residency capability.
     pub fn prepare_view_generated(
         &self,
         background: &BackgroundExecutor,
@@ -480,37 +480,9 @@ impl ImageUploadService {
             if state.frames.len() >= MAX_RETAINED_FRAMES {
                 return Err(ImageUploadError::RetainedFrameLimit);
             }
-            // Count actual raster and packed mip owners before allocating the viewer pyramid.
-            if mips
-                || !state.quarantined_views.is_empty()
-                || state.frames.iter().any(|frame| frame.has_mips)
-            {
-                let raw: u64 = state
-                    .pools
-                    .iter()
-                    .map(|(_, pool)| {
-                        let usage = pool.usage();
-                        usage.resident.saturating_add(usage.resident_stuck)
-                    })
-                    .sum();
-                let packed: u64 = state
-                    .frames
-                    .iter()
-                    .chain(&state.quarantined_views)
-                    .flat_map(|frame| &frame.tiles)
-                    .map(|tile| tile.transfer_bytes)
-                    .sum();
-                let incoming = if mips {
-                    FRAME_RGBA8_BYTES
-                        + (minimum_mip.unwrap_or(0)..=4)
-                            .map(|level| FRAME_RGBA8_BYTES >> (level * 2))
-                            .sum::<u64>()
-                } else {
-                    FRAME_RGBA8_BYTES * 2
-                };
-                if raw.saturating_add(packed).saturating_add(incoming) > STAGING_LIMIT_BYTES * 2 {
-                    return Err(ImageUploadError::RetainedFrameLimit);
-                }
+            let incoming = FRAME_RGBA8_BYTES + if mips { 0 } else { FRAME_RGBA8_BYTES };
+            if retained_cpu_bytes(&state).saturating_add(incoming) > STAGING_LIMIT_BYTES * 2 {
+                return Err(ImageUploadError::RetainedFrameLimit);
             }
             prune_idle_pools(&mut state);
             // Per-category totals across **every** generation. A pool's own limit is per pool, so
@@ -566,32 +538,28 @@ impl ImageUploadService {
             )
             .map_err(ImageUploadError::Admission)?
         };
-        let mut tiles = if minimum_mip == Some(2) {
+        let tiles = if mips {
             Vec::new()
         } else {
-            build_tiles(&verified, cancel, 0)?
+            build_tiles(&verified, cancel, 0, None)?
         };
-        if mips {
-            for level in minimum_mip.unwrap_or(0).max(1)..=4 {
-                let mip = verified.mip(level, cancel).map_err(map_media_error)?;
-                tiles.extend(build_tiles(&mip, cancel, level)?);
-            }
-        }
         if cancel.is_cancelled() {
             return Err(ImageUploadError::Cancelled);
         }
         let issued = vec![false; tiles.len()];
         let prepared = Arc::new(PreparedImage {
             identity,
-            tiles,
+            source: mips.then_some(verified),
             has_mips: mips,
             first_mip: minimum_mip.unwrap_or(0),
             admission: Mutex::new(Some(admission)),
             paint_state: Mutex::new(PaintState {
                 issued,
+                tiles,
                 ..PaintState::default()
             }),
         });
+
         let mut state = self.inner.state.lock().expect("image upload service state");
         if let Some(existing) = state
             .frames
@@ -605,6 +573,90 @@ impl ImageUploadService {
         }
         state.frames.push(Arc::clone(&prepared));
         Ok(prepared)
+    }
+    /// Prepare only this viewport's missing complete tiles, never on the input/paint thread.
+    pub(crate) fn prepare_visible(
+        &self,
+        background: &BackgroundExecutor,
+        frame: Arc<PreparedImage>,
+        demand: TileDemand,
+        cancel: Cancellation,
+    ) -> Task<Result<(), ImageUploadError>> {
+        let service = self.clone();
+        background.spawn(async move { service.prepare_visible_now(&frame, &demand, &cancel) })
+    }
+
+    fn prepare_visible_now(
+        &self,
+        frame: &Arc<PreparedImage>,
+        demand: &TileDemand,
+        cancel: &Cancellation,
+    ) -> Result<(), ImageUploadError> {
+        if cancel.is_cancelled() {
+            return Err(ImageUploadError::Cancelled);
+        }
+        let _preparation = match PROCESS_PREPARATION.try_lock() {
+            Ok(guard) => guard,
+            Err(std::sync::TryLockError::WouldBlock) => {
+                return Err(ImageUploadError::PreparationBusy);
+            }
+            Err(std::sync::TryLockError::Poisoned(error)) => error.into_inner(),
+        };
+        let source = frame
+            .source
+            .as_ref()
+            .ok_or(ImageUploadError::InvalidRasterLayout)?;
+        let missing = {
+            let state = self.inner.state.lock().expect("image upload service state");
+            if !state
+                .frames
+                .iter()
+                .any(|retained| Arc::ptr_eq(retained, frame))
+            {
+                return Err(ImageUploadError::NotRetained);
+            }
+            let missing = {
+                let paint = frame.paint_state.lock().expect("image frame paint state");
+                demand
+                    .spans
+                    .iter()
+                    .copied()
+                    .filter(|span| {
+                        !paint
+                            .tiles
+                            .iter()
+                            .any(|tile| tile.level == demand.level && tile.span == *span)
+                    })
+                    .collect::<Vec<_>>()
+            };
+            let incoming = missing.iter().try_fold(0u64, |sum, span| {
+                tile_transfer_layout(*span).map(|(_, bytes)| sum.saturating_add(bytes))
+            })?;
+            if retained_cpu_bytes(&state).saturating_add(incoming) > STAGING_LIMIT_BYTES * 2 {
+                return Err(ImageUploadError::RetainedFrameLimit);
+            }
+            missing
+        };
+        if missing.is_empty() {
+            return Ok(());
+        }
+        let mip = source.mip(demand.level, cancel).map_err(map_media_error)?;
+        let tiles = build_tiles(&mip, cancel, demand.level, Some(&missing))?;
+        let service = self.inner.state.lock().expect("image upload service state");
+        if cancel.is_cancelled() {
+            return Err(ImageUploadError::Cancelled);
+        }
+        if !service
+            .frames
+            .iter()
+            .any(|retained| Arc::ptr_eq(retained, frame))
+        {
+            return Err(ImageUploadError::NotRetained);
+        }
+        let mut paint = frame.paint_state.lock().expect("image frame paint state");
+        paint.issued.extend(std::iter::repeat_n(false, tiles.len()));
+        paint.tiles.extend(tiles);
+        Ok(())
     }
 
     /// Share an already prepared exact identity without decoding or creating new atlas images.
@@ -728,7 +780,7 @@ impl ImageUploadService {
             if owner != window.window_handle() {
                 return Err(ImageUploadError::NotOwnedByWindow);
             }
-            for tile in &frame.tiles {
+            for tile in &paint_state.tiles {
                 window
                     .drop_image(Arc::clone(&tile.image))
                     .map_err(|_| ImageUploadError::AtlasRelease)?;
@@ -914,6 +966,33 @@ impl ImageUploadService {
     }
 }
 
+fn retained_cpu_bytes(state: &ServiceState) -> u64 {
+    let raw: u64 = state
+        .pools
+        .iter()
+        .map(|(_, pool)| {
+            let usage = pool.usage();
+            usage.resident.saturating_add(usage.resident_stuck)
+        })
+        .sum();
+    let packed: u64 = state
+        .frames
+        .iter()
+        .chain(&state.quarantined_views)
+        .map(|frame| {
+            frame
+                .paint_state
+                .lock()
+                .expect("image frame paint state")
+                .tiles
+                .iter()
+                .map(|tile| tile.transfer_bytes)
+                .sum::<u64>()
+        })
+        .sum();
+    raw.saturating_add(packed)
+}
+
 /// Drop pools that no retained frame owns and that hold no charged or quarantined bytes.
 ///
 /// A logical generation advance creates a pool on first use; without this, every advance would
@@ -1013,14 +1092,17 @@ struct PreparedTile {
 pub struct ConsumerId(u64);
 
 impl ConsumerId {
-    pub fn new(value: u64) -> Self {
-        Self(value)
+    /// Allocate one process-unique pane/consumer identity, independent of its window.
+    pub fn allocate() -> Self {
+        static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
+        Self(NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed))
     }
 }
 
 #[derive(Default)]
 struct PaintState {
     owner_window: Option<AnyWindowHandle>,
+    tiles: Vec<PreparedTile>,
     issued: Vec<bool>,
     complete_in_scene: bool,
     cancelled_before_upload: bool,
@@ -1028,19 +1110,38 @@ struct PaintState {
     consumers: std::collections::BTreeSet<ConsumerId>,
 }
 
-/// An immutable, complete set of tile images tied to one verified source/revision/device identity.
+/// Verified source and a bounded cache of complete tiles, tied to one revision/device identity.
 pub struct PreparedImage {
     identity: UploadIdentity,
-    tiles: Vec<PreparedTile>,
+    source: Option<VerifiedRaster>,
     has_mips: bool,
     first_mip: u8,
     admission: Mutex<Option<media::AdmittedUpload>>,
     paint_state: Mutex<PaintState>,
 }
 
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) struct TileDemand {
+    level: u8,
+    spans: Vec<TileSpan>,
+}
+
 impl PreparedImage {
     pub fn identity(&self) -> &UploadIdentity {
         &self.identity
+    }
+
+    pub(crate) fn demand(
+        &self,
+        image_bounds: Bounds<gpui::Pixels>,
+        viewport: Bounds<gpui::Pixels>,
+        level: u8,
+    ) -> TileDemand {
+        let level = level.clamp(self.first_mip, 4);
+        TileDemand {
+            level,
+            spans: visible_spans(image_bounds, viewport, level).collect(),
+        }
     }
 
     pub fn progress(&self) -> FrameProgress {
@@ -1049,7 +1150,7 @@ impl PreparedImage {
             source_revision: self.identity.source_revision,
             device_generation: self.identity.device_generation,
             issued_tiles: state.issued.iter().filter(|issued| **issued).count(),
-            tile_count: self.tiles.len(),
+            tile_count: state.tiles.len(),
             complete_in_scene: state.complete_in_scene,
             cancelled_before_upload: state.cancelled_before_upload,
         }
@@ -1134,18 +1235,23 @@ impl PreparedImage {
             0
         };
         let mut visible = 0;
+        let mut missing = 0;
+        let mut owner = state.owner_window;
+        let PaintState { tiles, issued, .. } = &mut *state;
         let result =
             window.with_content_mask(Some(gpui::ContentMask { bounds: viewport }), |window| {
-                for (index, tile) in self.tiles.iter().enumerate() {
-                    if tile.level != level {
-                        continue;
-                    }
-                    let bounds = tile_bounds(image_bounds, tile.span, tile.level);
-                    if !bounds.intersects(&viewport) {
-                        continue;
-                    }
+                for span in visible_spans(image_bounds, viewport, level) {
                     visible += 1;
-                    if !state.issued[index] {
+                    let Some((index, tile)) = tiles
+                        .iter()
+                        .enumerate()
+                        .find(|(_, tile)| tile.level == level && tile.span == span)
+                    else {
+                        missing += 1;
+                        continue;
+                    };
+                    let bounds = tile_bounds(image_bounds, span, level);
+                    if !issued[index] {
                         if cancel.is_cancelled() {
                             return Ok(PaintStatus::Cancelled);
                         }
@@ -1168,8 +1274,8 @@ impl PreparedImage {
                             0,
                             false,
                         )?;
-                        state.owner_window = Some(window_id);
-                        state.issued[index] = true;
+                        owner = Some(window_id);
+                        issued[index] = true;
                         note_process_paint_issued(tile.transfer_bytes);
                     } else {
                         // Atlas cache hit under the caller-owned device-generation invariant.
@@ -1184,10 +1290,17 @@ impl PreparedImage {
                         note_process_repaint(1);
                     }
                 }
+                if missing > 0 {
+                    return Ok(PaintStatus::Pending {
+                        issued_tiles: visible - missing,
+                        tile_count: visible,
+                    });
+                }
                 Ok(PaintStatus::CompleteInScene {
                     tile_count: visible,
                 })
             });
+        state.owner_window = owner;
         match result {
             Ok(PaintStatus::CompleteInScene { .. }) => state.complete_in_scene = true,
             _ => window.paint_quad(fill(viewport, rgb(0x141820))),
@@ -1204,6 +1317,27 @@ pub struct ViewPaint<'a> {
     pub source_revision: u64,
     pub device_generation: u64,
     pub cancel: &'a Cancellation,
+}
+
+fn visible_spans(
+    image: Bounds<gpui::Pixels>,
+    viewport: Bounds<gpui::Pixels>,
+    level: u8,
+) -> impl Iterator<Item = TileSpan> {
+    let edge = FRAME_EDGE >> level;
+    (0..edge)
+        .step_by(TILE_EDGE as usize)
+        .flat_map(move |y| {
+            (0..edge)
+                .step_by(TILE_EDGE as usize)
+                .map(move |x| TileSpan {
+                    x,
+                    y,
+                    width: TILE_EDGE.min(edge - x),
+                    height: TILE_EDGE.min(edge - y),
+                })
+        })
+        .filter(move |span| tile_bounds(image, *span, level).intersects(&viewport))
 }
 
 fn tile_bounds(bounds: Bounds<gpui::Pixels>, span: TileSpan, level: u8) -> Bounds<gpui::Pixels> {
@@ -1226,6 +1360,7 @@ fn build_tiles(
     verified: &VerifiedRaster,
     cancel: &Cancellation,
     level: u8,
+    wanted: Option<&[TileSpan]>,
 ) -> Result<Vec<PreparedTile>, ImageUploadError> {
     let edge = verified.size().width();
     let schedule = schedule_tiles(edge, TILE_EDGE.min(edge), PERIOD_UPLOAD_CAP_BYTES)
@@ -1241,6 +1376,9 @@ fn build_tiles(
     for period in &schedule.periods {
         let mut period_transfer_bytes = 0u64;
         for span in &period.tiles {
+            if wanted.is_some_and(|wanted| !wanted.contains(span)) {
+                continue;
+            }
             if cancel.is_cancelled() {
                 return Err(ImageUploadError::Cancelled);
             }
@@ -1286,7 +1424,7 @@ fn build_tiles(
             });
         }
     }
-    if tiles.len() != edge.div_ceil(TILE_EDGE).pow(2) as usize {
+    if tiles.len() != wanted.map_or(edge.div_ceil(TILE_EDGE).pow(2) as usize, <[TileSpan]>::len) {
         return Err(ImageUploadError::InvalidRasterLayout);
     }
     Ok(tiles)
@@ -1628,14 +1766,14 @@ mod tests {
         };
         let frame = Arc::new(PreparedImage {
             identity,
-            tiles: Vec::new(),
+            source: None,
             has_mips: false,
             first_mip: 0,
             admission: Mutex::new(None),
             paint_state: Mutex::new(PaintState::default()),
         });
         // A frame nobody retained can never gain a consumer.
-        assert!(!service.attach(&frame, ConsumerId::new(1), None));
+        assert!(!service.attach(&frame, ConsumerId::allocate(), None));
         service
             .inner
             .state
@@ -1643,8 +1781,8 @@ mod tests {
             .expect("image upload service state")
             .frames
             .push(Arc::clone(&frame));
-        let first = ConsumerId::new(1);
-        let second = ConsumerId::new(2);
+        let first = ConsumerId::allocate();
+        let second = ConsumerId::allocate();
         assert!(service.attach(&frame, first, None));
         // Re-attaching the same consumer is idempotent success, not a spurious failure.
         assert!(service.attach(&frame, first, None));
@@ -1681,5 +1819,66 @@ mod tests {
                 .sum::<usize>(),
             16
         );
+    }
+
+    #[test]
+    fn allocated_consumers_are_unique_per_pane() {
+        let first = ConsumerId::allocate();
+        let second = ConsumerId::allocate();
+        assert_ne!(first, second);
+        assert_ne!(second, ConsumerId::allocate());
+    }
+
+    #[test]
+    fn visible_demand_selects_only_intersecting_complete_tiles() {
+        let frame = demand_frame(0);
+        let image = Bounds::new(point(px(0.0), px(0.0)), size(px(2048.0), px(2048.0)));
+        let corner = Bounds::new(point(px(0.0), px(0.0)), size(px(500.0), px(500.0)));
+        let demand = frame.demand(image, corner, 0);
+        assert_eq!(demand.level, 0);
+        assert_eq!(demand.spans.len(), 1);
+        assert_eq!((demand.spans[0].x, demand.spans[0].y), (0, 0));
+        // The whole image at a downscaled level is one complete tile, not the 16 detail tiles.
+        let preview = frame.demand(image, image, 2);
+        assert_eq!((preview.level, preview.spans.len()), (2, 1));
+        assert_eq!(
+            (preview.spans[0].width, preview.spans[0].height),
+            (512, 512)
+        );
+        // A preview-only frame never prepares detail below its first retained level.
+        assert_eq!(demand_frame(2).demand(image, image, 0).level, 2);
+    }
+
+    fn demand_frame(first_mip: u8) -> Arc<PreparedImage> {
+        Arc::new(PreparedImage {
+            identity: media::UploadIdentity {
+                key: RepresentationKey {
+                    source: RepresentationSource::Local {
+                        provenance: media::LocalProvenance::Fixture {
+                            fixture: media::LocalId::new("img5-demand").expect("fixture id"),
+                            manifest: media::LocalId::new("img5-manifest").expect("manifest id"),
+                            source: media::LocalId::new("img5-source").expect("source id"),
+                        },
+                        revision: 1,
+                    },
+                    kind: desktop_protocol::RepresentationKind::Preview,
+                    size: media::PixelSize::new(FRAME_EDGE, FRAME_EDGE).expect("frame size"),
+                    orientation: media::Orientation::Normal,
+                    policy: media::DecodePolicy {
+                        decoder: media::LocalId::new("png-rgb8").expect("decoder id"),
+                        colour: media::LocalId::new("identity-rgb").expect("colour id"),
+                        generation: 1,
+                    },
+                },
+                source_revision: 1,
+                device_generation: 1,
+                content_digest: [0u8; 32],
+            },
+            source: None,
+            has_mips: true,
+            first_mip,
+            admission: Mutex::new(None),
+            paint_state: Mutex::new(PaintState::default()),
+        })
     }
 }

@@ -4,8 +4,8 @@
 use crate::{
     contrast::{ContrastScheme, NORMAL_COLORS, Palette},
     image_upload::{
-        ConsumerId, FRAME_EDGE, ImageUploadService, PaintStatus, PreparedImage, UploadRequest,
-        ViewPaint,
+        ConsumerId, FRAME_EDGE, ImageUploadError, ImageUploadService, PaintStatus, PreparedImage,
+        TileDemand, UploadRequest, ViewPaint,
     },
     view_transform::{Point, Size, ViewTransform},
 };
@@ -59,6 +59,12 @@ pub struct ImageViewer {
     service: ImageUploadService,
     current: Option<Arc<PreparedImage>>,
     cancel: Cancellation,
+    /// Cancellation owned by the current viewport tile demand.
+    tile_cancel: Cancellation,
+    demand: Option<TileDemand>,
+    /// Frames detached from this viewer but still reachable from the last presented scene.
+    retiring: Vec<Arc<PreparedImage>>,
+    retirement_scheduled: bool,
     serial: u64,
     view_serial: u64,
     revision: u64,
@@ -75,13 +81,15 @@ pub struct ImageViewer {
 }
 
 impl ImageViewer {
-    pub fn new(mode: ViewerMode, window: &Window, cx: &mut Context<Self>) -> Self {
+    pub fn new(mode: ViewerMode, _window: &Window, cx: &mut Context<Self>) -> Self {
         Self {
             service: ImageUploadService::global(), current: None, cancel: Cancellation::default(),
+            tile_cancel: Cancellation::default(), demand: None, retiring: Vec::new(),
+            retirement_scheduled: false,
             serial: 0, view_serial: 0, revision: 0, generation: 0, transform: None,
             viewport: Bounds::default(), focus: cx.focus_handle().tab_stop(true), drag: None,
             mode, phase: 0, status: "画像を利用できません: 認可済みの画像入力がありません。実行基盤からの取得は未対応です。".into(),
-            palette: Palette { scheme: ContrastScheme::Normal, colors: NORMAL_COLORS }, consumer: ConsumerId::new(window.window_handle().window_id().as_u64()),
+            palette: Palette { scheme: ContrastScheme::Normal, colors: NORMAL_COLORS }, consumer: ConsumerId::allocate(),
         }
     }
 
@@ -102,8 +110,10 @@ impl ImageViewer {
         source: impl FnOnce(&Cancellation) -> Result<Arc<[u8]>, MediaError> + Send + 'static,
     ) {
         self.cancel.cancel();
+        self.tile_cancel.cancel();
+        self.demand = None;
         self.serial = self.serial.saturating_add(1);
-        self.release_current(window);
+        self.release_current(window, cx);
         self.revision = request.source_revision;
         self.generation = request.current_device_generation;
         self.phase = 0;
@@ -154,23 +164,101 @@ impl ImageViewer {
     }
 
     /// Call before removing the owning view/window. Issued payloads remain quarantined, not freed.
-    pub fn close(&mut self, window: &mut Window) {
+    pub fn close(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         self.cancel.cancel();
+        self.tile_cancel.cancel();
+        self.demand = None;
         self.serial = self.serial.saturating_add(1);
-        self.release_current(window);
+        self.release_current(window, cx);
+        self.evict_retired(window);
     }
 
-    fn release_current(&mut self, window: &mut Window) {
-        if let Some(frame) = self.current.take() {
-            self.service.detach(&frame, self.consumer);
+    /// Detach at once so no later scene adds these tiles, then drop the atlas entries only after
+    /// two presented frames can no longer reference them. A frame another consumer still presents
+    /// stays retired and is retried by the next sweep.
+    fn release_current(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        let Some(frame) = self.current.take() else {
+            return;
+        };
+        self.service.detach(&frame, self.consumer);
+        self.retiring.push(frame);
+        self.schedule_retirement(window, cx);
+    }
+
+    fn schedule_retirement(&mut self, window: &Window, cx: &mut Context<Self>) {
+        if self.retirement_scheduled || self.retiring.is_empty() {
+            return;
+        }
+        self.retirement_scheduled = true;
+        let entity = cx.entity().downgrade();
+        window.on_next_frame(move |window, _cx| {
+            let entity = entity.clone();
+            window.on_next_frame(move |_window, cx| {
+                let _ = entity.update_in(cx, |this, window, cx| {
+                    this.retirement_scheduled = false;
+                    this.evict_retired(window);
+                    cx.notify();
+                });
+            });
+        });
+    }
+
+    fn evict_retired(&mut self, window: &mut Window) {
+        for frame in std::mem::take(&mut self.retiring) {
             if let Err(error) = self.service.evict(&frame, window) {
+                // Consumers elsewhere still present it, or release is not provable yet: keep the
+                // reference rather than dropping it, and report the bounded limitation.
+                self.retiring.push(frame);
                 self.status = format!("画像の解放を保留: {error}").into();
             }
         }
     }
 
+    /// Prepare only the tiles this viewport needs; a newer viewport supersedes the demand.
+    fn request_tiles(&mut self, demand: TileDemand, cx: &mut Context<Self>) {
+        let Some(frame) = self.current.clone() else {
+            return;
+        };
+        if self.demand.as_ref() == Some(&demand) {
+            return;
+        }
+        self.demand = Some(demand.clone());
+        self.tile_cancel.cancel();
+        self.tile_cancel = Cancellation::default();
+        let (serial, view_serial) = (self.serial, self.view_serial);
+        let task = self.service.prepare_visible(
+            cx.background_executor(),
+            frame,
+            demand,
+            self.tile_cancel.clone(),
+        );
+        cx.spawn(async move |this, cx| {
+            let outcome = task.await;
+            let _ = this.update(cx, |this, cx| {
+                if (this.serial, this.view_serial) != (serial, view_serial) {
+                    return;
+                }
+                match outcome {
+                    Ok(()) => {
+                        this.demand = None;
+                        cx.notify();
+                    }
+                    Err(ImageUploadError::Cancelled) => {}
+                    // Keep the demand so an unchanged viewport does not retry every frame.
+                    Err(error) => {
+                        this.status = format!("画像の表示を制限: {error}").into();
+                        cx.notify();
+                    }
+                }
+            });
+        })
+        .detach();
+    }
+
     fn change(&mut self, operation: impl FnOnce(&mut ViewTransform), cx: &mut Context<Self>) {
         self.view_serial = self.view_serial.saturating_add(1);
+        self.tile_cancel.cancel();
+        self.demand = None;
         if let Some(transform) = self.transform.as_mut() {
             operation(transform);
         }
@@ -212,8 +300,9 @@ impl ImageViewer {
 impl Drop for ImageViewer {
     fn drop(&mut self) {
         self.cancel.cancel();
+        self.tile_cancel.cancel();
         // If the host omitted close, keep the registry/charged bytes; no completion is invented.
-        if let Some(frame) = &self.current {
+        for frame in self.current.iter().chain(&self.retiring) {
             self.service.detach(frame, self.consumer);
         }
     }
@@ -288,6 +377,9 @@ impl Render for ImageViewer {
                 } else {
                     transform.mip_level()
                 };
+                let needed = frame
+                    .as_ref()
+                    .map(|frame| frame.demand(image_bounds, bounds, mip.min(4) as u8));
                 let result = frame.as_ref().map(|frame| {
                     frame.paint_view(
                         ViewPaint {
@@ -302,6 +394,7 @@ impl Render for ImageViewer {
                     )
                 });
                 let complete = matches!(result, Some(Ok(PaintStatus::CompleteInScene { .. })));
+                let missing = matches!(result, Some(Ok(PaintStatus::Pending { .. })));
                 let failure = match result {
                     Some(Err(_)) => Some("画像を利用できません: 描画に失敗しました。"),
                     Some(Ok(
@@ -318,7 +411,7 @@ impl Render for ImageViewer {
                 .filter(|message| previous_status.as_ref() != *message);
                 let changed = geometry.as_ref() != Some(&transform) || previous_viewport != bounds;
                 let promote = complete && phase < if preview { 1 } else { 2 };
-                if !changed && !promote && failure.is_none() {
+                if !changed && !promote && failure.is_none() && !missing {
                     return;
                 }
                 let entity = entity.clone();
@@ -326,6 +419,9 @@ impl Render for ImageViewer {
                     let _ = entity.update(app, |this, cx| {
                         if (this.serial, this.view_serial) != demand {
                             return;
+                        }
+                        if missing && let Some(needed) = needed {
+                            this.request_tiles(needed, cx);
                         }
                         this.transform = Some(transform);
                         this.viewport = bounds;

@@ -875,14 +875,22 @@ impl Shell {
         });
         #[cfg(feature = "r0-s2b-instrumentation")]
         r0_probe::record_window_created(window.window_handle().window_id().as_u64());
+        let artifact_viewer = cx.new(|cx| {
+            image_viewer::ImageViewer::new(image_viewer::ViewerMode::PreviewOnly, window, cx)
+        });
+        // The shell owns the window lifecycle: retiring the viewer and its atlas entries is an
+        // explicit step before the platform destroys the window, never an implicit Drop.
+        let closing_viewer = artifact_viewer.downgrade();
+        window.on_window_should_close(cx, move |window, cx| {
+            let _ = closing_viewer.update(cx, |viewer, cx| viewer.close(window, cx));
+            true
+        });
         Self {
             #[cfg(feature = "r0-s2b-instrumentation")]
             probe_window: window.window_handle().window_id().as_u64(),
             handle,
             desktop_version: Arc::clone(&desktop_version),
-            artifact_viewer: cx.new(|cx| {
-                image_viewer::ImageViewer::new(image_viewer::ViewerMode::PreviewOnly, window, cx)
-            }),
+            artifact_viewer,
             support_state: SupportPreviewState::default(),
             support_focus: cx.focus_handle().tab_stop(true),
             diagnostics_focus: cx.focus_handle().tab_stop(true),
