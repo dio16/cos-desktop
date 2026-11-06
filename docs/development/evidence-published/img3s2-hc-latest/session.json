@@ -1,0 +1,92 @@
+{
+  "schema_version": 1,
+  "status": "NATIVE_RELEASE_OBSERVED_INDEPENDENT_GATE_SUCCEEDED_EXTERNAL_REVIEW_PENDING",
+  "task": "MP-IMG3 (Step 2) with the MP-AX1 whole-shell High Contrast integration",
+  "contract": "DC-MP-IMG3 / DC-MP-AX1",
+  "caller_authority": "Direct resumption instruction under ADR-0014 and the recorded blanket approval; the MP-AX1 High Contrast decision (§19.104) unchanged.",
+  "candidate_source_commit": "6f0d4054a1b4f9ad372acf2c90418a8e0d3d5a8e",
+  "candidate_branch": "dev",
+  "documented_by_commit": "c7273ce8df58daf9081156178f887909e405cde8",
+  "worktree_at_candidate": "clean (four unrelated untracked fix_*.py files were left untouched and are not part of the candidate)",
+  "gate": {
+    "gate_id": "844838a3-413f-4e05-a06e-1966d0f9cf8b",
+    "gate_label": "cos-desktop-img3s2-hc-6f0d4054-r7",
+    "state": "SUCCEEDED",
+    "checks": 8,
+    "checks_passed": 8,
+    "candidate_sha256": "sha256:b8a521101fe83697db6ade9eb2896a422f9ad06a98d269ae4a5b1c8dfb2cdc3e",
+    "request_sha256": "sha256:1111cc75dc8c94b04ff92c56f8cb2353a8218f4fdcefb8bb1ee98dcbfc51f090",
+    "terminal_state_sha256": "sha256:b5c2e480fa26c33cf48342dd4eceac743a2515ff13537cb3b841fedacbbda853",
+    "duration_ms": 342823,
+    "cleanup": "complete",
+    "verify_exit": 0,
+    "earlier_refused_attempts": [
+      "3558900e-7c33-42b2-8917-8072c7c5be5f: millisecond-scale per-check deadlines; killed at fmt",
+      "a36b1a80-877f-4259-be75-de1bd7a29b7e: rustup shim without RUSTUP_HOME; the pinned toolchain was invisible",
+      "3e247a6f-1702-44ed-858c-2b742a4c32c0: dependency checker started without CARGO"
+    ]
+  },
+  "profile": {
+    "default_native": "release",
+    "debug_note": "A freshly built debug binary with the default MSVC link.exe aborts with a main-thread stack overflow on this host; the same abort reproduces from a clean git archive HEAD build (§19.214), so it is the recorded environment condition, not a regression. Native sets therefore use the release profile.",
+    "os": "Windows 10.0.26300.0",
+    "dpi": 96,
+    "window": "2324x999 client"
+  },
+  "fixture": {
+    "path": "crates/cos-client/fixtures/task-184.json",
+    "sha256": "sha256:2e33ed061c07bd97b8e4c4f823c028987e9415e83858878270489fb5b8c18c52"
+  },
+  "observations": [
+    {
+      "id": "shell-palette-query",
+      "image": "shell-palette-query-flow-release.png",
+      "profile": "release",
+      "claim": "Ctrl+K opens the palette; the placeholder is drawn and a typed query 'flow' renders in the input and filters to the matching command.",
+      "input_path": "approved takeover route (background key events do not reach GPUI on this host, §19.66)"
+    },
+    {
+      "id": "shell-after-escape",
+      "image": "shell-after-escape-release.png",
+      "profile": "release",
+      "claim": "Escape dismisses the palette and restores the shell; the rail query and rail selection remain as before.",
+      "input_path": "approved takeover route"
+    },
+    {
+      "id": "img3-complete-scene",
+      "image": "img3-fixture-complete-scene-release.png",
+      "profile": "release",
+      "claim": "The explicit fixture probe completes the scene at 16/16 tiles: red (256,256), green (1792,256), blue (256,1792), yellow (1792,1792), black centre cross, magenta revision-1 marker; retained_frames=1; 32 MiB resident reservation for one 16 MiB frame; GPU completion/residency/Present reported NOT_MEASURED.",
+      "input_path": "in-window button activation"
+    },
+    {
+      "id": "img3-retained-frame-refusal",
+      "image": "img3-retained-frame-refusal-debug.png",
+      "profile": "debug (larger-stack build; behaviour only)",
+      "claim": "A third distinct revision is refused with RetainedFrameLimit and no partial publication; retained_frames stays 2 with 32 MiB reservations.",
+      "input_path": "in-window button activation"
+    },
+    {
+      "id": "img3-stale-generation",
+      "image": "img3-stale-generation-debug.png",
+      "profile": "debug (larger-stack build; behaviour only)",
+      "claim": "After the logical device generation advances the retained frame is refused at paint ('Paint refused stale device generation 1; current=2') and the canvas stays covered.",
+      "input_path": "in-window button activation"
+    },
+    {
+      "id": "img3-cancelled-frame",
+      "image": "img3-cancelled-frame-debug.png",
+      "profile": "debug (larger-stack build; behaviour only)",
+      "claim": "A cancelled frame paints the cover surface instead of tiles and reports scene_complete=false.",
+      "input_path": "in-window button activation"
+    }
+  ],
+  "not_measured": [
+    "GPU transfer duration, completion, residency and Present (the pinned GPUI exposes no fence, Present-completion or residency signal; complete_upload is never called and the CPU payload is retained by design)",
+    "High Contrast under an enabled OS theme (changing the OS setting is out of scope); the High Contrast mapping is unit-verified only",
+    "UIA/screen-reader quality, IME behaviour and DPI scaling beyond 96",
+    "A device loss that does not advance the caller's device generation (outside this path's stated precondition)",
+    "Runtime media acquisition, Compare, eviction/lifetime, product acceptance and any numeric R0 gate"
+  ],
+  "privacy_review": "The captures contain only the desktop shell's own fixture projection (task 'Task-184', fixture node/edge labels), the probe's own counters and the Windows title bar. No path, URL, credential, token or user document is visible; the probe's captures show only its own generated fixture."
+}
