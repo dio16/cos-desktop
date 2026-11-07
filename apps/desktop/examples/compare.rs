@@ -167,6 +167,7 @@ struct LifetimeEvidence {
     warmup_ms: u64,
     stress_start_elapsed_us: u64,
     stress_end_elapsed_us: u64,
+    settle_ms: u64,
     samples: Vec<LifetimeSample>,
 }
 
@@ -188,7 +189,7 @@ fn export_lifetime(evidence: LifetimeEvidence) {
         .count();
     let _ = write!(
         output,
-        "{{\"schema_version\":1,\"task\":\"MP-REC2\",\"contract\":\"DC-MP-REC2\",\"pid\":{},\"run_start_unix_ms\":{},\"duration_ms\":{},\"warmup_ms\":{},\"stress_start_elapsed_us\":{},\"stress_end_elapsed_us\":{},\"stress_ms\":{},\"settle_ms\":7000,\"variant\":\"{}\",\"recovery\":{},\"operation_attempts\":{attempted},\"scene_observations\":{complete},\"refused_operations\":{refused},\"workload_limits\":\"Only the explicit supported 2048-square RGB8 fixture path is admitted; other formats and dimensions are NOT_ADMITTED.\",\"identity_order\":[\"current_compare_a\",\"current_compare_b\",\"retained_compare_a\",\"retained_compare_b\",\"current_viewer\",\"retained_viewer\"],\"endpoint_limitations\":{{\"gpu_residency\":\"NOT_MEASURED: GPUI atlas allocation is not exposed\",\"process_private_bytes\":\"NOT_MEASURED: external PID/lifetime-bound sampler required\",\"process_working_set\":\"NOT_MEASURED: external PID/lifetime-bound sampler required\",\"gpu_dedicated\":\"NOT_MEASURED: external sampler endpoint\",\"gpu_shared\":\"NOT_MEASURED: external sampler endpoint\",\"gpu_committed\":\"NOT_MEASURED: external sampler endpoint\",\"present\":\"NOT_MEASURED: scene observations do not prove displayed frames\"}},\"samples\":[",
+        "{{\"schema_version\":1,\"task\":\"MP-REC2\",\"contract\":\"DC-MP-REC2\",\"pid\":{},\"run_start_unix_ms\":{},\"duration_ms\":{},\"warmup_ms\":{},\"stress_start_elapsed_us\":{},\"stress_end_elapsed_us\":{},\"stress_ms\":{},\"settle_ms\":{},\"variant\":\"{}\",\"recovery\":{},\"operation_attempts\":{attempted},\"scene_complete_observations\":{complete},\"refused_operations\":{refused},\"workload_limits\":\"Only the explicit supported 2048-square RGB8 fixture path is admitted; other formats and dimensions are NOT_ADMITTED.\",\"identity_order\":[\"current_compare_a\",\"current_compare_b\",\"retained_compare_a\",\"retained_compare_b\",\"current_viewer\",\"retained_viewer\"],\"endpoint_limitations\":{{\"gpu_residency\":\"NOT_MEASURED: GPUI atlas allocation is not exposed\",\"process_private_bytes\":\"NOT_MEASURED: external PID/lifetime-bound sampler required\",\"process_working_set\":\"NOT_MEASURED: external PID/lifetime-bound sampler required\",\"gpu_dedicated\":\"NOT_MEASURED: external sampler endpoint\",\"gpu_shared\":\"NOT_MEASURED: external sampler endpoint\",\"gpu_committed\":\"NOT_MEASURED: external sampler endpoint\",\"present\":\"NOT_MEASURED: scene observations do not prove displayed frames\"}},\"samples\":[",
         std::process::id(),
         evidence.run_start_unix_ms,
         evidence.duration_ms,
@@ -196,6 +197,7 @@ fn export_lifetime(evidence: LifetimeEvidence) {
         evidence.stress_start_elapsed_us,
         evidence.stress_end_elapsed_us,
         (evidence.stress_end_elapsed_us - evidence.stress_start_elapsed_us) / 1000,
+        evidence.settle_ms,
         evidence.variant,
         evidence.recovery,
     );
@@ -568,12 +570,14 @@ fn start_lifetime(cx: &mut Context<CompareDemo>, variant: &'static str, recovery
             }
         }
         let stress_end_elapsed_us = run_start.elapsed().as_micros().min(u64::MAX as u128) as u64;
+        let settle_started = Instant::now();
         background.timer(Duration::from_secs(5)).await;
         if let Ok(sample) = this.update_in(cx, |demo, window, cx| {
             capture(demo, window, cx, "settle", 60, "observe_settle", "observed")
         }) {
             samples.push(sample);
         }
+        let settle_ms = settle_started.elapsed().as_millis().min(u64::MAX as u128) as u64;
         // First withdraw the other window. The surviving window must keep its own resource;
         // its final withdrawal below is observed separately from process termination.
         let others = this
@@ -642,6 +646,7 @@ fn start_lifetime(cx: &mut Context<CompareDemo>, variant: &'static str, recovery
             duration_ms: run_start.elapsed().as_millis().min(u64::MAX as u128) as u64,
             stress_start_elapsed_us,
             stress_end_elapsed_us,
+            settle_ms,
             samples,
         });
         let _ = this.update_in(cx, |_, _, cx| cx.quit());
