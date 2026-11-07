@@ -315,51 +315,58 @@ fn start_lifetime(cx: &mut Context<CompareDemo>, variant: &'static str, recovery
             .as_millis();
         // Every phase reads real view identities, including after close; never fill in nulls
         // merely because a close operation was requested.
-        let capture =
-            |demo: &CompareDemo, window: &Window, cx: &App, phase, step, action, result| {
-                let panes = demo.compare.read(cx).observations(cx);
-                let viewer = demo.viewer.read(cx);
-                let current = demo.compare.read(cx).frames(cx);
-                let retained = demo.compare.read(cx).retained_frames(cx);
-                let (device_state, device_generation) = match window.gpu_device_state() {
-                    GpuDeviceState::Unsupported => ("unsupported", None),
-                    GpuDeviceState::Ready { generation } => ("ready", Some(generation)),
-                    GpuDeviceState::Recovering { generation } => ("recovering", Some(generation)),
-                    GpuDeviceState::Unavailable { generation } => ("unavailable", Some(generation)),
-                };
-                LifetimeSample {
-                    elapsed_us: run_start.elapsed().as_micros().min(u64::MAX as u128) as u64,
-                    phase,
-                    step,
-                    action,
-                    result,
-                    windows: cx.windows().len(),
-                    viewer_open: viewer.observation().current_origin.is_some()
-                        || viewer.observation().retained_origin.is_some(),
-                    compare_open: !demo.closed,
-                    pair_present: demo.presentation.compare_pair().is_some(),
-                    missing_present: demo.missing.is_some(),
-                    device_generation,
-                    device_state,
-                    counters: desktop_gpui::image_upload::ImageUploadService::global().counters(),
-                    panes,
-                    viewer: viewer.observation(),
-                    identities: [
-                        current[0].as_ref().map(|f| f.identity().content_digest),
-                        current[1].as_ref().map(|f| f.identity().content_digest),
-                        retained[0].as_ref().map(|f| f.identity().content_digest),
-                        retained[1].as_ref().map(|f| f.identity().content_digest),
-                        viewer
-                            .prepared()
-                            .as_ref()
-                            .map(|f| f.identity().content_digest),
-                        viewer
-                            .retained_prepared()
-                            .as_ref()
-                            .map(|f| f.identity().content_digest),
-                    ],
-                }
+        let capture = |demo: &CompareDemo,
+                       window: &Window,
+                       cx: &App,
+                       phase,
+                       step,
+                       action,
+                       result,
+                       pair_present: bool,
+                       missing_present: bool| {
+            let panes = demo.compare.read(cx).observations(cx);
+            let viewer = demo.viewer.read(cx);
+            let current = demo.compare.read(cx).frames(cx);
+            let retained = demo.compare.read(cx).retained_frames(cx);
+            let (device_state, device_generation) = match window.gpu_device_state() {
+                GpuDeviceState::Unsupported => ("unsupported", None),
+                GpuDeviceState::Ready { generation } => ("ready", Some(generation)),
+                GpuDeviceState::Recovering { generation } => ("recovering", Some(generation)),
+                GpuDeviceState::Unavailable { generation } => ("unavailable", Some(generation)),
             };
+            LifetimeSample {
+                elapsed_us: run_start.elapsed().as_micros().min(u64::MAX as u128) as u64,
+                phase,
+                step,
+                action,
+                result,
+                windows: cx.windows().len(),
+                viewer_open: viewer.observation().current_origin.is_some()
+                    || viewer.observation().retained_origin.is_some(),
+                compare_open: !demo.closed,
+                pair_present,
+                missing_present,
+                device_generation,
+                device_state,
+                counters: desktop_gpui::image_upload::ImageUploadService::global().counters(),
+                panes,
+                viewer: viewer.observation(),
+                identities: [
+                    current[0].as_ref().map(|f| f.identity().content_digest),
+                    current[1].as_ref().map(|f| f.identity().content_digest),
+                    retained[0].as_ref().map(|f| f.identity().content_digest),
+                    retained[1].as_ref().map(|f| f.identity().content_digest),
+                    viewer
+                        .prepared()
+                        .as_ref()
+                        .map(|f| f.identity().content_digest),
+                    viewer
+                        .retained_prepared()
+                        .as_ref()
+                        .map(|f| f.identity().content_digest),
+                ],
+            }
+        };
         let warm = Instant::now();
         while warm.elapsed() < Duration::from_secs(5) {
             let ready = this
@@ -379,7 +386,17 @@ fn start_lifetime(cx: &mut Context<CompareDemo>, variant: &'static str, recovery
         let warmup_ms = warm.elapsed().as_millis().min(u64::MAX as u128) as u64;
         let mut samples = Vec::with_capacity(64);
         if let Ok(sample) = this.update_in(cx, |demo, window, cx| {
-            capture(demo, window, cx, "pre_stress", 0, "baseline", "observed")
+            capture(
+                demo,
+                window,
+                cx,
+                "pre_stress",
+                0,
+                "baseline",
+                "observed",
+                demo.presentation.compare_pair().is_some(),
+                demo.missing.is_some(),
+            )
         }) {
             samples.push(sample);
         }
@@ -387,6 +404,9 @@ fn start_lifetime(cx: &mut Context<CompareDemo>, variant: &'static str, recovery
         // Sixty independently observed actions, not a timer that can end with fewer samples.
         for step in 0..60 {
             let dispatched = this.update_in(cx, |demo, window, cx| {
+                // The cause of a refusal is the state before the action, not what the action left.
+                let pair_before = demo.presentation.compare_pair().is_some();
+                let missing_before = demo.missing.is_some();
                 let action = match step % 12 {
                     0 => "load_same_pair",
                     1 => "replace_side_a",
@@ -540,13 +560,23 @@ fn start_lifetime(cx: &mut Context<CompareDemo>, variant: &'static str, recovery
                     }
                     _ => demo.load_side(CompareSide::A, window, cx),
                 }
-                (action, result)
+                (action, result, pair_before, missing_before)
             });
             // Observe the resulting scene on a later turn. A request is never a completed upload.
             background.timer(Duration::from_secs(1)).await;
-            if let Ok((action, result)) = dispatched
+            if let Ok((action, result, pair_before, missing_before)) = dispatched
                 && let Ok(mut sample) = this.update_in(cx, |demo, window, cx| {
-                    capture(demo, window, cx, "stress", step, action, result)
+                    capture(
+                        demo,
+                        window,
+                        cx,
+                        "stress",
+                        step,
+                        action,
+                        result,
+                        pair_before,
+                        missing_before,
+                    )
                 })
             {
                 if result == "requested"
@@ -581,7 +611,17 @@ fn start_lifetime(cx: &mut Context<CompareDemo>, variant: &'static str, recovery
         let settle_started = Instant::now();
         background.timer(Duration::from_secs(5)).await;
         if let Ok(sample) = this.update_in(cx, |demo, window, cx| {
-            capture(demo, window, cx, "settle", 60, "observe_settle", "observed")
+            capture(
+                demo,
+                window,
+                cx,
+                "settle",
+                60,
+                "observe_settle",
+                "observed",
+                demo.presentation.compare_pair().is_some(),
+                demo.missing.is_some(),
+            )
         }) {
             samples.push(sample);
         }
@@ -618,6 +658,8 @@ fn start_lifetime(cx: &mut Context<CompareDemo>, variant: &'static str, recovery
                 60,
                 "close_other_window",
                 "observed",
+                demo.presentation.compare_pair().is_some(),
+                demo.missing.is_some(),
             )
         }) {
             samples.push(sample);
@@ -642,6 +684,8 @@ fn start_lifetime(cx: &mut Context<CompareDemo>, variant: &'static str, recovery
                 60,
                 "close_and_evict",
                 "observed",
+                demo.presentation.compare_pair().is_some(),
+                demo.missing.is_some(),
             )
         }) {
             samples.push(sample);

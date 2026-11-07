@@ -135,16 +135,26 @@ GPU_COUNTERS = ("dedicated usage", "shared usage", "total committed")
 LOAD_ACTIONS = ("load_same_pair", "replace_side_a", "replace_side_b", "compare_reopen", "reload_side_a")
 REFUSALS = ("refused_no_pair", "refused_no_missing_source", "refused_unsupported",
             "refused_feature_unavailable")
+# Only the action whose precondition can fail may report that refusal reason.
+ALLOWED_REFUSALS = {
+    "replace_side_a": {"refused_no_pair"},
+    "replace_side_b": {"refused_no_pair"},
+    "swap": {"refused_no_pair"},
+    "unavailable": {"refused_no_pair"},
+    "reappear": {"refused_no_missing_source"},
+    "recovery_fail": {"refused_unsupported", "refused_feature_unavailable"},
+    "recovery_recreate_and_close": {"refused_unsupported", "refused_feature_unavailable"},
+}
 # View index to identity index: two Compare panes, then the standalone viewer's current/retained.
 CURRENT_IDENTITY = {0: 0, 1: 1, 2: 4}
 
 
 def gpu_instances_belong_to(gpu: dict, pid: int) -> bool:
-    """Each recorded instance must be this PID's GPU Process Memory counter, once per counter."""
+    """Each recorded instance must be this PID's GPU Process Memory counter for its adapter."""
     instances = gpu.get("instances")
     if not isinstance(instances, list) or not instances:
         return False
-    seen: set[str] = set()
+    seen: set[tuple[str, str]] = set()
     for instance in instances:
         if not isinstance(instance, dict):
             return False
@@ -157,10 +167,13 @@ def gpu_instances_belong_to(gpu: dict, pid: int) -> bool:
             return False
         if not isinstance(path, str) or "gpu process memory" not in path.lower():
             return False
-        if counter.lower() in seen:
+        if name.lower() not in path.lower():
             return False
-        seen.add(counter.lower())
-    return seen == set(GPU_COUNTERS)
+        # One row per (adapter instance, counter); several adapters for one PID are expected.
+        if (name.lower(), counter.lower()) in seen:
+            return False
+        seen.add((name.lower(), counter.lower()))
+    return {counter for _, counter in seen} == set(GPU_COUNTERS)
 
 
 def verify_results(samples: list[dict], failures: list[str]) -> None:
@@ -173,15 +186,18 @@ def verify_results(samples: list[dict], failures: list[str]) -> None:
             return
         identities = sample.get("identities")
         for index, view in enumerate(views):
-            if view.get("complete_in_scene"):
-                if view.get("current_origin") is None and view.get("retained_origin") is None:
-                    failures.append("A sample claims a complete scene with no attached origin")
-                    return
-                identity_index = CURRENT_IDENTITY.get(index)
-                if (view.get("current_origin") is not None and isinstance(identities, list)
-                        and identity_index is not None and identities[identity_index] is None):
-                    failures.append("A complete scene has no identity for its attached frame")
-                    return
+            if not view.get("complete_in_scene"):
+                continue
+            # A completed scene is a frame that is actually current in that view; a retained
+            # backup alone is recovery ownership, not display evidence.
+            if view.get("current_origin") is None:
+                failures.append("A sample claims a complete scene without a current frame")
+                return
+            identity_index = CURRENT_IDENTITY.get(index)
+            if (isinstance(identities, list) and identity_index is not None
+                    and identities[identity_index] is None):
+                failures.append("A complete scene has no identity for its current frame")
+                return
         if phase != "stress":
             if result != "observed":
                 failures.append(f"A {phase} observation reports {result!r} instead of an observation")
@@ -204,16 +220,17 @@ def verify_results(samples: list[dict], failures: list[str]) -> None:
                 failures.append(
                     f"Action {action!r} reports {result!r} but its views say {expected!r}")
                 return
-        # A refusal must name a state the sample actually observed.
-        if result == "refused_no_pair" and sample.get("pair_present") is not False:
-            failures.append(f"Action {action!r} claims no Compare pair while one is present")
-            return
-        if result == "refused_no_missing_source" and sample.get("missing_present") is not False:
-            failures.append(f"Action {action!r} claims no withheld source while one is present")
-            return
-        if result in ("refused_unsupported", "refused_feature_unavailable") and action not in RECOVERY_ACTIONS.values():
-            failures.append(f"Action {action!r} claims an unsupported backend hook")
-            return
+        # A refusal must be one this action can produce, and its cause is the state before it ran.
+        if result in REFUSALS:
+            if result not in ALLOWED_REFUSALS.get(action, set()):
+                failures.append(f"Action {action!r} cannot report {result!r}")
+                return
+            if result == "refused_no_pair" and sample.get("pair_present") is not False:
+                failures.append(f"Action {action!r} claims no Compare pair while one was present")
+                return
+            if result == "refused_no_missing_source" and sample.get("missing_present") is not False:
+                failures.append(f"Action {action!r} claims no withheld source while one was present")
+                return
 
 
 def analyze_campaign(directory: Path) -> dict:

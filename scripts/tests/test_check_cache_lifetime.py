@@ -223,7 +223,7 @@ class CampaignEvidenceTests(unittest.TestCase):
         self._write_campaign()
         result = analyze_campaign(self.directory)
         self.assertEqual(result["status"], "FAILED")
-        self.assertTrue(any("no identity for its attached frame" in failure
+        self.assertTrue(any("no identity for its current frame" in failure
                             for failure in result["runs"][0]["failures"]))
 
     def test_refusal_and_dispatch_classifications_are_rechecked(self):
@@ -241,7 +241,7 @@ class CampaignEvidenceTests(unittest.TestCase):
         self._write_campaign()
         result = analyze_campaign(self.directory)
         self.assertEqual(result["status"], "FAILED")
-        self.assertTrue(any("claims no Compare pair while one is present" in failure
+        self.assertTrue(any("claims no Compare pair while one was present" in failure
                             for failure in result["runs"][0]["failures"]))
         # The same refusal is evidence when the pair really is absent.
         refused["pair_present"] = False
@@ -249,6 +249,45 @@ class CampaignEvidenceTests(unittest.TestCase):
         result = analyze_campaign(self.directory)
         self.assertEqual(result["status"], "OBSERVED")
         self.assertEqual(result["runs"][0]["actions"]["replace_side_a"]["refused_observations"], 1)
+
+    def test_a_refusal_reason_must_belong_to_that_action(self):
+        self.native_samples[4]["result"] = "refused_no_missing_source"
+        self.native_samples[4]["missing_present"] = False
+        self._write_campaign()
+        result = analyze_campaign(self.directory)
+        self.assertEqual(result["status"], "FAILED")
+        self.assertTrue(any("cannot report" in failure for failure in result["runs"][0]["failures"]))
+
+    def test_a_retained_backup_alone_is_not_a_completed_scene(self):
+        view = self.native_samples[1]["views"][0]
+        view["current_origin"] = None
+        view["retained_origin"] = 1
+        self._write_campaign()
+        result = analyze_campaign(self.directory)
+        self.assertEqual(result["status"], "FAILED")
+        self.assertTrue(any("without a current frame" in failure
+                            for failure in result["runs"][0]["failures"]))
+
+    def test_several_adapters_for_one_pid_reconcile(self):
+        record_path = self.directory / "run-1/observations-0.json"
+        record = json.loads(record_path.read_text())
+        rows = []
+        for adapter, dedicated in (("phys_0", 3), ("phys_1", 1)):
+            base = f"pid_1000_luid_0x0_0x1_{adapter}"
+            rows.extend([
+                {"counter": "dedicated usage", "status": 0, "bytes": dedicated, "instance": base,
+                 "path": f"\\\\host\\gpu process memory({base})\\dedicated usage"},
+                {"counter": "shared usage", "status": 0, "bytes": 2, "instance": base,
+                 "path": f"\\\\host\\gpu process memory({base})\\shared usage"},
+                {"counter": "total committed", "status": 0, "bytes": dedicated + 2, "instance": base,
+                 "path": f"\\\\host\\gpu process memory({base})\\total committed"},
+            ])
+        record["samples"][0]["gpu"] = {
+            "status": "OBSERVED", "dedicated_bytes": 4, "shared_bytes": 4, "committed_bytes": 8,
+            "instances": rows,
+        }
+        record_path.write_text(json.dumps(record))
+        self.assertEqual(analyze_campaign(self.directory)["status"], "OBSERVED")
 
     def test_a_run_without_any_attached_consumer_cannot_claim_withdrawal(self):
         for sample in self.native_samples:
