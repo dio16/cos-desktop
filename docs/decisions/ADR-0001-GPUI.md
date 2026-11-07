@@ -4,10 +4,11 @@ Status: **Accepted** source/toolchain/features. **Observed** minimal native buil
 
 ## Source and update decision
 
-- Source: `https://github.com/zed-industries/zed`.
-- Fixed revision: `395def7a067b32ed598fcb3f048969ada9b54942`.
-- Packages: `gpui 0.2.2`, `gpui_platform 0.1.0`, Windows backend `gpui_windows 0.1.0`.
-- Freshness recheck: upstream main had advanced to `bcf6582ce3500df93a8a39366640173e6786cea6`; both revisions declare Rust 1.98.1. Keep the accepted revision rather than follow main. A newer HEAD alone is not a reason to change the pin.
+- Source: `https://github.com/dio16/zed` (public fork of `https://github.com/zed-industries/zed`), branch `cos-desktop-recovery`.
+- Fixed revision: `bf1429a63e9d04fec0eb49464cb97bbfcb39d5e6`.
+- Base revision and audit provenance: upstream `395def7a067b32ed598fcb3f048969ada9b54942`, plus one fork commit adding the public shared-device state/recovery contract described below. The earlier upstream source analyses in this repository remain citations to that base, not to the fork's exact bytes.
+- Packages: `gpui 0.2.2`, `gpui_platform 0.1.0`, Windows backend `gpui_windows 0.1.0` (package versions are inherited from the base; the fork changes no crate version).
+- Freshness recheck: upstream main had advanced to `bcf6582ce3500df93a8a39366640173e6786cea6`; both revisions declare Rust 1.98.1. Keep one accepted revision rather than follow main. A newer HEAD alone is not a reason to change the pin.
 - Root workspace declarations disable defaults and explicitly request `gpui/windows-manifest`; platform selection supplies the Windows backend. Upstream workspace feature unification may enable additional GPUI features; this is not a claim that every transitive default is disabled.
 - Cargo.lock is the resolved dependency inventory. No floating branch/tag, local patches, vendoring, or mixed Zed revisions.
 
@@ -41,7 +42,9 @@ Inspected pinned manifests declare Apache-2.0 for gpui, gpui_platform, gpui_wind
 
 ## Update policy and remaining limits
 
-Change all Zed pins together only for a concrete fix/security need or a deliberate periodic review. Refresh lockfile, inspect dependency/license changes, run Windows quality gates and real native startup/navigation/close, and record migration/rollback evidence. No automatic main tracking. No current fork/patch requirement.
+Change all Zed pins together only for a concrete fix/security need or a deliberate periodic review. Refresh lockfile, inspect dependency/license changes, run Windows quality gates and real native startup/navigation/close, and record migration/rollback evidence. No automatic main tracking.
+
+On 2026-11-07 the Caller selected the minimum GPUI recovery extension to resolve the observed missing public device-generation/recovery contract. [DC-MP-REC1](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-rec1) owns its API ordering, failure, cache and qualification requirements. Implementation is authorized in a dedicated checkout rooted at the accepted revision; Cargo's cached source remains untouched. A temporary local development override is permitted only to qualify this extension, not as a shipped dependency or a portable final candidate. The Caller subsequently explicitly authorized creating the public fork `dio16/zed`, pushing only the locally verified minimum extension to `cos-desktop-recovery`, and updating every Desktop GPUI reference to one immutable commit for independent review. **Observed 2026-11-07:** the fork was created and the extension published as `dio16/zed@bf1429a63e9d04fec0eb49464cb97bbfcb39d5e6` on `cos-desktop-recovery`; seven files under `crates/gpui` and `crates/gpui_windows` changed (+698/−115), with no private evidence, host paths, alternate renderer or upstream pull request. Both workspace pins and `Cargo.lock` now name that commit, so the accepted production reference is the fork commit whose base is upstream `395def7a…`; the host-local path override is no longer required to build the candidate. Keep private evidence/logs out of the fork; no upstream PR is authorized. Renderer replacement, new own-code unsafe, actual OS GPU reset, main promotion and release remain outside this grant.
 
 Real transport, GPU device-loss recovery, full accessibility, IME/high-DPI coverage, performance targets, production media and signed packaging remain unverified/deferred.
 

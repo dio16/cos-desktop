@@ -73,6 +73,7 @@ const FRAME_RGBA8_BYTES: u64 = FRAME_EDGE as u64 * FRAME_EDGE as u64 * 4;
 const STAGING_LIMIT_BYTES: u64 = FRAME_RGBA8_BYTES * MAX_RETAINED_FRAMES as u64;
 
 static PROCESS_EPOCH: LazyLock<Instant> = LazyLock::new(Instant::now);
+static NEXT_FRAME_ORIGIN: AtomicU64 = AtomicU64::new(1);
 static PROCESS_ALLOWANCE: LazyLock<Mutex<PeriodAllowance>> =
     LazyLock::new(|| Mutex::new(PeriodAllowance::default()));
 static PROCESS_PREPARATION: LazyLock<PreparationQueue> = LazyLock::new(PreparationQueue::default);
@@ -80,6 +81,7 @@ static PROCESS_SERVICE: LazyLock<ImageUploadService> = LazyLock::new(|| ImageUpl
     inner: Arc::new(ServiceInner {
         state: Mutex::new(ServiceState::default()),
         window_frames: Mutex::new(std::collections::HashMap::new()),
+        device_generation: AtomicU64::new(0),
     }),
 });
 
@@ -198,6 +200,8 @@ pub enum PaintStatus {
         requested: u64,
         current: u64,
     },
+    /// The native backend has no usable authoritative device (including unsupported backends).
+    DeviceUnavailable,
     EmptyBounds,
     DifferentWindow,
     AdmissionUnavailable,
@@ -466,6 +470,7 @@ struct ServiceInner {
     state: Mutex<ServiceState>,
     /// Composed frames reported by each window's root view.
     window_frames: Mutex<std::collections::HashMap<u64, u64>>,
+    device_generation: AtomicU64,
 }
 
 #[derive(Default)]
@@ -478,7 +483,7 @@ struct ServiceState {
     quarantined_payload_bytes: u64,
     decode_calls: u64,
     reuse_calls: u64,
-    /// Viewer mip payloads with no transfer-completion proof stay owned until process exit.
+    /// Safe CPU inputs/tiles retained for recovery or unproven transfers, one owner per origin.
     quarantined_views: Vec<Arc<PreparedImage>>,
 }
 impl ImageUploadService {
@@ -551,6 +556,7 @@ impl ImageUploadService {
         let service = self.clone();
         background.spawn(async move {
             validate_request(&request)?;
+            service.check_device_generation(request.device_generation)?;
             if cancel.is_cancelled() {
                 return Err(ImageUploadError::Cancelled);
             }
@@ -558,6 +564,7 @@ impl ImageUploadService {
             if cancel.is_cancelled() {
                 return Err(ImageUploadError::Cancelled);
             }
+            service.check_device_generation(request.device_generation)?;
             let encoded = match source(&cancel) {
                 Ok(encoded) => encoded,
                 Err(MediaError::Cancelled) => return Err(ImageUploadError::Cancelled),
@@ -566,6 +573,7 @@ impl ImageUploadService {
             if cancel.is_cancelled() {
                 return Err(ImageUploadError::Cancelled);
             }
+            service.check_device_generation(request.device_generation)?;
             if encoded.len() > request.max_encoded_bytes {
                 return Err(ImageUploadError::EncodedInputTooLarge {
                     actual: encoded.len(),
@@ -585,8 +593,20 @@ impl ImageUploadService {
             if cancel.is_cancelled() {
                 return Err(ImageUploadError::Cancelled);
             }
-            let frame =
-                service.prepare_verified(verified, request, &cancel, minimum_mip, independent)?;
+            let identity = UploadIdentity {
+                key: request.key,
+                source_revision: request.source_revision,
+                device_generation: request.device_generation,
+                content_digest: verified.content_digest(),
+            };
+            let frame = service.prepare_verified(
+                verified,
+                identity,
+                &cancel,
+                minimum_mip,
+                independent,
+                None,
+            )?;
             frame.decode_calls.fetch_add(1, Ordering::Relaxed);
             frame
                 .preparation_queue_wait_nanos
@@ -606,18 +626,103 @@ impl ImageUploadService {
         self.prepare_generated(background, request, cancel, move |_| Ok(encoded))
     }
 
+    /// Invalidate old GPU admissions without interpreting backend readiness as transfer completion.
+    /// Safe immutable inputs remain charged and reusable; callers detach their own consumers.
+    pub fn invalidate_device_generation(&self, generation: u64) {
+        if self
+            .inner
+            .device_generation
+            .fetch_max(generation, Ordering::AcqRel)
+            >= generation
+        {
+            return;
+        }
+        let mut state = self.inner.state.lock().expect("image upload service state");
+        for index in (0..state.frames.len()).rev() {
+            if state.frames[index].identity.device_generation >= generation {
+                continue;
+            }
+            let frame = state.frames.swap_remove(index);
+            let mut paint = frame.paint_state.lock().expect("image frame paint state");
+            paint.complete_in_scene = false;
+            paint.cancelled_before_upload = true;
+            let admission = frame
+                .admission
+                .lock()
+                .expect("image frame admission")
+                .take();
+            if let Some(mut admission) = admission {
+                if admission.stage() == UploadStage::Staged {
+                    let _ = admission.release();
+                } else {
+                    state.quarantined_payload_bytes = state
+                        .quarantined_payload_bytes
+                        .saturating_add(admission.bytes());
+                }
+                // Drop retains any unproven transfer in its original pool.
+            }
+            drop(paint);
+            retain_cpu_frame(&mut state, frame);
+        }
+        prune_idle_pools(&mut state);
+    }
+
+    /// Rebind retained verified CPU data to a current device without decoding or copying pixels.
+    /// GPU issuance remains lazy and uses the ordinary per-period/process admission limits.
+    pub fn recover_frame(
+        &self,
+        previous: &Arc<PreparedImage>,
+        device_generation: u64,
+        cancel: &Cancellation,
+    ) -> Result<Arc<PreparedImage>, ImageUploadError> {
+        let previous = self
+            .inner
+            .state
+            .lock()
+            .expect("image upload service state")
+            .quarantined_views
+            .iter()
+            .find(|frame| frame.origin == previous.origin)
+            .cloned()
+            .unwrap_or_else(|| Arc::clone(previous));
+        let verified = previous
+            .source
+            .clone()
+            .ok_or(ImageUploadError::InvalidRasterLayout)?;
+        self.prepare_verified(
+            verified,
+            UploadIdentity {
+                device_generation,
+                ..previous.identity.clone()
+            },
+            cancel,
+            previous.has_mips.then_some(previous.first_mip),
+            false,
+            Some(&previous),
+        )
+    }
+
+    fn check_device_generation(&self, requested: u64) -> Result<(), ImageUploadError> {
+        let current = self.inner.device_generation.load(Ordering::Acquire);
+        if current != 0 && requested != current {
+            return Err(ImageUploadError::StaleDeviceGeneration { requested, current });
+        }
+        Ok(())
+    }
+
     fn prepare_verified(
         &self,
         verified: VerifiedRaster,
-        request: UploadRequest,
+        identity: UploadIdentity,
         cancel: &Cancellation,
         minimum_mip: Option<u8>,
         independent: bool,
+        recovered: Option<&PreparedImage>,
     ) -> Result<Arc<PreparedImage>, ImageUploadError> {
         if cancel.is_cancelled() {
             return Err(ImageUploadError::Cancelled);
         }
-        validate_request(&request)?;
+        self.check_device_generation(identity.device_generation)?;
         if verified.size().width() != FRAME_EDGE
             || verified.size().height() != FRAME_EDGE
             || verified.raster().rgba.len() as u64 != FRAME_RGBA8_BYTES
@@ -625,19 +730,26 @@ impl ImageUploadService {
             return Err(ImageUploadError::InvalidRasterLayout);
         }
         let mips = minimum_mip.is_some();
-        let identity = UploadIdentity {
-            key: request.key.clone(),
-            source_revision: request.source_revision,
-            device_generation: request.device_generation,
-            content_digest: verified.content_digest(),
-        };
+        let origin = recovered.map(|previous| previous.origin);
         // One process-wide admission decision: live staging/in-flight reservations of **every**
         // generation plus the quarantine ledger are summed under the service lock, and the
         // admission itself happens inside that lock, so two generations cannot each pass a
         // per-pool check and together exceed the process budget.
         let admission = {
             let mut state = self.inner.state.lock().expect("image upload service state");
+            self.check_device_generation(identity.device_generation)?;
+            if let Some(origin) = origin
+                && let Some(existing) = state
+                    .frames
+                    .iter()
+                    .find(|frame| frame.identity == identity && frame.origin == origin)
+                    .cloned()
+            {
+                state.reuse_calls = state.reuse_calls.saturating_add(1);
+                return Ok(existing);
+            }
             if !independent
+                && recovered.is_none()
                 && let Some(existing) = state
                     .frames
                     .iter()
@@ -650,7 +762,21 @@ impl ImageUploadService {
                 state.reuse_calls = state.reuse_calls.saturating_add(1);
                 return Ok(existing);
             }
-            if state.frames.len() >= MAX_RETAINED_FRAMES {
+            // A recovery re-admits a payload this service already owns: it adds a
+            // generation-specific view, not another CPU frame, so the whole-frame ceiling must
+            // not refuse it. The CPU-bytes ceiling below still applies to genuinely new payloads.
+            let source_retained =
+                state
+                    .frames
+                    .iter()
+                    .chain(&state.quarantined_views)
+                    .any(|frame| {
+                        frame
+                            .source
+                            .as_ref()
+                            .is_some_and(|source| std::ptr::eq(source.raster(), verified.raster()))
+                    });
+            if state.frames.len() >= MAX_RETAINED_FRAMES && !source_retained {
                 return Err(ImageUploadError::RetainedFrameLimit);
             }
             // Count actual raster and packed-tile owners before extending the viewer pyramid. The
@@ -660,8 +786,16 @@ impl ImageUploadService {
                 || !state.quarantined_views.is_empty()
                 || state.frames.iter().any(|frame| frame.has_mips)
             {
-                let incoming = FRAME_RGBA8_BYTES + if mips { 0 } else { FRAME_RGBA8_BYTES };
-                if retained_cpu_bytes(&state).saturating_add(incoming) > STAGING_LIMIT_BYTES * 2 {
+                let incoming = if source_retained {
+                    0
+                } else {
+                    FRAME_RGBA8_BYTES
+                } + if recovered.is_some() || mips {
+                    0
+                } else {
+                    FRAME_RGBA8_BYTES
+                };
+                if retained_bytes(&state).1.saturating_add(incoming) > STAGING_LIMIT_BYTES * 2 {
                     return Err(ImageUploadError::RetainedFrameLimit);
                 }
             }
@@ -694,7 +828,7 @@ impl ImageUploadService {
                     cap: capacity,
                 });
             }
-            let pool = if independent {
+            let pool = if independent || recovered.is_some() {
                 let pool = UploadPool::new(UploadBudget {
                     staging_bytes: STAGING_LIMIT_BYTES,
                     in_flight_bytes: STAGING_LIMIT_BYTES,
@@ -702,13 +836,13 @@ impl ImageUploadService {
                 });
                 state
                     .pools
-                    .push((request.device_generation, Arc::clone(&pool)));
+                    .push((identity.device_generation, Arc::clone(&pool)));
                 pool
             } else {
                 state
                     .pools
                     .iter()
-                    .find(|(generation, _)| *generation == request.device_generation)
+                    .find(|(generation, _)| *generation == identity.device_generation)
                     .map(|(_, pool)| Arc::clone(pool))
                     .unwrap_or_else(|| {
                         let pool = UploadPool::new(UploadBudget {
@@ -718,33 +852,44 @@ impl ImageUploadService {
                         });
                         state
                             .pools
-                            .push((request.device_generation, Arc::clone(&pool)));
+                            .push((identity.device_generation, Arc::clone(&pool)));
                         pool
                     })
             };
             admit_upload(
                 &verified,
                 identity.clone(),
-                request.current_device_generation,
+                identity.device_generation,
                 &pool,
                 cancel,
             )
             .map_err(ImageUploadError::Admission)?
         };
-        let tiles = if mips {
-            Vec::new()
+        let tiles = if let Some(previous) = recovered {
+            Arc::clone(
+                &previous
+                    .paint_state
+                    .lock()
+                    .expect("image frame paint state")
+                    .tiles,
+            )
         } else {
-            build_tiles(&verified, cancel, 0, None)?
+            Arc::new(Mutex::new(if mips {
+                Vec::new()
+            } else {
+                build_tiles(&verified, cancel, 0, None)?
+            }))
         };
         if cancel.is_cancelled() {
             return Err(ImageUploadError::Cancelled);
         }
-        let issued = vec![false; tiles.len()];
+        let issued = vec![false; tiles.lock().expect("CPU tile cache").len()];
         let prepared = Arc::new(PreparedImage {
             identity,
             decode_calls: AtomicU64::new(0),
             preparation_queue_wait_nanos: AtomicU64::new(0),
-            source: mips.then_some(verified),
+            source: Some(verified),
+            origin: origin.unwrap_or_else(|| NEXT_FRAME_ORIGIN.fetch_add(1, Ordering::Relaxed)),
             has_mips: mips,
             first_mip: minimum_mip.unwrap_or(0),
             admission: Mutex::new(Some(admission)),
@@ -756,7 +901,21 @@ impl ImageUploadService {
         });
 
         let mut state = self.inner.state.lock().expect("image upload service state");
+        self.check_device_generation(prepared.identity.device_generation)?;
+        if recovered.is_some()
+            && let Some(existing) = state
+                .frames
+                .iter()
+                .find(|frame| {
+                    frame.identity == prepared.identity && frame.origin == prepared.origin
+                })
+                .cloned()
+        {
+            state.reuse_calls = state.reuse_calls.saturating_add(1);
+            return Ok(existing);
+        }
         if !independent
+            && recovered.is_none()
             && let Some(existing) = state
                 .frames
                 .iter()
@@ -766,7 +925,21 @@ impl ImageUploadService {
             state.reuse_calls = state.reuse_calls.saturating_add(1);
             return Ok(existing);
         }
-        if state.frames.len() >= MAX_RETAINED_FRAMES {
+        // Same rule as the admission gate: a recovered frame is a generation view over pixels the
+        // service already owns, so it does not consume a new CPU frame slot.
+        let source_retained = state
+            .frames
+            .iter()
+            .chain(&state.quarantined_views)
+            .any(|frame| {
+                frame.source.as_ref().is_some_and(|source| {
+                    prepared
+                        .source
+                        .as_ref()
+                        .is_some_and(|own| std::ptr::eq(source.raster(), own.raster()))
+                })
+            });
+        if state.frames.len() >= MAX_RETAINED_FRAMES && !source_retained {
             return Err(ImageUploadError::RetainedFrameLimit);
         }
         state.frames.push(Arc::clone(&prepared));
@@ -793,6 +966,7 @@ impl ImageUploadService {
         if cancel.is_cancelled() {
             return Err(ImageUploadError::Cancelled);
         }
+        self.check_device_generation(frame.identity.device_generation)?;
         let _preparation = PROCESS_PREPARATION.acquire(cancel)?;
         frame
             .preparation_queue_wait_nanos
@@ -803,6 +977,7 @@ impl ImageUploadService {
             .ok_or(ImageUploadError::InvalidRasterLayout)?;
         let missing = {
             let state = self.inner.state.lock().expect("image upload service state");
+            self.check_device_generation(frame.identity.device_generation)?;
             if !state
                 .frames
                 .iter()
@@ -812,13 +987,13 @@ impl ImageUploadService {
             }
             let missing = {
                 let paint = frame.paint_state.lock().expect("image frame paint state");
+                let tiles = paint.tiles.lock().expect("CPU tile cache");
                 demand
                     .spans
                     .iter()
                     .copied()
                     .filter(|span| {
-                        !paint
-                            .tiles
+                        !tiles
                             .iter()
                             .any(|tile| tile.level == demand.level && tile.span == *span)
                     })
@@ -827,7 +1002,7 @@ impl ImageUploadService {
             let incoming = missing.iter().try_fold(0u64, |sum, span| {
                 tile_transfer_layout(*span).map(|(_, bytes)| sum.saturating_add(bytes))
             })?;
-            if retained_cpu_bytes(&state).saturating_add(incoming) > STAGING_LIMIT_BYTES * 2 {
+            if retained_bytes(&state).1.saturating_add(incoming) > STAGING_LIMIT_BYTES * 2 {
                 return Err(ImageUploadError::RetainedFrameLimit);
             }
             missing
@@ -838,6 +1013,7 @@ impl ImageUploadService {
         let mip = source.mip(demand.level, cancel).map_err(map_media_error)?;
         let tiles = build_tiles(&mip, cancel, demand.level, Some(&missing))?;
         let service = self.inner.state.lock().expect("image upload service state");
+        self.check_device_generation(frame.identity.device_generation)?;
         if cancel.is_cancelled() {
             return Err(ImageUploadError::Cancelled);
         }
@@ -849,8 +1025,12 @@ impl ImageUploadService {
             return Err(ImageUploadError::NotRetained);
         }
         let mut paint = frame.paint_state.lock().expect("image frame paint state");
-        paint.issued.extend(std::iter::repeat_n(false, tiles.len()));
-        paint.tiles.extend(tiles);
+        let count = {
+            let mut cached = paint.tiles.lock().expect("CPU tile cache");
+            cached.extend(tiles);
+            cached.len()
+        };
+        paint.issued.resize(count, false);
         Ok(())
     }
 
@@ -879,6 +1059,12 @@ impl ImageUploadService {
         window: Option<AnyWindowHandle>,
     ) -> bool {
         let service = self.inner.state.lock().expect("image upload service state");
+        if self
+            .check_device_generation(frame.identity.device_generation)
+            .is_err()
+        {
+            return false;
+        }
         if !service
             .frames
             .iter()
@@ -975,7 +1161,7 @@ impl ImageUploadService {
             if owner != window.window_handle() {
                 return Err(ImageUploadError::NotOwnedByWindow);
             }
-            for tile in &paint_state.tiles {
+            for tile in paint_state.tiles.lock().expect("CPU tile cache").iter() {
                 window
                     .drop_image(Arc::clone(&tile.image))
                     .map_err(|_| ImageUploadError::AtlasRelease)?;
@@ -999,9 +1185,7 @@ impl ImageUploadService {
                 outcome.quarantined_bytes = bytes;
                 service.quarantined_payload_bytes =
                     service.quarantined_payload_bytes.saturating_add(bytes);
-                if frame.has_mips {
-                    service.quarantined_views.push(Arc::clone(frame));
-                }
+                retain_cpu_frame(&mut service, Arc::clone(frame));
             }
         }
         drop(admission);
@@ -1171,6 +1355,7 @@ impl ImageUploadService {
             0
         };
         let queue = PROCESS_PREPARATION.state.lock().expect("preparation queue");
+        let (packed_retained_bytes, cpu_retained_bytes) = retained_bytes(&state);
         ImageUploadCounters {
             retained_frames: state.frames.len(),
             staging_reservation_bytes: staging,
@@ -1181,8 +1366,8 @@ impl ImageUploadService {
             quarantined_resident_bytes: resident_stuck,
             decode_calls: state.decode_calls,
             reuse_calls: state.reuse_calls,
-            packed_retained_bytes: retained_packed_bytes(&state),
-            cpu_retained_bytes: retained_cpu_bytes(&state),
+            packed_retained_bytes,
+            cpu_retained_bytes,
             period_index,
             reserved_bytes_this_period,
             period_capacity_bytes: PERIOD_UPLOAD_CAP_BYTES,
@@ -1212,49 +1397,45 @@ impl ImageUploadService {
     }
 }
 
-fn retained_packed_bytes(state: &ServiceState) -> u64 {
-    state
-        .frames
+/// One immutable CPU owner per preparation origin; recovery carries all prior tile Arcs forward.
+fn retain_cpu_frame(state: &mut ServiceState, frame: Arc<PreparedImage>) {
+    if let Some(index) = state
+        .quarantined_views
         .iter()
-        .chain(&state.quarantined_views)
-        .map(|frame| {
-            frame
-                .paint_state
-                .lock()
-                .expect("image frame paint state")
-                .tiles
-                .iter()
-                .map(|tile| tile.transfer_bytes)
-                .sum::<u64>()
-        })
-        .sum()
+        .position(|previous| previous.origin == frame.origin)
+    {
+        state.quarantined_views[index] = frame;
+        return;
+    }
+    state.quarantined_views.push(frame);
 }
 
-fn retained_cpu_bytes(state: &ServiceState) -> u64 {
-    let raw: u64 = state
-        .pools
-        .iter()
-        .map(|(_, pool)| {
-            let usage = pool.usage();
-            usage.resident.saturating_add(usage.resident_stuck)
-        })
-        .sum();
-    let packed: u64 = state
-        .frames
-        .iter()
-        .chain(&state.quarantined_views)
-        .map(|frame| {
-            frame
-                .paint_state
-                .lock()
-                .expect("image frame paint state")
-                .tiles
-                .iter()
-                .map(|tile| tile.transfer_bytes)
-                .sum::<u64>()
-        })
-        .sum();
-    raw.saturating_add(packed)
+/// CPU payload accounting counts each distinct owned allocation once, however many retained
+/// frames and generations share it. Each frame is inspected under its own lock, so two paint
+/// states are never held at the same time.
+fn retained_bytes(state: &ServiceState) -> (u64, u64) {
+    let mut sources: Vec<*const u8> = Vec::new();
+    let mut caches: Vec<*const Mutex<Vec<PreparedTile>>> = Vec::new();
+    let mut raw = 0u64;
+    let mut packed = 0u64;
+    for frame in state.frames.iter().chain(&state.quarantined_views) {
+        if let Some(source) = frame.source.as_ref() {
+            let raster = source.raster().rgba.as_ptr();
+            if !sources.contains(&raster) {
+                sources.push(raster);
+                raw = raw.saturating_add(source.raster().rgba.len() as u64);
+            }
+        }
+        let paint = frame.paint_state.lock().expect("image frame paint state");
+        let cache = &*paint.tiles as *const Mutex<Vec<PreparedTile>>;
+        let cached = paint.tiles.lock().expect("CPU tile cache");
+        if !caches.contains(&cache) {
+            caches.push(cache);
+            packed =
+                packed.saturating_add(cached.iter().map(|tile| tile.transfer_bytes).sum::<u64>());
+        }
+    }
+    (packed, raw.saturating_add(packed))
 }
 
 /// Drop pools that no retained frame owns and that hold no charged or quarantined bytes.
@@ -1362,7 +1543,7 @@ impl ConsumerId {
 #[derive(Default)]
 struct PaintState {
     owner_window: Option<AnyWindowHandle>,
-    tiles: Vec<PreparedTile>,
+    tiles: Arc<Mutex<Vec<PreparedTile>>>,
     issued: Vec<bool>,
     complete_in_scene: bool,
     cancelled_before_upload: bool,
@@ -1374,6 +1555,8 @@ struct PaintState {
 pub struct PreparedImage {
     identity: UploadIdentity,
     source: Option<VerifiedRaster>,
+    /// Stable across recovery, distinct for independently prepared entries and unrelated to GPU generation.
+    origin: u64,
     has_mips: bool,
     first_mip: u8,
     admission: Mutex<Option<media::AdmittedUpload>>,
@@ -1413,13 +1596,14 @@ impl PreparedImage {
 
     pub fn progress(&self) -> FrameProgress {
         let state = self.paint_state.lock().expect("image frame paint state");
+        let tiles = state.tiles.lock().expect("CPU tile cache");
         FrameProgress {
             source_revision: self.identity.source_revision,
             device_generation: self.identity.device_generation,
             issued_tiles: state.issued.iter().filter(|issued| **issued).count(),
-            tile_count: state.tiles.len(),
-            packed_tiles: state.tiles.len(),
-            packed_bytes: state.tiles.iter().map(|tile| tile.transfer_bytes).sum(),
+            tile_count: tiles.len(),
+            packed_tiles: tiles.len(),
+            packed_bytes: tiles.iter().map(|tile| tile.transfer_bytes).sum(),
             decode_calls: self.decode_calls.load(Ordering::Relaxed),
             preparation_queue_wait_nanos: self.preparation_queue_wait_nanos.load(Ordering::Relaxed),
             complete_in_scene: state.complete_in_scene,
@@ -1470,6 +1654,18 @@ impl PreparedImage {
         let paint_period = current_period_index();
         let mut state = self.paint_state.lock().expect("image frame paint state");
         state.complete_in_scene = false;
+        let gpui::GpuDeviceState::Ready {
+            generation: native_generation,
+        } = window.gpu_device_state()
+        else {
+            return Ok(PaintStatus::DeviceUnavailable);
+        };
+        if device_generation != native_generation {
+            return Ok(PaintStatus::StaleDeviceGeneration {
+                requested: device_generation,
+                current: native_generation,
+            });
+        }
         if cancel.is_cancelled() || state.cancelled_before_upload {
             return Ok(PaintStatus::Cancelled);
         }
@@ -1509,6 +1705,7 @@ impl PreparedImage {
         let mut missing = 0;
         let mut owner = state.owner_window;
         let PaintState { tiles, issued, .. } = &mut *state;
+        let tiles = tiles.lock().expect("CPU tile cache");
         let result =
             window.with_content_mask(Some(gpui::ContentMask { bounds: viewport }), |window| {
                 for span in visible_spans(image_bounds, viewport, level) {
@@ -1576,6 +1773,7 @@ impl PreparedImage {
                     tile_count: visible,
                 })
             });
+        drop(tiles);
         state.owner_window = owner;
         state.complete_in_scene = matches!(result, Ok(PaintStatus::CompleteInScene { .. }));
         if !state.complete_in_scene {
@@ -1782,7 +1980,7 @@ fn rgba_tile_to_bgra(
 mod tests {
     use super::*;
 
-    /// Serializes the two tests that hold the process preparation guard.
+    /// Serializes tests that use the process-wide preparation guard.
     static PREPARATION_SERIAL: Mutex<()> = Mutex::new(());
     #[test]
     fn a_tile_with_padded_rows_is_refused_by_the_smallest_period_cap() {
@@ -2097,6 +2295,7 @@ mod tests {
             decode_calls: AtomicU64::new(0),
             preparation_queue_wait_nanos: AtomicU64::new(0),
             source: None,
+            origin: NEXT_FRAME_ORIGIN.fetch_add(1, Ordering::Relaxed),
             has_mips: false,
             first_mip: 0,
             admission: Mutex::new(None),
@@ -2215,6 +2414,7 @@ mod tests {
     #[test]
     fn same_identity_shared_and_independent_entries_have_distinct_resource_accounting() {
         use image::ImageEncoder;
+        let _serial = PREPARATION_SERIAL.lock().expect("test serialization");
 
         let identity_source = demand_frame(0);
         let request = UploadRequest {
@@ -2234,34 +2434,43 @@ mod tests {
             .expect("encode admitted RGB8 fixture");
         let verified = decode_for_upload(&encoded, request.decode_limits, &Cancellation::default())
             .expect("verify admitted fixture");
+        let identity = UploadIdentity {
+            key: request.key,
+            source_revision: request.source_revision,
+            device_generation: request.device_generation,
+            content_digest: verified.content_digest(),
+        };
         let service = ImageUploadService {
             inner: Arc::new(ServiceInner {
                 state: Mutex::new(ServiceState::default()),
                 window_frames: Mutex::new(std::collections::HashMap::new()),
+                device_generation: AtomicU64::new(0),
             }),
         };
         let cancellation = Cancellation::default();
         let shared = service
             .prepare_verified(
                 verified.clone(),
-                request.clone(),
+                identity.clone(),
                 &cancellation,
                 Some(0),
                 false,
+                None,
             )
             .expect("first shared entry");
         let shared_again = service
             .prepare_verified(
                 verified.clone(),
-                request.clone(),
+                identity.clone(),
                 &cancellation,
                 Some(0),
                 false,
+                None,
             )
             .expect("same verified identity reuses retained entry");
         assert!(Arc::ptr_eq(&shared, &shared_again));
         let independent = service
-            .prepare_verified(verified, request, &cancellation, Some(0), true)
+            .prepare_verified(verified, identity, &cancellation, Some(0), true, None)
             .expect("independent same-identity entry");
         assert!(!Arc::ptr_eq(&shared, &independent));
         assert_eq!(shared.identity(), independent.identity());
@@ -2269,7 +2478,312 @@ mod tests {
         assert_eq!(counters.retained_frames, 2);
         assert_eq!(counters.reuse_calls, 1);
         assert_eq!(counters.resident_reservation_bytes, 2 * FRAME_RGBA8_BYTES);
-        assert_eq!(counters.cpu_retained_bytes, 2 * FRAME_RGBA8_BYTES);
+        assert_eq!(counters.cpu_retained_bytes, FRAME_RGBA8_BYTES);
+
+        // Exercise real admission transitions without asserting unobservable GPU completion.
+        let image = Bounds::new(point(px(0.0), px(0.0)), size(px(2048.0), px(2048.0)));
+        service
+            .prepare_visible_now(&shared, &shared.demand(image, image, 2), &cancellation)
+            .expect("prepare one visible mip");
+        for frame in [&shared, &independent] {
+            frame
+                .admission
+                .lock()
+                .expect("admission")
+                .as_mut()
+                .expect("admitted")
+                .begin_upload()
+                .expect("begin transfer");
+        }
+        let consumer = ConsumerId::allocate();
+        assert!(service.attach(&shared, consumer, None));
+        service.invalidate_device_generation(2);
+        assert!(!service.attach(&shared, ConsumerId::allocate(), None));
+        assert!(service.detach(&shared, consumer));
+        assert_eq!(service.counters().retained_frames, 0);
+        assert_eq!(
+            service.counters().quarantined_payload_bytes,
+            2 * FRAME_RGBA8_BYTES
+        );
+
+        let recovered = service
+            .recover_frame(&shared, 2, &cancellation)
+            .expect("recover shared source");
+        let recovered_again = service
+            .recover_frame(&shared, 2, &cancellation)
+            .expect("reuse recovered source");
+        let independent_recovered = service
+            .recover_frame(&independent, 2, &cancellation)
+            .expect("recover independent source");
+        assert!(Arc::ptr_eq(&recovered, &recovered_again));
+        assert!(!Arc::ptr_eq(&recovered, &independent_recovered));
+        assert_eq!(recovered.identity.device_generation, 2);
+        assert_eq!(recovered.identity.key, shared.identity.key);
+        assert!(std::ptr::eq(
+            recovered
+                .source
+                .as_ref()
+                .expect("recovered source")
+                .raster(),
+            shared.source.as_ref().expect("original source").raster(),
+        ));
+        let old_tiles = shared.paint_state.lock().expect("old tiles");
+        let new_tiles = recovered.paint_state.lock().expect("new tiles");
+        assert!(Arc::ptr_eq(&old_tiles.tiles, &new_tiles.tiles));
+        assert_eq!(new_tiles.issued, vec![false]);
+        drop(new_tiles);
+        drop(old_tiles);
+        let usage = service.counters();
+        assert_eq!(usage.cpu_retained_bytes, FRAME_RGBA8_BYTES + 1024 * 1024);
+        assert_eq!(usage.packed_retained_bytes, 1024 * 1024);
+        assert_eq!(usage.quarantined_payload_bytes, 2 * FRAME_RGBA8_BYTES);
+        assert_eq!(
+            usage.staging_reservation_bytes + usage.quarantined_staging_bytes,
+            4 * FRAME_RGBA8_BYTES
+        );
+        assert!(matches!(
+            service.recover_frame(&shared, 1, &cancellation),
+            Err(ImageUploadError::StaleDeviceGeneration {
+                requested: 1,
+                current: 2
+            })
+        ));
+        let cancelled = Cancellation::default();
+        cancelled.cancel();
+        assert!(matches!(
+            service.recover_frame(&shared, 2, &cancelled),
+            Err(ImageUploadError::Cancelled)
+        ));
+        service.invalidate_device_generation(3);
+        service.invalidate_device_generation(2);
+        assert!(matches!(
+            service.recover_frame(&shared, 2, &cancellation),
+            Err(ImageUploadError::StaleDeviceGeneration {
+                requested: 2,
+                current: 3
+            })
+        ));
+        assert_eq!(
+            service.counters().cpu_retained_bytes,
+            usage.cpu_retained_bytes
+        );
+        assert_eq!(
+            service.counters().quarantined_payload_bytes,
+            usage.quarantined_payload_bytes
+        );
+        for generation in 3..12 {
+            let current = service
+                .recover_frame(&shared, generation, &cancellation)
+                .expect("recover through the retained CPU cache");
+            service.invalidate_device_generation(generation + 1);
+            assert_eq!(current.identity.device_generation, generation);
+            assert_eq!(
+                service.counters().cpu_retained_bytes,
+                usage.cpu_retained_bytes
+            );
+            assert_eq!(
+                service.counters().quarantined_payload_bytes,
+                usage.quarantined_payload_bytes
+            );
+            assert_eq!(
+                service
+                    .inner
+                    .state
+                    .lock()
+                    .expect("cache state")
+                    .quarantined_views
+                    .len(),
+                2
+            );
+        }
+    }
+
+    fn recovery_service() -> ImageUploadService {
+        ImageUploadService {
+            inner: Arc::new(ServiceInner {
+                state: Mutex::new(ServiceState::default()),
+                window_frames: Mutex::new(std::collections::HashMap::new()),
+                device_generation: AtomicU64::new(0),
+            }),
+        }
+    }
+
+    /// Prepare one real admitted frame for the given device generation.
+    fn prepared_for_recovery(
+        service: &ImageUploadService,
+        generation: u64,
+        independent: bool,
+    ) -> Arc<PreparedImage> {
+        use image::ImageEncoder;
+        let key = demand_frame(0).identity.key.clone();
+        let request = UploadRequest {
+            key,
+            source_revision: 1,
+            device_generation: generation,
+            current_device_generation: generation,
+            decode_limits: media::DecodeBudget::ratified_default()
+                .limits()
+                .expect("declared decode limits"),
+            max_encoded_bytes: 16 * 1024 * 1024,
+        };
+        let rgb = vec![0; FRAME_EDGE as usize * FRAME_EDGE as usize * 3];
+        let mut encoded = Vec::new();
+        image::codecs::png::PngEncoder::new(&mut encoded)
+            .write_image(&rgb, FRAME_EDGE, FRAME_EDGE, image::ExtendedColorType::Rgb8)
+            .expect("encode admitted RGB8 fixture");
+        let verified = decode_for_upload(&encoded, request.decode_limits, &Cancellation::default())
+            .expect("verify admitted fixture");
+        let content_digest = verified.content_digest();
+        service
+            .prepare_verified(
+                verified,
+                UploadIdentity {
+                    key: request.key,
+                    source_revision: request.source_revision,
+                    device_generation: generation,
+                    content_digest,
+                },
+                &Cancellation::default(),
+                Some(0),
+                independent,
+                None,
+            )
+            .expect("prepared frame")
+    }
+
+    #[test]
+    fn recovery_rebinds_the_same_cpu_payload_and_shared_tile_cache() {
+        let _serial = PREPARATION_SERIAL.lock().expect("test serialization");
+        let service = recovery_service();
+        let frame = prepared_for_recovery(&service, 4, false);
+        let before = service.counters();
+        let tiles = Arc::clone(&frame.paint_state.lock().expect("frame").tiles);
+
+        service.invalidate_device_generation(5);
+        assert_eq!(service.counters().retained_frames, 0);
+
+        let recovered = service
+            .recover_frame(&frame, 5, &Cancellation::default())
+            .expect("retained CPU payload rebinds to the current generation");
+        assert_eq!(recovered.identity.device_generation, 5);
+        assert!(
+            std::ptr::eq(
+                recovered.source.as_ref().expect("source").raster(),
+                frame.source.as_ref().expect("source").raster(),
+            ),
+            "recovery must reuse the exact verified CPU pixels"
+        );
+        assert!(
+            Arc::ptr_eq(&recovered.paint_state.lock().expect("frame").tiles, &tiles),
+            "recovery must share the prepared tile cache instead of rebuilding it"
+        );
+        assert!(
+            recovered
+                .paint_state
+                .lock()
+                .expect("frame")
+                .issued
+                .iter()
+                .all(|issued| !*issued),
+            "a new generation re-issues every tile"
+        );
+        let after = service.counters();
+        assert_eq!(after.cpu_retained_bytes, before.cpu_retained_bytes);
+        assert_eq!(after.packed_retained_bytes, before.packed_retained_bytes);
+        assert_eq!(
+            service
+                .inner
+                .state
+                .lock()
+                .expect("cache state")
+                .quarantined_views
+                .len(),
+            1,
+            "one retained owner per preparation origin"
+        );
+    }
+
+    #[test]
+    fn recovery_refuses_a_generation_the_service_already_invalidated() {
+        let _serial = PREPARATION_SERIAL.lock().expect("test serialization");
+        let service = recovery_service();
+        let frame = prepared_for_recovery(&service, 3, false);
+        service.invalidate_device_generation(6);
+        assert!(matches!(
+            service.recover_frame(&frame, 5, &Cancellation::default()),
+            Err(ImageUploadError::StaleDeviceGeneration {
+                requested: 5,
+                current: 6
+            })
+        ));
+    }
+
+    #[test]
+    fn repeated_unpainted_recovery_keeps_one_cpu_owner_and_stable_charges() {
+        let _serial = PREPARATION_SERIAL.lock().expect("test serialization");
+        let service = recovery_service();
+        let mut frame = prepared_for_recovery(&service, 2, false);
+        let baseline = service.counters();
+        let tiles = Arc::clone(&frame.paint_state.lock().expect("frame").tiles);
+
+        for generation in 3..=5u64 {
+            service.invalidate_device_generation(generation);
+            frame = service
+                .recover_frame(&frame, generation, &Cancellation::default())
+                .expect("bounded repeated recovery");
+            let counters = service.counters();
+            assert_eq!(counters.cpu_retained_bytes, baseline.cpu_retained_bytes);
+            assert_eq!(
+                counters.packed_retained_bytes,
+                baseline.packed_retained_bytes
+            );
+            assert_eq!(
+                counters.quarantined_payload_bytes, baseline.quarantined_payload_bytes,
+                "a never-painted transfer is released, not quarantined for every generation"
+            );
+            assert_eq!(
+                service
+                    .inner
+                    .state
+                    .lock()
+                    .expect("cache state")
+                    .quarantined_views
+                    .len(),
+                1
+            );
+            assert!(Arc::ptr_eq(
+                &frame.paint_state.lock().expect("frame").tiles,
+                &tiles
+            ));
+        }
+    }
+
+    #[test]
+    fn recovery_adds_a_generation_view_without_taking_a_cpu_frame_slot() {
+        let _serial = PREPARATION_SERIAL.lock().expect("test serialization");
+        let service = recovery_service();
+        // Two windows already own the process ceiling of two independent frames.
+        let first = prepared_for_recovery(&service, 1, true);
+        let second = prepared_for_recovery(&service, 1, true);
+        assert_ne!(first.origin, second.origin);
+        assert_eq!(service.counters().retained_frames, 2);
+        let before = service.counters();
+
+        let recovered = service
+            .recover_frame(&first, 2, &Cancellation::default())
+            .expect("a retained payload recovers even when every frame slot is in use");
+        assert_eq!(recovered.identity.device_generation, 2);
+        assert_eq!(recovered.origin, first.origin);
+        assert_eq!(service.counters().retained_frames, 3);
+        // The third entry is a generation view over pixels already owned: no new CPU payload.
+        assert_eq!(
+            service.counters().cpu_retained_bytes,
+            before.cpu_retained_bytes
+        );
+        assert_eq!(
+            service.counters().packed_retained_bytes,
+            before.packed_retained_bytes
+        );
     }
 
     fn demand_frame(first_mip: u8) -> Arc<PreparedImage> {
@@ -2298,6 +2812,7 @@ mod tests {
                 content_digest: [0u8; 32],
             },
             source: None,
+            origin: NEXT_FRAME_ORIGIN.fetch_add(1, Ordering::Relaxed),
             decode_calls: AtomicU64::new(0),
             preparation_queue_wait_nanos: AtomicU64::new(0),
             has_mips: true,

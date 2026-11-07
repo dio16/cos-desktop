@@ -71,7 +71,7 @@ WORKSPACE_ALLOWLIST = {
 
 GPUI_PACKAGES = ("gpui", "gpui_platform", "gpui_windows")
 GPUI_ALLOWED_DEPENDENTS = {"cos-desktop", "desktop-gpui"}  # Binary and GPUI presentation boundary
-ZED_GIT_URL = "https://github.com/zed-industries/zed"
+ZED_GIT_URL = "https://github.com/dio16/zed"
 CRATES_IO_SOURCE = "registry+https://github.com/rust-lang/crates.io-index"
 REV_RE = re.compile(r"^[0-9a-f]{40}$")
 RUNTIME_CHECKOUT_RE = re.compile(r"(^|/)c:/ai(/|$)")

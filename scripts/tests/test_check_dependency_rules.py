@@ -251,6 +251,18 @@ class DependencyRulesTests(unittest.TestCase):
         violations = cdr.check_metadata(metadata, str(self.root))
         self.assertIn("git-pin", self.codes(violations))
 
+    def test_retired_upstream_zed_source_rejected(self):
+        """The MP-REC1 cutover allows one Zed source; a stray upstream pin must fail, not pass."""
+        metadata = self.clean_workspace()
+        self.replace_dependency(
+            metadata,
+            "cos-desktop",
+            "gpui",
+            git_dep("gpui", url="https://github.com/zed-industries/zed"),
+        )
+        violations = cdr.check_metadata(metadata, str(self.root))
+        self.assertIn("external-source", self.codes(violations))
+
     def test_unreviewed_external_source_detected(self):
         metadata = self.clean_workspace()
         dependencies = self.package(metadata, "desktop-gpui")["dependencies"]

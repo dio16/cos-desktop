@@ -6,9 +6,9 @@ use crate::{
     view_transform::{Point, ViewCamera},
 };
 use gpui::{
-    AccessibleAction, App, AppContext, Context, Entity, EventEmitter, FocusHandle,
+    AccessibleAction, App, AppContext, Context, Entity, EventEmitter, FocusHandle, GpuDeviceState,
     InteractiveElement, IntoElement, KeyBinding, ParentElement, Render, Role, SharedString,
-    StatefulInteractiveElement, Styled, Window, actions, div, rgb,
+    StatefulInteractiveElement, Styled, Subscription, Window, actions, div, rgb,
 };
 use media::{Cancellation, MediaError};
 use std::sync::Arc;
@@ -26,6 +26,22 @@ pub fn bind_keys(cx: &mut App) {
         KeyBinding::new("enter", CompareActivate, Some("CompareAction")),
         KeyBinding::new("space", CompareActivate, Some("CompareAction")),
     ]);
+}
+
+fn backend_reason(state: GpuDeviceState) -> SharedString {
+    match state {
+        GpuDeviceState::Unsupported => {
+            "GPU表示を利用できません: このバックエンドでは画像表示が未対応です。".into()
+        }
+        GpuDeviceState::Recovering { generation } => {
+            format!("GPUデバイスを復旧中です（世代 {generation}）。").into()
+        }
+        GpuDeviceState::Unavailable { generation } => {
+            format!("GPU表示を利用できません（世代 {generation}）。アプリを再起動してください。")
+                .into()
+        }
+        GpuDeviceState::Ready { .. } => "GPUデバイス世代が要求された画像と一致しません。".into(),
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -74,13 +90,22 @@ pub struct CompareView {
     pane_serial: [u64; 2],
     mode: ViewerMode,
     palette: Palette,
+    device_state: GpuDeviceState,
+    _device_subscription: Subscription,
 }
 
 impl CompareView {
-    pub fn new(mode: ViewerMode, window: &mut Window, cx: &mut Context<Self>) -> Self {
+    pub fn new(
+        mode: ViewerMode,
+        base_window_title: impl Into<String>,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> Self {
+        let base_window_title = base_window_title.into();
         let panes = std::array::from_fn(|index| {
+            let base_window_title = base_window_title.clone();
             cx.new(|cx| {
-                let mut pane = ImageViewer::new(mode, window, cx);
+                let mut pane = ImageViewer::new(mode, base_window_title, window, cx);
                 pane.set_compare_pane(index, cx);
                 pane
             })
@@ -100,6 +125,15 @@ impl CompareView {
             })
             .detach();
         }
+        let device_state = cx.gpu_device_state();
+        let window_handle = window.window_handle();
+        let weak = cx.entity().downgrade();
+        let device_subscription = cx.on_gpu_device_state_change(move |app| {
+            let state = app.gpu_device_state();
+            let _ = window_handle.update(app, |_, _, app| {
+                let _ = weak.update(app, |view, cx| view.device_state_changed(state, cx));
+            });
+        });
         Self {
             panes,
             labels: ["A: 未選択".into(), "B: 未選択".into()],
@@ -123,7 +157,21 @@ impl CompareView {
                 scheme: ContrastScheme::Normal,
                 colors: NORMAL_COLORS,
             },
+            device_state,
+            _device_subscription: device_subscription,
         }
+    }
+
+    fn device_state_changed(&mut self, state: GpuDeviceState, cx: &mut Context<Self>) {
+        if self.device_state == state {
+            return;
+        }
+        self.device_state = state;
+        self.cancel_inputs();
+        self.cancel = Cancellation::default();
+        self.side_cancel = std::array::from_fn(|_| Cancellation::default());
+        self.pane_serial = self.pane_serial.map(|serial| serial.saturating_add(1));
+        cx.notify();
     }
 
     pub fn set_palette(&mut self, palette: Palette, cx: &mut Context<Self>) {
@@ -192,6 +240,10 @@ impl CompareView {
 
     pub fn frames(&self, cx: &App) -> [Option<Arc<PreparedImage>>; 2] {
         std::array::from_fn(|index| self.panes[index].read(cx).prepared())
+    }
+
+    pub fn retained_frames(&self, cx: &App) -> [Option<Arc<PreparedImage>>; 2] {
+        std::array::from_fn(|index| self.panes[index].read(cx).retained_prepared())
     }
 
     pub fn observations(&self, cx: &App) -> [ViewerObservation; 2] {
@@ -273,34 +325,36 @@ impl CompareView {
     }
 
     /// Swap resources, not entities/cameras/focus. Both Arc owners survive the two attachments.
+    ///
+    /// Availability and its reason move with the candidate: a side whose candidate is withheld
+    /// keeps that reason and receives no picture, so no recovery backup can appear under it.
     pub fn swap_resources(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         self.cancel_inputs();
-        let frames = self.frames(cx);
-        for index in 0..2 {
-            match frames[1 - index].clone() {
-                Some(frame) => {
-                    self.panes[index]
-                        .update(cx, |pane, cx| pane.present_prepared(frame, window, cx));
-                }
-                None => self.panes[index].update(cx, |pane, cx| {
-                    pane.unavailable(
-                        "画像を利用できません: この候補の認可済み画像がありません。".into(),
-                        cx,
-                    )
-                }),
-            }
-        }
-        // The projection's availability follows the candidate that now sits in each pane, so the
-        // swapped side must not look like a reappearance to the next `set_projection` call: that
-        // transition would withdraw the picture the swap just attached.
+        let frames = self.retained_frames(cx);
         self.available.swap(0, 1);
         self.side_reason.swap(0, 1);
         for index in 0..2 {
-            // The side that just received no picture states why that candidate has none.
-            if frames[1 - index].is_none()
-                && let Some(reason) = self.side_reason[index].clone()
-            {
-                self.panes[index].update(cx, |pane, cx| pane.unavailable(reason, cx));
+            let frame = frames[1 - index].clone();
+            match (self.available[index], frame) {
+                (true, Some(frame)) => {
+                    self.side_reason[index] = None;
+                    self.panes[index]
+                        .update(cx, |pane, cx| pane.restore_prepared(frame, window, cx));
+                }
+                (true, None) => {
+                    let reason: SharedString =
+                        "画像を利用できません: この候補の認可済み画像がありません。".into();
+                    self.side_reason[index] = Some(reason.clone());
+                    self.panes[index].update(cx, |pane, cx| pane.unavailable(reason, cx));
+                }
+                (false, _) => {
+                    let reason = self.side_reason[index].clone().unwrap_or_else(|| {
+                        SharedString::from(
+                            "画像を利用できません: この候補は現在閲覧できる情報に含まれていません。",
+                        )
+                    });
+                    self.panes[index].update(cx, |pane, cx| pane.unavailable(reason, cx));
+                }
             }
         }
         self.panes[self.active]
@@ -325,26 +379,92 @@ impl CompareView {
         self.cancel = Cancellation::default();
         self.side_cancel = std::array::from_fn(|_| Cancellation::default());
         self.pane_serial = self.pane_serial.map(|serial| serial.saturating_add(1));
-        self.reset_fit(cx);
-        for pane in &self.panes {
-            pane.update(cx, |pane, cx| {
-                pane.unavailable(
-                    "ローカル比較画像を準備中（実行基盤の成果物ではありません）".into(),
-                    cx,
-                )
-            });
+        let state = window.gpu_device_state();
+        if self.device_state != state {
+            self.device_state_changed(state, cx);
         }
+        let retained = self.retained_frames(cx);
+        let matches_candidate = |frame: &Arc<PreparedImage>, request: &UploadRequest| {
+            frame.identity().key == request.key
+                && frame.identity().source_revision == request.source_revision
+        };
+        let GpuDeviceState::Ready { generation } = state else {
+            let reason = backend_reason(state);
+            for index in 0..2 {
+                if let Some(frame) = retained[index]
+                    .clone()
+                    .filter(|frame| matches_candidate(frame, &requests[index]))
+                {
+                    self.panes[index].update(cx, |pane, cx| {
+                        pane.restore_prepared(frame, window, cx);
+                    });
+                    self.side_reason[index] = None;
+                } else {
+                    self.side_reason[index] = Some(reason.clone());
+                    let reason = reason.clone();
+                    self.panes[index].update(cx, |pane, cx| pane.unavailable(reason, cx));
+                }
+            }
+            cx.notify();
+            return;
+        };
+        if requests.iter().any(|request| {
+            request.device_generation != generation
+                || request.current_device_generation != generation
+        }) {
+            let reason = backend_reason(state);
+            for index in 0..2 {
+                self.side_reason[index] = Some(reason.clone());
+                let reason = reason.clone();
+                self.panes[index].update(cx, |pane, cx| pane.unavailable(reason, cx));
+            }
+            cx.notify();
+            return;
+        }
+
+        self.reset_fit(cx);
         let shared = share
             && requests[0].key == requests[1].key
             && requests[0].source_revision == requests[1].source_revision
             && requests[0].device_generation == requests[1].device_generation
             && requests[0].current_device_generation == requests[1].current_device_generation;
-        let source = Arc::new(source);
-        for (index, request) in requests
-            .into_iter()
-            .enumerate()
-            .take(if shared { 1 } else { 2 })
+        if shared
+            && let Some(frame) = retained
+                .iter()
+                .flatten()
+                .find(|frame| matches_candidate(frame, &requests[0]))
+                .cloned()
         {
+            for index in 0..2 {
+                self.panes[index].update(cx, |pane, cx| {
+                    pane.restore_prepared(Arc::clone(&frame), window, cx);
+                });
+                self.side_reason[index] = None;
+            }
+            cx.notify();
+            return;
+        }
+
+        let source = Arc::new(source);
+        for (index, request) in requests.into_iter().enumerate() {
+            if !shared
+                && let Some(frame) = retained[index]
+                    .clone()
+                    .filter(|frame| matches_candidate(frame, &request))
+            {
+                self.panes[index].update(cx, |pane, cx| {
+                    pane.restore_prepared(frame, window, cx);
+                });
+                self.side_reason[index] = None;
+                continue;
+            }
+            self.panes[index].update(cx, |pane, cx| {
+                pane.unavailable(
+                    "ローカル比較画像を準備中（実行基盤の成果物ではありません）".into(),
+                    cx,
+                )
+            });
+            self.side_reason[index] = None;
             let source = Arc::clone(&source);
             let targets = if shared { 0..2 } else { index..index + 1 };
             let cancel = if shared {
@@ -355,6 +475,9 @@ impl CompareView {
             self.prepare_input(targets, request, cancel, window, cx, move |cancel| {
                 source(index, cancel)
             });
+            if shared {
+                break;
+            }
         }
     }
 
@@ -368,16 +491,49 @@ impl CompareView {
         cx: &mut Context<Self>,
         source: impl FnOnce(&Cancellation) -> Result<Arc<[u8]>, MediaError> + Send + 'static,
     ) {
+        let state = window.gpu_device_state();
+        if self.device_state != state {
+            self.device_state_changed(state, cx);
+        }
+        let index = side.index();
+        let retained = self.panes[index].read(cx).retained_prepared();
+        if let Some(frame) = retained.filter(|frame| {
+            frame.identity().key == request.key
+                && frame.identity().source_revision == request.source_revision
+        }) {
+            self.side_cancel[index].cancel();
+            self.pane_serial[index] = self.pane_serial[index].saturating_add(1);
+            let restored =
+                self.panes[index].update(cx, |pane, cx| pane.restore_prepared(frame, window, cx));
+            if restored {
+                self.side_reason[index] = None;
+            }
+            cx.notify();
+            return;
+        }
+        let reason = match state {
+            GpuDeviceState::Ready { generation }
+                if request.device_generation == generation
+                    && request.current_device_generation == generation =>
+            {
+                None
+            }
+            _ => Some(backend_reason(state)),
+        };
+        if let Some(reason) = reason {
+            self.unavailable(side, reason, cx);
+            return;
+        }
         self.unavailable(
             side,
             "ローカル比較画像を準備中（実行基盤の成果物ではありません）".into(),
             cx,
         );
-        self.side_cancel[side.index()] = Cancellation::default();
+        self.side_cancel[index] = Cancellation::default();
         self.prepare_input(
-            side.index()..side.index() + 1,
+            index..index + 1,
             request,
-            self.side_cancel[side.index()].clone(),
+            self.side_cancel[index].clone(),
             window,
             cx,
             source,
@@ -401,6 +557,23 @@ impl CompareView {
         attached
     }
 
+    pub fn restore_prepared(
+        &mut self,
+        side: CompareSide,
+        frame: Arc<PreparedImage>,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> bool {
+        self.side_cancel[side.index()].cancel();
+        self.pane_serial[side.index()] = self.pane_serial[side.index()].saturating_add(1);
+        let restored = self.panes[side.index()]
+            .update(cx, |pane, cx| pane.restore_prepared(frame, window, cx));
+        if restored {
+            self.side_reason[side.index()] = None;
+        }
+        restored
+    }
+
     fn cancel_inputs(&mut self) {
         self.cancel.cancel();
         self.side_cancel.iter().for_each(Cancellation::cancel);
@@ -417,6 +590,7 @@ impl CompareView {
         source: impl FnOnce(&Cancellation) -> Result<Arc<[u8]>, MediaError> + Send + 'static,
     ) {
         let serial = self.serial;
+        let generation = request.device_generation;
         let pane_serial = self.pane_serial;
         let service = ImageUploadService::global();
         let task = service.prepare_view_independent_generated(
@@ -430,7 +604,10 @@ impl CompareView {
             let result = task.await;
             let mut unclaimed = result.as_ref().ok().cloned();
             let _ = this.update_in(cx, |this, window, cx| {
-                if this.serial != serial {
+                if this.serial != serial
+                    || window.gpu_device_state() != (GpuDeviceState::Ready { generation })
+                    || this.device_state != (GpuDeviceState::Ready { generation })
+                {
                     return;
                 }
                 match result {
@@ -444,7 +621,6 @@ impl CompareView {
                                 pane.present_prepared(Arc::clone(&frame), window, cx)
                             });
                             if presented {
-                                // The preparing reason no longer describes this side.
                                 this.side_reason[target] = None;
                             }
                             attached |= presented;
@@ -460,8 +636,6 @@ impl CompareView {
                             if this.pane_serial[target] != pane_serial[target] {
                                 continue;
                             }
-                            // The settled refusal replaces the preparing reason, so a later swap
-                            // carries the reason that actually applies to this candidate.
                             this.side_reason[target] = Some(reason.clone());
                             let reason = reason.clone();
                             this.panes[target].update(cx, |pane, cx| pane.unavailable(reason, cx));
@@ -480,10 +654,7 @@ impl CompareView {
     pub fn close(&mut self, cx: &mut Context<Self>) {
         self.cancel_inputs();
         for pane in &self.panes {
-            pane.update(cx, |pane, cx| {
-                pane.close(cx);
-                pane.set_camera(ViewCamera::default(), cx);
-            });
+            pane.update(cx, |pane, cx| pane.close(cx));
         }
         self.linked = true;
     }

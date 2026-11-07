@@ -10,11 +10,11 @@ use crate::{
     view_transform::{Point, Rect, Size, ViewCamera, ViewTransform},
 };
 use gpui::{
-    App, Bounds, Context, EventEmitter, FocusHandle, IntoElement, KeyBinding, MouseButton, Pixels,
-    Render, Role, SharedString, Window, actions, canvas, div, fill, point, prelude::*, px, rgb,
-    size,
+    App, Bounds, Context, EventEmitter, FocusHandle, GpuDeviceState, IntoElement, KeyBinding,
+    MouseButton, Pixels, Render, Role, SharedString, Subscription, Window, actions, canvas, div,
+    fill, point, prelude::*, px, rgb, size,
 };
-use media::{Cancellation, MediaError, Orientation};
+use media::{Cancellation, MediaError, Orientation, RepresentationKey};
 use std::sync::Arc;
 
 actions!(
@@ -64,6 +64,30 @@ fn retirement_interval(attempts: u8, slow: bool) -> u64 {
     } else {
         SLOW_RETIREMENT_MILLIS
     }
+}
+
+fn device_status(state: GpuDeviceState) -> SharedString {
+    match state {
+        GpuDeviceState::Unsupported => {
+            "GPU表示を利用できません: このバックエンドでは画像表示が未対応です。".into()
+        }
+        GpuDeviceState::Ready { .. } => {
+            "画像を利用できません: 認可済みの画像入力がありません。実行基盤からの取得は未対応です。"
+                .into()
+        }
+        GpuDeviceState::Recovering { generation } => {
+            format!("GPUデバイスを復旧中です（世代 {generation}）。画像表示を一時停止しています。")
+                .into()
+        }
+        GpuDeviceState::Unavailable { generation } => {
+            format!("GPU表示を利用できません（世代 {generation}）。アプリを再起動してください。")
+                .into()
+        }
+    }
+}
+
+fn initial_status(state: GpuDeviceState) -> SharedString {
+    device_status(state)
 }
 
 /// A retired frame may be released only after two composed scenes postdate its detach.
@@ -116,6 +140,11 @@ pub struct ViewerObservation {
 pub struct ImageViewer {
     service: ImageUploadService,
     current: Option<Arc<PreparedImage>>,
+    /// One bounded retained CPU source frame used for generation-specific recovery.
+    retained: Option<Arc<PreparedImage>>,
+    /// The exact identity this pane's host asked to present. Recovery may re-admit only this
+    /// identity: a backup for a superseded or withheld candidate is dropped, never resurrected.
+    requested: Option<(RepresentationKey, u64)>,
     cancel: Cancellation,
     /// Cancellation owned by the current viewport tile demand.
     tile_cancel: Cancellation,
@@ -134,6 +163,11 @@ pub struct ImageViewer {
     view_serial: u64,
     revision: u64,
     generation: u64,
+    device_state: GpuDeviceState,
+    recovery_pending: bool,
+    recovery_attempted_generation: Option<u64>,
+    _device_subscription: Subscription,
+    base_window_title: String,
     transform: Option<ViewTransform>,
     camera: ViewCamera,
     compare_pane: Option<usize>,
@@ -151,21 +185,182 @@ pub struct ImageViewer {
 }
 
 impl ImageViewer {
-    pub fn new(mode: ViewerMode, window: &Window, cx: &mut Context<Self>) -> Self {
+    pub fn new(
+        mode: ViewerMode,
+        base_window_title: impl Into<String>,
+        window: &Window,
+        cx: &mut Context<Self>,
+    ) -> Self {
+        let device_state = cx.gpu_device_state();
+        let base_window_title = base_window_title.into();
         let window = window.window_handle();
+        let weak = cx.entity().downgrade();
+        let device_subscription = cx.on_gpu_device_state_change(move |app| {
+            let state = app.gpu_device_state();
+            let _ = window.update(app, |_, window, app| {
+                let _ = weak.update(app, |viewer, cx| {
+                    viewer.device_state_changed(state, window, cx);
+                });
+            });
+        });
         Self {
-            service: ImageUploadService::global(), current: None, cancel: Cancellation::default(),
-            tile_cancel: Cancellation::default(), demand: None, demand_id: 0, tile_attempts: 0,
-            retiring: Vec::new(), scene_serial: 0,
-            retirement_scheduled: false, retirement_attempts: 0,
+            service: ImageUploadService::global(),
+            current: None,
+            retained: None,
+            requested: None,
+            cancel: Cancellation::default(),
+            tile_cancel: Cancellation::default(),
+            demand: None,
+            demand_id: 0,
+            tile_attempts: 0,
+            retiring: Vec::new(),
+            scene_serial: 0,
+            retirement_scheduled: false,
+            retirement_attempts: 0,
             retirement_slow: false,
-            serial: 0, view_serial: 0, revision: 0, generation: 0, transform: None,
-            camera: ViewCamera::default(), compare_pane: None,
+            serial: 0,
+            view_serial: 0,
+            revision: 0,
+            generation: 0,
+            device_state,
+            recovery_pending: false,
+            recovery_attempted_generation: None,
+            _device_subscription: device_subscription,
+            base_window_title,
+            transform: None,
+            camera: ViewCamera::default(),
+            compare_pane: None,
             complete_in_scene: false,
-            dpi: 0.0, window, viewport: Bounds::default(), focus: cx.focus_handle().tab_stop(true), drag: None,
-            mode, phase: 0, status: "画像を利用できません: 認可済みの画像入力がありません。実行基盤からの取得は未対応です。".into(),
-            palette: Palette { scheme: ContrastScheme::Normal, colors: NORMAL_COLORS }, consumer: ConsumerId::allocate(),
+            dpi: 0.0,
+            window,
+            viewport: Bounds::default(),
+            focus: cx.focus_handle().tab_stop(true),
+            drag: None,
+            mode,
+            phase: 0,
+            status: initial_status(device_state),
+            palette: Palette {
+                scheme: ContrastScheme::Normal,
+                colors: NORMAL_COLORS,
+            },
+            consumer: ConsumerId::allocate(),
         }
+    }
+
+    pub fn device_state(&self) -> GpuDeviceState {
+        self.device_state
+    }
+
+    pub fn retained_prepared(&self) -> Option<Arc<PreparedImage>> {
+        self.retained.clone()
+    }
+
+    /// Drop the recovery backup without claiming anything about the picture on screen.
+    ///
+    /// The host calls this when the candidate the pane represents is replaced or withheld: the
+    /// identity the backup belongs to is no longer the one this pane may publish, so a later GPU
+    /// generation change must not re-admit it. The retained entry is not released here; release
+    /// still belongs to the explicit eviction path.
+    pub fn withdraw_recovery_backup(&mut self, cx: &mut Context<Self>) {
+        if self.retained.is_none() && self.requested.is_none() {
+            return;
+        }
+        self.retained = None;
+        self.requested = None;
+        self.recovery_pending = false;
+        self.recovery_attempted_generation = None;
+        cx.notify();
+    }
+
+    fn device_state_changed(
+        &mut self,
+        state: GpuDeviceState,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        if self.device_state == state {
+            return;
+        }
+        let previous_generation = match self.device_state {
+            GpuDeviceState::Ready { generation }
+            | GpuDeviceState::Recovering { generation }
+            | GpuDeviceState::Unavailable { generation } => Some(generation),
+            GpuDeviceState::Unsupported => None,
+        };
+        let next_generation = match state {
+            GpuDeviceState::Ready { generation }
+            | GpuDeviceState::Recovering { generation }
+            | GpuDeviceState::Unavailable { generation } => Some(generation),
+            GpuDeviceState::Unsupported => None,
+        };
+        let invalidated = next_generation.is_some_and(|generation| {
+            let advanced = previous_generation.is_none_or(|previous| generation > previous);
+            if advanced {
+                self.service.invalidate_device_generation(generation);
+            }
+            advanced
+        });
+
+        self.device_state = state;
+        self.cancel.cancel();
+        self.tile_cancel.cancel();
+        self.cancel = Cancellation::default();
+        self.tile_cancel = Cancellation::default();
+        self.serial = self.serial.saturating_add(1);
+        self.view_serial = self.view_serial.saturating_add(1);
+        self.demand = None;
+        self.tile_attempts = 0;
+        self.recovery_pending = false;
+        self.recovery_attempted_generation = None;
+        self.complete_in_scene = false;
+        self.drag = None;
+
+        if invalidated {
+            if let Some(frame) = self.current.take() {
+                self.service.detach(&frame, self.consumer);
+            }
+        } else {
+            self.release_current(cx);
+        }
+
+        // A pane embedded in a host window must not overwrite the host's native title; an empty
+        // base title means "the embedding window owns the title".
+        let title = |suffix: &str| match self.base_window_title.is_empty() {
+            true => None,
+            false => Some(format!("{}{suffix}", self.base_window_title)),
+        };
+        match state {
+            GpuDeviceState::Ready { .. } => {
+                if let Some(title) = title("") {
+                    window.set_window_title(&title);
+                }
+                self.status = if self.retained.is_some() {
+                    "GPUは利用可能です。保持済みの画像を次の表示要求時に復元します。".into()
+                } else {
+                    device_status(state)
+                };
+            }
+            GpuDeviceState::Recovering { .. } => {
+                if let Some(title) = title(" — GPU復旧中") {
+                    window.set_window_title(&title);
+                }
+                self.status = device_status(state);
+            }
+            GpuDeviceState::Unavailable { .. } => {
+                if let Some(title) = title(" — GPU表示不可: アプリを再起動してください")
+                {
+                    window.set_window_title(&title);
+                }
+                self.status = device_status(state);
+            }
+            GpuDeviceState::Unsupported => {
+                if let Some(title) = title(" — GPUバックエンド未対応") {
+                    window.set_window_title(&title);
+                }
+                self.status = device_status(state);
+            }
+        }
+        cx.notify();
     }
 
     /// The shell owns the OS probe; child viewers consume its already-resolved palette.
@@ -241,6 +436,21 @@ impl ImageViewer {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) -> bool {
+        let state = window.gpu_device_state();
+        if state != self.device_state {
+            self.device_state_changed(state, window, cx);
+        }
+        let GpuDeviceState::Ready { generation } = state else {
+            self.unavailable(device_status(state), cx);
+            return false;
+        };
+        if frame.identity().device_generation != generation {
+            self.unavailable(
+                "画像を利用できません: 画像は現在のGPUデバイス世代に属していません。".into(),
+                cx,
+            );
+            return false;
+        }
         if frame.identity().key.orientation != Orientation::Normal {
             self.unavailable(
                 "画像を利用できません: この経路では標準の向きだけが検証済みです。".into(),
@@ -278,6 +488,11 @@ impl ImageViewer {
         self.tile_attempts = 0;
         self.cancel = Cancellation::default();
         let preview = self.mode == ViewerMode::PreviewOnly || frame.minimum_mip() > 0;
+        self.retained = Some(Arc::clone(&frame));
+        self.requested = Some((
+            frame.identity().key.clone(),
+            frame.identity().source_revision,
+        ));
         self.current = Some(frame);
         self.status = match preview {
             true => "ローカル画像: 低解像度プレビュー。原寸の詳細表示・1:1ではありません。",
@@ -288,11 +503,68 @@ impl ImageViewer {
         true
     }
 
+    /// Restore a retained candidate after a surface switch or device transition. Stale-generation
+    /// frames are CPU recovery sources only; a new GPU-tagged frame is created lazily when visible.
+    pub fn restore_prepared(
+        &mut self,
+        frame: Arc<PreparedImage>,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> bool {
+        let state = window.gpu_device_state();
+        if state != self.device_state {
+            self.device_state_changed(state, window, cx);
+        }
+        if frame.identity().key.orientation != Orientation::Normal {
+            self.unavailable(
+                "画像を利用できません: この経路では標準の向きだけが検証済みです。".into(),
+                cx,
+            );
+            return false;
+        }
+        if matches!(state, GpuDeviceState::Ready { generation } if generation == frame.identity().device_generation)
+        {
+            return self.present_prepared(frame, window, cx);
+        }
+        self.cancel.cancel();
+        self.tile_cancel.cancel();
+        self.cancel = Cancellation::default();
+        self.tile_cancel = Cancellation::default();
+        self.serial = self.serial.saturating_add(1);
+        self.release_current(cx);
+        self.retained = Some(Arc::clone(&frame));
+        self.requested = Some((
+            frame.identity().key.clone(),
+            frame.identity().source_revision,
+        ));
+        self.revision = frame.identity().source_revision;
+        self.generation = frame.identity().device_generation;
+        self.recovery_pending = false;
+        self.recovery_attempted_generation = None;
+        self.demand = None;
+        self.tile_attempts = 0;
+        self.phase = 0;
+        self.complete_in_scene = false;
+        self.status = match state {
+            GpuDeviceState::Ready { .. } => {
+                "保持済みのCPU画像を現在のGPU世代に再結合する準備をしています。".into()
+            }
+            _ => device_status(state),
+        };
+        cx.notify();
+        true
+    }
+
     pub fn unavailable(&mut self, reason: SharedString, cx: &mut Context<Self>) {
         self.cancel.cancel();
         self.tile_cancel.cancel();
         self.serial = self.serial.saturating_add(1);
+        self.recovery_pending = false;
+        self.recovery_attempted_generation = None;
         self.release_current(cx);
+        self.retained = None;
+        // The host withdrew this pane's picture: no recovery backup may resurrect it later.
+        self.requested = None;
         self.demand = None;
         self.status = reason;
         cx.notify();
@@ -322,18 +594,49 @@ impl ImageViewer {
     pub fn load_generated(
         &mut self,
         request: UploadRequest,
-        _window: &mut Window,
+        window: &mut Window,
         cx: &mut Context<Self>,
         source: impl FnOnce(&Cancellation) -> Result<Arc<[u8]>, MediaError> + Send + 'static,
     ) {
+        let state = window.gpu_device_state();
+        if state != self.device_state {
+            self.device_state_changed(state, window, cx);
+        }
+        let GpuDeviceState::Ready { generation } = state else {
+            self.unavailable(device_status(state), cx);
+            return;
+        };
+        if request.device_generation != generation
+            || request.current_device_generation != generation
+        {
+            self.unavailable(
+                format!(
+                    "画像を利用できません: 要求されたGPU世代 {} は現在の世代 {} と一致しません。",
+                    request.device_generation, generation
+                )
+                .into(),
+                cx,
+            );
+            return;
+        }
+        if let Some(frame) = self.retained.clone().filter(|frame| {
+            frame.identity().key == request.key
+                && frame.identity().source_revision == request.source_revision
+        }) {
+            self.restore_prepared(frame, window, cx);
+            return;
+        }
         self.cancel.cancel();
         self.tile_cancel.cancel();
         self.demand = None;
         self.tile_attempts = 0;
         self.serial = self.serial.saturating_add(1);
+        self.recovery_pending = false;
+        self.recovery_attempted_generation = None;
         self.release_current(cx);
+        self.retained = None;
         self.revision = request.source_revision;
-        self.generation = request.current_device_generation;
+        self.generation = generation;
         self.phase = 0;
         self.transform = None;
         self.camera = ViewCamera::default();
@@ -345,6 +648,9 @@ impl ImageViewer {
             cx.notify();
             return;
         }
+        // Only this explicit host request owns publication; a later generation change may
+        // re-admit this identity and nothing else.
+        self.requested = Some((request.key.clone(), request.source_revision));
         self.status = "ローカル画像を準備中（実行基盤の成果物ではありません）".into();
         let serial = self.serial;
         let service = self.service.clone();
@@ -356,21 +662,32 @@ impl ImageViewer {
             self.mode == ViewerMode::PreviewOnly,
             source,
         );
-        // Keep the completion cleanup alive after a view/revision is superseded. The cancellation
-        // token stops preparation; dropping its waiter must not strand a just-prepared frame.
         cx.spawn(async move |this, cx| {
             let result = task.await;
             let mut unclaimed = result.as_ref().ok().cloned();
             let _ = this.update_in(cx, |this, window, cx| {
-                if serial != this.serial { return; }
+                if serial != this.serial
+                    || window.gpu_device_state() != (GpuDeviceState::Ready { generation })
+                    || this.device_state != (GpuDeviceState::Ready { generation })
+                {
+                    return;
+                }
                 match result {
-                    Ok(frame) if this.service.attach(&frame, this.consumer, Some(window.window_handle())) => {
+                    Ok(frame)
+                        if this.service.attach(
+                            &frame,
+                            this.consumer,
+                            Some(window.window_handle()),
+                        ) =>
+                    {
+                        this.retained = Some(Arc::clone(&frame));
                         this.current = Some(frame);
                         unclaimed = None;
                         this.status = match this.mode {
                             ViewerMode::PreviewOnly => "ローカル画像: 低解像度プレビュー。原寸の詳細表示・1:1ではありません。",
                             ViewerMode::ExperimentalTiles => "ローカル画像・実験用タイル表示。GPU完了・常駐量・本番の画質受入は未計測。",
-                        }.into();
+                        }
+                        .into();
                     }
                     Ok(_) => this.status = "画像を利用できません: 保持されていない画像です。".into(),
                     Err(error) => {
@@ -379,14 +696,145 @@ impl ImageViewer {
                 }
                 cx.notify();
             });
-            if let Some(frame) = unclaimed { cleanup.discard_unpainted(&frame); }
-        }).detach();
+            if let Some(frame) = unclaimed {
+                cleanup.discard_unpainted(&frame);
+            }
+        })
+        .detach();
         cx.notify();
     }
 
+    /// Re-admit a retained CPU source only when this viewer is actually rendered.
+    fn ensure_recovery(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        let state = window.gpu_device_state();
+        if state != self.device_state {
+            self.device_state_changed(state, window, cx);
+        }
+        let GpuDeviceState::Ready { generation } = state else {
+            return;
+        };
+        if self.current.is_some() || self.recovery_pending {
+            return;
+        }
+        let Some(previous) = self.retained.clone() else {
+            return;
+        };
+        // Only the identity this pane's host last asked for may be published again. A backup
+        // left from a superseded selection, a replaced revision, a different decoder policy, or
+        // a withheld candidate is dropped here instead of being resurrected as the picture.
+        match self.requested.as_ref() {
+            Some((key, revision))
+                if *key == previous.identity().key
+                    && *revision == previous.identity().source_revision => {}
+            _ => {
+                self.retained = None;
+                self.recovery_pending = false;
+                self.recovery_attempted_generation = None;
+                return;
+            }
+        }
+        if previous.identity().device_generation == generation
+            && self
+                .service
+                .attach(&previous, self.consumer, Some(window.window_handle()))
+        {
+            self.current = Some(Arc::clone(&previous));
+            self.revision = previous.identity().source_revision;
+            self.generation = generation;
+            self.phase = 0;
+            self.status = match self.mode {
+                ViewerMode::PreviewOnly => {
+                    "ローカル画像: 低解像度プレビュー。原寸の詳細表示・1:1ではありません。"
+                }
+                ViewerMode::ExperimentalTiles => {
+                    "ローカル画像・実験用タイル表示。GPU完了・常駐量・本番の画質受入は未計測。"
+                }
+            }
+            .into();
+            cx.notify();
+            return;
+        }
+        if self.recovery_attempted_generation == Some(generation) {
+            return;
+        }
+        self.recovery_attempted_generation = Some(generation);
+        self.recovery_pending = true;
+        let serial = self.serial;
+        let source_revision = previous.identity().source_revision;
+        let source_key = previous.identity().key.clone();
+        let cancel = self.cancel.clone();
+        let service = self.service.clone();
+        let cleanup = service.clone();
+        let worker_service = service.clone();
+        let recovery_source = Arc::clone(&previous);
+        let task = cx.background_executor().spawn(async move {
+            worker_service.recover_frame(&recovery_source, generation, &cancel)
+        });
+        cx.spawn(async move |this, cx| {
+            let result = task.await;
+            let mut unclaimed = result.as_ref().ok().cloned();
+            let _ = this.update_in(cx, |this, window, cx| {
+                this.recovery_pending = false;
+                if serial != this.serial
+                    || window.gpu_device_state() != (GpuDeviceState::Ready { generation })
+                    || this.device_state != (GpuDeviceState::Ready { generation })
+                    || !this
+                        .retained
+                        .as_ref()
+                        .is_some_and(|retained| Arc::ptr_eq(retained, &previous))
+                    || this.requested.as_ref()
+                        != Some(&(source_key.clone(), source_revision))
+                {
+                    return;
+                }
+                match result {
+                    Ok(frame)
+                        if frame.identity().key == source_key
+                            && frame.identity().source_revision == source_revision
+                            && frame.identity().device_generation == generation
+                            && this.service.attach(
+                                &frame,
+                                this.consumer,
+                                Some(window.window_handle()),
+                            ) =>
+                    {
+                        this.retained = Some(Arc::clone(&frame));
+                        this.current = Some(frame);
+                        this.revision = source_revision;
+                        this.generation = generation;
+                        this.phase = 0;
+                        unclaimed = None;
+                        this.status = match this.mode {
+                            ViewerMode::PreviewOnly => {
+                                "ローカル画像: 低解像度プレビュー。原寸の詳細表示・1:1ではありません。"
+                            }
+                            ViewerMode::ExperimentalTiles => {
+                                "ローカル画像・実験用タイル表示。GPU完了・常駐量・本番の画質受入は未計測。"
+                            }
+                        }
+                        .into();
+                    }
+                    Ok(_) => {
+                        this.status =
+                            "画像を利用できません: 保持された入力を現在のGPU世代に再結合できません。"
+                                .into();
+                    }
+                    Err(error) => {
+                        this.status =
+                            format!("画像を利用できません: {}", error.limitation()).into();
+                    }
+                }
+                cx.notify();
+            });
+            if let Some(frame) = unclaimed {
+                cleanup.discard_unpainted(&frame);
+            }
+        })
+        .detach();
+    }
+
     /// Call before removing the owning view/window. A painted payload is never released here: the
-    /// scene that referenced it may still be presented and there is no completion signal. Frames
-    /// that never reached the atlas are released through the existing unpainted path.
+    /// scene that referenced it may still be presented and there is no completion signal.
     fn window_id(&self) -> u64 {
         self.window.window_id().as_u64()
     }
@@ -395,12 +843,13 @@ impl ImageViewer {
         self.complete_in_scene = false;
         self.cancel.cancel();
         self.tile_cancel.cancel();
+        self.cancel = Cancellation::default();
+        self.tile_cancel = Cancellation::default();
         self.demand = None;
         self.serial = self.serial.saturating_add(1);
-        // Frames retired while this pane was live are timed by its own composed scenes, which stop
-        // advancing now. Moving them to the window clock costs two more composed frames, so the
-        // migration is never earlier than the rule it replaces - and it also covers a close with
-        // no current frame, which used to leave them waiting forever.
+        self.recovery_pending = false;
+        self.recovery_attempted_generation = None;
+        self.requested = None;
         let window_scenes = self.service.composed_frames(self.window_id());
         for retired in &mut self.retiring {
             if let ReleaseClock::Pane(_) = retired.clock {
@@ -412,10 +861,12 @@ impl ImageViewer {
             return;
         };
         self.service.detach(&frame, self.consumer);
-        if !self.service.discard_unpainted(&frame) {
-            // A painted frame is never released here: a presented scene may still reference its
-            // atlas entries. This pane leaves the draw tree and composes nothing more, so the
-            // proof becomes the scenes a viewer still being drawn composes in this window.
+        if !self.service.discard_unpainted(&frame)
+            && !self
+                .retiring
+                .iter()
+                .any(|retired| Arc::ptr_eq(&retired.frame, &frame))
+        {
             self.retiring.push(Retired {
                 frame,
                 clock: ReleaseClock::Window(self.service.composed_frames(self.window_id())),
@@ -433,10 +884,16 @@ impl ImageViewer {
             return;
         };
         self.service.detach(&frame, self.consumer);
-        self.retiring.push(Retired {
-            frame,
-            clock: ReleaseClock::Pane(self.scene_serial),
-        });
+        if !self
+            .retiring
+            .iter()
+            .any(|retired| Arc::ptr_eq(&retired.frame, &frame))
+        {
+            self.retiring.push(Retired {
+                frame,
+                clock: ReleaseClock::Pane(self.scene_serial),
+            });
+        }
         self.schedule_retirement(cx);
     }
 
@@ -663,6 +1120,7 @@ impl EventEmitter<ViewerEvent> for ImageViewer {}
 
 impl Render for ImageViewer {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        self.ensure_recovery(window, cx);
         let palette = self.palette;
         let preview = self.mode == ViewerMode::PreviewOnly
             || self
@@ -748,26 +1206,55 @@ impl Render for ImageViewer {
                 } else {
                     transform.mip_level()
                 };
-                let needed = frame
-                    .as_ref()
-                    .map(|frame| frame.demand(image_bounds, bounds, mip.min(4) as u8));
-                let result = frame.as_ref().map(|frame| {
-                    frame.paint_view(
-                        ViewPaint {
-                            image_bounds,
-                            viewport: bounds,
-                            mip_level: mip.min(4) as u8,
-                            source_revision: revision,
-                            device_generation: generation,
-                            cancel: &cancel,
-                        },
-                        window,
-                    )
-                });
+                let paint_ready = matches!(
+                    window.gpu_device_state(),
+                    GpuDeviceState::Ready { generation: active_generation }
+                        if active_generation == generation
+                );
+                let needed = if paint_ready {
+                    frame
+                        .as_ref()
+                        .map(|frame| frame.demand(image_bounds, bounds, mip.min(4) as u8))
+                } else {
+                    None
+                };
+                let result = if paint_ready {
+                    frame.as_ref().map(|frame| {
+                        frame.paint_view(
+                            ViewPaint {
+                                image_bounds,
+                                viewport: bounds,
+                                mip_level: mip.min(4) as u8,
+                                source_revision: revision,
+                                device_generation: generation,
+                                cancel: &cancel,
+                            },
+                            window,
+                        )
+                    })
+                } else {
+                    None
+                };
                 let complete = matches!(result, Some(Ok(PaintStatus::CompleteInScene { .. })));
                 let missing = matches!(result, Some(Ok(PaintStatus::Pending { .. })));
                 let failure = match result {
                     Some(Err(_)) => Some("画像を利用できません: 描画に失敗しました。"),
+                    Some(Ok(PaintStatus::DeviceUnavailable)) => {
+                        Some(match window.gpu_device_state() {
+                            GpuDeviceState::Unsupported => {
+                                "GPU表示を利用できません: このバックエンドでは画像表示が未対応です。"
+                            }
+                            GpuDeviceState::Recovering { .. } => {
+                                "GPUデバイスを復旧中です。画像表示を一時停止しています。"
+                            }
+                            GpuDeviceState::Unavailable { .. } => {
+                                "GPU表示を利用できません。アプリを再起動してください。"
+                            }
+                            GpuDeviceState::Ready { .. } => {
+                                "画像を利用できません: GPU描画の準備が完了していません。"
+                            }
+                        })
+                    }
                     Some(Ok(
                         PaintStatus::Cancelled
                         | PaintStatus::StaleRevision { .. }

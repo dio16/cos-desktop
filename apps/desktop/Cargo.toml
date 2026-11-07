@@ -12,6 +12,7 @@ path = "src/main.rs"
 [features]
 default = []
 r0-s2b-instrumentation = ["gpui/profiler", "desktop-gpui/r0-s2b-instrumentation"]
+gpu-recovery-test = ["gpui/test-support", "gpui_platform/test-support"]
 
 [dependencies]
 gpui.workspace = true

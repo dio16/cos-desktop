@@ -8,10 +8,13 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use desktop_gpui::image_upload::{ConsumerId, ImageUploadError, ImageUploadService, PaintStatus};
+#[cfg(feature = "gpu-recovery-test")]
+use gpui::GpuDeviceRecoveryTest;
 use gpui::prelude::*;
 use gpui::{
-    App, AppContext, Bounds, Context, IntoElement, Render, Role, SharedString, Task,
-    TitlebarOptions, Window, WindowBounds, WindowOptions, canvas, div, fill, px, rgb, size,
+    App, AppContext, Bounds, Context, GpuDeviceState, IntoElement, Render, Role, SharedString,
+    Subscription, Task, TitlebarOptions, Window, WindowBounds, WindowOptions, canvas, div, fill,
+    px, rgb, size,
 };
 use media::{Cancellation, MediaError};
 
@@ -35,16 +38,37 @@ enum Mode {
     /// Capacity in bytes for the process-wide quarantine ladder.
     Manifest(u64),
 }
+fn backend_reason(state: GpuDeviceState) -> SharedString {
+    match state {
+        GpuDeviceState::Unsupported => {
+            "GPU表示を利用できません: このバックエンドでは画像表示が未対応です。".into()
+        }
+        GpuDeviceState::Ready { generation } => {
+            format!("GPUデバイス世代 {generation} を利用できます。").into()
+        }
+        GpuDeviceState::Recovering { generation } => {
+            format!("GPUデバイスを復旧中です（世代 {generation}）。").into()
+        }
+        GpuDeviceState::Unavailable { generation } => {
+            format!("GPU表示を利用できません（世代 {generation}）。アプリを再起動してください。")
+                .into()
+        }
+    }
+}
 
 struct ImageUploadProbe {
     service: ImageUploadService,
     status: SharedString,
     current: Option<Arc<desktop_gpui::image_upload::PreparedImage>>,
     cancel: Cancellation,
+    manifest_cancel: Cancellation,
     task: Option<Task<()>>,
     request_serial: u64,
     source_revision: u64,
-    device_generation: u64,
+    logical_generation: u64,
+    native_state: GpuDeviceState,
+    _device_subscription: Subscription,
+    base_window_title: String,
     pending: bool,
     /// The last paint result reported to the user. Paint callbacks must not mutate view state,
     /// so a differing message is deferred to the next frame instead of written during paint.
@@ -66,12 +90,22 @@ impl ImageUploadProbe {
         self.request_serial = self.request_serial.saturating_add(1);
         let serial = self.request_serial;
         let revision = self.source_revision;
-        let generation = self.device_generation;
+        let state = cx.gpu_device_state();
+        let GpuDeviceState::Ready { generation } = state else {
+            if let Some(previous) = self.current.take() {
+                self.service.detach(&previous, self.consumer);
+                self.service.discard_unpainted(&previous);
+            }
+            self.pending = false;
+            self.status = backend_reason(state);
+            cx.notify();
+            return;
+        };
         let cancel = Cancellation::default();
         self.cancel = cancel.clone();
         self.pending = true;
         self.status = format!(
-            "Fixture revision {revision}: generating PNG, decoding, and converting on background worker"
+            "Fixture revision {revision}: generating PNG for native backend generation {generation}; logical-generation probe is separate"
         )
         .into();
 
@@ -93,7 +127,9 @@ impl ImageUploadProbe {
         self.task = Some(cx.spawn(async move |this, cx| {
             let result = task.await;
             let _ = this.update_in(cx, |this, window, cx| {
-                if this.request_serial != serial {
+                if this.request_serial != serial
+                    || window.gpu_device_state() != (GpuDeviceState::Ready { generation })
+                {
                     if let Ok(frame) = result {
                         cleanup_service.discard_unpainted(&frame);
                     }
@@ -102,11 +138,11 @@ impl ImageUploadProbe {
                 this.pending = false;
                 match result {
                     Ok(frame) => {
-                        // The view presents this frame: eviction must wait for this consumer.
                         if this.service.attach(&frame, this.consumer, Some(window.window_handle())) {
                             this.current = Some(frame);
                             this.status = format!(
-                                "Fixture revision {revision}, device generation {generation}: verified PNG admitted; tiles are issued only by GPUI paint callbacks"
+                                "Fixture revision {revision}, native backend generation {generation}: verified PNG admitted; logical-generation probe={}; tiles are issued only by GPUI paint callbacks",
+                                this.logical_generation
                             )
                             .into();
                         } else {
@@ -126,9 +162,81 @@ impl ImageUploadProbe {
         }));
         cx.notify();
     }
+    fn device_state_changed(
+        &mut self,
+        state: GpuDeviceState,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        if self.native_state == state {
+            return;
+        }
+        let previous_generation = match self.native_state {
+            GpuDeviceState::Unsupported => None,
+            GpuDeviceState::Ready { generation }
+            | GpuDeviceState::Recovering { generation }
+            | GpuDeviceState::Unavailable { generation } => Some(generation),
+        };
+        let next_generation = match state {
+            GpuDeviceState::Unsupported => None,
+            GpuDeviceState::Ready { generation }
+            | GpuDeviceState::Recovering { generation }
+            | GpuDeviceState::Unavailable { generation } => Some(generation),
+        };
+        let invalidated = next_generation.is_some_and(|generation| {
+            let advanced = previous_generation.is_none_or(|previous| generation > previous);
+            if advanced {
+                self.service.invalidate_device_generation(generation);
+            }
+            advanced
+        });
+        self.native_state = state;
+        self.cancel.cancel();
+        self.cancel = Cancellation::default();
+        self.request_serial = self.request_serial.saturating_add(1);
+        self.pending = false;
+        self.task = None;
+        if let Some(frame) = self.current.take() {
+            self.service.detach(&frame, self.consumer);
+            if !invalidated {
+                self.service.discard_unpainted(&frame);
+            }
+        }
+        match state {
+            GpuDeviceState::Ready { .. } => {
+                window.set_window_title(&self.base_window_title);
+                self.status = format!(
+                    "{} Logical-generation probe={} (not backend identity).",
+                    backend_reason(state),
+                    self.logical_generation
+                )
+                .into();
+            }
+            GpuDeviceState::Recovering { .. } => {
+                window.set_window_title(&format!("{} — GPU復旧中", self.base_window_title));
+                self.status = backend_reason(state);
+            }
+            GpuDeviceState::Unavailable { .. } => {
+                window.set_window_title(&format!(
+                    "{} — GPU表示不可: アプリを再起動してください",
+                    self.base_window_title
+                ));
+                self.status = backend_reason(state);
+            }
+            GpuDeviceState::Unsupported => {
+                window.set_window_title(&format!(
+                    "{} — GPUバックエンド未対応",
+                    self.base_window_title
+                ));
+                self.status = backend_reason(state);
+            }
+        }
+        cx.notify();
+    }
 
     fn cancel(&mut self, cx: &mut Context<Self>) {
         self.cancel.cancel();
+        self.manifest_cancel.cancel();
         self.request_serial = self.request_serial.saturating_add(1);
         self.pending = false;
         let discarded = self.current.as_ref().is_some_and(|frame| {
@@ -174,26 +282,78 @@ impl ImageUploadProbe {
         self.cancel.cancel();
         self.request_serial = self.request_serial.saturating_add(1);
         self.pending = false;
-        // A frame whose tiles were already issued cannot be released, so it stays in the view and
-        // its next paint reports the stale-generation refusal instead of silently disappearing.
-        if let Some(previous) = self.current.clone() {
+        if let Some(previous) = self.current.take() {
             self.service.detach(&previous, self.consumer);
-            if self.service.discard_unpainted(&previous) {
-                self.current = None;
-            }
+            self.service.discard_unpainted(&previous);
         }
-        let previous = self.device_generation;
-        self.device_generation = self.device_generation.saturating_add(1);
-        // Cancel any in-flight preparation, but give the retained frame a live token so its next
-        // paint reports the stale-generation refusal rather than a cancellation.
+        self.logical_generation = self.logical_generation.saturating_add(1);
         self.cancel = Cancellation::default();
-        let _ = previous;
         self.status = format!(
-            "Logical device generation advanced to {} (no hardware device reset performed); previous frame is now stale; any quarantined payload stays retained (no GPU completion signal)",
-            self.device_generation
+            "Logical-generation probe advanced to {} only; GPUI native backend state remains {:?}; no hardware reset or native identity change",
+            self.logical_generation, self.native_state
         )
         .into();
         cx.notify();
+    }
+    #[cfg(feature = "gpu-recovery-test")]
+    fn request_backend_recovery(
+        &mut self,
+        mode: GpuDeviceRecoveryTest,
+        label: &'static str,
+        cx: &mut Context<Self>,
+    ) {
+        self.status = if cx.request_gpu_device_recreation(mode) {
+            label.into()
+        } else {
+            "Test-support backend recreation is unsupported here.".into()
+        };
+        cx.notify();
+    }
+
+    fn backend_controls(&mut self, cx: &mut Context<Self>) -> impl IntoElement {
+        #[cfg(feature = "gpu-recovery-test")]
+        {
+            div()
+                .flex()
+                .gap_2()
+                .child(
+                    div()
+                        .id("gpu-recreate")
+                        .role(Role::Button)
+                        .aria_label("テスト支援: GPUバックエンドを再作成（物理リセットではありません）")
+                        .p_2()
+                        .border_1()
+                        .child("Backend: Recreate — test-support only; not a physical reset")
+                        .on_click(cx.listener(|this, _, _, cx| {
+                            this.request_backend_recovery(
+                                GpuDeviceRecoveryTest::Recreate,
+                                "Backend recreation requested; test-support only, not a physical reset.",
+                                cx,
+                            )
+                        })),
+                )
+                .child(
+                    div()
+                        .id("gpu-fail")
+                        .role(Role::Button)
+                        .aria_label("テスト支援: GPUバックエンド再作成の制御失敗（物理リセットではありません）")
+                        .p_2()
+                        .border_1()
+                        .child("Backend: Fail — controlled failure; not a physical reset")
+                        .on_click(cx.listener(|this, _, _, cx| {
+                            this.request_backend_recovery(
+                                GpuDeviceRecoveryTest::Fail,
+                                "Controlled backend factory failure requested; not a physical reset.",
+                                cx,
+                            )
+                        })),
+                )
+        }
+        #[cfg(not(feature = "gpu-recovery-test"))]
+        {
+            let _ = cx;
+            div().child("Backend recovery controls require --features gpu-recovery-test")
+        }
     }
 
     /// Drive the fixed manifest plus the process-wide quarantine ladder.
@@ -204,13 +364,23 @@ impl ImageUploadProbe {
     /// The shared identity comes first, so the retention-after-one-detach rule is exercised before
     /// the budget fills. The probe exits non-zero if any expectation is violated.
     fn start_manifest(&mut self, capacity_bytes: u64, cx: &mut Context<Self>) {
+        let GpuDeviceState::Ready { generation } = cx.gpu_device_state() else {
+            self.status = backend_reason(self.native_state);
+            cx.notify();
+            return;
+        };
         // Must be set before the first render reads the capacity.
         let _ = desktop_gpui::image_upload::set_quarantine_capacity(capacity_bytes);
         let background = cx.background_executor().clone();
         let service = self.service.clone();
+        self.manifest_cancel.cancel();
+        self.manifest_cancel = Cancellation::default();
+        let manifest_cancel = self.manifest_cancel.clone();
         self.pending = true;
-        self.status =
-            "Manifest: fixed identities until the process quarantine ledger is full".into();
+        self.status = format!(
+            "Manifest: fixed identities use native GPUI generation {generation}; logical probe is separate"
+        )
+        .into();
         self.task = Some(cx.spawn(async move |this, cx| {
             let mut failures = 0u32;
             let mut evictions = 0u32;
@@ -219,11 +389,7 @@ impl ImageUploadProbe {
             // B-03: a frame prepared and attached but never painted is owned through the attach
             // binding, so the close sweep must collect it even though no atlas entry exists yet.
             let mut prepaint_ready = false;
-            if let Ok(request) = fixture_request_for(
-                "closing",
-                1,
-                this.update(cx, |this, _| this.device_generation).unwrap_or(1),
-            ) {
+            if let Ok(request) = fixture_request_for("closing", 1, generation) {
                 let bytes = background
                     .spawn(async move {
                         let cancel = Cancellation::default();
@@ -252,10 +418,8 @@ impl ImageUploadProbe {
                 println!("{{\"event\":\"img4-prepaint-missing\"}}");
             }
             'outer: for (index, (source, revision)) in MANIFEST.iter().copied().enumerate() {
-                // One generation per identity keeps each pool distinct, so the bound under test is
-                // the process-wide aggregate rather than a single pool's allowance.
-                let _ = this.update(cx, |this, cx| this.advance_logical_generation(cx));
-                let generation = this.update(cx, |this, _| this.device_generation).unwrap_or(1);
+                // Distinct source/revision identities share the real backend generation; the
+                // logical-generation control is not used as a fabricated device identity.
                 let request = match fixture_request_for(source, revision, generation) {
                     Ok(request) => request,
                     Err(error) => {
@@ -419,6 +583,11 @@ impl ImageUploadProbe {
                     }
                 }
             }
+            if manifest_cancel.is_cancelled() {
+                // A native device transition or explicit cancel ended this run; the diagnostic
+                // expectations no longer apply and no result is claimed.
+                return;
+            }
             let counters = service.counters();
             // Structural expectations: at least one eviction quarantined a payload, the very next
             // prepare was refused because of the retained bytes, the shared identity survived one
@@ -540,7 +709,15 @@ impl Render for ImageUploadProbe {
         let current = self.current.clone();
         let cancel = self.cancel.clone();
         let current_revision = self.source_revision;
-        let current_generation = self.device_generation;
+        let current_generation = current
+            .as_ref()
+            .map_or(0, |frame| frame.identity().device_generation);
+        let native_state = self.native_state;
+        let native_line: SharedString = format!(
+            "Native GPUI backend: {:?}; logical-generation probe counter: {} (not backend identity)",
+            native_state, self.logical_generation
+        )
+        .into();
         let service = self.service.clone();
         let counters = service.counters();
         let frame_line: SharedString = match &current {
@@ -576,6 +753,7 @@ impl Render for ImageUploadProbe {
         let pending = self.pending;
         let last_paint_message = self.paint_message.clone();
         let probe = cx.entity().downgrade();
+        let backend_controls = self.backend_controls(cx);
         // The canvas draws inside a sized wrapper: GPUI's canvas is a leaf whose own style is not
         // given a size here, and the wrapper owns the 1:1 display box instead.
         let frame_canvas = div()
@@ -606,7 +784,15 @@ impl Render for ImageUploadProbe {
                             Some(format!("Paint refused stale source revision {requested}; current={current}"))
                         }
                         Ok(PaintStatus::StaleDeviceGeneration { requested, current }) => {
-                            Some(format!("Paint refused stale device generation {requested}; current={current}"))
+                            Some(format!("Paint refused stale native device generation {requested}; current={current}"))
+                        }
+                        Ok(PaintStatus::DeviceUnavailable) => {
+                            Some(match window.gpu_device_state() {
+                                GpuDeviceState::Unsupported => "GPU表示を利用できません: このバックエンドでは画像表示が未対応です。".to_owned(),
+                                GpuDeviceState::Recovering { generation } => format!("GPUデバイスを復旧中です（世代 {generation}）。"),
+                                GpuDeviceState::Unavailable { generation } => format!("GPU表示を利用できません（世代 {generation}）。アプリを再起動してください。"),
+                                GpuDeviceState::Ready { generation } => format!("GPU世代 {generation} の描画リソースは利用できません。"),
+                            })
                         }
                         Ok(PaintStatus::EmptyBounds) => None,
                         Ok(PaintStatus::DifferentWindow) => {
@@ -653,12 +839,14 @@ impl Render for ImageUploadProbe {
             .flex_col()
             .gap_3()
             .child("MP-IMG3-S2 — explicit in-memory Fixture; no Runtime or product import")
+            .child(native_line)
+            .child(backend_controls)
             .child(div().flex().flex_row().gap_2()
                 .child(button("Load current revision", !pending, cx.listener(|this, _, _, cx| this.start_load(false, cx))))
                 .child(button("Load next revision", !pending, cx.listener(|this, _, _, cx| this.start_load(true, cx))))
                 .child(button("Reuse exact identity", !pending, cx.listener(|this, _, _, cx| this.reuse_current(cx))))
                 .child(button("Cancel", true, cx.listener(|this, _, _, cx| this.cancel(cx))))
-                .child(button("Advance logical generation", true, cx.listener(|this, _, _, cx| this.advance_logical_generation(cx))))
+                .child(button("Advance logical-generation probe", true, cx.listener(|this, _, _, cx| this.advance_logical_generation(cx))))
                 .child(button("Evict current", !pending, cx.listener(|this, _, window, cx| this.evict_current(window, cx))))
                 .child(button("Evict owned and close", true, cx.listener(|this, _, window, cx| { let _ = this.close_with_sweep(window, cx); }))))
             .child(status)
@@ -728,21 +916,45 @@ fn main() {
                 }),
                 ..Default::default()
             },
-            move |_, cx| {
-                let probe = cx.new(|_| ImageUploadProbe {
-                    service: ImageUploadService::global(),
-                    status:
-                        "Fixture mode only. Load to generate/decode the deterministic RGB8 PNG."
-                            .into(),
-                    current: None,
-                    cancel: Cancellation::default(),
-                    task: None,
-                    request_serial: 0,
-                    source_revision: 0,
-                    device_generation: 1,
-                    pending: false,
-                    paint_message: SharedString::default(),
-                    consumer: ConsumerId::allocate(),
+            move |window, cx| {
+                let probe = cx.new(|cx| {
+                    let native_state = cx.gpu_device_state();
+                    let base_window_title =
+                        "MP-IMG3 Fixture upload feasibility".to_owned();
+                    let window_handle = window.window_handle();
+                    let weak = cx.entity().downgrade();
+                    let device_subscription = cx.on_gpu_device_state_change(move |app| {
+                        let state = app.gpu_device_state();
+                        let _ = window_handle.update(app, |_, window, app| {
+                            let _ = weak.update(app, |probe: &mut ImageUploadProbe, cx| {
+                                probe.device_state_changed(state, window, cx);
+                            });
+                        });
+                    });
+                    let status = match native_state {
+                        GpuDeviceState::Ready { generation } => format!(
+                            "Fixture mode only. Native GPUI generation {generation}; logical-generation probe is separate."
+                        )
+                        .into(),
+                        state => backend_reason(state),
+                    };
+                    ImageUploadProbe {
+                        service: ImageUploadService::global(),
+                        status,
+                        current: None,
+                        cancel: Cancellation::default(),
+                        manifest_cancel: Cancellation::default(),
+                        task: None,
+                        request_serial: 0,
+                        source_revision: 0,
+                        logical_generation: 0,
+                        native_state,
+                        _device_subscription: device_subscription,
+                        base_window_title,
+                        pending: false,
+                        paint_message: SharedString::default(),
+                        consumer: ConsumerId::allocate(),
+                    }
                 });
                 if let Mode::Manifest(capacity_bytes) = mode {
                     probe.update(cx, |this, cx| this.start_manifest(capacity_bytes, cx));

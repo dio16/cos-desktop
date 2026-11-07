@@ -714,6 +714,10 @@ pub struct Shell {
     dock_focus: FocusHandle,
     /// The dock's keyboard cursor, kept by scoped identity rather than position.
     dock_active: Option<desktop_protocol::CandidateRef>,
+    /// The viewed candidate was last observed as withheld from the current projection. The
+    /// artifact viewer's recovery backup is dropped on the transition, so a later GPU recovery
+    /// cannot publish the withheld candidate's picture.
+    viewed_withheld: bool,
     /// Local visible anchor and fractional pixel offset; survives withheld display
     /// placeholders, but never authorizes rendering or acting on cached rows.
     dock_anchor: Option<(desktop_protocol::CandidateRef, Pixels)>,
@@ -796,6 +800,11 @@ pub struct Shell {
     rail_trace_enabled: bool,
     rail_request_generation: Arc<RailWorkSignal>,
     _rail_worker: Option<Task<()>>,
+    /// Last shared GPU-device state this shell observed; the native title reports it.
+    device_state: gpui::GpuDeviceState,
+    /// Title restored whenever the shared device is ready again.
+    base_window_title: SharedString,
+    _device_subscription: gpui::Subscription,
     _subscription: Task<()>,
 }
 
@@ -868,6 +877,20 @@ impl Shell {
         });
         let contrast_worker =
             contrast::platform_probe().map(|probe| contrast_probe_worker(probe, cx));
+        // The shell owns the native title for the whole window: it is the only text a user can
+        // still read when GPU drawing itself is unavailable.
+        let device_state = cx.gpu_device_state();
+        let base_window_title: SharedString = "COS Desktop".into();
+        let device_window = window.window_handle();
+        let device_shell = cx.entity().downgrade();
+        let device_subscription = cx.on_gpu_device_state_change(move |app| {
+            let state = app.gpu_device_state();
+            let _ = device_window.update(app, |_, window, app| {
+                let _ = device_shell.update(app, |shell, cx| {
+                    shell.device_state_changed(state, window, cx);
+                });
+            });
+        });
         let flow_worker = handle.clone().map(|handle| {
             Self::start_flow_worker(
                 handle,
@@ -879,10 +902,10 @@ impl Shell {
         #[cfg(feature = "r0-s2b-instrumentation")]
         r0_probe::record_window_created(window.window_handle().window_id().as_u64());
         let artifact_viewer = cx.new(|cx| {
-            image_viewer::ImageViewer::new(image_viewer::ViewerMode::PreviewOnly, window, cx)
+            image_viewer::ImageViewer::new(image_viewer::ViewerMode::PreviewOnly, "", window, cx)
         });
         let compare_view = cx.new(|cx| {
-            compare_view::CompareView::new(image_viewer::ViewerMode::PreviewOnly, window, cx)
+            compare_view::CompareView::new(image_viewer::ViewerMode::PreviewOnly, "", window, cx)
         });
         cx.subscribe_in(&compare_view, window, |this, _, event, window, cx| {
             match event {
@@ -961,6 +984,7 @@ impl Shell {
             stop_intent: StopTracker::default(),
             dock_focus: cx.focus_handle().tab_index(30).tab_stop(true),
             dock_active: None,
+            viewed_withheld: false,
             dock_anchor: None,
             dock_mounts: Arc::new(AtomicUsize::new(0)),
             dock_frame: 0,
@@ -1021,8 +1045,44 @@ impl Shell {
             rail_request_generation: Arc::clone(&rail_request_generation),
             rendered_candidates: Arc::default(),
             _rail_worker: rail_worker,
+            device_state,
+            base_window_title,
+            _device_subscription: device_subscription,
             _subscription: subscription,
         }
+    }
+
+    /// Report the shared GPU-device state where the user can still read it: the native title.
+    ///
+    /// Panes already refuse to publish stale or old-generation pictures; this only states the
+    /// window-wide condition, and never changes selection or Runtime Task state.
+    fn device_state_changed(
+        &mut self,
+        state: gpui::GpuDeviceState,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        if self.device_state == state {
+            return;
+        }
+        self.device_state = state;
+        window.set_window_title(&match state {
+            gpui::GpuDeviceState::Ready { .. } => self.base_window_title.to_string(),
+            gpui::GpuDeviceState::Recovering { generation } => {
+                format!(
+                    "{} — GPU復旧中（世代 {generation}）",
+                    self.base_window_title
+                )
+            }
+            gpui::GpuDeviceState::Unavailable { generation } => format!(
+                "{} — GPU表示不可（世代 {generation}）: アプリを再起動してください",
+                self.base_window_title
+            ),
+            gpui::GpuDeviceState::Unsupported => {
+                format!("{} — GPU表示未対応", self.base_window_title)
+            }
+        });
+        cx.notify();
     }
 
     /// Subscribe to complete publications and install revalidated display text.
@@ -2173,6 +2233,11 @@ impl Shell {
             .as_ref()
             .map(|workbench| workbench.core.navigation.surface())
             .unwrap_or_default();
+        let previous_viewed = self
+            .workbench
+            .as_ref()
+            .and_then(|workbench| workbench.presentation.viewed())
+            .cloned();
         let previous_pair = self
             .workbench
             .as_ref()
@@ -2215,6 +2280,18 @@ impl Shell {
         }
         self.dock_active = Some(identity);
         self.dock_focus.focus(window, cx);
+        if self
+            .workbench
+            .as_ref()
+            .and_then(|workbench| workbench.presentation.viewed())
+            != previous_viewed.as_ref()
+        {
+            // Viewed now names another candidate: the previous picture's recovery backup must
+            // not be re-admitted later under the new selection.
+            self.artifact_viewer
+                .update(cx, |viewer, cx| viewer.withdraw_recovery_backup(cx));
+            self.viewed_withheld = false;
+        }
         if let Some(target) = event.surface
             && target != surface
         {
@@ -4274,6 +4351,23 @@ impl Render for Shell {
         }
         // Drop withheld metadata, not the user's local identity/scroll intent.
         self.rendered_candidates = Arc::clone(&artifacts);
+        // A withheld viewed candidate keeps its reference but must lose its picture: the recovery
+        // backup is dropped at the transition so a later GPU recovery cannot publish it.
+        let viewed_withheld = viewed
+            .as_ref()
+            .is_some_and(|identity| !artifacts.iter().any(|row| row.identity == *identity));
+        if viewed_withheld != self.viewed_withheld {
+            self.viewed_withheld = viewed_withheld;
+            if viewed_withheld {
+                self.artifact_viewer.update(cx, |viewer, cx| {
+                    viewer.unavailable(
+                        "画像を利用できません: 閲覧中の候補は、現在閲覧できる情報に含まれていません。"
+                            .into(),
+                        cx,
+                    );
+                });
+            }
+        }
         let dock_window = dock::DockWindow::new(
             dock_count,
             dock_viewport,

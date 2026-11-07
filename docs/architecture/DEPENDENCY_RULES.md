@@ -31,6 +31,8 @@ The checker's allowlist covers workspace-member edges only; crates.io dependenci
 
 `image` 0.25.10 is a **normal dependency of `desktop-gpui`** added for the MP-IMG3-S2 presentation path (§19.289). `desktop-gpui` builds GPUI `RenderImage` payloads from the already-admitted raster, and those payloads are an `image::RgbaImage`; the crate is declared with `default-features = false`, so **no decoder** enters through this edge - the codec features stay exclusively in `media`, which remains the only component that decodes untrusted input. It is the same version `media` already resolves, so no new crate version enters the graph, and the edge adds no TLS, network, filesystem or subprocess capability. Upload, tile conversion and retention stay GPUI-boundary concerns; `media` still owns admission, identity and accounting.
 
+The MP-REC1 source cutover authorized in [ADR-0001](../decisions/ADR-0001-GPUI.md#update-policy-and-remaining-limits) uses only `https://github.com/dio16/zed`, with every Zed dependency pinned to one coherent immutable 40-hex revision. The historical upstream source is not a second allowed source after that cutover. A host-local qualification override is not a portable dependency; publication, the manifest/lockfile update and qualification of the final pinned candidate remain distinct steps. This changes the reviewed source, not the workspace dependency edges or the GPUI isolation boundary.
+
 ## Prohibitions
 
 - No cycles, including build/dev edges; no Runtime internal crate, checkout path, submodule, DB/CAS/config access.
@@ -44,4 +46,4 @@ The checker's allowlist covers workspace-member edges only; crates.io dependenci
 
 `cargo metadata --locked --no-deps --format-version 1` checks parsability/resolution input, not these rules. `scripts/check_dependency_rules.py` maps workspace package IDs and dependency declarations (renames, normal/dev/build kinds, target-specific edges and path/workspace aliases included) to this allowlist, rejects unknown internal edges/cycles, and rejects runtime-checkout path dependencies and prohibited external package identities. Inspect all target conditions, not only the host's activated graph. Compare package manifests/source imports as needed for behavioral prohibitions: metadata cannot prove absence of direct DB calls or main-thread I/O.
 
-The check's regression examples include a renamed forbidden cos-client dependency from desktop-gpui, a target-specific forbidden edge, a dev-edge cycle, and an accepted direct DTO dependency (see `scripts/tests/test_check_dependency_rules.py`). Maintain the table and checker together.
+The check's regression examples include a renamed forbidden cos-client dependency from desktop-gpui, a target-specific forbidden edge, a dev-edge cycle, an accepted direct DTO dependency and, after the MP-REC1 cutover, rejection of a pin to the retired upstream Zed source (see `scripts/tests/test_check_dependency_rules.py`). Maintain the table and checker together.

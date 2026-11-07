@@ -4,15 +4,17 @@ mod image_fixture;
 
 use desktop_gpui::{
     compare_view::{CompareEvent, CompareView},
-    image_upload::PreparedImage,
+    image_upload::{PreparedImage, UploadRequest},
     image_viewer::{ImageViewer, ViewerMode},
     view_transform::ViewCamera,
 };
+#[cfg(feature = "gpu-recovery-test")]
+use gpui::GpuDeviceRecoveryTest;
 use gpui::{
-    AccessibleAction, App, AppContext, Bounds, Context, Entity, FocusHandle, InteractiveElement,
-    IntoElement, KeyBinding, ParentElement, Render, Role, SharedString, StatefulInteractiveElement,
-    Styled, TitlebarOptions, Window, WindowBounds, WindowOptions, actions, div, point, px, rgb,
-    size,
+    AccessibleAction, App, AppContext, Bounds, Context, Entity, FocusHandle, GpuDeviceState,
+    InteractiveElement, IntoElement, KeyBinding, ParentElement, Render, Role, SharedString,
+    StatefulInteractiveElement, Styled, TitlebarOptions, Window, WindowBounds, WindowOptions,
+    actions, div, point, px, rgb, size,
 };
 use media::MediaError;
 use std::{
@@ -55,6 +57,32 @@ const CANDIDATES: [Candidate; 3] = [
         revision: 2,
     },
 ];
+
+fn fixture_request_for_backend(
+    source: &str,
+    revision: u64,
+    cx: &App,
+) -> Result<UploadRequest, SharedString> {
+    let generation = match cx.gpu_device_state() {
+        GpuDeviceState::Ready { generation } => generation,
+        GpuDeviceState::Unsupported => {
+            return Err(
+                "GPU表示を利用できません: このバックエンドでは画像表示が未対応です。".into(),
+            );
+        }
+        GpuDeviceState::Recovering { generation } => {
+            return Err(format!("GPUデバイスを復旧中です（世代 {generation}）。").into());
+        }
+        GpuDeviceState::Unavailable { generation } => {
+            return Err(format!(
+                "GPU表示を利用できません（世代 {generation}）。アプリを再起動してください。"
+            )
+            .into());
+        }
+    };
+    image_fixture::fixture_request_for(source, revision, generation)
+        .map_err(|error| format!("Fixture request refused: {error}").into())
+}
 
 fn reference(index: usize) -> desktop_protocol::CandidateRef {
     desktop_protocol::CandidateRef {
@@ -339,12 +367,9 @@ fn start_trace(cx: &mut Context<CompareDemo>, variant: &'static str) {
                                 66 => {
                                     target = 0;
                                     probe_frames = view.frames(cx);
-                                    let request = image_fixture::fixture_request_for(
-                                        CANDIDATES[2].source,
-                                        2,
-                                        1,
-                                    )
-                                    .expect("declared delayed fixture");
+                                    let request =
+                                        fixture_request_for_backend(CANDIDATES[2].source, 2, cx)
+                                            .expect("trace starts on a Ready backend");
                                     view.load_generated_side(
                                         CompareSide::A,
                                         request,
@@ -570,18 +595,90 @@ fn start_trace(cx: &mut Context<CompareDemo>, variant: &'static str) {
     .detach();
 }
 impl CompareDemo {
+    #[cfg(feature = "gpu-recovery-test")]
+    fn request_backend_recovery(
+        &mut self,
+        mode: GpuDeviceRecoveryTest,
+        label: &'static str,
+        cx: &mut Context<Self>,
+    ) {
+        self.status = if cx.request_gpu_device_recreation(mode) {
+            label.into()
+        } else {
+            "Test-support backend recreation is unsupported here.".into()
+        };
+        cx.notify();
+    }
+
+    fn backend_controls(&self, cx: &Context<Self>) -> impl IntoElement {
+        #[cfg(feature = "gpu-recovery-test")]
+        {
+            div()
+                .flex()
+                .gap_2()
+                .child(
+                    div()
+                        .id("compare-gpu-recreate")
+                        .role(Role::Button)
+                        .aria_label("テスト支援: GPUバックエンド再作成（物理リセットではありません）")
+                        .p_2()
+                        .border_1()
+                        .child("Backend: Recreate — test-support only; not a physical reset")
+                        .on_click(cx.listener(|this, _, _, cx| {
+                            this.request_backend_recovery(
+                                GpuDeviceRecoveryTest::Recreate,
+                                "Backend recreation requested; test-support only, not a physical reset.",
+                                cx,
+                            )
+                        })),
+                )
+                .child(
+                    div()
+                        .id("compare-gpu-fail")
+                        .role(Role::Button)
+                        .aria_label("テスト支援: GPUバックエンド制御失敗（物理リセットではありません）")
+                        .p_2()
+                        .border_1()
+                        .child("Backend: Fail — controlled failure; not a physical reset")
+                        .on_click(cx.listener(|this, _, _, cx| {
+                            this.request_backend_recovery(
+                                GpuDeviceRecoveryTest::Fail,
+                                "Controlled backend factory failure requested; not a physical reset.",
+                                cx,
+                            )
+                        })),
+                )
+        }
+        #[cfg(not(feature = "gpu-recovery-test"))]
+        {
+            let _ = cx;
+            div().child("Backend recovery controls require --features gpu-recovery-test")
+        }
+    }
+
     fn load_pair(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         let Some(pair) = self.presentation.compare_pair() else {
             return;
         };
         self.closed = false;
         let indexes = [candidate_index(&pair[0]), candidate_index(&pair[1])];
-        let requests = indexes.map(|i| {
-            image_fixture::fixture_request_for(CANDIDATES[i].source, CANDIDATES[i].revision, 1)
-                .expect("declared fixture request")
-        });
+        let requests = indexes
+            .map(|i| fixture_request_for_backend(CANDIDATES[i].source, CANDIDATES[i].revision, cx));
+        let requests = match requests {
+            [Ok(a), Ok(b)] => [a, b],
+            [Err(reason), _] | [_, Err(reason)] => {
+                self.compare.update(cx, |view, cx| {
+                    view.set_labels(indexes.map(|i| SharedString::from(CANDIDATES[i].name)), cx);
+                    view.unavailable(CompareSide::A, reason.clone(), cx);
+                    view.unavailable(CompareSide::B, reason.clone(), cx);
+                });
+                self.status = reason;
+                cx.notify();
+                return;
+            }
+        };
         let shared = self.share_treatment && requests[0].key == requests[1].key;
-        let retained = self.viewer.read(cx).prepared();
+        let retained = self.viewer.read(cx).retained_prepared();
         if retained.is_none() {
             self.viewer.update(cx, |viewer, cx| viewer.close(cx));
         }
@@ -600,7 +697,7 @@ impl CompareDemo {
                         .as_ref()
                         .filter(|frame| frame.identity().key == request.key)
                     {
-                        view.present_prepared(side, Arc::clone(frame), window, cx);
+                        view.restore_prepared(side, Arc::clone(frame), window, cx);
                     } else {
                         let revision = CANDIDATES[indexes[side.index()]].revision;
                         view.load_generated_side(side, request, window, cx, move |cancel| {
@@ -626,14 +723,17 @@ impl CompareDemo {
             return;
         };
         let index = candidate_index(candidate);
-        let request = match image_fixture::fixture_request_for(
+        let request = match fixture_request_for_backend(
             CANDIDATES[index].source,
             CANDIDATES[index].revision,
-            1,
+            cx,
         ) {
             Ok(request) => request,
-            Err(error) => {
-                self.status = format!("Fixture request refused: {error}").into();
+            Err(reason) => {
+                self.compare
+                    .update(cx, |view, cx| view.unavailable(side, reason.clone(), cx));
+                self.status = reason;
+                cx.notify();
                 return;
             }
         };
@@ -641,9 +741,10 @@ impl CompareDemo {
             // This fixed local manifest maps these candidates to the same immutable generator
             // input. Reuse the already verified exact frame, not an unverified external key.
             if self.share_treatment
-                && let Some(frame) = view.frames(cx)[1 - side.index()].clone()
+                && let Some(frame) = view.retained_frames(cx)[1 - side.index()].clone()
                 && frame.identity().key == request.key
-                && view.present_prepared(side, frame, window, cx)
+                && frame.identity().source_revision == request.source_revision
+                && view.restore_prepared(side, frame, window, cx)
             {
                 return;
             }
@@ -665,22 +766,33 @@ impl CompareDemo {
         match effect {
             SelectionEffect::CompareSideA => {
                 self.closed = true;
-                let request = image_fixture::fixture_request_for(
+                let request = match fixture_request_for_backend(
                     CANDIDATES[index].source,
                     CANDIDATES[index].revision,
-                    1,
-                )
-                .expect("declared fixture request");
+                    cx,
+                ) {
+                    Ok(request) => request,
+                    Err(reason) => {
+                        self.viewer.update(cx, |viewer, cx| {
+                            viewer.unavailable(reason.clone(), cx);
+                        });
+                        self.status = reason;
+                        cx.notify();
+                        return;
+                    }
+                };
                 self.viewer.update(cx, |viewer, cx| {
                     viewer.set_camera(ViewCamera::default(), cx);
-                    if !viewer
-                        .prepared()
-                        .is_some_and(|frame| frame.identity().key == request.key)
-                    {
+                    if !viewer.retained_prepared().is_some_and(|frame| {
+                        frame.identity().key == request.key
+                            && frame.identity().source_revision == request.source_revision
+                    }) {
                         viewer.load_generated(request, window, cx, move |cancel| {
                             image_fixture::generate_fixture_png(CANDIDATES[index].revision, cancel)
                                 .map(Arc::<[u8]>::from)
                         });
+                    } else if let Some(frame) = viewer.retained_prepared() {
+                        viewer.restore_prepared(frame, window, cx);
                     }
                 });
                 self.status = "A側を選択しました。別の候補を選ぶと比較します。".into();
@@ -730,15 +842,15 @@ impl CompareDemo {
                 .position(|candidate| candidate_index(candidate) == index)
         });
         let frame = pane.and_then(|pane| {
-            (self.missing != Some(index)).then(|| self.compare.read(cx).frames(cx)[pane].clone())?
+            (self.missing != Some(index))
+                .then(|| self.compare.read(cx).retained_frames(cx)[pane].clone())?
         });
         let own = if frame.is_none() {
-            image_fixture::fixture_request_for(
+            Some(fixture_request_for_backend(
                 CANDIDATES[index].source,
                 CANDIDATES[index].revision,
-                1,
-            )
-            .ok()
+                cx,
+            ))
         } else {
             None
         };
@@ -748,21 +860,28 @@ impl CompareDemo {
                 viewer.set_camera(ViewCamera::default(), cx);
             }
             if let Some(frame) = frame {
-                viewer.present_prepared(frame, window, cx);
-            } else if let Some(request) = own {
-                if !viewer
-                    .prepared()
-                    .is_some_and(|prepared| prepared.identity().key == request.key)
-                {
-                    viewer.load_generated(request, window, cx, move |cancel| {
-                        image_fixture::generate_fixture_png(revision, cancel).map(Arc::<[u8]>::from)
-                    });
-                }
+                viewer.restore_prepared(frame, window, cx);
             } else {
-                viewer.unavailable(
-                    "画像を利用できません: 閲覧中の候補のローカル入力を準備できません。".into(),
-                    cx,
-                );
+                match own {
+                    Some(Ok(request)) => {
+                        if let Some(frame) = viewer.retained_prepared().filter(|frame| {
+                            frame.identity().key == request.key
+                                && frame.identity().source_revision == request.source_revision
+                        }) {
+                            viewer.restore_prepared(frame, window, cx);
+                        } else {
+                            viewer.load_generated(request, window, cx, move |cancel| {
+                                image_fixture::generate_fixture_png(revision, cancel)
+                                    .map(Arc::<[u8]>::from)
+                            });
+                        }
+                    }
+                    Some(Err(reason)) => viewer.unavailable(reason, cx),
+                    None => viewer.unavailable(
+                        "画像を利用できません: 閲覧中の候補のローカル入力を準備できません。".into(),
+                        cx,
+                    ),
+                }
             }
         });
     }
@@ -773,7 +892,7 @@ impl CompareDemo {
         };
         let index = candidate_index(&pair[0]);
         self.missing = Some(index);
-        self.missing_frame = self.compare.read(cx).frames(cx)[0].clone();
+        self.missing_frame = self.compare.read(cx).retained_frames(cx)[0].clone();
         self.compare.update(cx, |view, cx| view.unavailable(CompareSide::A,
             "画像を利用できません: この候補は現在閲覧できる情報に含まれていません。参照を保持しています。".into(), cx));
         if self.selected == index {
@@ -805,7 +924,7 @@ impl CompareDemo {
             Some(side) => {
                 let restored = self.missing_frame.take().is_some_and(|frame| {
                     self.compare.update(cx, |view, cx| {
-                        view.present_prepared(side, frame, window, cx)
+                        view.restore_prepared(side, frame, window, cx)
                     })
                 });
                 if !restored {
@@ -877,6 +996,7 @@ impl Render for CompareDemo {
         // counter as their release proof.
         let _ = desktop_gpui::image_upload::ImageUploadService::global()
             .note_composed_frame(window.window_handle().window_id().as_u64());
+        let status = self.status.clone();
         div().size_full().p_3().bg(rgb(0x20242a)).text_color(rgb(0xf0f0f0)).flex().flex_col().gap_2()
             .on_action(cx.listener(|_, _: &DemoNext, window, cx| window.focus_next(cx)))
             .on_action(cx.listener(|_, _: &DemoPrevious, window, cx| window.focus_prev(cx)))
@@ -891,9 +1011,10 @@ impl Render for CompareDemo {
                 div()
                     .id("compare-status")
                     .role(Role::Group)
-                    .aria_label(self.status.clone())
-                    .child(self.status.clone()),
+                    .aria_label(status.clone())
+                    .child(status),
             )
+            .child(self.backend_controls(cx))
             .child(div().flex_1().min_h_0().child(if self.closed { self.viewer.clone().into_any_element() } else { self.compare.clone().into_any_element() }))
             .child(div().id("fixture-candidates").role(Role::Group).aria_label("候補一覧。左右キーで移動、Enterで選択")
                 .key_context("FixtureCandidates").track_focus(&self.candidate_focus).flex().gap_2()
@@ -968,10 +1089,20 @@ fn open_compare_window(
             ..Default::default()
         },
         move |window, cx| {
-            let compare = cx.new(|cx| CompareView::new(ViewerMode::ExperimentalTiles, window, cx));
+            let base_window_title =
+                format!("MP-CMP1 Compare local fixture {window_number}");
+            let compare = cx.new(|cx| {
+                CompareView::new(
+                    ViewerMode::ExperimentalTiles,
+                    base_window_title.clone(),
+                    window,
+                    cx,
+                )
+            });
             let viewer = cx.new(|cx| {
                 desktop_gpui::image_viewer::ImageViewer::new(
                     ViewerMode::ExperimentalTiles,
+                    base_window_title,
                     window,
                     cx,
                 )
