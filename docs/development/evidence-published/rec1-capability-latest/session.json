@@ -71,5 +71,18 @@
   "required_decision": "A separately approved supported public GPUI device-loss/generation/recovery contract or equivalent owner-approved integration route is needed before full-contract implementation. No pin change, upstream mutation, unsafe or OS device reset was performed.",
   "product_code_changed": false,
   "refine_gate": "NOT_RUN: capability investigation only; no new product candidate",
-  "tern_review": "NOT_RUN for this investigation; earlier CMP1 CLEAN remains bound to 0b807f3"
+  "tern_review": {
+    "candidate": "e1976ad8ad94f3dced83c50fff19a2ea95a9bb9d",
+    "scope": "Investigation documentation only; REC1 itself remains HOLD",
+    "verdict": "CLEAN",
+    "blocking": 0,
+    "actionable_non_blocking": 0,
+    "excessive": 0,
+    "remote_verified": true,
+    "conversation_id": "6aedc810-6ad8-83ee-8b44-9bb28126b81a",
+    "request_user_key": "7a5665f3-0e66-47a4-8e9c-787ad599cb3a",
+    "response_key": "c36ab2a9-0bbc-429a-92ee-e34cfaa84b06",
+    "independently_reexecuted": "No Native/checker/Taskern/Gate execution or private screenshot hash verification; reviewer explicitly records these limits",
+    "record_binding": "This later record describes review of e1976ad, not review of the commit containing this record"
+  }
 }
