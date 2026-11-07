@@ -65,32 +65,39 @@ class CampaignEvidenceTests(unittest.TestCase):
             "qpc_frequency": 1_000_000,
             "endpoints": {"atlas_allocations": {"status": "NOT_MEASURED"}}, "runs": [],
         }
-        self.native_samples = [self.sample(0, 500_000, "pre_stress", 0, "baseline", "observed")]
+        self.native_samples = [self.sample(500_000, "pre_stress", 0, "baseline", "observed")]
         self.native_samples.extend(
-            self.sample(i + 1, (i + 1) * 1_000_000, "stress", i, expected_action(i, False),
+            self.sample((i + 1) * 1_000_000, "stress", i, expected_action(i, False),
                         "scene_complete" if i == 0 else (
-                            "requested" if i % 12 in (3, 4, 5, 6, 7) else "pending_or_unavailable"))
+                            "requested" if i % 12 in (3, 4, 5, 6, 7) else "pending_or_unavailable"),
+                        complete=(i == 0))
             for i in range(60)
         )
         self.native_samples.append(
-            self.sample(61, 61_000_000, "settle", 60, "observe_settle", "observed"))
+            self.sample(61_000_000, "settle", 60, "observe_settle", "observed"))
         self.native_samples.append(
-            self.sample(62, 62_000_000, "peer_closed", 60, "close_other_window", "observed"))
-        final = self.sample(63, 63_000_000, "post_close_teardown", 60, "close_and_evict", "observed")
-        final["viewer_open"] = False
-        final["compare_open"] = False
-        final["views"] = [{**view, "complete_in_scene": False} for view in self.observed_views()]
-        self.native_samples.append(final)
+            self.sample(62_000_000, "peer_closed", 60, "close_other_window", "observed"))
+        self.native_samples.append(
+            self.sample(63_000_000, "post_close_teardown", 60, "close_and_evict", "observed",
+                        complete=False, consumers=0, teardown=True))
         self._write_campaign()
 
-    def sample(self, order, elapsed_us, phase, step, action, result):
+    def sample(self, elapsed_us, phase, step, action, result, *, complete=True,
+               consumers=2, teardown=False):
+        drawn = complete and not teardown
+        views = [{"scene_serial": 0, "view_serial": 0, "phase": 2 if drawn else 1,
+                  "complete_in_scene": drawn,
+                  "current_origin": 1 if drawn else None,
+                  "retained_origin": 1 if drawn else None,
+                  "retiring_frames": 0}
+                 for _ in range(3)]
         return {"elapsed_us": elapsed_us, "phase": phase, "step": step,
                 "action": action, "result": result, "windows": 1,
-                "viewer_open": phase != "post_close_teardown",
-                "compare_open": phase != "post_close_teardown",
+                "viewer_open": not teardown, "compare_open": not teardown,
+                "pair_present": True, "missing_present": True,
                 "device_generation": 1, "device_state": "ready",
-                "counters": self.counters(), "views": self.observed_views(),
-                "identities": [None] * 6}
+                "counters": self.counters(consumers), "views": views,
+                "identities": [None] * 6 if teardown else [f"{index:064x}" for index in range(6)]}
 
     @staticmethod
     def observed_views():
@@ -103,13 +110,13 @@ class CampaignEvidenceTests(unittest.TestCase):
         self.temp.cleanup()
 
     @staticmethod
-    def counters():
+    def counters(consumers=0):
         return {"retained_frames": 0, "backup_claims": 0, "backup_origins": 0,
                 "pool_count": 0, "staging_reservation_bytes": 0,
                 "in_flight_reservation_bytes": 0, "resident_reservation_bytes": 0,
                 "quarantined_payload_bytes": 0, "quarantine_capacity_bytes": 64 * 1024 * 1024,
                 "quarantined_frames": 0,
-                "consumers": 0, "consumer_unknown_frames": 0,
+                "consumers": consumers, "consumer_unknown_frames": 0,
                 "decoded_retained_bytes": 0, "packed_retained_bytes": 0, "cpu_retained_bytes": 0}
 
     def _write_campaign(self):
@@ -200,21 +207,89 @@ class CampaignEvidenceTests(unittest.TestCase):
         self.assertTrue(any("peer window was not withdrawn" in failure
                             for failure in result["runs"][0]["failures"]))
 
+    def test_claimed_scene_must_match_its_own_views(self):
+        self.native_samples[1]["views"] = [
+            {**view, "complete_in_scene": False, "phase": 1,
+             "current_origin": None, "retained_origin": None}
+            for view in self.native_samples[1]["views"]
+        ]
+        self._write_campaign()
+        result = analyze_campaign(self.directory)
+        self.assertEqual(result["status"], "FAILED")
+        self.assertTrue(any("its views say" in failure for failure in result["runs"][0]["failures"]))
+
+    def test_a_complete_scene_without_a_frame_identity_is_rejected(self):
+        self.native_samples[1]["identities"][0] = None
+        self._write_campaign()
+        result = analyze_campaign(self.directory)
+        self.assertEqual(result["status"], "FAILED")
+        self.assertTrue(any("no identity for its attached frame" in failure
+                            for failure in result["runs"][0]["failures"]))
+
+    def test_refusal_and_dispatch_classifications_are_rechecked(self):
+        self.native_samples[4]["result"] = "observed"
+        self._write_campaign()
+        result = analyze_campaign(self.directory)
+        self.assertEqual(result["status"], "FAILED")
+        self.assertTrue(any("instead of dispatch or refusal" in failure
+                            for failure in result["runs"][0]["failures"]))
+
+    def test_a_refusal_must_name_the_state_that_caused_it(self):
+        refused = self.native_samples[2]
+        refused["result"] = "refused_no_pair"
+        refused["pair_present"] = True
+        self._write_campaign()
+        result = analyze_campaign(self.directory)
+        self.assertEqual(result["status"], "FAILED")
+        self.assertTrue(any("claims no Compare pair while one is present" in failure
+                            for failure in result["runs"][0]["failures"]))
+        # The same refusal is evidence when the pair really is absent.
+        refused["pair_present"] = False
+        self._write_campaign()
+        result = analyze_campaign(self.directory)
+        self.assertEqual(result["status"], "OBSERVED")
+        self.assertEqual(result["runs"][0]["actions"]["replace_side_a"]["refused_observations"], 1)
+
+    def test_a_run_without_any_attached_consumer_cannot_claim_withdrawal(self):
+        for sample in self.native_samples:
+            sample["counters"]["consumers"] = 0
+        self._write_campaign()
+        run = analyze_campaign(self.directory)["runs"][0]
+        self.assertFalse(run["post_close_reconciliation"]["consumer_release_observed"])
+        self.assertEqual(run["post_close_reconciliation"]["consumer_peak"], 0)
+
     def test_recorded_gpu_total_must_recompute_from_its_instances(self):
         record_path = self.directory / "run-1/observations-0.json"
         record = json.loads(record_path.read_text())
+        def instances(pid, dedicated, shared, committed):
+            base = f"pid_{pid}_luid_0x0_0x1_phys_0"
+            return [
+                {"counter": "dedicated usage", "status": 0, "bytes": dedicated, "instance": base,
+                 "path": f"\\\\host\\gpu process memory({base})\\dedicated usage"},
+                {"counter": "shared usage", "status": 0, "bytes": shared, "instance": base,
+                 "path": f"\\\\host\\gpu process memory({base})\\shared usage"},
+                {"counter": "total committed", "status": 0, "bytes": committed, "instance": base,
+                 "path": f"\\\\host\\gpu process memory({base})\\total committed"},
+            ]
         record["samples"][0]["gpu"] = {
             "status": "OBSERVED", "dedicated_bytes": 10, "shared_bytes": 5, "committed_bytes": 15,
-            "instances": [
-                {"counter": "dedicated usage", "status": 0, "bytes": 4},
-                {"counter": "shared usage", "status": 0, "bytes": 5},
-                {"counter": "total committed", "status": 0, "bytes": 9},
-            ],
+            "instances": instances(1000, 4, 5, 9),
         }
         record_path.write_text(json.dumps(record))
         result = analyze_campaign(self.directory)
         self.assertEqual(result["status"], "FAILED")
         self.assertTrue(any("does not match its own instances" in failure
+                            for failure in result["runs"][0]["failures"]))
+        # A matching total from another process's instances is still not this run's evidence.
+        foreign = json.loads(record_path.read_text())
+        foreign["samples"][0]["gpu"] = {
+            "status": "OBSERVED", "dedicated_bytes": 4, "shared_bytes": 5, "committed_bytes": 9,
+            "instances": instances(999999, 4, 5, 9),
+        }
+        record_path.write_text(json.dumps(foreign))
+        result = analyze_campaign(self.directory)
+        self.assertEqual(result["status"], "FAILED")
+        self.assertTrue(any("not this PID's GPU Process Memory counters" in failure
                             for failure in result["runs"][0]["failures"]))
 
     def test_empty_campaign_and_native_samples_fail_closed(self):

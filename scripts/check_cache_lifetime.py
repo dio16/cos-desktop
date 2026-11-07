@@ -131,6 +131,91 @@ def gpu_instance_sums(gpu: dict) -> dict[str, int] | None:
     return totals
 
 
+GPU_COUNTERS = ("dedicated usage", "shared usage", "total committed")
+LOAD_ACTIONS = ("load_same_pair", "replace_side_a", "replace_side_b", "compare_reopen", "reload_side_a")
+REFUSALS = ("refused_no_pair", "refused_no_missing_source", "refused_unsupported",
+            "refused_feature_unavailable")
+# View index to identity index: two Compare panes, then the standalone viewer's current/retained.
+CURRENT_IDENTITY = {0: 0, 1: 1, 2: 4}
+
+
+def gpu_instances_belong_to(gpu: dict, pid: int) -> bool:
+    """Each recorded instance must be this PID's GPU Process Memory counter, once per counter."""
+    instances = gpu.get("instances")
+    if not isinstance(instances, list) or not instances:
+        return False
+    seen: set[str] = set()
+    for instance in instances:
+        if not isinstance(instance, dict):
+            return False
+        name = instance.get("instance")
+        counter = instance.get("counter")
+        path = instance.get("path")
+        if not isinstance(name, str) or not name.lower().startswith(f"pid_{pid}_"):
+            return False
+        if not isinstance(counter, str) or counter.lower() not in GPU_COUNTERS:
+            return False
+        if not isinstance(path, str) or "gpu process memory" not in path.lower():
+            return False
+        if counter.lower() in seen:
+            return False
+        seen.add(counter.lower())
+    return seen == set(GPU_COUNTERS)
+
+
+def verify_results(samples: list[dict], failures: list[str]) -> None:
+    """Recompute each reported outcome from the observation it claims, never trusting `result`."""
+    for sample in samples:
+        phase, action, result = sample.get("phase"), sample.get("action"), sample.get("result")
+        views = sample.get("views")
+        if not isinstance(views, list) or len(views) != 3:
+            failures.append("A sample does not carry exactly three view observations")
+            return
+        identities = sample.get("identities")
+        for index, view in enumerate(views):
+            if view.get("complete_in_scene"):
+                if view.get("current_origin") is None and view.get("retained_origin") is None:
+                    failures.append("A sample claims a complete scene with no attached origin")
+                    return
+                identity_index = CURRENT_IDENTITY.get(index)
+                if (view.get("current_origin") is not None and isinstance(identities, list)
+                        and identity_index is not None and identities[identity_index] is None):
+                    failures.append("A complete scene has no identity for its attached frame")
+                    return
+        if phase != "stress":
+            if result != "observed":
+                failures.append(f"A {phase} observation reports {result!r} instead of an observation")
+                return
+            continue
+        if action == "viewer_reload":
+            drawn = (views[2].get("complete_in_scene") is True and views[2].get("phase", 0) >= 2)
+        elif action in LOAD_ACTIONS:
+            drawn = all(view.get("complete_in_scene") is True and view.get("phase", 0) >= 2
+                        for view in views[:2])
+        else:
+            drawn = None
+        if drawn is None:
+            if result != "requested" and result not in REFUSALS:
+                failures.append(f"Action {action!r} reports {result!r} instead of dispatch or refusal")
+                return
+        else:
+            expected = "scene_complete" if drawn else "pending_or_unavailable"
+            if result not in REFUSALS and result != expected:
+                failures.append(
+                    f"Action {action!r} reports {result!r} but its views say {expected!r}")
+                return
+        # A refusal must name a state the sample actually observed.
+        if result == "refused_no_pair" and sample.get("pair_present") is not False:
+            failures.append(f"Action {action!r} claims no Compare pair while one is present")
+            return
+        if result == "refused_no_missing_source" and sample.get("missing_present") is not False:
+            failures.append(f"Action {action!r} claims no withheld source while one is present")
+            return
+        if result in ("refused_unsupported", "refused_feature_unavailable") and action not in RECOVERY_ACTIONS.values():
+            failures.append(f"Action {action!r} claims an unsupported backend hook")
+            return
+
+
 def analyze_campaign(directory: Path) -> dict:
     failures: list[str] = []
     runs: list[dict] = []
@@ -275,7 +360,7 @@ def analyze_campaign(directory: Path) -> dict:
                 native_samples = [s for s in native_samples if isinstance(s, dict)]
             required_sample_fields = (
                 "elapsed_us", "phase", "step", "action", "result", "windows",
-                "viewer_open", "compare_open", "device_generation", "device_state",
+                "viewer_open", "compare_open", "pair_present", "missing_present", "device_generation", "device_state",
                 "counters", "views", "identities",
             )
             if any(any(key not in sample for key in required_sample_fields) for sample in native_samples):
@@ -302,6 +387,8 @@ def analyze_campaign(directory: Path) -> dict:
                    or not isinstance(s.get("windows"), int) or isinstance(s.get("windows"), bool)
                    or not isinstance(s.get("viewer_open"), bool)
                    or not isinstance(s.get("compare_open"), bool)
+                   or not isinstance(s.get("pair_present"), bool)
+                   or not isinstance(s.get("missing_present"), bool)
                    or (s.get("device_generation") is not None and
                        (not isinstance(s.get("device_generation"), int) or isinstance(s.get("device_generation"), bool)))
                    for s in native_samples):
@@ -320,6 +407,7 @@ def analyze_campaign(directory: Path) -> dict:
             if len(stress) < 60:
                 run_failures.append("Fewer than 60 stress action observations")
             verify_workload(manifest.get("variant"), bool(manifest.get("recovery")), native_samples, run_failures)
+            verify_results(native_samples, run_failures)
 
             valid_process = []
             missing_process = 0
@@ -355,6 +443,9 @@ def analyze_campaign(directory: Path) -> dict:
             for sample in process_rows:
                 gpu = sample.get("gpu") if isinstance(sample, dict) else None
                 if isinstance(gpu, dict) and gpu.get("status") == "OBSERVED":
+                    if not gpu_instances_belong_to(gpu, identity[0]):
+                        run_failures.append("A sampled GPU observation is not this PID's GPU Process Memory counters")
+                        break
                     summed = gpu_instance_sums(gpu)
                     if summed is None:
                         run_failures.append("A sampled GPU observation has invalid per-instance values")
@@ -465,6 +556,12 @@ def analyze_campaign(directory: Path) -> dict:
             if final and isinstance(final.get("counters"), dict):
                 c = final["counters"]
                 unknown, consumers = c.get("consumer_unknown_frames"), c.get("consumers")
+                consumer_peak = max(
+                    (sample["counters"]["consumers"] for sample in native_samples
+                     if isinstance(sample.get("counters"), dict)
+                     and isinstance(sample["counters"].get("consumers"), int)),
+                    default=0,
+                )
                 ownership_keys = ("retained_frames", "backup_claims", "backup_origins")
                 known_empty_ownership = all(c.get(k) == 0 for k in ownership_keys)
                 resource_keys = ("pool_count", "staging_reservation_bytes",
@@ -487,7 +584,7 @@ def analyze_campaign(directory: Path) -> dict:
                             and v.get("complete_in_scene") is False for v in views)
                 )
                 consumer_release = bool(
-                    known_consumers and known_empty_ownership and retiring == 0
+                    consumer_peak > 0 and known_consumers and known_empty_ownership and retiring == 0
                     and final_references_empty and len(peer_closed) > 0 and final_scene_closed
                     and final_device_ready and not run_failures
                 )
@@ -495,6 +592,7 @@ def analyze_campaign(directory: Path) -> dict:
                     "status": "HOLD", "post_close_samples": len(post_close),
                     "peer_closed_samples": len(peer_closed),
                     "consumers": consumers, "consumer_unknown_frames": unknown,
+                    "consumer_peak": consumer_peak,
                     "backup_claims": c.get("backup_claims"), "backup_origins": c.get("backup_origins"),
                     "retained_frames": c.get("retained_frames"), "pool_count": c.get("pool_count"),
                     "staging_reservation_bytes": c.get("staging_reservation_bytes"),

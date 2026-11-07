@@ -151,6 +151,10 @@ struct LifetimeSample {
     windows: usize,
     viewer_open: bool,
     compare_open: bool,
+    /// Whether a Compare pair is selected, which is what a pair-dependent action needs.
+    pair_present: bool,
+    /// Whether a locally withheld source is present, which is what a reappearance needs.
+    missing_present: bool,
     device_generation: Option<u64>,
     device_state: &'static str,
     counters: desktop_gpui::image_upload::ImageUploadCounters,
@@ -207,7 +211,7 @@ fn export_lifetime(evidence: LifetimeEvidence) {
         }
         let _ = write!(
             output,
-            "{{\"elapsed_us\":{},\"phase\":\"{}\",\"step\":{},\"action\":\"{}\",\"result\":\"{}\",\"windows\":{},\"viewer_open\":{},\"compare_open\":{},\"device_generation\":{},\"device_state\":\"{}\",\"counters\":{{\"retained_frames\":{},\"backup_claims\":{},\"backup_origins\":{},\"quarantined_frames\":{},\"pool_count\":{},\"staging_reservation_bytes\":{},\"in_flight_reservation_bytes\":{},\"resident_reservation_bytes\":{},\"quarantined_staging_bytes\":{},\"quarantined_in_flight_bytes\":{},\"quarantined_resident_bytes\":{},\"decode_calls\":{},\"reuse_calls\":{},\"packed_retained_bytes\":{},\"decoded_retained_bytes\":{},\"cpu_retained_bytes\":{},\"period_index\":{},\"reserved_bytes_this_period\":{},\"period_capacity_bytes\":{},\"paint_issued_bytes\":{},\"paint_issued_tiles\":{},\"repaint_calls\":{},\"evicted_frames\":{},\"atlas_drop_calls\":{},\"released_payload_bytes\":{},\"quarantined_payload_bytes\":{},\"quarantine_capacity_bytes\":{},\"consumers\":{},\"consumer_unknown_frames\":{},\"preparation_queue_wait_nanos\":{},\"preparation_queue_rejections\":{},\"preparation_queue_cancellations\":{}}},\"views\":[",
+            "{{\"elapsed_us\":{},\"phase\":\"{}\",\"step\":{},\"action\":\"{}\",\"result\":\"{}\",\"windows\":{},\"viewer_open\":{},\"compare_open\":{},\"pair_present\":{},\"missing_present\":{},\"device_generation\":{},\"device_state\":\"{}\",\"counters\":{{\"retained_frames\":{},\"backup_claims\":{},\"backup_origins\":{},\"quarantined_frames\":{},\"pool_count\":{},\"staging_reservation_bytes\":{},\"in_flight_reservation_bytes\":{},\"resident_reservation_bytes\":{},\"quarantined_staging_bytes\":{},\"quarantined_in_flight_bytes\":{},\"quarantined_resident_bytes\":{},\"decode_calls\":{},\"reuse_calls\":{},\"packed_retained_bytes\":{},\"decoded_retained_bytes\":{},\"cpu_retained_bytes\":{},\"period_index\":{},\"reserved_bytes_this_period\":{},\"period_capacity_bytes\":{},\"paint_issued_bytes\":{},\"paint_issued_tiles\":{},\"repaint_calls\":{},\"evicted_frames\":{},\"atlas_drop_calls\":{},\"released_payload_bytes\":{},\"quarantined_payload_bytes\":{},\"quarantine_capacity_bytes\":{},\"consumers\":{},\"consumer_unknown_frames\":{},\"preparation_queue_wait_nanos\":{},\"preparation_queue_rejections\":{},\"preparation_queue_cancellations\":{}}},\"views\":[",
             sample.elapsed_us,
             sample.phase,
             sample.step,
@@ -216,6 +220,8 @@ fn export_lifetime(evidence: LifetimeEvidence) {
             sample.windows,
             sample.viewer_open,
             sample.compare_open,
+            sample.pair_present,
+            sample.missing_present,
             sample
                 .device_generation
                 .map_or("null".to_owned(), |v| v.to_string()),
@@ -331,6 +337,8 @@ fn start_lifetime(cx: &mut Context<CompareDemo>, variant: &'static str, recovery
                     viewer_open: viewer.observation().current_origin.is_some()
                         || viewer.observation().retained_origin.is_some(),
                     compare_open: !demo.closed,
+                    pair_present: demo.presentation.compare_pair().is_some(),
+                    missing_present: demo.missing.is_some(),
                     device_generation,
                     device_state,
                     counters: desktop_gpui::image_upload::ImageUploadService::global().counters(),
