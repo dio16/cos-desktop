@@ -2917,6 +2917,24 @@ mod tests {
         );
     }
 
+    #[test]
+    fn loading_another_candidate_reclaims_the_previous_backup() {
+        let _serial = PREPARATION_SERIAL.lock().expect("test serialization");
+        let service = recovery_service();
+        let a = prepared_for_recovery(&service, 1, true);
+        service.invalidate_device_generation(2);
+        let charge = service.counters().quarantined_payload_bytes;
+
+        // The viewer abandons A's backup when it loads another candidate: the origin leaves every
+        // reference and is reclaimed, while the unproven transfer stays charged.
+        assert!(service.release_origin(a.origin()));
+        assert_eq!(service.counters().cpu_retained_bytes, 0);
+        let b = prepared_for_recovery(&service, 2, true);
+        assert_eq!(service.counters().retained_frames, 1);
+        assert_eq!(service.counters().quarantined_payload_bytes, charge);
+        assert_ne!(b.origin(), a.origin());
+    }
+
     fn demand_frame(first_mip: u8) -> Arc<PreparedImage> {
         Arc::new(PreparedImage {
             identity: media::UploadIdentity {

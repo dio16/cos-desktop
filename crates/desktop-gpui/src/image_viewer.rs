@@ -669,7 +669,13 @@ impl ImageViewer {
         self.recovery_pending = false;
         self.recovery_attempted_generation = None;
         self.release_current(cx);
+        let replaced_origin = self.retained.as_ref().map(|frame| frame.origin());
         self.retained = None;
+        if let Some(origin) = replaced_origin {
+            // A load for another identity must not keep the previous candidate's CPU owner: the
+            // release is decided after the old frame left this pane's references.
+            self.release_origin_after_registry(origin);
+        }
         self.revision = request.source_revision;
         self.generation = generation;
         self.phase = 0;
@@ -765,6 +771,7 @@ impl ImageViewer {
                 self.retained = None;
                 self.recovery_pending = false;
                 self.recovery_attempted_generation = None;
+                self.release_origin_after_registry(previous.origin());
                 return;
             }
         }
