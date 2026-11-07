@@ -7,7 +7,7 @@ import unittest
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from check_cache_lifetime import analyze_campaign, gauge_trend
+from check_cache_lifetime import analyze_campaign, expected_action, gauge_trend
 
 
 class ResourceTrendTests(unittest.TestCase):
@@ -65,31 +65,32 @@ class CampaignEvidenceTests(unittest.TestCase):
             "qpc_frequency": 1_000_000,
             "endpoints": {"atlas_allocations": {"status": "NOT_MEASURED"}}, "runs": [],
         }
-        self.native_samples = [
-            {"elapsed_us": i * 1_000_000, "phase": "stress", "step": i,
-             "action": "load", "result": "scene_complete" if i == 1 else "requested",
-             "windows": 1, "viewer_open": True, "compare_open": True,
-             "device_generation": 1, "device_state": "ready",
-             "counters": self.counters(), "views": self.observed_views(),
-             "identities": [None] * 6}
-            for i in range(1, 61)
-        ]
-        self.native_samples.extend([
-            {"elapsed_us": 62_000_000, "phase": "peer_closed", "step": 60,
-             "action": "close_peer", "result": "observed", "windows": 1,
-             "viewer_open": True, "compare_open": True, "device_generation": 1,
-             "device_state": "ready", "counters": self.counters(),
-             "views": self.observed_views(), "identities": [None] * 6},
-            {"elapsed_us": 63_000_000, "phase": "post_close_teardown", "step": 60,
-             "action": "close_and_evict", "result": "observed", "windows": 1,
-             "viewer_open": False, "compare_open": False, "device_generation": 1,
-             "device_state": "ready", "counters": self.counters(),
-             "views": self.observed_views(), "identities": [None] * 6},
-        ])
-        self.native_samples[-1]["views"] = [
-            {**view, "complete_in_scene": False} for view in self.observed_views()
-        ]
+        self.native_samples = [self.sample(0, 500_000, "pre_stress", 0, "baseline", "observed")]
+        self.native_samples.extend(
+            self.sample(i + 1, (i + 1) * 1_000_000, "stress", i, expected_action(i, False),
+                        "scene_complete" if i == 0 else (
+                            "requested" if i % 12 in (3, 4, 5, 6, 7) else "pending_or_unavailable"))
+            for i in range(60)
+        )
+        self.native_samples.append(
+            self.sample(61, 61_000_000, "settle", 60, "observe_settle", "observed"))
+        self.native_samples.append(
+            self.sample(62, 62_000_000, "peer_closed", 60, "close_other_window", "observed"))
+        final = self.sample(63, 63_000_000, "post_close_teardown", 60, "close_and_evict", "observed")
+        final["viewer_open"] = False
+        final["compare_open"] = False
+        final["views"] = [{**view, "complete_in_scene": False} for view in self.observed_views()]
+        self.native_samples.append(final)
         self._write_campaign()
+
+    def sample(self, order, elapsed_us, phase, step, action, result):
+        return {"elapsed_us": elapsed_us, "phase": phase, "step": step,
+                "action": action, "result": result, "windows": 1,
+                "viewer_open": phase != "post_close_teardown",
+                "compare_open": phase != "post_close_teardown",
+                "device_generation": 1, "device_state": "ready",
+                "counters": self.counters(), "views": self.observed_views(),
+                "identities": [None] * 6}
 
     @staticmethod
     def observed_views():
@@ -153,11 +154,68 @@ class CampaignEvidenceTests(unittest.TestCase):
         self.assertEqual(result["status"], "OBSERVED")
         self.assertEqual(result["acceptance"], "HOLD")
         run = result["runs"][0]
-        self.assertEqual(run["actions"]["load"]["dispatch_only_observations"], 59)
-        self.assertEqual(run["actions"]["load"]["scene_complete_observations"], 1)
-        self.assertEqual(len(run["actions"]["load"]["scene_observations"]), 1)
+        self.assertEqual(run["actions"]["load_same_pair"]["scene_complete_observations"], 1)
+        self.assertEqual(run["actions"]["load_same_pair"]["pending_observations"], 4)
+        self.assertEqual(run["actions"]["swap"]["dispatch_only_observations"], 5)
+        self.assertEqual(run["actions"]["viewer_reload"]["pending_observations"], 5)
         self.assertTrue(run["post_close_reconciliation"]["consumer_release_observed"])
         self.assertEqual(run["post_close_reconciliation"]["physical_atlas_release"], "NOT_MEASURED")
+
+    def test_a_ledger_without_the_declared_workload_is_rejected(self):
+        for sample in self.native_samples[1:61]:
+            sample["action"] = "load_same_pair"
+        self._write_campaign()
+        result = analyze_campaign(self.directory)
+        self.assertEqual(result["status"], "FAILED")
+        self.assertTrue(any("instead of the declared" in failure
+                            for failure in result["runs"][0]["failures"]))
+
+    def test_misnumbered_or_duplicated_steps_are_rejected(self):
+        self.native_samples[11]["step"] = 9
+        self._write_campaign()
+        result = analyze_campaign(self.directory)
+        self.assertEqual(result["status"], "FAILED")
+        self.assertTrue(any("misnumbered" in failure for failure in result["runs"][0]["failures"]))
+
+    def test_a_recovery_campaign_must_observe_failure_and_recovery(self):
+        self.manifest["recovery"] = True
+        self._write_campaign()
+        result = analyze_campaign(self.directory)
+        self.assertEqual(result["status"], "FAILED")
+        self.assertTrue(any("instead of the declared 'recovery_fail'" in failure
+                            for failure in result["runs"][0]["failures"]))
+
+    def test_two_window_workload_must_observe_and_withdraw_the_peer(self):
+        self.manifest["variant"] = "windows2"
+        self._write_campaign()
+        result = analyze_campaign(self.directory)
+        self.assertEqual(result["status"], "FAILED")
+        self.assertTrue(any("both windows" in failure for failure in result["runs"][0]["failures"]))
+        self._write_campaign()
+        for sample in self.native_samples[1:61]:
+            sample["windows"] = 2
+        self.native_samples[-1]["windows"] = 2
+        self._write_campaign()
+        result = analyze_campaign(self.directory)
+        self.assertTrue(any("peer window was not withdrawn" in failure
+                            for failure in result["runs"][0]["failures"]))
+
+    def test_recorded_gpu_total_must_recompute_from_its_instances(self):
+        record_path = self.directory / "run-1/observations-0.json"
+        record = json.loads(record_path.read_text())
+        record["samples"][0]["gpu"] = {
+            "status": "OBSERVED", "dedicated_bytes": 10, "shared_bytes": 5, "committed_bytes": 15,
+            "instances": [
+                {"counter": "dedicated usage", "status": 0, "bytes": 4},
+                {"counter": "shared usage", "status": 0, "bytes": 5},
+                {"counter": "total committed", "status": 0, "bytes": 9},
+            ],
+        }
+        record_path.write_text(json.dumps(record))
+        result = analyze_campaign(self.directory)
+        self.assertEqual(result["status"], "FAILED")
+        self.assertTrue(any("does not match its own instances" in failure
+                            for failure in result["runs"][0]["failures"]))
 
     def test_empty_campaign_and_native_samples_fail_closed(self):
         self.manifest["runs"] = []

@@ -58,6 +58,79 @@ def sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+# The frozen lifetime workload: 60 stress steps repeating this schedule, with the two recovery
+# slots replaced by the supported backend hooks when the campaign declares recovery.
+WORKLOAD_ACTIONS = (
+    "load_same_pair", "replace_side_a", "replace_side_b", "swap", "unavailable", "reappear",
+    "compare_close", "viewer_close", "viewer_reload", "compare_reopen",
+    "reload_side_a", "reload_side_a",
+)
+RECOVERY_ACTIONS = {10: "recovery_fail", 11: "recovery_recreate_and_close"}
+
+
+def expected_action(step: int, recovery: bool) -> str:
+    index = step % len(WORKLOAD_ACTIONS)
+    if recovery and index in RECOVERY_ACTIONS:
+        return RECOVERY_ACTIONS[index]
+    return WORKLOAD_ACTIONS[index]
+
+
+def verify_workload(variant: str, recovery: bool, samples: list[dict], failures: list[str]) -> None:
+    """Check that the samples are the declared workload, not merely a long enough ledger."""
+    phases = [sample.get("phase") for sample in samples]
+    if phases != ["pre_stress"] + ["stress"] * 60 + ["settle", "peer_closed", "post_close_teardown"]:
+        failures.append("Native sample phases are not the declared pre-stress/stress/settle/peer-close/teardown shape")
+        return
+    stress = samples[1:61]
+    for step, sample in enumerate(stress):
+        if sample.get("step") != step:
+            failures.append(f"Stress step {step} is misnumbered or duplicated")
+            return
+        expected = expected_action(step, recovery)
+        if sample.get("action") != expected:
+            failures.append(f"Stress step {step} ran {sample.get('action')!r} instead of the declared {expected!r}")
+            return
+    if variant == "windows2":
+        if any(sample.get("windows") != 2 for sample in stress):
+            failures.append("The two-window workload did not observe both windows during stress")
+        if samples[62].get("windows") != 1 or samples[63].get("windows") != 1:
+            failures.append("The peer window was not withdrawn before the final teardown")
+    elif any(sample.get("windows") != 1 for sample in samples):
+        failures.append("A single-window workload reported another window count")
+    states = {sample.get("device_state") for sample in samples}
+    generations = [sample.get("device_generation") for sample in samples]
+    if recovery:
+        if "unavailable" not in states or "ready" not in states:
+            failures.append("The recovery workload did not observe both a controlled failure and a ready backend")
+        if any(a is not None and b is not None and b < a for a, b in zip(generations, generations[1:])):
+            failures.append("Device generation went backwards during the recovery workload")
+        if len({s.get("device_generation") for s in samples if s.get("device_state") == "ready"}) < 2:
+            failures.append("The recovery workload did not advance to a second ready generation")
+        if samples[-1].get("device_state") != "ready":
+            failures.append("The recovery workload did not end with a ready backend")
+        return
+    if states != {"ready"}:
+        failures.append("A workload without recovery observed an unexpected device state")
+    if len(set(generations)) != 1:
+        failures.append("A workload without recovery changed device generation")
+
+
+def gpu_instance_sums(gpu: dict) -> dict[str, int] | None:
+    """Recompute the per-counter totals from the recorded instances, or None when invalid."""
+    totals: dict[str, int] = {}
+    instances = gpu.get("instances")
+    if not isinstance(instances, list) or not instances:
+        return None
+    for instance in instances:
+        if not isinstance(instance, dict):
+            return None
+        name, value, status = instance.get("counter"), instance.get("bytes"), instance.get("status")
+        if status != 0 or not isinstance(value, int) or isinstance(value, bool) or value < 0:
+            return None
+        totals[name] = totals.get(name, 0) + value
+    return totals
+
+
 def analyze_campaign(directory: Path) -> dict:
     failures: list[str] = []
     runs: list[dict] = []
@@ -246,6 +319,7 @@ def analyze_campaign(directory: Path) -> dict:
             ]
             if len(stress) < 60:
                 run_failures.append("Fewer than 60 stress action observations")
+            verify_workload(manifest.get("variant"), bool(manifest.get("recovery")), native_samples, run_failures)
 
             valid_process = []
             missing_process = 0
@@ -278,6 +352,19 @@ def analyze_campaign(directory: Path) -> dict:
                 run_failures.append("No process sample recorded the sampled executable path")
             elif recorded_path not in observed_paths:
                 run_failures.append("Recorded executable path does not match its samples")
+            for sample in process_rows:
+                gpu = sample.get("gpu") if isinstance(sample, dict) else None
+                if isinstance(gpu, dict) and gpu.get("status") == "OBSERVED":
+                    summed = gpu_instance_sums(gpu)
+                    if summed is None:
+                        run_failures.append("A sampled GPU observation has invalid per-instance values")
+                        break
+                    if any(summed.get(name) != gpu.get(key) for name, key in (
+                            ("dedicated usage", "dedicated_bytes"),
+                            ("shared usage", "shared_bytes"),
+                            ("total committed", "committed_bytes"))):
+                        run_failures.append("A recorded GPU total does not match its own instances")
+                        break
             for sample in process_rows:
                 if not isinstance(sample, dict) or identity is None:
                     run_failures.append("Process sample identity is malformed")

@@ -308,9 +308,11 @@ pub struct ImageUploadCounters {
     /// Payload bytes currently quarantined across every device generation.
     pub quarantined_payload_bytes: u64,
     pub quarantine_capacity_bytes: u64,
-    /// Attached consumers observed without blocking. A lower bound when consumer_unknown_frames > 0.
+    /// Attached consumers observed without blocking across registry and quarantined frames,
+    /// deduplicated by consumer identity. A lower bound when `consumer_unknown_frames` is nonzero.
     pub consumers: usize,
-    /// Registry frames whose consumer set could not be sampled because its paint state was locked.
+    /// Service-owned frames whose consumer set could not be sampled because its paint state was
+    /// locked. Registry and quarantine frames are both counted.
     pub consumer_unknown_frames: usize,
     /// Cumulative background queue wait; this is not UI latency.
     pub preparation_queue_wait_nanos: u64,
@@ -1436,16 +1438,21 @@ impl ImageUploadService {
         };
         let queue = PROCESS_PREPARATION.state.lock().expect("preparation queue");
         let retained = retained_bytes(&state);
-        let (consumers, consumer_unknown_frames) =
-            state
-                .frames
-                .iter()
-                .fold((0, 0), |(consumers, unknown), frame| {
-                    match frame.paint_state.try_lock() {
-                        Ok(paint) => (consumers + paint.consumers.len(), unknown),
-                        Err(_) => (consumers, unknown + 1),
-                    }
-                });
+        // Registry and quarantine frames are both sampled: a generation change can move a frame
+        // that still has attached consumers into quarantine, and reporting zero there would read
+        // as a withdrawn consumer. The union also avoids counting one consumer twice when two
+        // generation views share it.
+        let (consumers, consumer_unknown_frames) = {
+            let mut attached = std::collections::BTreeSet::new();
+            let mut unknown = 0;
+            for index in 0..state.frames.len() + state.quarantined_views.len() {
+                match retained_frame_at(&state, index).paint_state.try_lock() {
+                    Ok(paint) => attached.extend(paint.consumers.iter().copied()),
+                    Err(_) => unknown += 1,
+                }
+            }
+            (attached.len(), unknown)
+        };
         ImageUploadCounters {
             retained_frames: state.frames.len(),
             backup_claims: state.backup_claims.values().copied().sum(),
@@ -2978,6 +2985,46 @@ mod tests {
         assert!(service.release_origin(origin));
         assert_eq!(service.counters().cpu_retained_bytes, 0);
         assert_eq!(service.counters().packed_retained_bytes, 0);
+    }
+
+    #[test]
+    fn a_quarantined_consumer_is_still_observed_and_clears_on_withdrawal() {
+        let _serial = PREPARATION_SERIAL.lock().expect("test serialization");
+        let service = recovery_service();
+        let frame = prepared_for_recovery(&service, 1, false);
+        let consumer = ConsumerId::allocate();
+        assert!(service.attach(&frame, consumer, None));
+        // A generation change moves a frame that may still be presented into quarantine. Counting
+        // only the registry would report zero consumers and read as a withdrawn consumer.
+        service.invalidate_device_generation(2);
+        assert_eq!(service.counters().retained_frames, 0);
+        assert_eq!(service.counters().quarantined_frames, 1);
+        assert_eq!(service.counters().consumers, 1);
+        assert_eq!(service.counters().consumer_unknown_frames, 0);
+
+        // The last withdrawal is the point where consumers actually reach zero.
+        assert!(service.detach(&frame, consumer));
+        assert_eq!(service.counters().consumers, 0);
+        assert_eq!(service.counters().consumer_unknown_frames, 0);
+    }
+
+    #[test]
+    fn one_consumer_holding_two_views_is_counted_once() {
+        let _serial = PREPARATION_SERIAL.lock().expect("test serialization");
+        let service = recovery_service();
+        let frame = prepared_for_recovery(&service, 1, true);
+        let consumer = ConsumerId::allocate();
+        assert!(service.attach(&frame, consumer, None));
+        service.invalidate_device_generation(2);
+        let recovered = service
+            .recover_frame(&frame, 2, &Cancellation::default())
+            .expect("rebind");
+        // Both views belong to the same pane; the counter reports one attached consumer.
+        assert!(service.attach(&recovered, consumer, None));
+        assert_eq!(service.counters().consumers, 1);
+        assert!(service.detach(&recovered, consumer));
+        assert!(service.detach(&frame, consumer));
+        assert_eq!(service.counters().consumers, 0);
     }
 
     #[test]
