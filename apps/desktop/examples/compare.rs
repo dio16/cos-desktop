@@ -1118,8 +1118,9 @@ fn open_compare_window(
             window.on_window_should_close(cx, move |window, cx| {
                 let _ = weak_compare.update(cx, |view, cx| view.close(cx));
                 let _ = weak_viewer.update(cx, |viewer, cx| viewer.close(cx));
-                let _ =
-                    desktop_gpui::image_upload::ImageUploadService::global().evict_owned_by(window);
+                let service = desktop_gpui::image_upload::ImageUploadService::global();
+                let _ = service.evict_owned_by(window);
+                service.forget_window(window.window_handle().window_id().as_u64());
                 true
             });
             demo

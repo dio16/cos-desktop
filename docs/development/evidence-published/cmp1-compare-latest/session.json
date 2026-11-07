@@ -5,8 +5,8 @@
   "contract": "DC-MP-CMP1",
   "status": "LOCAL_TWO_PANE_COMPARE_IMPLEMENTED_NATIVE_OBSERVED_REPAIRED",
   "source_parent": "b8aa19c",
-  "predecessor_commit": "0aae309df7e1c0b1b1bf605f2cc8577dd876b954",
-  "review_round": 6,
+  "predecessor_commit": "e151c11776e94b20fb037b5277379292d9d6610a",
+  "review_round": 7,
   "authority": "Caller-directed completion of the implementation plan; ADR-0015 UX-01 decisions; development on dev.",
   "scope": "Local two-pane Compare over the existing admitted 2048x2048 noninterlaced RGB8 PNG class, plus the fixed R5 trace harness exercised once in the shared variant. Production media acquisition, the R5 reuse/fairness matrix and product acceptance remain NOT_RUN.",
   "representations": {
@@ -22,17 +22,17 @@
   },
   "trace_pilot": {
     "file": "cmp1-trace-shared-pilot.jsonl (private, 1.1 MiB)",
-    "sha256": "sha256:b16935b424a75cf7a567fd9f89a6832a69711bb58d1ebb6b4f409769dd261531",
+    "sha256": "sha256:817f626a7c463910d8ff30f7231887e1bf0fbc285d2ed25df131b1b1b3669926",
     "executed_binary": "examples/compare.exe",
-    "executed_binary_sha256": "sha256:ac27c6816cbd72bf241296b3e305d5cfaeb467ca35944e2faae104d5a5bf49a1",
+    "executed_binary_sha256": "sha256:0c404eb7e332398fc2d80695d811a0ed492cce51ff288bbc068ad7671fbd2c3f",
     "trace_after_binary_build": true,
     "variant": "shared",
     "ready": true,
-    "warmup_ms": 119,
+    "warmup_ms": 113,
     "settled": true,
     "cancel_probe_stage": 3,
     "refusals": 0,
-    "rows": 1976,
+    "rows": 1988,
     "decode_calls": 1,
     "reuse_calls": 0,
     "retained_frames": 1,
@@ -58,7 +58,7 @@
   "captures": [
     {
       "path": "captures/01-linked-fit.png",
-      "sha256": "sha256:92a54c64dcce9f0549ee96983e3a119cd12a44d3aaffadf23326b47d0adcff2f",
+      "sha256": "sha256:84b861dcee525c4e36a502e0168d198072e4e0a1c07bff4803cff857545ef970",
       "width": 1275,
       "height": 932,
       "step": "01-linked-fit",
@@ -85,13 +85,11 @@
         "Fixture: 同じ候補の再出現",
         "Fixture: 診断値"
       ],
-      "focused": [
-        "MP-CMP1 Compare local fixture 1"
-      ]
+      "focused": []
     },
     {
       "path": "captures/02-linked-1to1-pan-a.png",
-      "sha256": "sha256:e2737c7daa1ae24eee9ba0875d67fe2cf3e109684d186ab5443f29a0ce1956cd",
+      "sha256": "sha256:17a9298ce6c527dd8c4162861a9df08d8a6715ecfd47766ce43048d7e7825b99",
       "width": 1275,
       "height": 932,
       "step": "02-linked-1to1-pan-a",
@@ -118,10 +116,7 @@
         "Fixture: 同じ候補の再出現",
         "Fixture: 診断値"
       ],
-      "focused": [
-        "MP-CMP1 Compare local fixture 1",
-        "比較するA側の画像。0: 全体、1: 物理等倍、+/-: 拡大縮小、矢印: 移動、F11: 全画面、Escape: 復帰"
-      ]
+      "focused": []
     },
     {
       "path": "captures/03-unlinked-pan-b.png",
@@ -458,7 +453,7 @@
     },
     {
       "path": "captures/13-restore-before.png",
-      "sha256": "sha256:96ef59b0ff9a8dc8b2e8059b9a98040e2aedf04217603895e41ce39a56c48f21",
+      "sha256": "sha256:b9b0703fb8c683e166f6dea5c1db8e58ae6d1cb8999a5bb67e387d0935fa0b47",
       "width": 1275,
       "height": 932,
       "step": "13-restore-before",
@@ -471,7 +466,7 @@
         "画像を利用できません: この候補は現在閲覧できる情報に含まれていません。参照を保持しています。",
         "画像は未表示です",
         "ローカル画像・実験用タイル表示。GPU完了・常駐量・本番の画質受入は未計測。",
-        "物理表示倍率 100.0% / DIP変換 1.00 / 画像の一部を切り抜いて表示"
+        "物理表示倍率 25.8% / DIP変換 1.00 / 画像全体を表示"
       ],
       "controls": [
         "全体表示 (0)",
@@ -492,7 +487,7 @@
     },
     {
       "path": "captures/14-restore-after.png",
-      "sha256": "sha256:9d6d70eb975e0d8ef5c9cf92807c6bf34a608df4245acf6e77f73dd79a4e285f",
+      "sha256": "sha256:a4f69214bf8a6937ab948b5e87010f759f6e6d7fbddfd745b98a182435c2c4f3",
       "width": 1275,
       "height": 932,
       "step": "14-restore-after",
@@ -503,9 +498,9 @@
       ],
       "pane_texts": [
         "ローカル画像・実験用タイル表示。GPU完了・常駐量・本番の画質受入は未計測。",
-        "物理表示倍率 100.0% / DIP変換 1.00 / 画像の一部を切り抜いて表示",
+        "物理表示倍率 25.8% / DIP変換 1.00 / 画像全体を表示",
         "ローカル画像・実験用タイル表示。GPU完了・常駐量・本番の画質受入は未計測。",
-        "物理表示倍率 100.0% / DIP変換 1.00 / 画像の一部を切り抜いて表示"
+        "物理表示倍率 25.8% / DIP変換 1.00 / 画像全体を表示"
       ],
       "controls": [
         "全体表示 (0)",
@@ -526,7 +521,7 @@
     },
     {
       "path": "captures/15-viewed-outside-pair.png",
-      "sha256": "sha256:52f465aef39cdc74ec8d51563a93a108fcaf21720209a270ee1d8ff07ce16024",
+      "sha256": "sha256:be29ffda5cd60e8d8a2ee831ee932fdb01abf14b8d992287ece824193806baa8",
       "width": 1275,
       "height": 932,
       "step": "15-viewed-outside-pair",
@@ -537,9 +532,9 @@
       ],
       "pane_texts": [
         "ローカル画像・実験用タイル表示。GPU完了・常駐量・本番の画質受入は未計測。",
-        "物理表示倍率 100.0% / DIP変換 1.00 / 画像の一部を切り抜いて表示",
+        "物理表示倍率 25.8% / DIP変換 1.00 / 画像全体を表示",
         "ローカル画像・実験用タイル表示。GPU完了・常駐量・本番の画質受入は未計測。",
-        "物理表示倍率 100.0% / DIP変換 1.00 / 画像の一部を切り抜いて表示"
+        "物理表示倍率 25.8% / DIP変換 1.00 / 画像全体を表示"
       ],
       "controls": [
         "全体表示 (0)",
@@ -560,7 +555,7 @@
     },
     {
       "path": "captures/16-close-shows-viewed-c.png",
-      "sha256": "sha256:055c463639e89455753bab2988dd0abb2ac813015723db595662afc2b79b7bf1",
+      "sha256": "sha256:53906806559bf9b63f8cae9985c848a23aa5472bdd462ba2c247a0b744a2ec67",
       "width": 1275,
       "height": 932,
       "step": "16-close-shows-viewed-c",
@@ -679,7 +674,7 @@
     },
     {
       "path": "crates/desktop-gpui/src/image_viewer.rs",
-      "sha256": "sha256:00d3d6434d88a40504da4f8a35bf98904da7e64970aa76112bb768d86befa165"
+      "sha256": "sha256:9f75e1e055970097373c7b711caab49e05ccacfc092a072917b3c591d8402c83"
     },
     {
       "path": "crates/desktop-gpui/src/image_upload.rs",
@@ -699,7 +694,7 @@
     },
     {
       "path": "apps/desktop/examples/compare.rs",
-      "sha256": "sha256:05325f1339fdbd7a6dab93c8350f32a12a633aad59ad0940d9c9c485571c3854"
+      "sha256": "sha256:96d58bdb38ba0f3a16ef35bd05b27263434660e846a6bda8d5596757d5bb7b9c"
     },
     {
       "path": "apps/desktop/examples/support/image_fixture.rs",
@@ -713,7 +708,7 @@
   "binaries": [
     {
       "release_output": "examples/compare.exe",
-      "sha256": "sha256:ac27c6816cbd72bf241296b3e305d5cfaeb467ca35944e2faae104d5a5bf49a1"
+      "sha256": "sha256:0c404eb7e332398fc2d80695d811a0ed492cce51ff288bbc068ad7671fbd2c3f"
     },
     {
       "release_output": "cos-desktop.exe",
@@ -721,7 +716,7 @@
     }
   ],
   "verification": {
-    "local_quality": "fmt: exit 0; metadata: exit 0; dependency-rules-self-test: exit 0; dependency-rules: exit 0; plan-ledger: exit 0; clippy: exit 0; workspace tests passed: 0",
+    "local_quality": "fmt: exit 0 (1999 ms); metadata: exit 0 (47 ms); dependency-rules-self-test: exit 0 (647 ms); dependency-rules: exit 0 (233 ms); plan-ledger: exit 0 (549 ms); clippy: exit 0 (1628 ms); tests: exit 0 (211644 ms); build: exit 0 (11028 ms); workspace tests passed: 1019",
     "focused_regressions": "cargo test -p desktop-gpui --lib image_upload: 17 passed (admission, reuse, sharing, counters, pool pruning)",
     "independent_gate": "first candidate 7fe5bad: Gate 92249c9f SUCCEEDED 8/8 with cleanup complete; this repaired candidate awaits its own Gate",
     "external_review": "round 1 on 7fe5bad: PASS 1 / 1 / 0 HOLD; both findings are repaired in this candidate and observed natively"

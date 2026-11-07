@@ -397,7 +397,18 @@ impl ImageViewer {
         self.tile_cancel.cancel();
         self.demand = None;
         self.serial = self.serial.saturating_add(1);
+        // Frames retired while this pane was live are timed by its own composed scenes, which stop
+        // advancing now. Moving them to the window clock costs two more composed frames, so the
+        // migration is never earlier than the rule it replaces - and it also covers a close with
+        // no current frame, which used to leave them waiting forever.
+        let window_scenes = self.service.composed_frames(self.window_id());
+        for retired in &mut self.retiring {
+            if let ReleaseClock::Pane(_) = retired.clock {
+                retired.clock = ReleaseClock::Window(window_scenes);
+            }
+        }
         let Some(frame) = self.current.take() else {
+            self.schedule_retirement(cx);
             return;
         };
         self.service.detach(&frame, self.consumer);
