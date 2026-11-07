@@ -1,0 +1,779 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-07",
+  "task": "MP-REC2",
+  "contract": "DC-MP-REC2",
+  "status": "OBSERVED_PHYSICAL_ENDPOINTS_HOLD",
+  "source_commit": "20ba348d5700090fc4047c623f5667abfa328d35",
+  "source_commit_note": "The native binary was built from this commit. This manifest and the plan record are added by a documentation-only successor commit; no source file changes after it.",
+  "executable_sha256": "bef69d7cc0fd18642a9bbe5bfb706a3912e75aa1bafd1e55bf4f3f891a9c8cf5",
+  "observer_sha256": "7c48c65af10781e1af1af009ee66d7e09024bd2a9c9ab07a7cff623ed8f4fa28",
+  "environment": {
+    "os": "Microsoft Windows 11 Pro 10.0.26300 build 26300",
+    "gpu": [
+      "NVIDIA GeForce RTX 2080 SUPER driver 32.0.16.1742"
+    ],
+    "ram_bytes": 34267746304,
+    "displays": {
+      "status": "NOT_MEASURED",
+      "reason": "Attach native display/window observations to the final manifest"
+    },
+    "true_cold": {
+      "status": "NOT_MEASURED",
+      "reason": "Fresh process only; no OS file cache/driver reset"
+    },
+    "thermal_frequency_background_controls": "Uncontrolled; record observed contention separately",
+    "sampled_interval_ms": 1000,
+    "process_clock": "Stopwatch/QPC with UTC bounds per sample"
+  },
+  "observation_scope": "Separate bounded lifetime workloads per variant; not the deferred R5 cross-variant performance/fairness comparison.",
+  "acceptance": "HOLD",
+  "hold_reason": "No supported public per-atlas allocation/removal, GPU completion/resource-lifetime or Present endpoint; correlated process and GPU gauges plus bounded refusal cannot prove physical residency or release.",
+  "interpretation_limits": [
+    "A completed scene is a CPU scene observation after a bounded delay, never GPU completion or Present.",
+    "Quarantine charges stay charged while a transfer is unproven; the final consumer withdrawal removes consumers, registry frames and retirement references, not those charges.",
+    "Process private/working-set and GPU gauges are attribution-limited samples of one process and adapter, including unrelated allocations.",
+    "Each workload is a fresh process, not an OS/driver cold state; other processes, driver, DWM, thermal and frequency behaviour are uncontrolled.",
+    "Flat sampled retention over 60 seconds does not establish a ratified numeric residency threshold."
+  ],
+  "percentiles": {
+    "reason": "Correlated gauge samples; no tail-latency certification",
+    "p95": null,
+    "p99": null
+  },
+  "endpoints": {
+    "process_memory": "Diagnostics.Process PrivateMemorySize64/WorkingSet64; process-wide, sampled, not allocator attribution",
+    "consumer_sets": "Sampled service count is a lower bound whenever consumer_unknown_frames is nonzero",
+    "gpu_memory": "PDH GPU Process Memory Dedicated Usage/Shared Usage/Total Committed summed across matching PID adapter instances; attribution-limited gauge",
+    "gpu_completion": {
+      "status": "NOT_MEASURED",
+      "reason": "Backend Ready and paint/drop calls are not GPU completion"
+    },
+    "encoded_and_decode_scratch": {
+      "status": "NOT_MEASURED",
+      "reason": "Source callback buffers and decoder scratch are transient; retained service bytes do not measure their peaks"
+    },
+    "atlas_allocations": {
+      "status": "NOT_MEASURED",
+      "reason": "No supported public per-atlas allocation/removal/completion endpoint"
+    },
+    "generation_resources": {
+      "status": "NOT_MEASURED",
+      "reason": "Native generation and service pool/wrapper counts are not physical GPU resource counts"
+    }
+  },
+  "campaigns": [
+    {
+      "campaign": "shared",
+      "variant": "shared",
+      "recovery": false,
+      "status": "OBSERVED",
+      "acceptance": "HOLD",
+      "runs": 5,
+      "observed_runs": 5,
+      "failures": [],
+      "final_consumer_release_observed_runs": 5,
+      "application_resources_empty_runs": 0,
+      "action_outcomes": {
+        "load_same_pair": {
+          "observations": 25,
+          "scene_complete": 5,
+          "pending_or_unavailable": 20,
+          "refused": 0,
+          "dispatch_only": 0
+        },
+        "replace_side_a": {
+          "observations": 25,
+          "scene_complete": 5,
+          "pending_or_unavailable": 20,
+          "refused": 0,
+          "dispatch_only": 0
+        },
+        "replace_side_b": {
+          "observations": 25,
+          "scene_complete": 5,
+          "pending_or_unavailable": 20,
+          "refused": 0,
+          "dispatch_only": 0
+        },
+        "swap": {
+          "observations": 25,
+          "scene_complete": 0,
+          "pending_or_unavailable": 0,
+          "refused": 0,
+          "dispatch_only": 25
+        },
+        "unavailable": {
+          "observations": 25,
+          "scene_complete": 0,
+          "pending_or_unavailable": 0,
+          "refused": 0,
+          "dispatch_only": 25
+        },
+        "reappear": {
+          "observations": 25,
+          "scene_complete": 0,
+          "pending_or_unavailable": 0,
+          "refused": 0,
+          "dispatch_only": 25
+        },
+        "compare_close": {
+          "observations": 25,
+          "scene_complete": 0,
+          "pending_or_unavailable": 0,
+          "refused": 0,
+          "dispatch_only": 25
+        },
+        "viewer_close": {
+          "observations": 25,
+          "scene_complete": 0,
+          "pending_or_unavailable": 0,
+          "refused": 0,
+          "dispatch_only": 25
+        },
+        "viewer_reload": {
+          "observations": 25,
+          "scene_complete": 0,
+          "pending_or_unavailable": 25,
+          "refused": 0,
+          "dispatch_only": 0
+        },
+        "compare_reopen": {
+          "observations": 25,
+          "scene_complete": 0,
+          "pending_or_unavailable": 25,
+          "refused": 0,
+          "dispatch_only": 0
+        },
+        "reload_side_a": {
+          "observations": 50,
+          "scene_complete": 0,
+          "pending_or_unavailable": 50,
+          "refused": 0,
+          "dispatch_only": 0
+        }
+      },
+      "retained_cpu_bytes_last": [
+        53673984,
+        53673984
+      ],
+      "retained_decoded_bytes_last": [
+        50331648,
+        50331648
+      ],
+      "retained_packed_bytes_last": [
+        3342336,
+        3342336
+      ],
+      "quarantined_payload_bytes_last": [
+        50331648,
+        50331648
+      ],
+      "quarantine_capacity_bytes": [
+        67108864,
+        67108864
+      ],
+      "upload_pools_last": [
+        3,
+        3
+      ],
+      "process_private_bytes_last_minus_first": [
+        25915392,
+        29622272
+      ],
+      "process_private_bytes_final_third_range": [
+        106496,
+        618496
+      ],
+      "process_working_set_bytes_last_minus_first": [
+        30388224,
+        34127872
+      ],
+      "gpu_dedicated_bytes_last_minus_first": [
+        -4202496,
+        -4194304
+      ],
+      "gpu_dedicated_bytes_final_third_range": [
+        0,
+        0
+      ],
+      "gpu_committed_bytes_last_minus_first": [
+        -5332992,
+        -5201920
+      ],
+      "manifest_sha256": "38306688ad4fb3284bdd4d2b60fd230ad5c03a501997a8060984bbe88a2c8fa8",
+      "analysis_sha256": "ab054ee043b672ecb5477e52fff0015d457f4dd0649fb97a10d59e923d2a1102"
+    },
+    {
+      "campaign": "independent",
+      "variant": "independent",
+      "recovery": false,
+      "status": "OBSERVED",
+      "acceptance": "HOLD",
+      "runs": 5,
+      "observed_runs": 5,
+      "failures": [],
+      "final_consumer_release_observed_runs": 5,
+      "application_resources_empty_runs": 0,
+      "action_outcomes": {
+        "load_same_pair": {
+          "observations": 25,
+          "scene_complete": 5,
+          "pending_or_unavailable": 20,
+          "refused": 0,
+          "dispatch_only": 0
+        },
+        "replace_side_a": {
+          "observations": 25,
+          "scene_complete": 0,
+          "pending_or_unavailable": 25,
+          "refused": 0,
+          "dispatch_only": 0
+        },
+        "replace_side_b": {
+          "observations": 25,
+          "scene_complete": 0,
+          "pending_or_unavailable": 25,
+          "refused": 0,
+          "dispatch_only": 0
+        },
+        "swap": {
+          "observations": 25,
+          "scene_complete": 0,
+          "pending_or_unavailable": 0,
+          "refused": 0,
+          "dispatch_only": 25
+        },
+        "unavailable": {
+          "observations": 25,
+          "scene_complete": 0,
+          "pending_or_unavailable": 0,
+          "refused": 0,
+          "dispatch_only": 25
+        },
+        "reappear": {
+          "observations": 25,
+          "scene_complete": 0,
+          "pending_or_unavailable": 0,
+          "refused": 0,
+          "dispatch_only": 25
+        },
+        "compare_close": {
+          "observations": 25,
+          "scene_complete": 0,
+          "pending_or_unavailable": 0,
+          "refused": 0,
+          "dispatch_only": 25
+        },
+        "viewer_close": {
+          "observations": 25,
+          "scene_complete": 0,
+          "pending_or_unavailable": 0,
+          "refused": 0,
+          "dispatch_only": 25
+        },
+        "viewer_reload": {
+          "observations": 25,
+          "scene_complete": 0,
+          "pending_or_unavailable": 25,
+          "refused": 0,
+          "dispatch_only": 0
+        },
+        "compare_reopen": {
+          "observations": 25,
+          "scene_complete": 0,
+          "pending_or_unavailable": 25,
+          "refused": 0,
+          "dispatch_only": 0
+        },
+        "reload_side_a": {
+          "observations": 50,
+          "scene_complete": 0,
+          "pending_or_unavailable": 50,
+          "refused": 0,
+          "dispatch_only": 0
+        }
+      },
+      "retained_cpu_bytes_last": [
+        53673984,
+        53673984
+      ],
+      "retained_decoded_bytes_last": [
+        50331648,
+        50331648
+      ],
+      "retained_packed_bytes_last": [
+        3342336,
+        3342336
+      ],
+      "quarantined_payload_bytes_last": [
+        50331648,
+        50331648
+      ],
+      "quarantine_capacity_bytes": [
+        67108864,
+        67108864
+      ],
+      "upload_pools_last": [
+        3,
+        3
+      ],
+      "process_private_bytes_last_minus_first": [
+        6823936,
+        10592256
+      ],
+      "process_private_bytes_final_third_range": [
+        106496,
+        593920
+      ],
+      "process_working_set_bytes_last_minus_first": [
+        11472896,
+        15089664
+      ],
+      "gpu_dedicated_bytes_last_minus_first": [
+        -4202496,
+        -4194304
+      ],
+      "gpu_dedicated_bytes_final_third_range": [
+        0,
+        0
+      ],
+      "gpu_committed_bytes_last_minus_first": [
+        -6389760,
+        -6291456
+      ],
+      "manifest_sha256": "9acfa16ca8cbcd4bb35d474af00b4cd740a79d2c120a9dbb1287abb357bb7192",
+      "analysis_sha256": "d965b0ebad89440109d612335675b3cf7178c2fa32801911b153d685cb5a7820"
+    },
+    {
+      "campaign": "distinct",
+      "variant": "distinct",
+      "recovery": false,
+      "status": "OBSERVED",
+      "acceptance": "HOLD",
+      "runs": 5,
+      "observed_runs": 5,
+      "failures": [],
+      "final_consumer_release_observed_runs": 5,
+      "application_resources_empty_runs": 0,
+      "action_outcomes": {
+        "load_same_pair": {
+          "observations": 25,
+          "scene_complete": 5,
+          "pending_or_unavailable": 20,
+          "refused": 0,
+          "dispatch_only": 0
+        },
+        "replace_side_a": {
+          "observations": 25,
+          "scene_complete": 5,
+          "pending_or_unavailable": 20,
+          "refused": 0,
+          "dispatch_only": 0
+        },
+        "replace_side_b": {
+          "observations": 25,
+          "scene_complete": 0,
+          "pending_or_unavailable": 25,
+          "refused": 0,
+          "dispatch_only": 0
+        },
+        "swap": {
+          "observations": 25,
+          "scene_complete": 0,
+          "pending_or_unavailable": 0,
+          "refused": 0,
+          "dispatch_only": 25
+        },
+        "unavailable": {
+          "observations": 25,
+          "scene_complete": 0,
+          "pending_or_unavailable": 0,
+          "refused": 0,
+          "dispatch_only": 25
+        },
+        "reappear": {
+          "observations": 25,
+          "scene_complete": 0,
+          "pending_or_unavailable": 0,
+          "refused": 0,
+          "dispatch_only": 25
+        },
+        "compare_close": {
+          "observations": 25,
+          "scene_complete": 0,
+          "pending_or_unavailable": 0,
+          "refused": 0,
+          "dispatch_only": 25
+        },
+        "viewer_close": {
+          "observations": 25,
+          "scene_complete": 0,
+          "pending_or_unavailable": 0,
+          "refused": 0,
+          "dispatch_only": 25
+        },
+        "viewer_reload": {
+          "observations": 25,
+          "scene_complete": 0,
+          "pending_or_unavailable": 25,
+          "refused": 0,
+          "dispatch_only": 0
+        },
+        "compare_reopen": {
+          "observations": 25,
+          "scene_complete": 0,
+          "pending_or_unavailable": 25,
+          "refused": 0,
+          "dispatch_only": 0
+        },
+        "reload_side_a": {
+          "observations": 50,
+          "scene_complete": 0,
+          "pending_or_unavailable": 50,
+          "refused": 0,
+          "dispatch_only": 0
+        }
+      },
+      "retained_cpu_bytes_last": [
+        53673984,
+        53673984
+      ],
+      "retained_decoded_bytes_last": [
+        50331648,
+        50331648
+      ],
+      "retained_packed_bytes_last": [
+        3342336,
+        3342336
+      ],
+      "quarantined_payload_bytes_last": [
+        50331648,
+        50331648
+      ],
+      "quarantine_capacity_bytes": [
+        67108864,
+        67108864
+      ],
+      "upload_pools_last": [
+        3,
+        3
+      ],
+      "process_private_bytes_last_minus_first": [
+        6512640,
+        7356416
+      ],
+      "process_private_bytes_final_third_range": [
+        114688,
+        528384
+      ],
+      "process_working_set_bytes_last_minus_first": [
+        11251712,
+        11927552
+      ],
+      "gpu_dedicated_bytes_last_minus_first": [
+        -4206592,
+        -4198400
+      ],
+      "gpu_dedicated_bytes_final_third_range": [
+        0,
+        0
+      ],
+      "gpu_committed_bytes_last_minus_first": [
+        -6619136,
+        -5451776
+      ],
+      "manifest_sha256": "2b0d6cc5626a2ea85a810c21d22cd48a0364c16653375c166dbd9403bf7e6971",
+      "analysis_sha256": "0311b2ed323c2f6af97557a25a9deb878bc16cd1b47bf01ef525f30ed161aa61"
+    },
+    {
+      "campaign": "windows2",
+      "variant": "windows2",
+      "recovery": false,
+      "status": "OBSERVED",
+      "acceptance": "HOLD",
+      "runs": 5,
+      "observed_runs": 5,
+      "failures": [],
+      "final_consumer_release_observed_runs": 5,
+      "application_resources_empty_runs": 0,
+      "action_outcomes": {
+        "load_same_pair": {
+          "observations": 25,
+          "scene_complete": 5,
+          "pending_or_unavailable": 20,
+          "refused": 0,
+          "dispatch_only": 0
+        },
+        "replace_side_a": {
+          "observations": 25,
+          "scene_complete": 0,
+          "pending_or_unavailable": 25,
+          "refused": 0,
+          "dispatch_only": 0
+        },
+        "replace_side_b": {
+          "observations": 25,
+          "scene_complete": 0,
+          "pending_or_unavailable": 25,
+          "refused": 0,
+          "dispatch_only": 0
+        },
+        "swap": {
+          "observations": 25,
+          "scene_complete": 0,
+          "pending_or_unavailable": 0,
+          "refused": 0,
+          "dispatch_only": 25
+        },
+        "unavailable": {
+          "observations": 25,
+          "scene_complete": 0,
+          "pending_or_unavailable": 0,
+          "refused": 0,
+          "dispatch_only": 25
+        },
+        "reappear": {
+          "observations": 25,
+          "scene_complete": 0,
+          "pending_or_unavailable": 0,
+          "refused": 0,
+          "dispatch_only": 25
+        },
+        "compare_close": {
+          "observations": 25,
+          "scene_complete": 0,
+          "pending_or_unavailable": 0,
+          "refused": 0,
+          "dispatch_only": 25
+        },
+        "viewer_close": {
+          "observations": 25,
+          "scene_complete": 0,
+          "pending_or_unavailable": 0,
+          "refused": 0,
+          "dispatch_only": 25
+        },
+        "viewer_reload": {
+          "observations": 25,
+          "scene_complete": 0,
+          "pending_or_unavailable": 25,
+          "refused": 0,
+          "dispatch_only": 0
+        },
+        "compare_reopen": {
+          "observations": 25,
+          "scene_complete": 0,
+          "pending_or_unavailable": 25,
+          "refused": 0,
+          "dispatch_only": 0
+        },
+        "reload_side_a": {
+          "observations": 50,
+          "scene_complete": 0,
+          "pending_or_unavailable": 50,
+          "refused": 0,
+          "dispatch_only": 0
+        }
+      },
+      "retained_cpu_bytes_last": [
+        53673984,
+        53673984
+      ],
+      "retained_decoded_bytes_last": [
+        50331648,
+        50331648
+      ],
+      "retained_packed_bytes_last": [
+        3342336,
+        3342336
+      ],
+      "quarantined_payload_bytes_last": [
+        50331648,
+        50331648
+      ],
+      "quarantine_capacity_bytes": [
+        67108864,
+        67108864
+      ],
+      "upload_pools_last": [
+        3,
+        3
+      ],
+      "process_private_bytes_last_minus_first": [
+        3702784,
+        32784384
+      ],
+      "process_private_bytes_final_third_range": [
+        122880,
+        25243648
+      ],
+      "process_working_set_bytes_last_minus_first": [
+        8400896,
+        37380096
+      ],
+      "gpu_dedicated_bytes_last_minus_first": [
+        -4214784,
+        -4132864
+      ],
+      "gpu_dedicated_bytes_final_third_range": [
+        0,
+        0
+      ],
+      "gpu_committed_bytes_last_minus_first": [
+        -5304320,
+        -5181440
+      ],
+      "manifest_sha256": "bf1f7628510c1268b2edc984a9f95486244786192b513c0d8ce6bf696cc259d1",
+      "analysis_sha256": "f7462917ab4a013baa18473bafa53241a47771eee615d3a3e9c986c841bdc7ea"
+    },
+    {
+      "campaign": "windows2-recovery",
+      "variant": "windows2",
+      "recovery": true,
+      "status": "OBSERVED",
+      "acceptance": "HOLD",
+      "runs": 5,
+      "observed_runs": 5,
+      "failures": [],
+      "final_consumer_release_observed_runs": 5,
+      "application_resources_empty_runs": 0,
+      "action_outcomes": {
+        "load_same_pair": {
+          "observations": 25,
+          "scene_complete": 5,
+          "pending_or_unavailable": 20,
+          "refused": 0,
+          "dispatch_only": 0
+        },
+        "replace_side_a": {
+          "observations": 25,
+          "scene_complete": 0,
+          "pending_or_unavailable": 5,
+          "refused": 20,
+          "dispatch_only": 0
+        },
+        "replace_side_b": {
+          "observations": 25,
+          "scene_complete": 0,
+          "pending_or_unavailable": 5,
+          "refused": 20,
+          "dispatch_only": 0
+        },
+        "swap": {
+          "observations": 25,
+          "scene_complete": 0,
+          "pending_or_unavailable": 0,
+          "refused": 20,
+          "dispatch_only": 5
+        },
+        "unavailable": {
+          "observations": 25,
+          "scene_complete": 0,
+          "pending_or_unavailable": 0,
+          "refused": 20,
+          "dispatch_only": 5
+        },
+        "reappear": {
+          "observations": 25,
+          "scene_complete": 0,
+          "pending_or_unavailable": 0,
+          "refused": 20,
+          "dispatch_only": 5
+        },
+        "compare_close": {
+          "observations": 25,
+          "scene_complete": 0,
+          "pending_or_unavailable": 0,
+          "refused": 0,
+          "dispatch_only": 25
+        },
+        "viewer_close": {
+          "observations": 25,
+          "scene_complete": 0,
+          "pending_or_unavailable": 0,
+          "refused": 0,
+          "dispatch_only": 25
+        },
+        "viewer_reload": {
+          "observations": 25,
+          "scene_complete": 0,
+          "pending_or_unavailable": 25,
+          "refused": 0,
+          "dispatch_only": 0
+        },
+        "compare_reopen": {
+          "observations": 25,
+          "scene_complete": 0,
+          "pending_or_unavailable": 25,
+          "refused": 0,
+          "dispatch_only": 0
+        },
+        "recovery_fail": {
+          "observations": 25,
+          "scene_complete": 0,
+          "pending_or_unavailable": 0,
+          "refused": 0,
+          "dispatch_only": 25
+        },
+        "recovery_recreate_and_close": {
+          "observations": 25,
+          "scene_complete": 0,
+          "pending_or_unavailable": 0,
+          "refused": 0,
+          "dispatch_only": 25
+        }
+      },
+      "retained_cpu_bytes_last": [
+        53673984,
+        53673984
+      ],
+      "retained_decoded_bytes_last": [
+        50331648,
+        50331648
+      ],
+      "retained_packed_bytes_last": [
+        3342336,
+        3342336
+      ],
+      "quarantined_payload_bytes_last": [
+        67108864,
+        67108864
+      ],
+      "quarantine_capacity_bytes": [
+        67108864,
+        67108864
+      ],
+      "upload_pools_last": [
+        4,
+        4
+      ],
+      "process_private_bytes_last_minus_first": [
+        69255168,
+        73216000
+      ],
+      "process_private_bytes_final_third_range": [
+        66629632,
+        68235264
+      ],
+      "process_working_set_bytes_last_minus_first": [
+        21172224,
+        25206784
+      ],
+      "gpu_dedicated_bytes_last_minus_first": [
+        -18903040,
+        -18886656
+      ],
+      "gpu_dedicated_bytes_final_third_range": [
+        5246976,
+        34791424
+      ],
+      "gpu_committed_bytes_last_minus_first": [
+        -8433664,
+        -8384512
+      ],
+      "manifest_sha256": "51cce25103eff1a94249d23ea9284981608f2b97e348977c497d48e95091ea9a",
+      "analysis_sha256": "2cae3727ee2649950abaf403a039405f78a6d37524952a31c38c4a1e3c0ad213"
+    }
+  ]
+}
