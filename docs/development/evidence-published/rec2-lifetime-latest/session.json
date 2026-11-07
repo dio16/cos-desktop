@@ -4,9 +4,9 @@
   "task": "MP-REC2",
   "contract": "DC-MP-REC2",
   "status": "OBSERVED_PHYSICAL_ENDPOINTS_HOLD",
-  "source_commit": "20ba348d5700090fc4047c623f5667abfa328d35",
+  "source_commit": "8b3cc3fcdc7a99028c9f0e14313ddb0ca28566f7",
   "source_commit_note": "The native binary was built from this commit. This manifest and the plan record are added by a documentation-only successor commit; no source file changes after it.",
-  "executable_sha256": "bef69d7cc0fd18642a9bbe5bfb706a3912e75aa1bafd1e55bf4f3f891a9c8cf5",
+  "executable_sha256": "91378bd581a599a312d8d4ed0ad863f461391678a279aef7e5c48fe87fd17ecb",
   "observer_sha256": "7c48c65af10781e1af1af009ee66d7e09024bd2a9c9ab07a7cff623ed8f4fa28",
   "environment": {
     "os": "Microsoft Windows 11 Pro 10.0.26300 build 26300",
@@ -37,22 +37,12 @@
     "Flat sampled retention over 60 seconds does not establish a ratified numeric residency threshold."
   ],
   "percentiles": {
-    "reason": "Correlated gauge samples; no tail-latency certification",
     "p95": null,
+    "reason": "Correlated gauge samples; no tail-latency certification",
     "p99": null
   },
   "endpoints": {
-    "process_memory": "Diagnostics.Process PrivateMemorySize64/WorkingSet64; process-wide, sampled, not allocator attribution",
     "consumer_sets": "Sampled service count is a lower bound whenever consumer_unknown_frames is nonzero",
-    "gpu_memory": "PDH GPU Process Memory Dedicated Usage/Shared Usage/Total Committed summed across matching PID adapter instances; attribution-limited gauge",
-    "gpu_completion": {
-      "status": "NOT_MEASURED",
-      "reason": "Backend Ready and paint/drop calls are not GPU completion"
-    },
-    "encoded_and_decode_scratch": {
-      "status": "NOT_MEASURED",
-      "reason": "Source callback buffers and decoder scratch are transient; retained service bytes do not measure their peaks"
-    },
     "atlas_allocations": {
       "status": "NOT_MEASURED",
       "reason": "No supported public per-atlas allocation/removal/completion endpoint"
@@ -60,6 +50,16 @@
     "generation_resources": {
       "status": "NOT_MEASURED",
       "reason": "Native generation and service pool/wrapper counts are not physical GPU resource counts"
+    },
+    "process_memory": "Diagnostics.Process PrivateMemorySize64/WorkingSet64; process-wide, sampled, not allocator attribution",
+    "gpu_completion": {
+      "status": "NOT_MEASURED",
+      "reason": "Backend Ready and paint/drop calls are not GPU completion"
+    },
+    "gpu_memory": "PDH GPU Process Memory Dedicated Usage/Shared Usage/Total Committed summed across matching PID adapter instances; attribution-limited gauge",
+    "encoded_and_decode_scratch": {
+      "status": "NOT_MEASURED",
+      "reason": "Source callback buffers and decoder scratch are transient; retained service bytes do not measure their peaks"
     }
   },
   "campaigns": [
@@ -178,20 +178,20 @@
         3
       ],
       "process_private_bytes_last_minus_first": [
-        25915392,
-        29622272
+        26333184,
+        42663936
       ],
       "process_private_bytes_final_third_range": [
-        106496,
-        618496
+        675840,
+        29986816
       ],
       "process_working_set_bytes_last_minus_first": [
-        30388224,
-        34127872
+        30801920,
+        44232704
       ],
       "gpu_dedicated_bytes_last_minus_first": [
         -4202496,
-        -4194304
+        -4202496
       ],
       "gpu_dedicated_bytes_final_third_range": [
         0,
@@ -201,8 +201,8 @@
         -5332992,
         -5201920
       ],
-      "manifest_sha256": "38306688ad4fb3284bdd4d2b60fd230ad5c03a501997a8060984bbe88a2c8fa8",
-      "analysis_sha256": "ab054ee043b672ecb5477e52fff0015d457f4dd0649fb97a10d59e923d2a1102"
+      "manifest_sha256": "d74cfc563f4a0d50d1f82b2a550c6d3c6e547961dc11ca9fa9d45eac6169c8f6",
+      "analysis_sha256": "a3ca3c029ed31e9ce9c8c55849ca1f33fac3d8577b1c865b638ff44881bcb1d9"
     },
     {
       "campaign": "independent",
@@ -319,31 +319,31 @@
         3
       ],
       "process_private_bytes_last_minus_first": [
-        6823936,
-        10592256
+        6082560,
+        7188480
       ],
       "process_private_bytes_final_third_range": [
-        106496,
-        593920
+        114688,
+        135168
       ],
       "process_working_set_bytes_last_minus_first": [
-        11472896,
-        15089664
+        10952704,
+        11882496
       ],
       "gpu_dedicated_bytes_last_minus_first": [
         -4202496,
-        -4194304
+        -4202496
       ],
       "gpu_dedicated_bytes_final_third_range": [
         0,
         0
       ],
       "gpu_committed_bytes_last_minus_first": [
-        -6389760,
-        -6291456
+        -6299648,
+        -6299648
       ],
-      "manifest_sha256": "9acfa16ca8cbcd4bb35d474af00b4cd740a79d2c120a9dbb1287abb357bb7192",
-      "analysis_sha256": "d965b0ebad89440109d612335675b3cf7178c2fa32801911b153d685cb5a7820"
+      "manifest_sha256": "95bd358180a5d422b81b5b52c526b1dd545843a1c1843b0bccd07f5cdcb84b5f",
+      "analysis_sha256": "5ec2d74ada994b47a0ed80224dc3dcc5894cea69de4fb993afbc50b66c2b4c10"
     },
     {
       "campaign": "distinct",
@@ -460,31 +460,31 @@
         3
       ],
       "process_private_bytes_last_minus_first": [
-        6512640,
-        7356416
+        6721536,
+        35622912
       ],
       "process_private_bytes_final_third_range": [
-        114688,
-        528384
+        118784,
+        25378816
       ],
       "process_working_set_bytes_last_minus_first": [
-        11251712,
-        11927552
+        11214848,
+        40108032
       ],
       "gpu_dedicated_bytes_last_minus_first": [
         -4206592,
-        -4198400
+        -4206592
       ],
       "gpu_dedicated_bytes_final_third_range": [
         0,
         0
       ],
       "gpu_committed_bytes_last_minus_first": [
-        -6619136,
-        -5451776
+        -6754304,
+        -6504448
       ],
-      "manifest_sha256": "2b0d6cc5626a2ea85a810c21d22cd48a0364c16653375c166dbd9403bf7e6971",
-      "analysis_sha256": "0311b2ed323c2f6af97557a25a9deb878bc16cd1b47bf01ef525f30ed161aa61"
+      "manifest_sha256": "2a3d415e696cec1fd7cfa41280d4043ecc86973599faf15c86e104d590cb0c7a",
+      "analysis_sha256": "2c3e07d13ba7325f410332cebe3e6e9456f43d64f0eac00939126ea9c4d60c8a"
     },
     {
       "campaign": "windows2",
@@ -601,19 +601,19 @@
         3
       ],
       "process_private_bytes_last_minus_first": [
-        3702784,
-        32784384
+        6905856,
+        20365312
       ],
       "process_private_bytes_final_third_range": [
-        122880,
-        25243648
+        49152,
+        12648448
       ],
       "process_working_set_bytes_last_minus_first": [
-        8400896,
-        37380096
+        11677696,
+        24600576
       ],
       "gpu_dedicated_bytes_last_minus_first": [
-        -4214784,
+        -4198400,
         -4132864
       ],
       "gpu_dedicated_bytes_final_third_range": [
@@ -621,11 +621,11 @@
         0
       ],
       "gpu_committed_bytes_last_minus_first": [
-        -5304320,
+        -5308416,
         -5181440
       ],
-      "manifest_sha256": "bf1f7628510c1268b2edc984a9f95486244786192b513c0d8ce6bf696cc259d1",
-      "analysis_sha256": "f7462917ab4a013baa18473bafa53241a47771eee615d3a3e9c986c841bdc7ea"
+      "manifest_sha256": "9db22e8b3de3f2c7fef7c006a558d404a98180a698c0a89929739522405f6e1c",
+      "analysis_sha256": "80b053cf3899e03d81ceb1edb25af1ca149495bc389cf70e90d6d600eccbe081"
     },
     {
       "campaign": "windows2-recovery",
@@ -749,31 +749,31 @@
         4
       ],
       "process_private_bytes_last_minus_first": [
-        69255168,
-        73216000
+        8273920,
+        75063296
       ],
       "process_private_bytes_final_third_range": [
-        66629632,
-        68235264
+        61210624,
+        69025792
       ],
       "process_working_set_bytes_last_minus_first": [
-        21172224,
-        25206784
+        16846848,
+        21897216
       ],
       "gpu_dedicated_bytes_last_minus_first": [
-        -18903040,
-        -18886656
+        -18898944,
+        -18821120
       ],
       "gpu_dedicated_bytes_final_third_range": [
         5246976,
-        34791424
+        5267456
       ],
       "gpu_committed_bytes_last_minus_first": [
-        -8433664,
-        -8384512
+        -8445952,
+        -8204288
       ],
-      "manifest_sha256": "51cce25103eff1a94249d23ea9284981608f2b97e348977c497d48e95091ea9a",
-      "analysis_sha256": "2cae3727ee2649950abaf403a039405f78a6d37524952a31c38c4a1e3c0ad213"
+      "manifest_sha256": "fec99e06a48f1460bc8f8aa6048474f86a6cb951b1f8ab9a67b07d90f0f662ea",
+      "analysis_sha256": "0aa1bc07caba82fcc55f021f1de9747fd7ae98eaf03c3733ff7e5969eaa391cb"
     }
   ]
 }
