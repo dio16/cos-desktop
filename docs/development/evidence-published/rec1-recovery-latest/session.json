@@ -1,0 +1,241 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-07",
+  "task": "MP-REC1",
+  "contract": "DC-MP-REC1",
+  "status": "OBSERVED_BACKEND_RECREATION_PHYSICAL_RESET_HOLD",
+  "source_commit": "8a71c8da7ff7f2368c41ab1423ffaeb43aaa7041",
+  "source_commit_note": "Binaries were built from a clean checkout of this commit. This manifest is added by a later commit that changes only documentation and evidence files; the code tree is unchanged between them.",
+  "gpui_pin": {
+    "repository": "https://github.com/dio16/zed",
+    "branch": "cos-desktop-recovery",
+    "revision": "bf1429a63e9d04fec0eb49464cb97bbfcb39d5e6",
+    "parent": "395def7a067b32ed598fcb3f048969ada9b54942",
+    "files_changed": 7,
+    "published": true
+  },
+  "build": {
+    "profile": "release",
+    "command": "cargo build --locked --release -p cos-desktop --features gpu-recovery-test --examples",
+    "features": [
+      "gpu-recovery-test"
+    ],
+    "target_dir": "C:/dev/cos-build-rec1",
+    "binary_sha256": {
+      "image_upload": "d76387d71c3b71f7221eb5046c1355aa4a57ac27a1244bc9dd6e143ee49582ed",
+      "image_viewer": "648e9475658f01f73cb37e1d04049a8346ed64280d54fbff55790afa06da6533",
+      "compare": "7dd1e244269a036cdbc4a4f5a98bf8c8a77a7674b216815bccc3bbb0c6affc94"
+    },
+    "binaries": [
+      {
+        "path": "C:/dev/cos-build-rec1/release/examples/image_upload.exe",
+        "sha256": "d76387d71c3b71f7221eb5046c1355aa4a57ac27a1244bc9dd6e143ee49582ed"
+      },
+      {
+        "path": "C:/dev/cos-build-rec1/release/examples/image_viewer.exe",
+        "sha256": "648e9475658f01f73cb37e1d04049a8346ed64280d54fbff55790afa06da6533"
+      },
+      {
+        "path": "C:/dev/cos-build-rec1/release/examples/compare.exe",
+        "sha256": "7dd1e244269a036cdbc4a4f5a98bf8c8a77a7674b216815bccc3bbb0c6affc94"
+      }
+    ]
+  },
+  "environment": {
+    "os": "Microsoft Windows 11 Pro 10.0.26300",
+    "gpu": "NVIDIA GeForce RTX 2080 SUPER, driver 32.0.16.1742 (2026-09-30)",
+    "displays": [
+      {
+        "name": "MSI MAG341CQ",
+        "width": 3440,
+        "height": 1440,
+        "scale": 1,
+        "primary": true
+      },
+      {
+        "name": "RDT272WX",
+        "width": 1920,
+        "height": 1080,
+        "scale": 1,
+        "primary": false
+      }
+    ],
+    "method": "Window screenshots and accessibility-tree text captured through the host desktop session; window titles are OS-drawn and stay readable when GPU drawing is unavailable."
+  },
+  "runs": [
+    {
+      "id": "upload",
+      "binary": "image_upload.exe",
+      "argv": [
+        "--fixture"
+      ],
+      "steps": [
+        {
+          "action": "Load current revision",
+          "observed": "image painted; native generation 1; 16/16 tiles in the composed scene",
+          "capture": "captures/01-upload-generation-1-painted.png"
+        },
+        {
+          "action": "Backend: Recreate",
+          "observed": "window title \"MP-IMG3 Fixture upload feasibility — GPU復旧中\"; generation advanced",
+          "capture": "captures/02-upload-recovering.png"
+        },
+        {
+          "action": "Load current revision (after recovery)",
+          "observed": "native generation 2; image painted again; no stale picture was kept during the transition",
+          "capture": "captures/03-upload-generation-2-painted.png"
+        },
+        {
+          "action": "Backend: Fail",
+          "observed": "window title \"… — GPU表示不可: アプリを再起動してください\"; client area drawn black; window still accepted input",
+          "capture": "captures/04-upload-unavailable.png"
+        },
+        {
+          "action": "Backend: Recreate then Load current revision",
+          "observed": "native generation 4 Ready; this probe retains no backup, so its next load was refused with \"Fixture unavailable: RetainedFrameLimit\" after the quarantine ledger filled",
+          "capture": "captures/05-upload-recovered-generation-3-painted.png"
+        }
+      ],
+      "limitations": "The probe keeps no recovery backup and paints every transfer, so its own re-admission is charged each time; the refusal is the explicit ledger state, not a stale picture."
+    },
+    {
+      "id": "viewer",
+      "binary": "image_viewer.exe",
+      "argv": [
+        "--fixture"
+      ],
+      "steps": [
+        {
+          "action": "zoom to 37.4%",
+          "observed": "physical display scale 37.4%, cropped region",
+          "capture": "captures/06-viewer-zoomed-before-recovery.png"
+        },
+        {
+          "action": "Backend: Recreate",
+          "observed": "title \"MP-IMG5 Local Fixture Viewer — GPU復旧中\" during the transition",
+          "capture": null
+        },
+        {
+          "action": "after recovery",
+          "observed": "same 37.4% camera and the same crop restored; decoder count did not grow (retained CPU pixels were re-bound)",
+          "capture": "captures/07-viewer-restored-after-recovery.png"
+        }
+      ],
+      "limitations": "One transition observed in this run; repeated transitions are bounded by the 32 MiB quarantine ledger (MP-REC2)."
+    },
+    {
+      "id": "compare-two-windows",
+      "binary": "compare.exe",
+      "argv": [
+        "--fixture",
+        "--windows2"
+      ],
+      "steps": [
+        {
+          "action": "initial",
+          "observed": "both windows render A/B panes at 23.2%",
+          "capture": "captures/08-compare-window1-before-recovery.png, captures/09-compare-window2-before-recovery.png"
+        },
+        {
+          "action": "Backend: Recreate in window 1",
+          "observed": "both windows reported \"GPU復旧中\" for the same generation, proving one shared platform generation",
+          "capture": null
+        },
+        {
+          "action": "after recovery",
+          "observed": "both windows restored A/B at 23.2%",
+          "capture": "captures/10-compare-window1-after-recovery.png, captures/11-compare-window2-after-recovery.png"
+        },
+        {
+          "action": "Backend: Fail in window 1",
+          "observed": "both windows reported \"GPU表示不可: アプリを再起動してください\"; input still accepted",
+          "capture": "captures/12-compare-unavailable.png"
+        },
+        {
+          "action": "Backend: Recreate then observe",
+          "observed": "panes reported \"画像を利用できません: 保持上限に達したため、この画像を保持できません。\" with diagnostics retained_frames=0 consumers=0 cpu=35782656 B packed=2228224 B: the unproven-transfer ledger was full, so no unsafe release happened",
+          "capture": "captures/13-compare-after-failure-recreate.png"
+        }
+      ],
+      "limitations": "Two windows x repeated transitions exhaust the 32 MiB quarantine ledger. The refusal is explicit and no stale picture is shown; plateau/release accounting belongs to MP-REC2."
+    }
+  ],
+  "observations": [
+    "Recovering is reported before device teardown and Ready only after the shared device, text resources and every window renderer were rebuilt.",
+    "A controlled recreation failure leaves the message loop responsive and states the restart requirement in the native window title even though GPU drawing is unavailable.",
+    "No stale picture was published after any transition; panes that could not re-admit stated the reason instead.",
+    "Compare with two windows observed one shared generation, not a per-window counter."
+  ],
+  "not_measured": [
+    "Actual OS GPU/driver reset: HOLD (the hooks rebuild backend resources only).",
+    "GPU completion, residency and Present: NOT_MEASURED.",
+    "IME, UIA quality and mixed-DPI: NOT_RUN (both connected displays report scale 1)."
+  ],
+  "captures": [
+    {
+      "file": "captures/01-upload-generation-1-painted.png",
+      "sha256": "851eda2fc0bcde4a6117d5170bc3f07f1bb5e9cbf9a468fb9465d4357f74657c",
+      "bytes": 172776
+    },
+    {
+      "file": "captures/02-upload-recovering.png",
+      "sha256": "fac5b6577c3806211d43e1f9961d548b6627fa2ee2b7355b26eaf39242104e1b",
+      "bytes": 171712
+    },
+    {
+      "file": "captures/03-upload-generation-2-painted.png",
+      "sha256": "dc3884019710734c004d4634141848d361cadff883f2711ff7807a533cf7992a",
+      "bytes": 173139
+    },
+    {
+      "file": "captures/04-upload-unavailable.png",
+      "sha256": "9e919c26267dd6ccf7d07b106bcb1eee74a32f4d59f12dbead581bbfc4c9cd22",
+      "bytes": 28549
+    },
+    {
+      "file": "captures/05-upload-recovered-generation-3-painted.png",
+      "sha256": "ff7def9d12fa854177a782e1e4c8da2e3fc858f31c2a4332359d1a4cf166f4d2",
+      "bytes": 161844
+    },
+    {
+      "file": "captures/06-viewer-zoomed-before-recovery.png",
+      "sha256": "bf35e3249d70c75e201351af2c35d4fe450a1999a03b73f73adef40e4f70492d",
+      "bytes": 103583
+    },
+    {
+      "file": "captures/07-viewer-restored-after-recovery.png",
+      "sha256": "6fb17a49ea45860b3001867caafe6f95ee0a91fa5a5788b691d137ed33653a69",
+      "bytes": 102857
+    },
+    {
+      "file": "captures/08-compare-window1-before-recovery.png",
+      "sha256": "b39ce082690f2183d0c36e3afb1c7e2c5fc16fface5b2042f917167351b8224e",
+      "bytes": 165724
+    },
+    {
+      "file": "captures/09-compare-window2-before-recovery.png",
+      "sha256": "7ce4401be17c97e748328be70ce487d5e98a522050b07457ee75e78c0e2ba06c",
+      "bytes": 165454
+    },
+    {
+      "file": "captures/10-compare-window1-after-recovery.png",
+      "sha256": "21710dd4042e378a5ca42e49f51776eeaed21ac1aae14c630b344332f26a1b5e",
+      "bytes": 161068
+    },
+    {
+      "file": "captures/11-compare-window2-after-recovery.png",
+      "sha256": "7ce4401be17c97e748328be70ce487d5e98a522050b07457ee75e78c0e2ba06c",
+      "bytes": 165454
+    },
+    {
+      "file": "captures/12-compare-unavailable.png",
+      "sha256": "0f31c10541aff6910b7b3f130dfef8021b47a833beb9c70948ac1360825a75f8",
+      "bytes": 34522
+    },
+    {
+      "file": "captures/13-compare-after-failure-recreate.png",
+      "sha256": "e9a449b0da8173ba857bbd24f0b6bc0f27c20cca4191ab2df74d75233e68a092",
+      "bytes": 148360
+    }
+  ]
+}
