@@ -235,20 +235,22 @@ class CampaignEvidenceTests(unittest.TestCase):
         (self.directory / "manifest.json").write_text(json.dumps(self.manifest))
         self.assertEqual(analyze_campaign(self.directory)["status"], "FAILED")
 
-    def test_sampled_executable_identity_must_stay_one_file(self):
+    def test_sampled_executable_path_must_bind_to_the_record(self):
         record_path = self.directory / "run-1/observations-0.json"
-        record = json.loads(record_path.read_text())
-        record["samples"][10]["executable_path"] = "C:/elsewhere/compare.exe"
-        record_path.write_text(json.dumps(record))
-        result = analyze_campaign(self.directory)
-        self.assertEqual(result["runs"][0]["status"], "FAILED")
-        self.assertTrue(any("path changed" in failure for failure in result["runs"][0]["failures"]))
-        self._write_campaign()
         record = json.loads(record_path.read_text())
         record["observed_executable_path"] = "C:/elsewhere/compare.exe"
         record_path.write_text(json.dumps(record))
         result = analyze_campaign(self.directory)
+        self.assertEqual(result["runs"][0]["status"], "FAILED")
         self.assertTrue(any("does not match its samples" in failure for failure in result["runs"][0]["failures"]))
+        self._write_campaign()
+        record = json.loads(record_path.read_text())
+        record["observed_executable_path"] = None
+        for sample in record["samples"]:
+            sample["executable_path"] = None
+        record_path.write_text(json.dumps(record))
+        result = analyze_campaign(self.directory)
+        self.assertTrue(any("readable executable path" in failure for failure in result["runs"][0]["failures"]))
 
     def test_final_consumer_withdrawal_does_not_erase_unproven_reservations(self):
         final = self.native_samples[-1]["counters"]

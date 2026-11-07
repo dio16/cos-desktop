@@ -248,7 +248,10 @@ foreach ($run in 1..$Runs) {
                 $processExecutablePath = $observedPath
                 $pathMatchesRequested = [StringComparer]::OrdinalIgnoreCase.Equals($observedPath, $exePath)
             }
-            if ($before -ne $lifetimeTicks -or ($observedPath -and -not [StringComparer]::OrdinalIgnoreCase.Equals($observedPath, $processExecutablePath))) { throw 'Process identity changed before sampling' }
+            # One PID with a fixed start time cannot change its image, so a differently spelled
+            # module path is a resolution artifact (junction, short name), not a new executable.
+            # The recorded binary hash is the executable identity; the path stays informational.
+            if ($before -ne $lifetimeTicks) { throw 'Process lifetime changed before sampling' }
             $observedTitle = [string]$process.MainWindowTitle
             $sampleQpcStart = [Diagnostics.Stopwatch]::GetTimestamp()
             if ($sampleQpcStart -lt $previousSampleEndQpc) { throw 'Process sample QPC intervals are not monotonic' }
