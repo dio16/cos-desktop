@@ -4,8 +4,8 @@
   "task": "MP-REC1",
   "contract": "DC-MP-REC1",
   "status": "OBSERVED_BACKEND_RECREATION_PHYSICAL_RESET_HOLD",
-  "source_commit": "93ff31f9fefb6353c736594664abd40a80b83a78",
-  "source_commit_note": "Binaries were built from a clean checkout of this commit. This manifest is updated by a later documentation-and-evidence-only commit; `git diff --name-only 93ff31f..HEAD` lists no source files.",
+  "source_commit": "fa55073529f12448d7085eb4c8f74b3a85aacf5c",
+  "source_commit_note": "Binaries were built from a clean checkout of this commit. This manifest is updated by a later documentation-and-evidence-only commit; `git diff --name-only fa55073..HEAD` lists no source files.",
   "gpui_pin": {
     "repository": "https://github.com/dio16/zed",
     "branch": "cos-desktop-recovery",
@@ -22,25 +22,25 @@
     ],
     "target_dir": "C:/dev/cos-build-rec1",
     "binary_sha256": {
-      "image_upload": "0daad1c8b789bd306638e9000e0e548eb81a2e11371a7241fa55972a6d8da6c2",
-      "image_viewer": "2497e381fa600d80c57cb723fd32f7cdde29548b4c2425773d9e045aadbc209a",
-      "compare": "13a6da351afd539a1c95fa253882b8f5624c24bbded0fe940dd908f20e30671d"
+      "image_upload": "f7ab282bf80bd85e6befedf46ae8e35d63b275d0f8e7e9b132f287fa26fc25d9",
+      "image_viewer": "d8099ac0ca04fc81acd573c31e7aa04da554644bcf29bb8d688f2f6970d9d0be",
+      "compare": "3e1a9e584bce0b18680261f280452232c2c13390a7694c115d67635f016c1aaf"
     },
     "binaries": [
       {
         "id": "image_upload",
         "path": "C:/dev/cos-build-rec1/release/examples/image_upload.exe",
-        "sha256": "0daad1c8b789bd306638e9000e0e548eb81a2e11371a7241fa55972a6d8da6c2"
+        "sha256": "f7ab282bf80bd85e6befedf46ae8e35d63b275d0f8e7e9b132f287fa26fc25d9"
       },
       {
         "id": "image_viewer",
         "path": "C:/dev/cos-build-rec1/release/examples/image_viewer.exe",
-        "sha256": "2497e381fa600d80c57cb723fd32f7cdde29548b4c2425773d9e045aadbc209a"
+        "sha256": "d8099ac0ca04fc81acd573c31e7aa04da554644bcf29bb8d688f2f6970d9d0be"
       },
       {
         "id": "compare",
         "path": "C:/dev/cos-build-rec1/release/examples/compare.exe",
-        "sha256": "13a6da351afd539a1c95fa253882b8f5624c24bbded0fe940dd908f20e30671d"
+        "sha256": "3e1a9e584bce0b18680261f280452232c2c13390a7694c115d67635f016c1aaf"
       }
     ]
   },
@@ -69,7 +69,7 @@
     {
       "id": "upload",
       "binary": "image_upload.exe",
-      "binary_sha256": "0daad1c8b789bd306638e9000e0e548eb81a2e11371a7241fa55972a6d8da6c2",
+      "binary_sha256": "f7ab282bf80bd85e6befedf46ae8e35d63b275d0f8e7e9b132f287fa26fc25d9",
       "argv": [
         "--fixture"
       ],
@@ -110,7 +110,7 @@
     {
       "id": "viewer",
       "binary": "image_viewer.exe",
-      "binary_sha256": "2497e381fa600d80c57cb723fd32f7cdde29548b4c2425773d9e045aadbc209a",
+      "binary_sha256": "d8099ac0ca04fc81acd573c31e7aa04da554644bcf29bb8d688f2f6970d9d0be",
       "argv": [
         "--fixture"
       ],
@@ -137,7 +137,7 @@
     {
       "id": "compare-two-windows",
       "binary": "compare.exe",
-      "binary_sha256": "13a6da351afd539a1c95fa253882b8f5624c24bbded0fe940dd908f20e30671d",
+      "binary_sha256": "3e1a9e584bce0b18680261f280452232c2c13390a7694c115d67635f016c1aaf",
       "argv": [
         "--fixture",
         "--windows2"
@@ -193,23 +193,23 @@
     },
     {
       "file": "captures/02-upload-recovering.png",
-      "sha256": "844c61638170423cdf373a989317e5b7315102a0940d24eee3569a16841d620a",
-      "bytes": 173905
+      "sha256": "fac5b6577c3806211d43e1f9961d548b6627fa2ee2b7355b26eaf39242104e1b",
+      "bytes": 171712
     },
     {
       "file": "captures/03-upload-generation-2-painted.png",
-      "sha256": "dc3884019710734c004d4634141848d361cadff883f2711ff7807a533cf7992a",
-      "bytes": 173139
+      "sha256": "2709c8cd3cc84e5cb8db2c3e38b7ad5cd6a05b6510e728a0bb0cf6ec731e2cc4",
+      "bytes": 171682
     },
     {
       "file": "captures/04-upload-unavailable.png",
-      "sha256": "6f94215fb232a98af29c615ed2cf63a7606fb3376d3cb9a49f5d5219bb611f9d",
-      "bytes": 30388
+      "sha256": "9e919c26267dd6ccf7d07b106bcb1eee74a32f4d59f12dbead581bbfc4c9cd22",
+      "bytes": 28549
     },
     {
       "file": "captures/05-upload-after-failure-recreate-refused.png",
-      "sha256": "afc3e1d39b1e3ea2538ddb7fc1c5031136235c31b329ac399a77fb841b6d44ed",
-      "bytes": 160586
+      "sha256": "f9bd784c113a5d56ad3d098e93092bb0ec2f56601c4c1d0226f5307b68576f33",
+      "bytes": 161541
     },
     {
       "file": "captures/06-viewer-zoomed-before-recovery.png",
@@ -223,8 +223,8 @@
     },
     {
       "file": "captures/08-compare-window1-before-recovery.png",
-      "sha256": "7d19ca51a538ae9c23e0f152511bdc933056d048b7fade92a44c22c65ea488a4",
-      "bytes": 165650
+      "sha256": "f4a632eaf4c53592120a598df9389dfe1d57e35c2b7b327363d9aa7e6653f328",
+      "bytes": 165634
     },
     {
       "file": "captures/09-compare-window2-before-recovery.png",
