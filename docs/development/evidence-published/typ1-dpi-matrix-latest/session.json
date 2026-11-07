@@ -1,0 +1,205 @@
+{
+  "task": "MP-TYP1",
+  "contract": "DC-MP-TYP1",
+  "slice": "identity-bound capture path at fractional DPI (capture-path repair) and current-scale regression attempt",
+  "status": "CODE_FIX_VERIFIED_NATIVE_96DPI_BLOCKED_BY_APP_STARTUP",
+  "recorded_local": "2026-11-08T03:16:00+09:00",
+  "execution_baseline": "2652f20f7fd99f77adbd865cb10002d5a7d595f6",
+  "execution_baseline_scope": "dev, clean worktree apart from the three devtools files below; no product, token, layout, harness dependency or canonical contract changed",
+  "branch": "dev",
+  "taskern": {
+    "note": "No new Taskern packet was compiled for this bounded repair; the slice reuses the MP-TYP1 card/DC-MP-TYP1 and the linked next-task directive. No packet SHA is claimed."
+  },
+
+  "host_display": {
+    "observed": {
+      "foreground_window_dpi": 96,
+      "system_dpi": 96,
+      "scale": 1.0,
+      "method": "ctypes user32 GetDpiForWindow(GetForegroundWindow()) and GetDpiForSystem",
+      "screen_pixels": "3440x1440",
+      "observed_local": "2026-11-08T02:47:00+09:00"
+    },
+    "os_display_setting_changed": false,
+    "consequence": "The host is at 100 % today. A 120 DPI window is not reachable without changing an OS display setting, which this task prohibits, so the 120 DPI pixel row is NOT_MEASURED in this run; 125 % evidence exists only in the earlier AX5 measurement cited below."
+  },
+
+  "defect": {
+    "statement": "The typography observer ran the shared probe with no display scale. The probe host (Windows PowerShell 5.1) is DPI-unaware, so at a fractional display scale GetWindowRect/GetSystemMetrics stay in the DIP frame (1296x839 at (858,222)) while the display is physical (1620x1049 at (1072,278) at 125 %). The 7x7 display cross-check therefore compared two coordinate spaces and the capture was refused at 43 of 49 samples, below the required 45. The repair's measured effect (AX5: the same probe with the explicit 1.25 frame settles at 46/49) supports the mixed frame as the source of at least three of the six disagreements; 19.94's residual 'six disagreeing samples are not attributed' limitation still applies to the remaining three.",
+    "prior_evidence": {
+      "plan": "docs/development/IMPLEMENTATION_MASTER_PLAN.md 19.93 (HOLD_SCALE_CONFIRMED_CAPTURE_REFUSED) and 19.94 (coordinate-space divergence SUPPORTED, refusal mechanism NOT_DIAGNOSED)",
+      "probe_dpi_measurement": "19.94: Graphics.FromHwnd(IntPtr.Zero).DpiX = 96 while the target window's GetDpiForWindow = 120",
+      "measured_125_geometry": {
+        "source": "docs/development/evidence-published/ax5-probe-scale-latest/session.json",
+        "dip_rect": {"left": 858, "top": 222, "width": 1296, "height": 839},
+        "physical_rect": {"left": 1072, "top": 278, "width": 1620, "height": 1049},
+        "dpi": 120,
+        "legacy_mapping_refused": {"samples": 49, "matched": 43, "reason": "WINDOW_OCCLUDED"},
+        "explicit_1_25_mapping_observed": {"samples": 49, "matched": 46, "runs": 4, "png": "1296x839", "observer_runs_with_identical_png_digest": 3},
+        "mismatched_scale_negative_control_at_96_dpi": {"scale": 1.25, "matched": 11, "reason": "WINDOW_OCCLUDED"}
+      }
+    }
+  },
+
+  "repair": {
+    "public_json": true,
+    "files": [
+      {
+        "path": "apps/desktop/devtools/r0/n03_probe.ps1",
+        "sha256": "a3461321de6ca32df839073b665f62361f2f551e82bf677d49389cf5e09c28f0",
+        "change": "GetDpiForWindow P/Invoke; when -DpiScale is not bound the probe derives the scale from the captured window's own DPI / 96 and records dpi_scale_source=window_dpi and window_dpi in geometry; an explicit -DpiScale still wins; unusable DPI is a closed DPI_UNAVAILABLE refusal; the derived value is range-checked like the explicit one"
+      },
+      {
+        "path": "apps/desktop/devtools/typography/host_observe.py",
+        "sha256": "23b0ca6183d0f001eb38b890ea90d66222885346ca88896de47fbc029a62dd76",
+        "change": "resolves the same HWND's scale (GetDpiForWindow/96) before validating the probe record; verify_probe_scale requires geometry.dpi_scale to equal that scale (DPI_SCALE_MISMATCH otherwise) and the DIP/physical rectangles to follow the banker's rounding the probe uses; refused captures keep their bounded sample statistics; an accepted capture records the frame geometry inside its identity"
+      },
+      {
+        "path": "apps/desktop/devtools/typography/tests/test_host_observe.py",
+        "sha256": "d2d2ca69345c05ff05a5f7ff135316bf72e6bb5538dad7354cb507f05c1b10a0",
+        "change": "7 new hermetic cases: 1.0 and 1.25 rect-to-physical mapping; a 1.25 record accepted in its DIP bitmap frame; a legacy 1.0 record refused at 1.25 with DPI_SCALE_MISMATCH and the image deleted; physical_rect and DIP-sized bitmap enforcement; missing geometry schema refusal; retained refusal sample counts"
+      }
+    ],
+    "unchanged_gates": {
+      "display_samples": 49,
+      "required_matches": 45,
+      "rgb_tolerance": 24,
+      "identity_rechecks": ["bound PrintWindow HWND", "handle/pid/title/rect equality", "still_current", "live Win32 re-verification"],
+      "blank_and_malformed_refusals": true,
+      "no_raise_focus_zorder_or_foreground_grant": true,
+      "os_display_setting_changed": false
+    },
+    "r0_impact": "apps/desktop/devtools/r0/native_observe.py always passes an explicit -DpiScale (default 1.0), so the R0 path keeps the exact legacy frame; no R0 file, manifest, threshold or pinned digest was changed. The probe's new default affects only callers that pass no scale, such as the typography observer and the documented raw probe invocation."
+  },
+
+  "tests": [
+    {
+      "command": "python -B -m unittest discover -s apps/desktop/devtools/typography/tests -p test_*.py",
+      "result": "Ran 78 tests, OK",
+      "exit_code": 0,
+      "count_before": 71
+    },
+    {
+      "command": "python -B -m unittest discover -s apps/desktop/devtools/r0/tests -p test_n03_observe.py",
+      "result": "Ran 19 tests, OK (skipped=1)",
+      "exit_code": 0,
+      "note": "same shared-probe suite baseline as 19.94; proves the shared probe change did not regress the R0 observer contract"
+    },
+    {
+      "command": "powershell -NoProfile -Command Parser::ParseFile('apps/desktop/devtools/r0/n03_probe.ps1')",
+      "result": "PARSE_OK",
+      "exit_code": 0
+    }
+  ],
+
+  "tests_reverified_after_restore": {
+    "local": "2026-11-08T08:32:00+09:00",
+    "tool": "pwsh (the restricted-Bash tool is no longer registered in this session)",
+    "typography": "Ran 78 tests, OK",
+    "r0_n03": "Ran 19 tests, OK (skipped=1)"
+  },
+
+  "probe_contract_smoke_at_96_dpi": {
+    "purpose": "Execute the repaired derivation/geometry path on a real 96 DPI window without launching COS Desktop. Read-only PrintWindow capture of an already-visible local window; no raise/focus/z-order/input, no OS setting change. This is capture-path evidence, not MP-TYP1 typography evidence.",
+    "runs": [
+      {
+        "target": "an already-visible local Windows settings window",
+        "screenshot_status": "NOT_MEASURED",
+        "reason": "WINDOW_CAPTURE_EMPTY",
+        "samples": 49,
+        "matched": 43,
+        "tolerance": 24,
+        "geometry": {"dpi_scale": 1.0, "dpi_scale_source": "window_dpi", "window_dpi": 96, "dip_rect": {"left": 1101, "top": 90, "width": 1775, "height": 1032}, "physical_rect": {"left": 1101, "top": 90, "width": 1775, "height": 1032}},
+        "observation": "derived scale and geometry are emitted at the host scale; a refused capture still carries the sample count (the new bounded passthrough)"
+      },
+      {
+        "target": "an already-visible local Electron-based application window (title withheld from this published record)",
+        "screenshot_status": "OBSERVED",
+        "samples": 49,
+        "matched": 49,
+        "tolerance": 24,
+        "distinct_sampled_colors": 20,
+        "non_black_samples": 49,
+        "geometry": {"dpi_scale": 1.0, "dpi_scale_source": "window_dpi", "window_dpi": 96, "dip_rect": {"left": -8, "top": -8, "width": 3456, "height": 1408}, "physical_rect": {"left": -8, "top": -8, "width": 3456, "height": 1408}, "physical_visible": {"left": 0, "top": -8, "width": 3448, "height": 1408}},
+        "observation": "the derived-scale path yields an accepted identity-bound capture at the current 96 DPI display with 49/49 agreement in one frame"
+      }
+    ],
+    "png": "the smoke PNG is intentionally not published (it is not the COS Desktop shell and not typography evidence)"
+  },
+
+  "native_cos_desktop_attempts": [
+    {
+      "attempt": 1,
+      "command": "python -B apps/desktop/devtools/typography/host_observe.py --out C:/tmp/typ1-native-run1",
+      "result": "WINDOW_NOT_FOUND (no window appeared); app.log: 'COS Desktop instance ownership unavailable; startup refused (open-lock-file)'",
+      "screenshot": null
+    },
+    {
+      "attempt": 2,
+      "command": "... --out C:/tmp/typ1-native-run2",
+      "result": "WINDOW_NOT_FOUND; same open-lock-file startup refusal",
+      "screenshot": null
+    },
+    {
+      "attempt": 3,
+      "command": "LOCALAPPDATA=C:/tmp/typ1-native/localappdata python -B ... --out C:/tmp/typ1-native-run3",
+      "result": "WINDOW_NOT_FOUND; app.log: 'startup refused (create-directory)'",
+      "screenshot": null
+    },
+    {
+      "attempt": 4,
+      "what": "startup matrix of the clean-rebuilt debug binary under a held C:/tmp/cos-desktop-native.lock",
+      "result": "isolated C:/tmp profile -> create-directory; shared default profile -> open-lock-file; a pre-created workspace profile -> 'thread main has overflowed its stack' after creating the profile directory; identical results after cargo clean -p cos-desktop and a rebuild with TEMP/TMP inside target",
+      "screenshot": null
+    },
+    {
+      "attempt": 5,
+      "what": "retained release binary target/release/cos-desktop.exe sha256 45274b90f9bb97e3e63a7914e8d9e510e8ee697fafa0483839d2fd888e577a7d (mtime 2026-11-04) with an isolated workspace profile",
+      "result": "process started and stayed alive at 6 s; not used for evidence because its source provenance is not bound to the current HEAD",
+      "screenshot": null
+    }
+  ],
+
+  "app_startup_failure": {
+    "status": "NOT_DIAGNOSED_FROM_THIS_SESSION",
+    "evidence": "the same OpenOptions sequence (share_mode 0x3, FILE_FLAG_OPEN_REPARSE_POINT, read+write+create) executed by a standalone Rust program on the identical paths succeeds: shared-profile lock OPEN_OK, C:/tmp directory creation MKDIR_OK, workspace directory LOCK_OK. The application still refuses with open-lock-file / create-directory, so the cause is inside the application process or its launch context, not the OS call or the account. No product source was changed and no workaround was applied.",
+    "possible_related_observation": "a fresh (empty) application profile overflows the main-thread stack at startup in the current debug build; a seeded preferences.json does not change it. Both symptoms are outside this task's write scope and are reported for the owning lanes."
+  },
+
+  "analysis_for_120_dpi": {
+    "mapping": "physical = round(dip * scale) with .NET Math.Round (half to even); the probe maps each display sample back into the DIP bitmap with round(px / scale) and clamps to the bitmap. At 1.25 the measured geometry is left 1072.5 -> 1072, top 277.5 -> 278, height 1048.75 -> 1049, matching the AX5 record.",
+    "why_43_49": "with the legacy 1.0 frame the bitmap is still DIP-sized while the display samples are physical; 43 of the 49 sample pairs agree and 6 disagree, so the threshold (45) correctly refused the image.",
+    "why_46_49": "with the 1.25 frame the display sample is mapped back into the DIP bitmap and 46 of 49 pairs agree (AX5 measured this deterministically: 4/4 raw runs and 3/3 observer runs with one PNG digest). Three pairs still disagree; their origin is not attributed here and does not affect the unchanged 45/49 gate.",
+    "repair_effect": "the typography observer now receives that frame automatically from GetDpiForWindow(window)/96; the hermetic tests accept a 1.25 record with the measured geometry and refuse the legacy 1.0 record at the same scale.",
+    "not_measured_here": "no new 120 DPI pixel result: the host is at 96 DPI and changing it is prohibited. The AX5 125 % numbers are cited as prior evidence from the same probe, not re-executed."
+  },
+
+  "unexpected_environment_blocker": {
+    "resolved": true,
+    "resolved_local": "2026-11-08T08:30:00+09:00",
+    "resolution": "the Operator restored the missing Niubash payload (niu.exe size/sha256 verified); the restricted-Bash tool is no longer registered in this session, so the final runs and the commit were executed through PowerShell",
+    "what": "After 2026-11-08T03:00+09:00 every Ops Bash call failed with EXECUTOR_UNAVAILABLE: the private Niubash runtime could not be prepared because niu.exe was missing from C:/Users/diobrando/.dsh/profiles/desktop/node_modules/dsh-ops/runtime/win32-x64/niubash/ (expected 14545408 bytes, sha256 7ec3ec04ce91bae64c23d7150e6b16574e9d91df8fcf0df997006e2b37bf2f1e); the same file was absent from the home provisioned path and from every other location searched. This was an environment/tooling failure, not an authorization denial.",
+    "effect_on_this_slice": "work stopped for about five hours; after restoration the two suites were re-run green and the three source files plus this record were committed together. This record does not self-reference its own candidate SHA; the SHA is reported in the team report.",
+    "repair_needed": "restore the pinned Niubash payload (reinstall/provision dsh-ops or restore niu.exe with the recorded size/hash). DONE by the Operator."
+  },
+
+  "known_limits": [
+    "No 120 DPI pixel result in this run; the host is at 100 % and the OS display setting was not changed.",
+    "No COS Desktop 96 DPI capture in this run: the current debug binary refuses startup before any window exists (open-lock-file / create-directory), and a clean rebuild did not change it.",
+    "The 96 DPI probe smoke used a foreign window; it validates the repaired derivation and frame path, not the COS Desktop shell, and is not typography acceptance.",
+    "The retained release binary was exercised only for diagnosis and is not source-bound to HEAD; no evidence is taken from it.",
+    "MP-TYP1, DD-04b adoption, R1 exit, the 150/175/200 % ladder, High Contrast and product/release acceptance are unchanged."
+  ],
+
+  "acceptance_mapping": {
+    "code_fix_and_tests": "MET in the worktree (78/78 typography, 19/19 R0 n03, PARSE_OK)",
+    "existing_gates_preserved": "MET by construction and tests (49 samples, 45 required, tolerance 24, identity re-checks, blank/malformed refusals, no raise/focus/z-order, no OS setting change)",
+    "hermetic_regression_tests": "MET (7 new cases at 1.0/1.25 plus refusal reasons and deletion)",
+    "native_current_scale_capture": "NOT_MEASURED (host 96 DPI; 120 unreachable without an OS change; COS Desktop startup refused) - exact causes recorded above",
+    "evidence_json": "THIS FILE",
+    "commit": "INCLUDED IN THE CANDIDATE COMMIT (SHA reported in the team report)"
+  },
+
+  "declares_mptyp1_complete": false,
+  "statement": "Capture-path repair only. This record does not claim a 120 DPI pixel result, MP-TYP1 completion, DD-04b adoption or product acceptance."
+}

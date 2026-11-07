@@ -27,6 +27,13 @@ revision therefore refuses any capture that is not provably the target window:
                  zlib stream must be complete (`eof`, no unused data, no unconsumed tail),
                  and the image file is read with a hard cap so an oversized screenshot is
                  refused before it is loaded.
+    scale        the probe derives the display scale from the same target window's DPI
+                 (`GetDpiForWindow`/96) and samples the display in that frame; the
+                 record's reported `geometry.dpi_scale`, DIP rectangle and physical
+                 rectangle must equal the scale read from the live HWND here. A capture
+                 mapped with the wrong frame (a DIP rectangle compared against a physical
+                 display at a fractional scale) is refused as `DPI_SCALE_MISMATCH`,
+                 never accepted as an image.
     title        the window title must equal the pinned `COS Desktop`; a different or
                  missing title is refused, never recorded as whatever was found.
 
@@ -54,7 +61,8 @@ Closed error vocabulary (never a traceback):
     ARGS, ARGS_EXE, EXE_MISSING, OUT_EXISTS, LAUNCH_FAILED, PROBE_FAILED,
     PROBE_TIMEOUT, WINDOW_NOT_FOUND, RECORD_READ, RECORD_SCHEMA,
     SCREENSHOT_MISMATCH, PNG_INVALID, DPI_UNAVAILABLE, STOP_FAILED, WRITE_FAILED,
-    CAPTURE_NOT_BOUND, CAPTURE_IDENTITY_MISMATCH, CAPTURE_CONTENT_MISMATCH
+    CAPTURE_NOT_BOUND, CAPTURE_IDENTITY_MISMATCH, CAPTURE_CONTENT_MISMATCH,
+    DPI_SCALE_MISMATCH
 
 Everything this process cannot establish stays NOT_MEASURED with a reason and a human
 procedure; nothing here declares MP-TYP1 complete.
@@ -105,6 +113,7 @@ CAPTURE_REJECTION_CODES = frozenset(
         "PNG_TOO_LARGE",
         "SCREENSHOT_MISMATCH",
         "SCREENSHOT_GEOMETRY_MISMATCH",
+        "DPI_SCALE_MISMATCH",
     }
 )
 REFUSAL_CODES = frozenset(
@@ -120,6 +129,7 @@ REFUSAL_CODES = frozenset(
         "PNG_TOO_LARGE",
         "SCREENSHOT_MISMATCH",
         "SCREENSHOT_GEOMETRY_MISMATCH",
+        "DPI_SCALE_MISMATCH",
         "WINDOW_TITLE_MISMATCH",
     }
 )
@@ -151,6 +161,7 @@ ERROR_CODES = (
     "SCREENSHOT_MISMATCH",
     "PNG_INVALID",
     "DPI_UNAVAILABLE",
+    "DPI_SCALE_MISMATCH",
     "STOP_FAILED",
     "WRITE_FAILED",
     "CAPTURE_NOT_BOUND",
@@ -629,7 +640,70 @@ def _rect(window: dict[str, Any]) -> dict[str, int]:
     }
 
 
-def validate_probe_record(document: dict[str, Any], pid: int, screenshot: Path) -> dict[str, Any]:
+REFUSED_CONTENT_KEYS = (
+    "samples",
+    "matched",
+    "tolerance",
+    "distinct_sampled_colors",
+    "non_black_samples",
+)
+
+
+def scaled_rect(rect: dict[str, Any], scale: float) -> dict[str, int]:
+    """Map a DIP rectangle into the probe's physical display frame.
+
+    The probe rounds with .NET `Math.Round` (banker's rounding, its default) and Python's
+    `round` rounds half to even the same way, so both frames are directly comparable.
+    """
+    return {
+        "left": round(rect["left"] * scale),
+        "top": round(rect["top"] * scale),
+        "width": round(rect["width"] * scale),
+        "height": round(rect["height"] * scale),
+    }
+
+
+def refused_content(shot: dict[str, Any]) -> dict[str, Any]:
+    """The probe's bounded cross-check statistics, kept when a capture is refused."""
+    content = shot.get("content")
+    if not isinstance(content, dict):
+        return {}
+    kept = {key: content[key] for key in REFUSED_CONTENT_KEYS if key in content}
+    return {"content": kept} if kept else {}
+
+
+def verify_probe_scale(
+    shot: dict[str, Any], window: dict[str, Any], expected_scale: float
+) -> None:
+    """Refuse a capture whose sample mapping used a different display frame (pure).
+
+    The probe owns the sample arithmetic; this check holds it to the scale of the same
+    HWND read here, so a DIP rectangle can never be compared against a physical display
+    at a fractional scale and still be recorded as an image.
+    """
+    content = shot.get("content_cross_check")
+    geometry = content.get("geometry") if isinstance(content, dict) else None
+    if not isinstance(geometry, dict):
+        fail("RECORD_SCHEMA")
+    reported = geometry.get("dpi_scale")
+    if type(reported) not in (int, float) or not math.isfinite(reported):
+        fail("RECORD_SCHEMA")
+    if abs(float(reported) - expected_scale) > 1e-9:
+        fail("DPI_SCALE_MISMATCH")
+    expected_dip = _rect(window)
+    if geometry.get("dip_rect") != expected_dip:
+        fail("SCREENSHOT_GEOMETRY_MISMATCH")
+    if geometry.get("physical_rect") != scaled_rect(expected_dip, expected_scale):
+        fail("SCREENSHOT_GEOMETRY_MISMATCH")
+    visible = content.get("visible_region")
+    if isinstance(visible, dict):
+        if geometry.get("physical_visible") != scaled_rect(visible, expected_scale):
+            fail("SCREENSHOT_GEOMETRY_MISMATCH")
+
+
+def validate_probe_record(
+    document: dict[str, Any], pid: int, screenshot: Path, expected_scale: float
+) -> dict[str, Any]:
     """Validate the probe record; a capture-level rejection is returned as a closed record.
 
     Window schema/title failures still raise (there is no usable window to record), but a
@@ -637,6 +711,12 @@ def validate_probe_record(document: dict[str, Any], pid: int, screenshot: Path) 
     the single disposition point can delete the file and record the closed code.
     """
     if not isinstance(document, dict) or document.get("ok") is not True:
+        fail("RECORD_SCHEMA")
+    if (
+        type(expected_scale) not in (int, float)
+        or not math.isfinite(expected_scale)
+        or expected_scale <= 0
+    ):
         fail("RECORD_SCHEMA")
     window = _window(document.get("window"))
     shot = document.get("screenshot")
@@ -654,12 +734,17 @@ def validate_probe_record(document: dict[str, Any], pid: int, screenshot: Path) 
             fail("RECORD_SCHEMA")
         return {
             "window": window,
-            "screenshot": {"status": "NOT_MEASURED", "reason": shot["reason"]},
+            "screenshot": {
+                "status": "NOT_MEASURED",
+                "reason": shot["reason"],
+                **refused_content(shot),
+            },
             "uia": uia,
         }
     if shot.get("status") != "OBSERVED":
         fail("RECORD_SCHEMA")
     try:
+        verify_probe_scale(shot, window, float(expected_scale))
         data = read_bounded(screenshot)
         width, height = png_dimensions_verified(data)
         if (width, height) != (shot.get("width"), shot.get("height")):
@@ -748,6 +833,7 @@ def verify_capture_identity(
             "distinct_sampled_colors": colors,
             "non_black_samples": non_black,
             "visible_region": cross.get("visible_region"),
+            "geometry": cross.get("geometry"),
             "method": cross.get("method"),
         },
         "live_reverification": "IsWindow, GetWindowThreadProcessId, GetWindowTextW and "
@@ -847,7 +933,10 @@ def resolve_screenshot(shot: dict[str, Any], wait: dict[str, Any]) -> dict[str, 
         }
     if shot.get("status") == "OBSERVED":
         return shot
-    return {"status": "NOT_MEASURED", "reason": shot.get("reason")}
+    resolved = {"status": "NOT_MEASURED", "reason": shot.get("reason")}
+    if isinstance(shot.get("content"), dict):
+        resolved["content"] = shot["content"]
+    return resolved
 
 
 def discard_capture(path: Path, wait: dict[str, Any]) -> None:
@@ -1305,11 +1394,15 @@ def main(argv: list[str] | None = None) -> int:
         document = observe_window(
             args.powershell, probe, process.pid, screenshot
         )
-        observed = validate_probe_record(document, process.pid, screenshot)
+        if not isinstance(document, dict):
+            fail("RECORD_SCHEMA")
+        scale = host_scale(_window(document.get("window"))["handle"])
+        observed = validate_probe_record(
+            document, process.pid, screenshot, scale["scale"]
+        )
         observed, binding, _refusal = dispose_capture(
             observed, wait, process.pid, screenshot
         )
-        scale = host_scale(observed["window"]["handle"])
         analysis = analyze_elements(observed["uia"]["elements"])
         stop_record = stop(process)
         process = None

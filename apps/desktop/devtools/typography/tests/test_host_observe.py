@@ -114,6 +114,37 @@ RECT = {"left": 10, "top": 20, "width": 640, "height": 480}
 LIVE = {"status": "OBSERVED", "pid": 4242, "title": observe.EXPECTED_TITLE, "rect": dict(RECT)}
 
 
+def cross_check(
+    width: int = 640,
+    height: int = 480,
+    left: int = 10,
+    top: int = 20,
+    scale: float = 1.0,
+    samples: int = 49,
+    matched: int = 49,
+) -> dict:
+    dip = {"left": left, "top": top, "width": width, "height": height}
+    physical = observe.scaled_rect(dip, scale)
+    return {
+        "status": "OBSERVED",
+        "method": "bound capture versus display over the on-screen region",
+        "samples": samples,
+        "matched": matched,
+        "tolerance": 24,
+        "distinct_sampled_colors": 5,
+        "non_black_samples": 49,
+        "visible_region": dict(dip),
+        "geometry": {
+            "dpi_scale": scale,
+            "dpi_scale_source": "window_dpi",
+            "window_dpi": int(round(scale * 96)),
+            "dip_rect": dict(dip),
+            "physical_rect": dict(physical),
+            "physical_visible": dict(physical),
+        },
+    }
+
+
 def captured(**overrides) -> dict:
     value = {
         "status": "OBSERVED",
@@ -126,16 +157,7 @@ def captured(**overrides) -> dict:
         "title": observe.EXPECTED_TITLE,
         "rect": dict(RECT),
         "still_current": True,
-        "content_cross_check": {
-            "status": "OBSERVED",
-            "method": "bound capture versus display over the on-screen region",
-            "samples": 49,
-            "matched": 49,
-            "tolerance": 24,
-            "distinct_sampled_colors": 5,
-            "non_black_samples": 49,
-            "visible_region": {"left": 10, "top": 20, "width": 640, "height": 480},
-        },
+        "content_cross_check": cross_check(),
     }
     value.update(overrides)
     return value
@@ -369,6 +391,7 @@ class ProbeRecordTest(unittest.TestCase):
                 "width": width,
                 "height": height,
                 "bytes": 64,
+                "content_cross_check": cross_check(width=width, height=height),
             },
             "uia": {
                 "status": "OBSERVED",
@@ -387,7 +410,7 @@ class ProbeRecordTest(unittest.TestCase):
             screenshot.write_bytes(png(640, 480))
             expected_digest = observe.sha256_bytes(screenshot.read_bytes())
             observed = observe.validate_probe_record(
-                self._record(640, 480), 4242, screenshot
+                self._record(640, 480), 4242, screenshot, 1.0
             )
         self.assertEqual(observed["screenshot"]["ihdr"], {"width": 640, "height": 480})
         self.assertEqual(observed["screenshot"]["digest"], expected_digest)
@@ -399,7 +422,7 @@ class ProbeRecordTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             screenshot = Path(directory) / "screenshot.png"
             screenshot.write_bytes(png(641, 480))
-            observed = observe.validate_probe_record(record, 4242, screenshot)
+            observed = observe.validate_probe_record(record, 4242, screenshot, 1.0)
         self.assertEqual(observed["screenshot"]["status"], "NOT_MEASURED")
         self.assertEqual(observed["refused"], "SCREENSHOT_GEOMETRY_MISMATCH")
 
@@ -408,7 +431,7 @@ class ProbeRecordTest(unittest.TestCase):
             screenshot = Path(directory) / "screenshot.png"
             screenshot.write_bytes(png(640, 480)[:-200])
             observed = observe.validate_probe_record(
-                self._record(640, 480), 4242, screenshot
+                self._record(640, 480), 4242, screenshot, 1.0
             )
         self.assertIn(observed["refused"], ("PNG_TRUNCATED", "PNG_UNDECODABLE"))
 
@@ -419,7 +442,7 @@ class ProbeRecordTest(unittest.TestCase):
                 screenshot.write_bytes(png(640, 480))
                 with self.assertRaises(observe.ObserveError) as raised:
                     observe.validate_probe_record(
-                        self._record(640, 480, title), 4242, screenshot
+                        self._record(640, 480, title), 4242, screenshot, 1.0
                     )
             self.assertEqual(raised.exception.code, "WINDOW_TITLE_MISMATCH")
 
@@ -428,7 +451,7 @@ class ProbeRecordTest(unittest.TestCase):
         record["screenshot"] = {"status": "NOT_MEASURED", "reason": "WINDOW_OCCLUDED"}
         with tempfile.TemporaryDirectory() as directory:
             observed = observe.validate_probe_record(
-                record, 4242, Path(directory) / "absent.png"
+                record, 4242, Path(directory) / "absent.png", 1.0
             )
         self.assertEqual(observed["screenshot"]["status"], "NOT_MEASURED")
         self.assertEqual(observed["screenshot"]["reason"], "WINDOW_OCCLUDED")
@@ -444,7 +467,7 @@ class ProbeRecordTest(unittest.TestCase):
             screenshot = Path(directory) / "screenshot.png"
             screenshot.write_bytes(png(640, 480))
             with self.assertRaises(observe.ObserveError) as raised:
-                observe.validate_probe_record(self._record(640, 480), 9999, screenshot)
+                observe.validate_probe_record(self._record(640, 480), 9999, screenshot, 1.0)
         self.assertEqual(raised.exception.code, "RECORD_SCHEMA")
 
     def test_an_existing_output_directory_is_refused_before_launch(self) -> None:
@@ -453,6 +476,183 @@ class ProbeRecordTest(unittest.TestCase):
             code = observe.main(["--exe", __file__, "--out", directory])
         self.assertEqual(code, 1)
         self.assertEqual(json.loads(stdout.getvalue())["error"], "OUT_EXISTS")
+
+
+class ScaleFrameTest(unittest.TestCase):
+    """Rect-versus-bitmap frame at 100 % and at the measured 125 % geometry.
+
+    At a fractional display scale the probe host is DPI-unaware: GetWindowRect and the
+    captured bitmap stay in the DIP frame (1296x839) while the display is physical
+    (1620x1049). The probe maps only the display sample through the window's own DPI;
+    a record whose mapping used the 1.0 frame must never be accepted as an image.
+    """
+
+    DIP_125 = {"left": 858, "top": 222, "width": 1296, "height": 839}
+    PHYSICAL_125 = {"left": 1072, "top": 278, "width": 1620, "height": 1049}
+
+    def _window_125(self) -> dict:
+        return dict(WINDOW, left=858, top=222, width=1296, height=839)
+
+    def _uia(self) -> dict:
+        return {
+            "status": "OBSERVED",
+            "reason": "",
+            "elements": [element("Task Rail")],
+            "focused": None,
+            "truncated": False,
+            "depth_limited": False,
+            "elements_visited": 1,
+        }
+
+    def _record_125(self, scale: float = 1.25, matched: int = 46) -> dict:
+        return {
+            "ok": True,
+            "window": self._window_125(),
+            "screenshot": {
+                "status": "OBSERVED",
+                "width": 1296,
+                "height": 839,
+                "bytes": 64,
+                "method": observe.BOUND_CAPTURE_METHOD,
+                "handle": 7,
+                "pid": 4242,
+                "title": observe.EXPECTED_TITLE,
+                "rect": dict(self.DIP_125),
+                "still_current": True,
+                "content_cross_check": cross_check(
+                    width=1296,
+                    height=839,
+                    left=858,
+                    top=222,
+                    scale=scale,
+                    matched=matched,
+                ),
+            },
+            "uia": self._uia(),
+        }
+
+    def test_the_measured_125_percent_geometry_is_the_scaled_dip_frame(self) -> None:
+        self.assertEqual(observe.scaled_rect(self.DIP_125, 1.25), self.PHYSICAL_125)
+        # At 100 % the frame is the identity, so the legacy path is untouched.
+        self.assertEqual(observe.scaled_rect(RECT, 1.0), RECT)
+
+    def test_a_125_percent_capture_is_accepted_in_its_dip_bitmap_frame(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            screenshot = Path(directory) / "screenshot.png"
+            screenshot.write_bytes(png(1296, 839))
+            observed = observe.validate_probe_record(
+                self._record_125(), 4242, screenshot, 1.25
+            )
+        shot = observed["screenshot"]
+        self.assertEqual(shot["status"], "OBSERVED")
+        self.assertEqual(shot["ihdr"], {"width": 1296, "height": 839})
+        self.assertEqual(
+            shot["raw"]["content_cross_check"]["geometry"]["dpi_scale"], 1.25
+        )
+        self.assertEqual(
+            shot["raw"]["content_cross_check"]["geometry"]["dpi_scale_source"],
+            "window_dpi",
+        )
+        identity = observe.verify_capture_identity(
+            shot["raw"],
+            self._window_125(),
+            4242,
+            {
+                "status": "OBSERVED",
+                "pid": 4242,
+                "title": observe.EXPECTED_TITLE,
+                "rect": dict(self.DIP_125),
+            },
+        )
+        self.assertEqual(
+            identity["content_cross_check"]["geometry"]["dpi_scale"], 1.25
+        )
+        self.assertEqual(
+            identity["content_cross_check"]["geometry"]["physical_rect"],
+            self.PHYSICAL_125,
+        )
+
+    def test_a_legacy_1_0_frame_is_refused_at_125_percent_and_the_image_deleted(self) -> None:
+        record = self._record_125(scale=1.0)
+        with tempfile.TemporaryDirectory() as directory:
+            screenshot = Path(directory) / "screenshot.png"
+            screenshot.write_bytes(png(1296, 839))
+            observed = observe.validate_probe_record(record, 4242, screenshot, 1.25)
+            self.assertEqual(observed["refused"], "DPI_SCALE_MISMATCH")
+            observed, _binding, refusal = observe.dispose_capture(
+                observed, {"outcome": "NOT_REQUESTED"}, 4242, screenshot
+            )
+            self.assertFalse(screenshot.exists())
+        self.assertEqual(refusal, "DPI_SCALE_MISMATCH")
+        self.assertEqual(observed["screenshot"]["status"], "NOT_MEASURED")
+        self.assertEqual(observed["screenshot"]["reason"], "DPI_SCALE_MISMATCH")
+        self.assertNotIn("path", observed["screenshot"])
+        self.assertNotIn("digest", observed["screenshot"])
+
+    def test_the_physical_rectangle_must_follow_the_recorded_scale(self) -> None:
+        record = self._record_125()
+        record["screenshot"]["content_cross_check"]["geometry"]["physical_rect"] = dict(
+            self.DIP_125
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            screenshot = Path(directory) / "screenshot.png"
+            screenshot.write_bytes(png(1296, 839))
+            observed = observe.validate_probe_record(record, 4242, screenshot, 1.25)
+        self.assertEqual(observed["refused"], "SCREENSHOT_GEOMETRY_MISMATCH")
+
+    def test_the_capture_bitmap_stays_dip_sized_at_125_percent(self) -> None:
+        record = self._record_125()
+        # A physical-sized image is the wrong frame even if the probe reported its size.
+        record["screenshot"]["width"] = 1620
+        record["screenshot"]["height"] = 1049
+        with tempfile.TemporaryDirectory() as directory:
+            screenshot = Path(directory) / "screenshot.png"
+            screenshot.write_bytes(png(1620, 1049))
+            observed = observe.validate_probe_record(record, 4242, screenshot, 1.25)
+        self.assertEqual(observed["refused"], "SCREENSHOT_GEOMETRY_MISMATCH")
+
+    def test_a_record_without_scale_geometry_is_refused(self) -> None:
+        record = self._record_125()
+        del record["screenshot"]["content_cross_check"]["geometry"]
+        with tempfile.TemporaryDirectory() as directory:
+            screenshot = Path(directory) / "screenshot.png"
+            screenshot.write_bytes(png(1296, 839))
+            with self.assertRaises(observe.ObserveError) as raised:
+                observe.validate_probe_record(record, 4242, screenshot, 1.25)
+        self.assertEqual(raised.exception.code, "RECORD_SCHEMA")
+
+    def test_a_refused_capture_keeps_its_bounded_sample_count(self) -> None:
+        record = self._record_125()
+        geometry = cross_check(
+            width=1296, height=839, left=858, top=222, scale=1.25
+        )["geometry"]
+        record["screenshot"] = {
+            "status": "NOT_MEASURED",
+            "reason": "WINDOW_OCCLUDED",
+            "content": {
+                "status": "NOT_MEASURED",
+                "samples": 49,
+                "matched": 43,
+                "tolerance": 24,
+                "distinct_sampled_colors": 5,
+                "non_black_samples": 49,
+                "geometry": geometry,
+            },
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            observed = observe.validate_probe_record(
+                record, 4242, Path(directory) / "absent.png", 1.25
+            )
+        self.assertEqual(observed["screenshot"]["reason"], "WINDOW_OCCLUDED")
+        self.assertEqual(observed["screenshot"]["content"]["matched"], 43)
+        self.assertNotIn(
+            "geometry", observed["screenshot"]["content"]
+        )  # bounded: only the sample statistics are kept
+        resolved = observe.resolve_screenshot(
+            observed["screenshot"], {"outcome": "NOT_REQUESTED"}
+        )
+        self.assertEqual(resolved["reason"], "WINDOW_OCCLUDED")
+        self.assertEqual(resolved["content"]["samples"], 49)
 
 
 class AcceptanceRecordTest(unittest.TestCase):
@@ -904,12 +1104,13 @@ class RejectionDispositionTest(unittest.TestCase):
                     "ok": True,
                     "window": dict(WINDOW),
                     "screenshot": {"status": "OBSERVED", "width": 640, "height": 480,
-                                   "bytes": 64},
+                                   "bytes": 64, "content_cross_check": cross_check()},
                     "uia": {"status": "OBSERVED", "reason": "",
                             "elements": [element("Task Rail")]},
                 },
                 4242,
                 path,
+                1.0,
             )
             observed, _binding, refusal = self._dispose(
                 observed, {"outcome": "FOREGROUNDED", "handle": 7}, path

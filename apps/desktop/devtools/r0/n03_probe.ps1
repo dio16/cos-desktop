@@ -8,8 +8,11 @@ param(
     [int]$MaxElements = 400,
     [int]$MaxDepth = 12,
     [int]$MaxScreenshotBytes = 33554432,
-    # Explicit display scale for callers whose own DPI awareness makes GetWindowRect
-    # report DIP coordinates while the display is physical. 1.0 keeps the legacy path.
+    # Display scale of the *captured window*. When omitted, the probe derives it from
+    # the target window's own DPI (GetDpiForWindow / 96): this process is DPI-unaware,
+    # so at a fractional display scale GetWindowRect and GetSystemMetrics report DIP
+    # coordinates while the display is physical. An explicit value keeps the caller's
+    # scale unchanged, so 1.0 is still the legacy one-pixel-per-DIP path.
     [double]$DpiScale = 1.0
 )
 
@@ -46,6 +49,7 @@ public static class NativeWindow {
     [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr handle);
     [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr handle, out uint pid);
     [DllImport("user32.dll")] public static extern bool GetWindowRect(IntPtr handle, out RECT rect);
+    [DllImport("user32.dll")] public static extern uint GetDpiForWindow(IntPtr handle);
     [DllImport("user32.dll")] public static extern bool PrintWindow(IntPtr handle, IntPtr hdc, uint flags);
     [DllImport("user32.dll")] public static extern bool IsWindow(IntPtr handle);
     [DllImport("user32.dll")] public static extern IntPtr GetForegroundWindow();
@@ -104,6 +108,26 @@ if (-not [NativeWindow]::GetWindowRect($target.Handle, [ref]$rect)) { Fail "WIND
 $width = $rect.Right - $rect.Left
 $height = $rect.Bottom - $rect.Top
 if ($width -le 0 -or $height -le 0) { Fail "WINDOW_RECT_UNAVAILABLE" }
+
+# The display scale must describe the *captured window*, not this host. This process is
+# DPI-unaware, so at a fractional display scale GetWindowRect and GetSystemMetrics are
+# DIP-scaled while the display is physical; assuming 1.0 then compares two different
+# frames and the 7x7 content cross-check loses samples (43/49 at 125 %). An explicit
+# -DpiScale always wins; otherwise the target window's own DPI is authoritative, and an
+# unusable DPI is a closed refusal rather than a silent 1.0 fallback.
+$scaleSource = "argument"
+$windowDpi = 0
+try {
+    $windowDpi = [int][NativeWindow]::GetDpiForWindow($target.Handle)
+} catch {
+    $windowDpi = 0
+}
+if (-not $PSBoundParameters.ContainsKey("DpiScale")) {
+    if ($windowDpi -le 0) { Fail "DPI_UNAVAILABLE" }
+    $scaleSource = "window_dpi"
+    $DpiScale = [double]$windowDpi / 96.0
+}
+if ([double]::IsNaN($DpiScale) -or [double]::IsInfinity($DpiScale) -or $DpiScale -lt 0.5 -or $DpiScale -gt 4.0) { Fail "CAP_RANGE" }
 
 function Bound([double]$value) {
     # UIA reports infinity or NaN for offscreen elements; the record stays integral.
@@ -224,6 +248,8 @@ try {
             non_black_samples = $nonBlack
             geometry = @{
                 dpi_scale = $DpiScale
+                dpi_scale_source = $scaleSource
+                window_dpi = $windowDpi
                 dip_rect = @{ left = $rect.Left; top = $rect.Top; width = $width; height = $height }
                 physical_rect = @{
                     left = [int][Math]::Round($rect.Left * $DpiScale)
