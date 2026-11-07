@@ -2999,6 +2999,39 @@ mod tests {
         assert_eq!(service.counters().cpu_retained_bytes, 0);
     }
 
+    #[test]
+    fn replacing_one_of_two_shared_backups_keeps_the_other_claim() {
+        let _serial = PREPARATION_SERIAL.lock().expect("test serialization");
+        let service = recovery_service();
+        let shared = prepared_for_recovery(&service, 1, true);
+        service.invalidate_device_generation(2);
+        let shared_only = service.counters().cpu_retained_bytes;
+        let replacement = prepared_for_recovery(&service, 2, true);
+        let both = service.counters().cpu_retained_bytes;
+        let shared_origin = shared.origin();
+
+        // Both panes held the shared image and claimed it; one pane now adopts the replacement,
+        // which must withdraw exactly one claim for the shared image.
+        service.claim_backup(shared_origin);
+        service.claim_backup(shared_origin);
+        service.claim_backup(replacement.origin());
+        assert!(!service.release_backup_claim(shared_origin));
+        assert_eq!(
+            service.counters().cpu_retained_bytes,
+            both,
+            "the remaining pane still holds the shared pixels"
+        );
+        assert!(!service.release_origin(shared_origin));
+
+        // The last claim leaves: exactly the shared payload is reclaimed.
+        assert!(service.release_backup_claim(shared_origin));
+        assert_eq!(
+            service.counters().cpu_retained_bytes,
+            both - shared_only,
+            "only the replacement's payload stays counted"
+        );
+    }
+
     fn demand_frame(first_mip: u8) -> Arc<PreparedImage> {
         Arc::new(PreparedImage {
             identity: media::UploadIdentity {

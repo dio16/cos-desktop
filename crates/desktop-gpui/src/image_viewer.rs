@@ -533,11 +533,7 @@ impl ImageViewer {
         self.tile_attempts = 0;
         self.cancel = Cancellation::default();
         let preview = self.mode == ViewerMode::PreviewOnly || frame.minimum_mip() > 0;
-        let previous_origin = self.retained.as_ref().map(|retained| retained.origin());
         self.adopt_backup(Arc::clone(&frame));
-        if let Some(previous) = previous_origin.filter(|previous| *previous != frame.origin()) {
-            self.release_backup(previous);
-        }
         self.requested = Some((
             frame.identity().key.clone(),
             frame.identity().source_revision,
@@ -581,11 +577,7 @@ impl ImageViewer {
         self.tile_cancel = Cancellation::default();
         self.serial = self.serial.saturating_add(1);
         self.release_current(cx);
-        let previous_origin = self.retained.as_ref().map(|retained| retained.origin());
         self.adopt_backup(Arc::clone(&frame));
-        if let Some(previous) = previous_origin.filter(|previous| *previous != frame.origin()) {
-            self.release_backup(previous);
-        }
         self.requested = Some((
             frame.identity().key.clone(),
             frame.identity().source_revision,
