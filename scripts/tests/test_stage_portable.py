@@ -14,6 +14,7 @@ from unittest.mock import patch
 
 SCRIPT = Path(__file__).resolve().parents[1] / "stage_portable.py"
 sys.path.insert(0, str(SCRIPT.parent))
+import notice_bundle
 import stage_portable
 
 
@@ -43,21 +44,53 @@ class StagePortableCliTests(unittest.TestCase):
         self.temporary = tempfile.TemporaryDirectory(prefix="portable-preflight-")
         self.package = Path(self.temporary.name) / "package with 日本語"
         self.package.mkdir()
+        self.notice_data, self.notice_summary = self.fixture_notices()
+        self.payload = {
+            "cos-desktop.exe": minimal_pe(),
+            "LICENSE": b"Apache License 2.0\n",
+            "NOTICE": b"COS Desktop notice\n",
+        }
         self.write_valid_package()
 
     def tearDown(self):
         self.temporary.cleanup()
 
-    def write_valid_package(self):
-        payload = {
-            "cos-desktop.exe": minimal_pe(),
-            "LICENSE": b"Apache License 2.0\n",
-            "NOTICE": b"COS Desktop notice\n",
+    def fixture_notices(self, version="1.2.3"):
+        """Build a small real notice bundle and its claiming manifest section."""
+        source = Path(self.temporary.name) / f"notice-source-{version}"
+        dependency = source / "deps" / f"sample-dep-{version}"
+        dependency.mkdir(parents=True)
+        (dependency / "LICENSE-MIT").write_bytes(b"MIT License fixture text\n")
+        (dependency / "Cargo.toml").write_bytes(b"[package]\nname = \"sample-dep\"\n")
+        root_manifest = source / "apps" / "desktop" / "Cargo.toml"
+        root_manifest.parent.mkdir(parents=True)
+        root_manifest.write_bytes(b"[package]\nname = \"cos-desktop\"\n")
+        root_id = "path+file://<workspace>#cos-desktop@0.1.0"
+        dependency_id = f"registry+https://github.com/rust-lang/crates.io-index#sample-dep@{version}"
+        metadata = {
+            "packages": [
+                {"id": root_id, "name": "cos-desktop", "version": "0.1.0", "source": None,
+                 "manifest_path": str(root_manifest), "license": "Apache-2.0", "license_file": None},
+                {"id": dependency_id, "name": "sample-dep", "version": version,
+                 "source": "registry+https://github.com/rust-lang/crates.io-index",
+                 "manifest_path": str(dependency / "Cargo.toml"), "license": "MIT OR Apache-2.0",
+                 "license_file": None},
+            ],
+            "resolve": {"root": root_id, "nodes": [
+                {"id": root_id, "deps": [{"pkg": dependency_id, "dep_kinds": [{"kind": None, "target": None}]}]},
+                {"id": dependency_id, "deps": []},
+            ]},
+            "workspace_root": str(source),
         }
+        return notice_bundle.build(metadata, "c" * 64)
+
+    def write_valid_package(self):
+        payload = dict(self.payload)
+        payload[notice_bundle.PAYLOAD_NAME] = self.notice_data
         for name, content in payload.items():
             (self.package / name).write_bytes(content)
         manifest = {
-            "format": "cos-desktop-internal-portable-v1",
+            "format": "cos-desktop-internal-portable-v2",
             "desktop_version": "0.1.0",
             "protocol_version": {"status": "UNKNOWN_NOT_NEGOTIATED", "version": None},
             "schema_version": {"status": "UNKNOWN_NOT_NEGOTIATED", "version": None},
@@ -67,7 +100,8 @@ class StagePortableCliTests(unittest.TestCase):
             "files": [{"path": name, "sha256": hashlib.sha256(content).hexdigest()} for name, content in sorted(payload.items())],
             "source": {"commit": "a" * 40, "tree": "b" * 40, "worktree": "CLEAN"},
             "build": {"profile": "dev", "command": "cargo build --locked --package cos-desktop --bin cos-desktop --message-format=json-render-diagnostics", "cargo_version": "cargo 1.90", "rustc_version": "rustc 1.90"},
-            "licenses": {"LICENSE": "INCLUDED", "NOTICE": "INCLUDED"},
+            "licenses": {"LICENSE": "INCLUDED", "NOTICE": "INCLUDED", notice_bundle.PAYLOAD_NAME: "INCLUDED"},
+            "third_party_notices": self.notice_summary,
             "external_runtime_dependencies": {
                 "observed_direct_pe_imports": ["KERNEL32.dll"],
                 "delay_load_imports": "NOT_INSPECTED",
@@ -340,6 +374,7 @@ class StagePortableCliTests(unittest.TestCase):
             patch.object(stage_portable, "build_executable", return_value=(
                 self.package / "cos-desktop.exe", "cargo fixture", "rustc fixture",
                 "cargo build --locked --package cos-desktop --bin cos-desktop --message-format=json-render-diagnostics")),
+            patch.object(stage_portable, "build_notice_payload", return_value=(self.notice_data, self.notice_summary)),
             patch.object(stage_portable, "verify_directory", side_effect=change_before_final_verification),
         ):
             if expect_failure:
@@ -439,6 +474,7 @@ class StagePortableCliTests(unittest.TestCase):
             patch.object(stage_portable, "build_executable", return_value=(
                 self.package / "cos-desktop.exe", "cargo fixture", "rustc fixture",
                 "cargo build --locked --package cos-desktop --bin cos-desktop --message-format=json-render-diagnostics")),
+            patch.object(stage_portable, "build_notice_payload", return_value=(self.notice_data, self.notice_summary)),
             patch.object(stage_portable, "verify_directory", side_effect=corrupt_published),
             patch.object(stage_portable.os, "rename", side_effect=racing_rename),
         ):
@@ -448,6 +484,62 @@ class StagePortableCliTests(unittest.TestCase):
         # The foreign replacement is back at its path; this run's own package is
         # still parked where the race moved it, never deleted.
         self.assertTrue((saved / "NOTICE").exists())
+
+
+    def test_missing_third_party_notice_bundle_is_rejected(self):
+        (self.package / notice_bundle.PAYLOAD_NAME).unlink()
+        self.assert_rejected()
+
+    def test_modified_third_party_notice_bundle_is_rejected(self):
+        path = self.package / notice_bundle.PAYLOAD_NAME
+        original = path.read_bytes()
+        path.write_bytes(original + b"tampered\n")
+        self.assert_rejected()
+        path.write_bytes(original)
+        result = self.invoke("verify", self.package)
+        self.assertEqual(0, result.returncode, result.stderr)
+
+    def test_manifest_cannot_forge_third_party_notice_claims(self):
+        for key, value in (("bundle_sha256", "0" * 64), ("dependency_set_sha256", "0" * 64),
+                           ("text_found", 99), ("text_not_found", 99), ("dependencies", 2),
+                           ("bundle_bytes", 1), ("format", "cos-desktop-third-party-notices-v2"),
+                           ("legal_compliance", "ASSESSED")):
+            with self.subTest(key=key):
+                manifest = self.read_manifest()
+                manifest["third_party_notices"][key] = value
+                self.write_manifest(manifest)
+                self.assert_rejected()
+                self.write_valid_package()
+
+    def test_manifest_without_a_third_party_notice_claim_is_rejected(self):
+        manifest = self.read_manifest()
+        del manifest["third_party_notices"]
+        self.write_manifest(manifest)
+        self.assert_rejected()
+        self.write_valid_package()
+
+    def test_notice_bundle_from_a_different_dependency_set_is_rejected(self):
+        other_data, other_summary = self.fixture_notices("9.9.9")
+        (self.package / notice_bundle.PAYLOAD_NAME).write_bytes(other_data)
+        manifest = self.read_manifest()
+        manifest["third_party_notices"]["bundle_sha256"] = other_summary["bundle_sha256"]
+        manifest["third_party_notices"]["bundle_bytes"] = other_summary["bundle_bytes"]
+        for entry in manifest["files"]:
+            if entry["path"] == notice_bundle.PAYLOAD_NAME:
+                entry["sha256"] = hashlib.sha256(other_data).hexdigest()
+        self.write_manifest(manifest)
+        result = self.invoke("verify", self.package)
+        self.assertNotEqual(0, result.returncode, result.stdout)
+        self.assertIn("different dependency set", result.stderr)
+
+    def test_verification_path_performs_no_network_io(self):
+        import socket
+
+        with (
+            patch.object(socket, "socket", side_effect=AssertionError("network use")),
+            patch.object(socket, "create_connection", side_effect=AssertionError("network use")),
+        ):
+            stage_portable.verify_directory(self.package)
 
 
 if __name__ == "__main__":

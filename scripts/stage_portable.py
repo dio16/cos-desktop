@@ -2,7 +2,8 @@
 """Build, stage, and independently preflight an unsigned internal Windows package.
 
 This is not a distribution or release tool. It builds the clean source commit with locked Cargo,
-then atomically publishes only cos-desktop.exe, LICENSE, NOTICE, and a generated manifest.
+then atomically publishes only cos-desktop.exe, LICENSE, NOTICE, a deterministic offline
+third-party notice bundle, and a generated manifest.
 """
 from __future__ import annotations
 
@@ -19,15 +20,20 @@ import sys
 import tempfile
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import notice_bundle
+
 BINARY_NAME = "cos-desktop.exe"
 LICENSE_NAMES = ("LICENSE", "NOTICE")
+NOTICE_NAME = notice_bundle.PAYLOAD_NAME
 MANIFEST_NAME = "manifest.json"
-PAYLOAD_NAMES = (BINARY_NAME, *LICENSE_NAMES)
-MANIFEST_FORMAT = "cos-desktop-internal-portable-v1"
+PAYLOAD_NAMES = (BINARY_NAME, *LICENSE_NAMES, NOTICE_NAME)
+MANIFEST_FORMAT = "cos-desktop-internal-portable-v2"
 UNSIGNED_STATUS = "UNSIGNED_INTERNAL_STAGING"
 MACHINE_NAMES = {0x014C: "x86", 0x8664: "x86_64", 0xAA64: "aarch64"}
 MAX_PE_BYTES = 128 * 1024 * 1024
 MAX_MANIFEST_BYTES = 1024 * 1024
+MAX_NOTICE_BYTES = notice_bundle.MAX_BUNDLE_BYTES
 
 
 class StageError(RuntimeError):
@@ -76,6 +82,14 @@ def regular_file(path: Path, *, single_link: bool = True) -> bool:
     return stat.S_ISREG(info.st_mode) and (not single_link or info.st_nlink == 1) and not path.is_symlink()
 
 
+def payload_limit(name: str) -> int:
+    if name == BINARY_NAME:
+        return MAX_PE_BYTES
+    if name == NOTICE_NAME:
+        return MAX_NOTICE_BYTES
+    return MAX_MANIFEST_BYTES
+
+
 def run(command: list[str], cwd: Path) -> str:
     # Independent checks may have no PATH; keep tool paths out of the manifest.
     if command[0] in ("cargo", "git"):
@@ -115,6 +129,32 @@ def cargo_package(root: Path) -> tuple[dict, str]:
     if package.get("version") is None or not package.get("id"):
         raise StageError("cargo metadata omitted Desktop package version or identity")
     return package, package["id"]
+
+
+def cargo_metadata(root: Path) -> dict:
+    # Offline, locked, target-filtered: the notice path never observes the network.
+    command = ["cargo", "metadata", "--locked", "--offline", "--format-version", "1",
+               "--filter-platform", notice_bundle.CARGO_TARGET]
+    output = run(command, root)
+    try:
+        metadata = json.loads(output)
+    except json.JSONDecodeError as exc:
+        raise StageError(f"invalid cargo metadata: {exc}") from exc
+    if not isinstance(metadata, dict):
+        raise StageError("cargo metadata did not return a JSON object")
+    return metadata
+
+
+def build_notice_payload(root: Path) -> tuple[bytes, dict]:
+    metadata = cargo_metadata(root)
+    lock = root / "Cargo.lock"
+    if not regular_file(lock):
+        raise StageError("required root Cargo.lock must be a regular file")
+    _, lock_digest, _ = read_snapshot(lock, MAX_MANIFEST_BYTES)
+    try:
+        return notice_bundle.build(metadata, lock_digest)
+    except notice_bundle.NoticeError as exc:
+        raise StageError(f"third-party notice assembly refused: {exc}") from exc
 
 
 def build_executable(root: Path, package_id: str) -> tuple[Path, str, str, str]:
@@ -226,8 +266,8 @@ def inspect_pe(data: bytes) -> tuple[str, list[str]]:
     return arch, sorted(imports, key=lambda name: (name.casefold(), name))
 
 
-def make_manifest(package: dict, commit: str, tree: str, cargo_version: str, rustc_version: str, build_command: str, payload: dict[str, Path]) -> dict:
-    snapshots = {name: read_snapshot(source, MAX_PE_BYTES if name == BINARY_NAME else MAX_MANIFEST_BYTES)
+def make_manifest(package: dict, commit: str, tree: str, cargo_version: str, rustc_version: str, build_command: str, payload: dict[str, Path], notice_summary: dict) -> dict:
+    snapshots = {name: read_snapshot(source, payload_limit(name))
                  for name, source in sorted(payload.items())}
     binary_data, binary_digest, _ = snapshots[BINARY_NAME]
     arch, imports = inspect_pe(binary_data)
@@ -243,7 +283,8 @@ def make_manifest(package: dict, commit: str, tree: str, cargo_version: str, rus
         "build": {"profile": "dev", "command": build_command, "cargo_version": cargo_version, "rustc_version": rustc_version},
         "binary": {"path": BINARY_NAME, "sha256": binary_digest},
         "files": entries,
-        "licenses": {"LICENSE": "INCLUDED", "NOTICE": "INCLUDED"},
+        "licenses": {**{name: "INCLUDED" for name in LICENSE_NAMES}, NOTICE_NAME: "INCLUDED"},
+        "third_party_notices": notice_summary,
         "external_runtime_dependencies": {
             "observed_direct_pe_imports": imports,
             "delay_load_imports": "NOT_INSPECTED",
@@ -284,8 +325,9 @@ def verify_directory(directory: Path, require_signed: bool = False) -> dict:
         raise StageError("unsupported package manifest")
     if set(manifest) != {
         "format", "desktop_version", "protocol_version", "schema_version", "platform", "architecture",
-        "source", "build", "binary", "files", "licenses", "external_runtime_dependencies",
-        "signing_status", "packaging_status", "verification_status", "distribution_ready", "limitations",
+        "source", "build", "binary", "files", "licenses", "third_party_notices",
+        "external_runtime_dependencies", "signing_status", "packaging_status", "verification_status",
+        "distribution_ready", "limitations",
     }:
         raise StageError("manifest has missing or unexpected top-level fields")
     if not isinstance(manifest.get("desktop_version"), str) or not re.fullmatch(
@@ -325,18 +367,18 @@ def verify_directory(directory: Path, require_signed: bool = False) -> dict:
     for key, expected_value in fixed_states.items():
         if manifest.get(key) != expected_value:
             raise StageError(f"manifest has invalid protected field: {key}")
-    if manifest.get("licenses") != {name: "INCLUDED" for name in LICENSE_NAMES}:
-        raise StageError("manifest does not attest both required license files")
+    if manifest.get("licenses") != {**{name: "INCLUDED" for name in LICENSE_NAMES}, NOTICE_NAME: "INCLUDED"}:
+        raise StageError("manifest does not attest the required license, notice and third-party bundle files")
     files = manifest.get("files")
     if (not isinstance(files, list) or len(files) != len(PAYLOAD_NAMES)
             or any(not isinstance(entry, dict) or set(entry) != {"path", "sha256"} for entry in files)
             or any(not isinstance(entry["path"], str) for entry in files)
             or {entry["path"] for entry in files} != set(PAYLOAD_NAMES)):
-        raise StageError("manifest payload allowlist must be exactly binary, LICENSE, and NOTICE")
+        raise StageError("manifest payload allowlist must be exactly binary, LICENSE, NOTICE and the third-party notice bundle")
     binary = manifest.get("binary")
     if not isinstance(binary, dict) or set(binary) != {"path", "sha256"} or binary.get("path") != BINARY_NAME:
         raise StageError("manifest binary identity must use the fixed executable name")
-    snapshots = {name: read_snapshot(directory / name, MAX_PE_BYTES if name == BINARY_NAME else MAX_MANIFEST_BYTES)
+    snapshots = {name: read_snapshot(directory / name, payload_limit(name))
                  for name in PAYLOAD_NAMES}
     actual = {}
     for entry in files:
@@ -354,6 +396,10 @@ def verify_directory(directory: Path, require_signed: bool = False) -> dict:
             raise StageError(f"payload digest mismatch: {name}")
     if manifest.get("binary", {}).get("sha256") != actual[BINARY_NAME]:
         raise StageError("binary digest does not match manifest binary identity")
+    try:
+        notice_bundle.check_manifest(manifest.get("third_party_notices"), snapshots[NOTICE_NAME][0])
+    except notice_bundle.NoticeError as exc:
+        raise StageError(f"third-party notice preflight refused: {exc}") from exc
     arch, imports = inspect_pe(snapshots[BINARY_NAME][0])
     if manifest.get("architecture") != arch:
         raise StageError("manifest architecture does not match PE binary")
@@ -396,6 +442,7 @@ def stage(root: Path, output: Path) -> dict:
     binary, cargo_version, rustc_version, build_command = build_executable(root, package_id)
     if not regular_file(root / "LICENSE") or not regular_file(root / "NOTICE"):
         raise StageError("required root LICENSE and NOTICE must be regular files")
+    notice_data, notice_summary = build_notice_payload(root)
     output.parent.mkdir(parents=True, exist_ok=True)
     # The package is assembled in a sibling temp directory and published with one rename.
     temporary = Path(tempfile.mkdtemp(prefix=f".{output.name}.staging-", dir=output.parent))
@@ -404,8 +451,9 @@ def stage(root: Path, output: Path) -> dict:
         payload = {BINARY_NAME: binary, "LICENSE": root / "LICENSE", "NOTICE": root / "NOTICE"}
         for name, source in payload.items():
             shutil.copyfile(source, temporary / name)
+        (temporary / NOTICE_NAME).write_bytes(notice_data)
         manifest = make_manifest(package, commit, tree, cargo_version, rustc_version, build_command,
-                                 {name: temporary / name for name in PAYLOAD_NAMES})
+                                 {name: temporary / name for name in PAYLOAD_NAMES}, notice_summary)
         (temporary / MANIFEST_NAME).write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
         verify_directory(temporary)
         if read_source_identity(root) != (commit, tree):
@@ -445,12 +493,24 @@ def parser() -> argparse.ArgumentParser:
     verification = subparsers.add_parser("verify", help="independently verify a staged package inventory and manifest")
     verification.add_argument("package", type=Path)
     verification.add_argument("--require-signed", action="store_true", help="unsupported distribution preflight; always fails closed")
+    notices = subparsers.add_parser("notices", help="render the deterministic offline third-party notice bundle")
+    notices.add_argument("--source-root", type=Path, default=Path(__file__).resolve().parents[1])
+    notices.add_argument("--output", type=Path, required=True)
     return result
 
 
 def main(argv: list[str] | None = None) -> int:
     args = parser().parse_args(argv)
     try:
+        if args.command == "notices":
+            data, summary = build_notice_payload(args.source_root.resolve())
+            output = args.output.absolute()
+            if output.exists() or output.is_symlink():
+                raise StageError("output already exists; refusing replacement")
+            output.parent.mkdir(parents=True, exist_ok=True)
+            output.write_bytes(data)
+            print(json.dumps({"result": "OK", "bundle": summary}, sort_keys=True))
+            return 0
         if args.command == "stage":
             if args.require_signed:
                 raise StageError("distribution/require-signed staging is unsupported and fails closed")
