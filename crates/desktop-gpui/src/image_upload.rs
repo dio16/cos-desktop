@@ -667,6 +667,39 @@ impl ImageUploadService {
         prune_idle_pools(&mut state);
     }
 
+    /// Drop the retained CPU owner for one preparation origin that no pane references any more.
+    ///
+    /// A withdrawn, replaced or closed candidate must not keep its pixels and tiles occupying the
+    /// CPU retention ceiling: that would refuse unrelated new images while nothing can ever show
+    /// the old payload again. Unproven GPU transfer bytes stay charged in the quarantine ledger;
+    /// only the reusable CPU allocation is released. A frame any consumer still references, or one
+    /// whose tiles were already issued, is kept.
+    pub fn release_origin(&self, origin: u64) -> bool {
+        let mut state = self.inner.state.lock().expect("image upload service state");
+        let Some(index) = state
+            .quarantined_views
+            .iter()
+            .position(|frame| frame.origin == origin)
+        else {
+            return false;
+        };
+        let frame = Arc::clone(&state.quarantined_views[index]);
+        let paint = frame.paint_state.lock().expect("image frame paint state");
+        let referenced = !paint.consumers.is_empty() || paint.issued.iter().any(|issued| *issued);
+        drop(paint);
+        if referenced
+            || state
+                .frames
+                .iter()
+                .any(|retained| retained.origin == origin)
+        {
+            return false;
+        }
+        state.quarantined_views.remove(index);
+        prune_idle_pools(&mut state);
+        true
+    }
+
     /// Rebind retained verified CPU data to a current device without decoding or copying pixels.
     /// GPU issuance remains lazy and uses the ordinary per-period/process admission limits.
     pub fn recover_frame(
@@ -1574,6 +1607,11 @@ pub(crate) struct TileDemand {
 impl PreparedImage {
     pub fn identity(&self) -> &UploadIdentity {
         &self.identity
+    }
+
+    /// Stable preparation origin: preserved across recovery, distinct for independent entries.
+    pub fn origin(&self) -> u64 {
+        self.origin
     }
 
     /// Lowest mip retained for this frame (2 for preview-only frames, otherwise 0).
@@ -2784,6 +2822,40 @@ mod tests {
             service.counters().packed_retained_bytes,
             before.packed_retained_bytes
         );
+    }
+
+    #[test]
+    fn withdrawn_origins_release_cpu_ownership_and_free_the_ceiling() {
+        let _serial = PREPARATION_SERIAL.lock().expect("test serialization");
+        let service = recovery_service();
+        // Two different images were prepared and their GPU transfer never completed.
+        let first = prepared_for_recovery(&service, 1, true);
+        let second = prepared_for_recovery(&service, 1, true);
+        // A candidate still referenced by a consumer keeps its owner.
+        let consumer = ConsumerId::allocate();
+        assert!(service.attach(&first, consumer, None));
+        service.invalidate_device_generation(2);
+        assert_eq!(
+            service
+                .inner
+                .state
+                .lock()
+                .expect("cache state")
+                .quarantined_views
+                .len(),
+            2
+        );
+        assert!(!service.release_origin(first.origin()));
+        assert!(service.detach(&first, consumer));
+        // Both candidates left the display; their CPU owners are reclaimed.
+        assert!(service.release_origin(first.origin()));
+        assert!(service.release_origin(second.origin()));
+        assert_eq!(service.counters().cpu_retained_bytes, 0);
+        assert_eq!(service.counters().packed_retained_bytes, 0);
+        // The reclaimed ceiling admits an unrelated image at the current generation.
+        let third = prepared_for_recovery(&service, 2, true);
+        assert_eq!(third.identity.device_generation, 2);
+        assert_eq!(service.counters().retained_frames, 1);
     }
 
     fn demand_frame(first_mip: u8) -> Arc<PreparedImage> {

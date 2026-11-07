@@ -259,17 +259,40 @@ impl ImageViewer {
     ///
     /// The host calls this when the candidate the pane represents is replaced or withheld: the
     /// identity the backup belongs to is no longer the one this pane may publish, so a later GPU
-    /// generation change must not re-admit it. The retained entry is not released here; release
-    /// still belongs to the explicit eviction path.
+    /// generation change must not re-admit it. The CPU owner is released with it, otherwise a
+    /// withdrawn candidate would keep occupying the retention ceiling forever.
     pub fn withdraw_recovery_backup(&mut self, cx: &mut Context<Self>) {
         if self.retained.is_none() && self.requested.is_none() {
             return;
         }
+        let origin = self.retained.as_ref().map(|frame| frame.origin());
         self.retained = None;
         self.requested = None;
         self.recovery_pending = false;
         self.recovery_attempted_generation = None;
+        if let Some(origin) = origin {
+            self.release_backup(origin);
+        }
         cx.notify();
+    }
+
+    /// Release the CPU owner of an origin this pane has stopped referencing.
+    fn release_backup(&mut self, origin: u64) {
+        let still_referenced = self
+            .current
+            .as_ref()
+            .is_some_and(|frame| frame.origin() == origin)
+            || self
+                .retained
+                .as_ref()
+                .is_some_and(|frame| frame.origin() == origin)
+            || self
+                .retiring
+                .iter()
+                .any(|retired| retired.frame.origin() == origin);
+        if !still_referenced {
+            self.service.release_origin(origin);
+        }
     }
 
     fn device_state_changed(
@@ -488,7 +511,11 @@ impl ImageViewer {
         self.tile_attempts = 0;
         self.cancel = Cancellation::default();
         let preview = self.mode == ViewerMode::PreviewOnly || frame.minimum_mip() > 0;
+        let previous_origin = self.retained.as_ref().map(|retained| retained.origin());
         self.retained = Some(Arc::clone(&frame));
+        if let Some(previous) = previous_origin.filter(|previous| *previous != frame.origin()) {
+            self.release_backup(previous);
+        }
         self.requested = Some((
             frame.identity().key.clone(),
             frame.identity().source_revision,
@@ -532,7 +559,11 @@ impl ImageViewer {
         self.tile_cancel = Cancellation::default();
         self.serial = self.serial.saturating_add(1);
         self.release_current(cx);
+        let previous_origin = self.retained.as_ref().map(|retained| retained.origin());
         self.retained = Some(Arc::clone(&frame));
+        if let Some(previous) = previous_origin.filter(|previous| *previous != frame.origin()) {
+            self.release_backup(previous);
+        }
         self.requested = Some((
             frame.identity().key.clone(),
             frame.identity().source_revision,
@@ -561,10 +592,14 @@ impl ImageViewer {
         self.serial = self.serial.saturating_add(1);
         self.recovery_pending = false;
         self.recovery_attempted_generation = None;
+        let origin = self.retained.as_ref().map(|frame| frame.origin());
         self.release_current(cx);
         self.retained = None;
         // The host withdrew this pane's picture: no recovery backup may resurrect it later.
         self.requested = None;
+        if let Some(origin) = origin {
+            self.release_backup(origin);
+        }
         self.demand = None;
         self.status = reason;
         cx.notify();
@@ -850,6 +885,8 @@ impl ImageViewer {
         self.recovery_pending = false;
         self.recovery_attempted_generation = None;
         self.requested = None;
+        let retained_origin = self.retained.as_ref().map(|frame| frame.origin());
+        self.retained = None;
         let window_scenes = self.service.composed_frames(self.window_id());
         for retired in &mut self.retiring {
             if let ReleaseClock::Pane(_) = retired.clock {
@@ -857,10 +894,16 @@ impl ImageViewer {
             }
         }
         let Some(frame) = self.current.take() else {
+            if let Some(origin) = retained_origin {
+                self.release_backup(origin);
+            }
             self.schedule_retirement(cx);
             return;
         };
         self.service.detach(&frame, self.consumer);
+        if let Some(origin) = retained_origin {
+            self.release_backup(origin);
+        }
         if !self.service.discard_unpainted(&frame)
             && !self
                 .retiring
