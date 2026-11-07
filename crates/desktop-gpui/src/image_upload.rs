@@ -485,6 +485,9 @@ struct ServiceState {
     reuse_calls: u64,
     /// Safe CPU inputs/tiles retained for recovery or unproven transfers, one owner per origin.
     quarantined_views: Vec<Arc<PreparedImage>>,
+    /// Panes currently holding a reusable backup for an origin. The CPU owner cannot be released
+    /// while any pane still holds those pixels, even if the service registry no longer lists them.
+    backup_claims: std::collections::BTreeMap<u64, usize>,
 }
 impl ImageUploadService {
     /// Obtain the process-wide service. Separate panes/windows must share this value.
@@ -667,6 +670,29 @@ impl ImageUploadService {
         prune_idle_pools(&mut state);
     }
 
+    /// Record that one pane now holds a reusable CPU backup for this origin.
+    pub fn claim_backup(&self, origin: u64) {
+        let mut state = self.inner.state.lock().expect("image upload service state");
+        *state.backup_claims.entry(origin).or_insert(0) += 1;
+    }
+
+    /// Withdraw one pane's claim. The CPU owner is released only with the last claim, so shared
+    /// recovery pixels stay counted while any pane can still re-admit them.
+    pub fn release_backup_claim(&self, origin: u64) -> bool {
+        {
+            let mut state = self.inner.state.lock().expect("image upload service state");
+            let Some(count) = state.backup_claims.get_mut(&origin) else {
+                return false;
+            };
+            *count = count.saturating_sub(1);
+            if *count > 0 {
+                return false;
+            }
+            state.backup_claims.remove(&origin);
+        }
+        self.release_origin(origin)
+    }
+
     /// Drop the retained CPU owner for one preparation origin that no pane references any more.
     ///
     /// A withdrawn, replaced or closed candidate must not keep its pixels and tiles occupying the
@@ -676,6 +702,13 @@ impl ImageUploadService {
     /// whose tiles were already issued, is kept.
     pub fn release_origin(&self, origin: u64) -> bool {
         let mut state = self.inner.state.lock().expect("image upload service state");
+        if state
+            .backup_claims
+            .get(&origin)
+            .is_some_and(|claims| *claims > 0)
+        {
+            return false;
+        }
         let Some(index) = state
             .quarantined_views
             .iter()
@@ -2933,6 +2966,37 @@ mod tests {
         assert_eq!(service.counters().retained_frames, 1);
         assert_eq!(service.counters().quarantined_payload_bytes, charge);
         assert_ne!(b.origin(), a.origin());
+    }
+
+    #[test]
+    fn a_shared_backup_stays_counted_until_the_last_viewer_withdraws() {
+        let _serial = PREPARATION_SERIAL.lock().expect("test serialization");
+        let service = recovery_service();
+        let frame = prepared_for_recovery(&service, 1, true);
+        let first = ConsumerId::allocate();
+        let second = ConsumerId::allocate();
+        assert!(service.attach(&frame, first, None));
+        assert!(service.attach(&frame, second, None));
+        // Two panes hold the same recovery backup, so the service records two claims.
+        service.claim_backup(frame.origin());
+        service.claim_backup(frame.origin());
+        service.invalidate_device_generation(2);
+        let counted = service.counters().cpu_retained_bytes;
+        assert!(counted > 0);
+        assert!(
+            !service.release_origin(frame.origin()),
+            "a claimed backup is never released by a direct request"
+        );
+
+        // One pane switches candidate: its claim leaves, the shared pixels stay counted.
+        assert!(service.detach(&frame, first));
+        assert!(!service.release_backup_claim(frame.origin()));
+        assert_eq!(service.counters().cpu_retained_bytes, counted);
+
+        // The last pane leaves: the owner is reclaimed.
+        assert!(service.detach(&frame, second));
+        assert!(service.release_backup_claim(frame.origin()));
+        assert_eq!(service.counters().cpu_retained_bytes, 0);
     }
 
     fn demand_frame(first_mip: u8) -> Arc<PreparedImage> {

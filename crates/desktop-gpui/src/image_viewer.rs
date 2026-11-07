@@ -265,19 +265,41 @@ impl ImageViewer {
         if self.retained.is_none() && self.requested.is_none() {
             return;
         }
-        let origin = self.retained.as_ref().map(|frame| frame.origin());
-        self.retained = None;
+        self.drop_backup();
         self.requested = None;
         self.recovery_pending = false;
         self.recovery_attempted_generation = None;
-        if let Some(origin) = origin {
-            self.release_backup(origin);
-        }
         cx.notify();
     }
 
-    /// Release the CPU owner of an origin this pane has stopped referencing.
+    /// Adopt a frame as this pane's reusable backup, claiming its CPU owner in the service.
+    fn adopt_backup(&mut self, frame: Arc<PreparedImage>) {
+        if self
+            .retained
+            .as_ref()
+            .is_some_and(|retained| retained.origin() == frame.origin())
+        {
+            self.retained = Some(frame);
+            return;
+        }
+        let previous = self.retained.replace(Arc::clone(&frame));
+        self.service.claim_backup(frame.origin());
+        if let Some(previous) = previous {
+            self.release_backup(previous.origin());
+        }
+    }
+
+    /// Drop this pane's backup and withdraw its claim.
+    fn drop_backup(&mut self) {
+        let Some(previous) = self.retained.take() else {
+            return;
+        };
+        self.release_backup(previous.origin());
+    }
+
+    /// Withdraw this pane's claim and release the owner once nothing else references it.
     fn release_backup(&mut self, origin: u64) {
+        self.service.release_backup_claim(origin);
         let still_referenced = self
             .current
             .as_ref()
@@ -512,7 +534,7 @@ impl ImageViewer {
         self.cancel = Cancellation::default();
         let preview = self.mode == ViewerMode::PreviewOnly || frame.minimum_mip() > 0;
         let previous_origin = self.retained.as_ref().map(|retained| retained.origin());
-        self.retained = Some(Arc::clone(&frame));
+        self.adopt_backup(Arc::clone(&frame));
         if let Some(previous) = previous_origin.filter(|previous| *previous != frame.origin()) {
             self.release_backup(previous);
         }
@@ -560,7 +582,7 @@ impl ImageViewer {
         self.serial = self.serial.saturating_add(1);
         self.release_current(cx);
         let previous_origin = self.retained.as_ref().map(|retained| retained.origin());
-        self.retained = Some(Arc::clone(&frame));
+        self.adopt_backup(Arc::clone(&frame));
         if let Some(previous) = previous_origin.filter(|previous| *previous != frame.origin()) {
             self.release_backup(previous);
         }
@@ -592,14 +614,10 @@ impl ImageViewer {
         self.serial = self.serial.saturating_add(1);
         self.recovery_pending = false;
         self.recovery_attempted_generation = None;
-        let origin = self.retained.as_ref().map(|frame| frame.origin());
         self.release_current(cx);
-        self.retained = None;
+        self.drop_backup();
         // The host withdrew this pane's picture: no recovery backup may resurrect it later.
         self.requested = None;
-        if let Some(origin) = origin {
-            self.release_backup(origin);
-        }
         self.demand = None;
         self.status = reason;
         cx.notify();
@@ -670,7 +688,7 @@ impl ImageViewer {
         self.recovery_attempted_generation = None;
         self.release_current(cx);
         let replaced_origin = self.retained.as_ref().map(|frame| frame.origin());
-        self.retained = None;
+        self.drop_backup();
         if let Some(origin) = replaced_origin {
             // A load for another identity must not keep the previous candidate's CPU owner: the
             // release is decided after the old frame left this pane's references.
@@ -721,7 +739,7 @@ impl ImageViewer {
                             Some(window.window_handle()),
                         ) =>
                     {
-                        this.retained = Some(Arc::clone(&frame));
+                        this.adopt_backup(Arc::clone(&frame));
                         this.current = Some(frame);
                         unclaimed = None;
                         this.status = match this.mode {
@@ -768,7 +786,7 @@ impl ImageViewer {
                 if *key == previous.identity().key
                     && *revision == previous.identity().source_revision => {}
             _ => {
-                self.retained = None;
+                self.drop_backup();
                 self.recovery_pending = false;
                 self.recovery_attempted_generation = None;
                 self.release_origin_after_registry(previous.origin());
@@ -840,7 +858,7 @@ impl ImageViewer {
                                 Some(window.window_handle()),
                             ) =>
                     {
-                        this.retained = Some(Arc::clone(&frame));
+                        this.adopt_backup(Arc::clone(&frame));
                         this.current = Some(frame);
                         this.revision = source_revision;
                         this.generation = generation;
@@ -893,7 +911,7 @@ impl ImageViewer {
         self.recovery_attempted_generation = None;
         self.requested = None;
         let retained_origin = self.retained.as_ref().map(|frame| frame.origin());
-        self.retained = None;
+        self.drop_backup();
         let window_scenes = self.service.composed_frames(self.window_id());
         for retired in &mut self.retiring {
             if let ReleaseClock::Pane(_) = retired.clock {
