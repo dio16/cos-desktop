@@ -1,0 +1,329 @@
+{
+  "task": "MP-REL1",
+  "contract": "DC-MP-REL1",
+  "decision": "DD-21",
+  "slice": "deterministic offline third-party notice bundle and portable preflight closure (unsigned internal staging)",
+  "status": "NOTICE_BUNDLE_MEASURED_EXTERNAL_REVIEW_PENDING",
+  "baseline": "7839188ca138bdbe63b8e81abb99e90d95a2b58d",
+  "candidate_commits": [
+    "ac34502bbf7da80d0e5426988ac5c8cd1c0cc5ba",
+    "57f08d11bac60c7705091f2fb33212a14911c319"
+  ],
+  "candidate_commit_resolution": "the first commit carries the bundle and preflight integration, the second corrects pointer-only licence files; both are on dev and unpushed at measurement time",
+  "environment": {
+    "os": "Windows",
+    "python": "3.12.14 (bundled dsh-primary-runtime interpreter, PYTHONIOENCODING=utf-8)",
+    "cargo_metadata": "cargo metadata --locked --offline --format-version 1 --filter-platform x86_64-pc-windows-msvc",
+    "network_used_by_notice_path": false
+  },
+  "implementation": {
+    "files": [
+      "scripts/notice_bundle.py (new: graph walk, local text binding, canonical index, strict parser, manifest cross-check)",
+      "scripts/stage_portable.py (payload gains THIRD_PARTY_NOTICES.md; manifest cos-desktop-internal-portable-v2 with third_party_notices claim; verify recomputes digests/counts and fails closed; notices subcommand)",
+      "scripts/tests/test_notice_bundle.py (new hermetic cases)",
+      "scripts/tests/test_stage_portable.py (v2 fixture and notice refusal cases)"
+    ],
+    "payload": [
+      "cos-desktop.exe",
+      "LICENSE",
+      "NOTICE",
+      "THIRD_PARTY_NOTICES.md"
+    ],
+    "manifest_format": "cos-desktop-internal-portable-v2",
+    "claim_fields": [
+      "format",
+      "payload_path",
+      "scope",
+      "cargo_lock_sha256",
+      "dependency_set_sha256",
+      "bundle_sha256",
+      "bundle_bytes",
+      "dependencies",
+      "text_found",
+      "text_not_found",
+      "unresolved_texts",
+      "roles",
+      "metadata_packages",
+      "reachable",
+      "not_reachable",
+      "legal_compliance"
+    ],
+    "binding_rules": [
+      "every text is a verbatim local file or blob; nothing is fetched, generated, guessed or reworded",
+      "registry/git package roots come from cargo metadata manifest_path; workspace members bind the shared workspace LICENSE and NOTICE",
+      "a declared license-file is read only when it stays inside its package",
+      "a short single-line relative pointer is followed only for Git dependencies inside <CARGO_HOME>/git/checkouts; elsewhere it is POINTER_NOT_RESOLVED and the package stays unassessed",
+      "texts are deduplicated by SHA-256; the index is canonical JSON with a dependency-set digest; absolute paths, timestamps and machine names are never written",
+      "legal compliance is recorded as NOT_ASSESSED and the manifest keeps THIRD_PARTY_LICENSE_CLOSURE_UNASSESSED"
+    ]
+  },
+  "measurement": {
+    "command": "python -B scripts/stage_portable.py notices --output target/rel1-notices/run-a/THIRD_PARTY_NOTICES.md (PYTHONHASHSEED 1, 2 and 3 for runs a, b and c; default --source-root)",
+    "runs": [
+      {
+        "run": "a",
+        "pythonhashseed": "1",
+        "exit_code": 0,
+        "bundle_sha256": "d9181f73579caac1c34b32a89651b9ade16b60379f29d0df929ca897525db100"
+      },
+      {
+        "run": "b",
+        "pythonhashseed": "2",
+        "exit_code": 0,
+        "bundle_sha256": "d9181f73579caac1c34b32a89651b9ade16b60379f29d0df929ca897525db100"
+      },
+      {
+        "run": "c",
+        "pythonhashseed": "3",
+        "exit_code": 0,
+        "bundle_sha256": "d9181f73579caac1c34b32a89651b9ade16b60379f29d0df929ca897525db100"
+      }
+    ],
+    "byte_identical_across_independent_processes": true,
+    "bundle": {
+      "path_in_payload": "THIRD_PARTY_NOTICES.md",
+      "bytes": 794408,
+      "sha256": "d9181f73579caac1c34b32a89651b9ade16b60379f29d0df929ca897525db100",
+      "cargo_lock_sha256": "0f9e500debbefcedddb6f9a82430848a90a8245db6575124ef3c10af122da7a5",
+      "dependency_set_sha256": "da45e06ddad09a82fd22a10fc081af61980a0b765361a7a4d35e1aeb7b06d667",
+      "distinct_text_blobs": 207,
+      "text_blob_bytes": 589263,
+      "format": "cos-desktop-third-party-notices-v1",
+      "scope": "cargo-normal-build-reachable-x86_64-pc-windows-msvc",
+      "legal_compliance": "NOT_ASSESSED",
+      "license_sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "notice_sha256": "efd5a4700799e249e1c5947fdacc5dcbdf1b54572c43c2519fea5140f60a6874"
+    },
+    "graph": {
+      "metadata_packages": 386,
+      "reachable_over_normal_build_edges": 378,
+      "third_party_dependencies": 377,
+      "not_reachable_from_the_binary": 8,
+      "roles": {
+        "normal_only": 368,
+        "build_only": 6,
+        "normal_build": 3
+      },
+      "by_source": {
+        "registry": 354,
+        "git": 17,
+        "workspace": 6
+      }
+    },
+    "assessment": {
+      "text_found": 360,
+      "text_not_found": 17,
+      "unresolved_files": 2,
+      "classification": "UNASSESSED_FOR_LEGAL_COMPLIANCE",
+      "note": "TEXT_FOUND only records that a locally present licence text was bound verbatim and hashed. It is not a legal-compliance finding, and build-only dependencies are build inputs whose code need not ship."
+    },
+    "by_source_status": {
+      "registry_text_found": 337,
+      "registry_text_not_found": 17,
+      "git_text_found": 17,
+      "workspace_text_found": 6
+    },
+    "unassessed_dependencies": [
+      {
+        "name": "accesskit",
+        "version": "0.24.1",
+        "declared": "MIT OR Apache-2.0"
+      },
+      {
+        "name": "accesskit_consumer",
+        "version": "0.38.0",
+        "declared": "MIT OR Apache-2.0"
+      },
+      {
+        "name": "accesskit_windows",
+        "version": "0.34.0",
+        "declared": "MIT OR Apache-2.0"
+      },
+      {
+        "name": "lyon",
+        "version": "1.0.19",
+        "declared": "MIT OR Apache-2.0"
+      },
+      {
+        "name": "lyon_algorithms",
+        "version": "1.0.21",
+        "declared": "MIT OR Apache-2.0"
+      },
+      {
+        "name": "lyon_geom",
+        "version": "1.0.19",
+        "declared": "MIT OR Apache-2.0"
+      },
+      {
+        "name": "lyon_path",
+        "version": "1.0.19",
+        "declared": "MIT OR Apache-2.0"
+      },
+      {
+        "name": "lyon_tessellation",
+        "version": "1.0.22",
+        "declared": "MIT OR Apache-2.0"
+      },
+      {
+        "name": "profiling",
+        "version": "1.0.18",
+        "declared": "MIT OR Apache-2.0"
+      },
+      {
+        "name": "profiling-procmacros",
+        "version": "1.0.18",
+        "declared": "MIT OR Apache-2.0"
+      },
+      {
+        "name": "pulp-wasm-simd-flag",
+        "version": "0.1.1",
+        "declared": "MIT"
+      },
+      {
+        "name": "seahash",
+        "version": "4.1.0",
+        "declared": "MIT"
+      },
+      {
+        "name": "simd_helpers",
+        "version": "0.1.0",
+        "declared": "MIT"
+      },
+      {
+        "name": "sval_nested",
+        "version": "2.22.0",
+        "declared": "Apache-2.0 OR MIT"
+      },
+      {
+        "name": "svg_fmt",
+        "version": "0.4.5",
+        "declared": "MIT/Apache-2.0"
+      },
+      {
+        "name": "taffy",
+        "version": "0.13.0",
+        "declared": "MIT"
+      },
+      {
+        "name": "zune-inflate",
+        "version": "0.2.54",
+        "declared": "MIT OR Apache-2.0 OR Zlib"
+      }
+    ],
+    "unresolved_files": [
+      {
+        "name": "sval_nested",
+        "version": "2.22.0",
+        "path": "LICENSE-APACHE",
+        "reason": "POINTER_NOT_RESOLVED"
+      },
+      {
+        "name": "sval_nested",
+        "version": "2.22.0",
+        "path": "LICENSE-MIT",
+        "reason": "POINTER_NOT_RESOLVED"
+      }
+    ],
+    "git_text_binding": {
+      "source": "git+https://github.com/dio16/zed?rev=bf1429a63e9d04fec0eb49464cb97bbfcb39d5e6",
+      "crates": 17,
+      "resolved_text": "LICENSE-APACHE -> zed-9b2579ea426e768b/bf1429a/LICENSE-APACHE",
+      "resolved_sha256": "752daf2fb234ca4a1fa372c073fe127f44b7b90fd2529ae44273a64f9d53da7a",
+      "resolved_bytes": 10768,
+      "note": "identical shared text previously recorded in section 19.154 (that slice pinned upstream zed-industries 395def7a; the current lockfile pins the dio16 fork at bf1429a6)"
+    },
+    "workspace_members": [
+      "app-core",
+      "cos-client",
+      "desktop-gpui",
+      "desktop-protocol",
+      "media",
+      "ui-model"
+    ],
+    "implementation_file_sha256": {
+      "scripts/notice_bundle.py": "b83aa37a712b7f76e05580ea414dd3d8ac7e415e7cb6f1591eb90fdc6037caa5",
+      "scripts/stage_portable.py": "4d48242698e1094782679280d7632c3e2329ec7cb64ba76f4684a734e44c6aa9",
+      "scripts/tests/test_notice_bundle.py": "bccb0d046c02fb2be9189151658e287b0980204820175e5dbdc81d5ac3187ad4",
+      "scripts/tests/test_stage_portable.py": "7ce37c24fb82663e7f571d199e073f7c0469e1ae1bd4a91586d6bab39871fbce"
+    }
+  },
+  "inventory_cross_check": {
+    "historical_reference": "sections 19.153-19.156 and docs/development/REL1_REGISTRY_LICENSE_INVENTORY.tsv (2026-11-02)",
+    "historical_counts": {
+      "metadata_packages": 385,
+      "reachable": 377,
+      "dependencies": 376,
+      "registry": 354,
+      "git": 17,
+      "workspace": 5
+    },
+    "today_counts": {
+      "metadata_packages": 386,
+      "reachable": 378,
+      "dependencies": 377,
+      "registry": 354,
+      "git": 17,
+      "workspace": 6
+    },
+    "explanation": "the tree gained the media workspace member since the historical inventory and the pinned zed source moved to the dio16 fork at bf1429a6; the registry package set is unchanged to the name and version",
+    "registry_status": "live 337 found / 17 unassessed matches the historical TSV exactly, including sval_nested 2.22.0, which ships only ../LICENSE-* pointers",
+    "caught_by_measurement": "the first implementation bound those pointers as text and reported 361 found; the corrected rule reports 360 found / 17 unassessed and is committed separately",
+    "historical_tsv_sha256": "968a12e90e1cefed09417f5b21f2ec569bbbdeac581493450bae83c82b452e01",
+    "historical_tsv_unchanged_by_this_slice": true
+  },
+  "preflight_refusals_verified": [
+    "missing THIRD_PARTY_NOTICES.md fails inventory",
+    "modified bundle bytes fail the payload digest",
+    "forged claim fields (bundle_sha256, dependency_set_sha256, bundle_bytes, counts, format, legal_compliance) fail",
+    "a manifest without the third_party_notices claim fails",
+    "a valid bundle from a different dependency set fails the dependency-set cross-check",
+    "verification performs no network I/O (socket patched to raise)",
+    "the existing unsigned/signing/protocol/runtime-dependency refusals are unchanged"
+  ],
+  "tests": {
+    "commands": [
+      "python -B scripts/tests/test_notice_bundle.py",
+      "python -B scripts/tests/test_stage_portable.py",
+      "python -B -m py_compile scripts/notice_bundle.py scripts/stage_portable.py scripts/tests/test_notice_bundle.py scripts/tests/test_stage_portable.py"
+    ],
+    "results": [
+      {
+        "command": "test_notice_bundle.py",
+        "tests": 21,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 1,
+        "exit_code": 0,
+        "skip_reason": "case-variant file names are not creatable on Windows"
+      },
+      {
+        "command": "test_stage_portable.py",
+        "tests": 34,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 1,
+        "exit_code": 0,
+        "skip_reason": "symbolic-link creation privilege is denied on this host"
+      },
+      {
+        "command": "py_compile",
+        "exit_code": 0
+      }
+    ],
+    "hermetic_scope": "synthetic PE fixtures and synthetic Cargo metadata/source trees; no real binary was staged in this slice"
+  },
+  "residual_external": [
+    "DD-21 signing certificate, publisher and operator inputs; no signature, installer or channel is claimed",
+    "MSVC redistributable supply policy for VCRUNTIME140/api-ms-win-crt-* and DD-21 redistributable-vs-system classification",
+    "delay-load, transitive and dynamic DLL closure; only the direct PE import labels are recorded",
+    "clean-user install, upgrade, uninstall, and the same-user Native smoke are not re-run for this slice",
+    "legal review and per-package NOTICE obligations; 17 dependency packages still have no locally provable text",
+    "the bundle is generated but not committed; a real Rust stage/verify of a built binary was not run here, so the staging transaction is covered hermetically"
+  ],
+  "limits": [
+    "text binding is evidence-of-presence and hashing only, never a compliance conclusion",
+    "build-only dependencies are included for completeness even though their code need not ship",
+    "re-producing the exact bundle requires the same Cargo.lock and a populated local Cargo cache/checkout; the evidence records the digests, not the 794408-byte bundle",
+    "no Gate, review or product acceptance is implied by this record"
+  ]
+}
