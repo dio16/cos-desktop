@@ -895,16 +895,14 @@ impl ImageViewer {
         }
         let Some(frame) = self.current.take() else {
             if let Some(origin) = retained_origin {
-                self.release_backup(origin);
+                self.release_origin_after_registry(origin);
             }
             self.schedule_retirement(cx);
             return;
         };
         self.service.detach(&frame, self.consumer);
-        if let Some(origin) = retained_origin {
-            self.release_backup(origin);
-        }
-        if !self.service.discard_unpainted(&frame)
+        let discarded = self.service.discard_unpainted(&frame);
+        if !discarded
             && !self
                 .retiring
                 .iter()
@@ -916,6 +914,25 @@ impl ImageViewer {
             });
             self.schedule_retirement(cx);
         }
+        // The service dropped its registry entry (or the frame is now only retired), so the
+        // release decision is re-evaluated here rather than before the removal, where the
+        // registry entry itself would have refused it.
+        if let Some(origin) = retained_origin {
+            self.release_origin_after_registry(origin);
+        }
+    }
+
+    /// Re-evaluate a release once the registry no longer holds the frame.
+    fn release_origin_after_registry(&mut self, origin: u64) {
+        if self
+            .retiring
+            .iter()
+            .any(|retired| retired.frame.origin() == origin)
+        {
+            // Retirement still owns the frame; the sweep retries after eviction.
+            return;
+        }
+        self.service.release_origin(origin);
     }
 
     /// Detach at once so no later scene adds these tiles, then drop the atlas entries only after
@@ -988,7 +1005,15 @@ impl ImageViewer {
                 continue;
             }
             match self.service.evict(&retired.frame, window) {
-                Ok(_) | Err(ImageUploadError::NotRetained) => {}
+                Ok(_) => {
+                    // The registry entry is gone and the pane no longer references this origin, so
+                    // an unpainted CPU owner can be reclaimed now; a still-painted or shared one is
+                    // refused by the service and stays charged.
+                    self.service.release_origin(retired.frame.origin());
+                }
+                Err(ImageUploadError::NotRetained) => {
+                    self.service.release_origin(retired.frame.origin());
+                }
                 Err(_) => {
                     // Another consumer still presents it, or release is not provable yet. The
                     // retained frame stays owned and charged and is retried on the next sweep;

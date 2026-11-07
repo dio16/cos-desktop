@@ -2858,6 +2858,65 @@ mod tests {
         assert_eq!(service.counters().retained_frames, 1);
     }
 
+    #[test]
+    fn release_waits_for_registry_removal_and_then_reclaims_the_origin() {
+        let _serial = PREPARATION_SERIAL.lock().expect("test serialization");
+        let service = recovery_service();
+        let frame = prepared_for_recovery(&service, 1, false);
+        service.invalidate_device_generation(2);
+        let recovered = service
+            .recover_frame(&frame, 2, &Cancellation::default())
+            .expect("rebind");
+        let origin = recovered.origin();
+        let before = service.counters();
+
+        // Ordering contract: while the rebound frame is still registered, a close-before-paint
+        // must not pretend the owner was reclaimed.
+        assert!(
+            !service.release_origin(origin),
+            "registry entry still holds the origin"
+        );
+        assert_eq!(
+            service.counters().cpu_retained_bytes,
+            before.cpu_retained_bytes
+        );
+        // The unpainted frame is discarded from the registry, then the release succeeds.
+        assert!(service.discard_unpainted(&recovered));
+        assert!(service.release_origin(origin));
+        assert_eq!(service.counters().cpu_retained_bytes, 0);
+        assert_eq!(service.counters().packed_retained_bytes, 0);
+    }
+
+    #[test]
+    fn a_painted_origin_stays_charged_after_its_pane_leaves() {
+        let _serial = PREPARATION_SERIAL.lock().expect("test serialization");
+        let service = recovery_service();
+        let frame = prepared_for_recovery(&service, 1, false);
+        let consumer = ConsumerId::allocate();
+        assert!(service.attach(&frame, consumer, None));
+        // Simulate an issued tile: a transfer was attempted, so its completion is unprovable.
+        frame.paint_state.lock().expect("frame").issued = vec![true];
+        assert!(service.detach(&frame, consumer));
+        service.invalidate_device_generation(2);
+        // The issued tile makes the frame unpaintable-but-owned: it moves to quarantine and the
+        // release path refuses it, so the unproven transfer stays accounted for.
+        assert!(
+            !service.release_origin(frame.origin()),
+            "a painted origin is never released as if it were unused"
+        );
+        assert_eq!(
+            service
+                .inner
+                .state
+                .lock()
+                .expect("cache state")
+                .quarantined_views
+                .len(),
+            1,
+            "the painted frame stays retained for its unproven transfer"
+        );
+    }
+
     fn demand_frame(first_mip: u8) -> Arc<PreparedImage> {
         Arc::new(PreparedImage {
             identity: media::UploadIdentity {
