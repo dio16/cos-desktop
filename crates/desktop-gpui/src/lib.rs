@@ -2076,6 +2076,22 @@ impl Shell {
         }
     }
 
+    /// Combine the remembered-task notice with the Viewed/Compare restore outcome.
+    ///
+    /// A missing remembered task and a missing Viewed/Compare identity are independent
+    /// unavailable reasons. Earlier the presentation restore overwrote the single notice slot, so
+    /// a missing Task was silently erased whenever the viewed/compare restore had nothing to say.
+    fn combine_restore_notice(
+        previous: Option<String>,
+        restored: Option<String>,
+    ) -> Option<String> {
+        match (previous, restored) {
+            (Some(previous), Some(restored)) => Some(format!("{previous} {restored}")),
+            (Some(previous), None) => Some(previous),
+            (None, restored) => restored,
+        }
+    }
+
     fn apply_restored_presentation(
         &mut self,
         candidates: &[Arc<ui_model::CandidateDisplay>],
@@ -2099,7 +2115,10 @@ impl Shell {
             let outcome = workbench
                 .presentation
                 .restore(viewed.as_ref(), pair.as_ref(), present);
-            self.restore_notice = dock::restore_notice(&outcome);
+            self.restore_notice = Self::combine_restore_notice(
+                self.restore_notice.take(),
+                dock::restore_notice(&outcome),
+            );
         }
         self.restore_presentation_done = true;
         cx.notify();
@@ -7192,5 +7211,44 @@ mod flow_match_cache_reuse_tests {
             Some(&pair),
             &reversed
         ));
+    }
+}
+
+#[cfg(test)]
+mod restore_notice_tests {
+    use super::Shell;
+
+    const TASK_NOTICE: &str = "前回のタスクは、現在閲覧できる情報に含まれていません。";
+    const VIEWED_NOTICE: &str =
+        "復元した表示中の候補は、現在の認可済み観測情報では利用できません。";
+    const COMPARE_NOTICE: &str = "復元した比較ペアは、現在の認可済み観測情報では利用できません。";
+
+    #[test]
+    fn a_missing_remembered_task_survives_presentation_restore() {
+        assert_eq!(
+            Shell::combine_restore_notice(Some(TASK_NOTICE.to_owned()), None),
+            Some(TASK_NOTICE.to_owned())
+        );
+    }
+
+    #[test]
+    fn a_missing_viewed_or_compare_identity_is_reported_on_its_own() {
+        for restored in [VIEWED_NOTICE, COMPARE_NOTICE] {
+            assert_eq!(
+                Shell::combine_restore_notice(None, Some(restored.to_owned())),
+                Some(restored.to_owned())
+            );
+        }
+    }
+
+    #[test]
+    fn a_missing_task_and_a_missing_restored_identity_are_both_reported() {
+        assert_eq!(
+            Shell::combine_restore_notice(
+                Some(TASK_NOTICE.to_owned()),
+                Some(VIEWED_NOTICE.to_owned())
+            ),
+            Some(format!("{TASK_NOTICE} {VIEWED_NOTICE}"))
+        );
     }
 }
