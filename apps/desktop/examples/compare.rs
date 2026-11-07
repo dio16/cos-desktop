@@ -141,6 +141,513 @@ struct TraceEvidence {
     cancel_probe_stage: u8,
     settled: bool,
 }
+#[derive(Clone, Copy)]
+struct LifetimeSample {
+    elapsed_us: u64,
+    phase: &'static str,
+    step: usize,
+    action: &'static str,
+    result: &'static str,
+    windows: usize,
+    viewer_open: bool,
+    compare_open: bool,
+    device_generation: Option<u64>,
+    device_state: &'static str,
+    counters: desktop_gpui::image_upload::ImageUploadCounters,
+    panes: [desktop_gpui::image_viewer::ViewerObservation; 2],
+    viewer: desktop_gpui::image_viewer::ViewerObservation,
+    identities: [Option<[u8; 32]>; 6],
+}
+
+struct LifetimeEvidence {
+    variant: &'static str,
+    recovery: bool,
+    run_start_unix_ms: u128,
+    duration_ms: u64,
+    warmup_ms: u64,
+    stress_start_elapsed_us: u64,
+    stress_end_elapsed_us: u64,
+    samples: Vec<LifetimeSample>,
+}
+
+fn export_lifetime(evidence: LifetimeEvidence) {
+    use std::fmt::Write;
+    let samples = &evidence.samples;
+    let mut output = String::with_capacity(samples.len() * 1600 + 1024);
+    let attempted = samples
+        .iter()
+        .filter(|sample| sample.phase == "stress")
+        .count();
+    let refused = samples
+        .iter()
+        .filter(|sample| sample.result.starts_with("refused"))
+        .count();
+    let complete = samples
+        .iter()
+        .filter(|sample| sample.result == "scene_complete")
+        .count();
+    let _ = write!(
+        output,
+        "{{\"schema_version\":1,\"task\":\"MP-REC2\",\"contract\":\"DC-MP-REC2\",\"pid\":{},\"run_start_unix_ms\":{},\"duration_ms\":{},\"warmup_ms\":{},\"stress_start_elapsed_us\":{},\"stress_end_elapsed_us\":{},\"stress_ms\":{},\"settle_ms\":7000,\"variant\":\"{}\",\"recovery\":{},\"operation_attempts\":{attempted},\"scene_observations\":{complete},\"refused_operations\":{refused},\"workload_limits\":\"Only the explicit supported 2048-square RGB8 fixture path is admitted; other formats and dimensions are NOT_ADMITTED.\",\"identity_order\":[\"current_compare_a\",\"current_compare_b\",\"retained_compare_a\",\"retained_compare_b\",\"current_viewer\",\"retained_viewer\"],\"endpoint_limitations\":{{\"gpu_residency\":\"NOT_MEASURED: GPUI atlas allocation is not exposed\",\"process_private_bytes\":\"NOT_MEASURED: external PID/lifetime-bound sampler required\",\"process_working_set\":\"NOT_MEASURED: external PID/lifetime-bound sampler required\",\"gpu_dedicated\":\"NOT_MEASURED: external sampler endpoint\",\"gpu_shared\":\"NOT_MEASURED: external sampler endpoint\",\"gpu_committed\":\"NOT_MEASURED: external sampler endpoint\",\"present\":\"NOT_MEASURED: scene observations do not prove displayed frames\"}},\"samples\":[",
+        std::process::id(),
+        evidence.run_start_unix_ms,
+        evidence.duration_ms,
+        evidence.warmup_ms,
+        evidence.stress_start_elapsed_us,
+        evidence.stress_end_elapsed_us,
+        (evidence.stress_end_elapsed_us - evidence.stress_start_elapsed_us) / 1000,
+        evidence.variant,
+        evidence.recovery,
+    );
+    for (i, sample) in samples.iter().enumerate() {
+        if i > 0 {
+            output.push(',');
+        }
+        let _ = write!(
+            output,
+            "{{\"elapsed_us\":{},\"phase\":\"{}\",\"step\":{},\"action\":\"{}\",\"result\":\"{}\",\"windows\":{},\"viewer_open\":{},\"compare_open\":{},\"device_generation\":{},\"device_state\":\"{}\",\"counters\":{{\"retained_frames\":{},\"backup_claims\":{},\"backup_origins\":{},\"quarantined_frames\":{},\"pool_count\":{},\"staging_reservation_bytes\":{},\"in_flight_reservation_bytes\":{},\"resident_reservation_bytes\":{},\"quarantined_staging_bytes\":{},\"quarantined_in_flight_bytes\":{},\"quarantined_resident_bytes\":{},\"decode_calls\":{},\"reuse_calls\":{},\"packed_retained_bytes\":{},\"decoded_retained_bytes\":{},\"cpu_retained_bytes\":{},\"period_index\":{},\"reserved_bytes_this_period\":{},\"period_capacity_bytes\":{},\"paint_issued_bytes\":{},\"paint_issued_tiles\":{},\"repaint_calls\":{},\"evicted_frames\":{},\"atlas_drop_calls\":{},\"released_payload_bytes\":{},\"quarantined_payload_bytes\":{},\"quarantine_capacity_bytes\":{},\"consumers\":{},\"consumer_unknown_frames\":{},\"preparation_queue_wait_nanos\":{},\"preparation_queue_rejections\":{},\"preparation_queue_cancellations\":{}}},\"views\":[",
+            sample.elapsed_us,
+            sample.phase,
+            sample.step,
+            sample.action,
+            sample.result,
+            sample.windows,
+            sample.viewer_open,
+            sample.compare_open,
+            sample
+                .device_generation
+                .map_or("null".to_owned(), |v| v.to_string()),
+            sample.device_state,
+            sample.counters.retained_frames,
+            sample.counters.backup_claims,
+            sample.counters.backup_origins,
+            sample.counters.quarantined_frames,
+            sample.counters.pool_count,
+            sample.counters.staging_reservation_bytes,
+            sample.counters.in_flight_reservation_bytes,
+            sample.counters.resident_reservation_bytes,
+            sample.counters.quarantined_staging_bytes,
+            sample.counters.quarantined_in_flight_bytes,
+            sample.counters.quarantined_resident_bytes,
+            sample.counters.decode_calls,
+            sample.counters.reuse_calls,
+            sample.counters.packed_retained_bytes,
+            sample.counters.decoded_retained_bytes,
+            sample.counters.cpu_retained_bytes,
+            sample.counters.period_index,
+            sample.counters.reserved_bytes_this_period,
+            sample.counters.period_capacity_bytes,
+            sample.counters.paint_issued_bytes,
+            sample.counters.paint_issued_tiles,
+            sample.counters.repaint_calls,
+            sample.counters.evicted_frames,
+            sample.counters.atlas_drop_calls,
+            sample.counters.released_payload_bytes,
+            sample.counters.quarantined_payload_bytes,
+            sample.counters.quarantine_capacity_bytes,
+            sample.counters.consumers,
+            sample.counters.consumer_unknown_frames,
+            sample.counters.preparation_queue_wait_nanos,
+            sample.counters.preparation_queue_rejections,
+            sample.counters.preparation_queue_cancellations,
+        );
+        for (view_index, view) in sample
+            .panes
+            .iter()
+            .chain(std::iter::once(&sample.viewer))
+            .enumerate()
+        {
+            if view_index > 0 {
+                output.push(',');
+            }
+            let _ = write!(
+                output,
+                "{{\"scene_serial\":{},\"view_serial\":{},\"phase\":{},\"complete_in_scene\":{},\"current_origin\":{},\"retained_origin\":{},\"retiring_frames\":{},\"viewport\":[{:.1},{:.1}]}}",
+                view.scene_serial,
+                view.view_serial,
+                view.phase,
+                view.complete_in_scene,
+                view.current_origin
+                    .map_or("null".to_owned(), |v| v.to_string()),
+                view.retained_origin
+                    .map_or("null".to_owned(), |v| v.to_string()),
+                view.retiring_frames,
+                view.viewport.width,
+                view.viewport.height
+            );
+        }
+        output.push_str("],\"identities\":[");
+        for (identity_index, identity) in sample.identities.iter().enumerate() {
+            if identity_index > 0 {
+                output.push(',');
+            }
+            match identity {
+                Some(digest) => {
+                    output.push('"');
+                    for byte in digest {
+                        let _ = write!(output, "{byte:02x}");
+                    }
+                    output.push('"');
+                }
+                None => output.push_str("null"),
+            }
+        }
+        output.push_str("]}");
+    }
+    output.push_str("]}\n");
+    print!("REC2_RESULT {output}");
+}
+fn start_lifetime(cx: &mut Context<CompareDemo>, variant: &'static str, recovery: bool) {
+    let background = cx.background_executor().clone();
+    cx.spawn(async move |this, cx| {
+        let run_start = Instant::now();
+        let run_start_unix_ms = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_millis();
+        // Every phase reads real view identities, including after close; never fill in nulls
+        // merely because a close operation was requested.
+        let capture =
+            |demo: &CompareDemo, window: &Window, cx: &App, phase, step, action, result| {
+                let panes = demo.compare.read(cx).observations(cx);
+                let viewer = demo.viewer.read(cx);
+                let current = demo.compare.read(cx).frames(cx);
+                let retained = demo.compare.read(cx).retained_frames(cx);
+                let (device_state, device_generation) = match window.gpu_device_state() {
+                    GpuDeviceState::Unsupported => ("unsupported", None),
+                    GpuDeviceState::Ready { generation } => ("ready", Some(generation)),
+                    GpuDeviceState::Recovering { generation } => ("recovering", Some(generation)),
+                    GpuDeviceState::Unavailable { generation } => ("unavailable", Some(generation)),
+                };
+                LifetimeSample {
+                    elapsed_us: run_start.elapsed().as_micros().min(u64::MAX as u128) as u64,
+                    phase,
+                    step,
+                    action,
+                    result,
+                    windows: cx.windows().len(),
+                    viewer_open: viewer.observation().current_origin.is_some()
+                        || viewer.observation().retained_origin.is_some(),
+                    compare_open: !demo.closed,
+                    device_generation,
+                    device_state,
+                    counters: desktop_gpui::image_upload::ImageUploadService::global().counters(),
+                    panes,
+                    viewer: viewer.observation(),
+                    identities: [
+                        current[0].as_ref().map(|f| f.identity().content_digest),
+                        current[1].as_ref().map(|f| f.identity().content_digest),
+                        retained[0].as_ref().map(|f| f.identity().content_digest),
+                        retained[1].as_ref().map(|f| f.identity().content_digest),
+                        viewer
+                            .prepared()
+                            .as_ref()
+                            .map(|f| f.identity().content_digest),
+                        viewer
+                            .retained_prepared()
+                            .as_ref()
+                            .map(|f| f.identity().content_digest),
+                    ],
+                }
+            };
+        let warm = Instant::now();
+        while warm.elapsed() < Duration::from_secs(5) {
+            let ready = this
+                .update_in(cx, |demo, _, cx| {
+                    demo.compare
+                        .read(cx)
+                        .observations(cx)
+                        .iter()
+                        .all(|view| view.complete_in_scene && view.phase >= 2)
+                })
+                .unwrap_or(false);
+            if ready {
+                break;
+            }
+            background.timer(Duration::from_millis(50)).await;
+        }
+        let warmup_ms = warm.elapsed().as_millis().min(u64::MAX as u128) as u64;
+        let mut samples = Vec::with_capacity(64);
+        if let Ok(sample) = this.update_in(cx, |demo, window, cx| {
+            capture(demo, window, cx, "pre_stress", 0, "baseline", "observed")
+        }) {
+            samples.push(sample);
+        }
+        let stress_start_elapsed_us = run_start.elapsed().as_micros().min(u64::MAX as u128) as u64;
+        // Sixty independently observed actions, not a timer that can end with fewer samples.
+        for step in 0..60 {
+            let dispatched = this.update_in(cx, |demo, window, cx| {
+                let action = match step % 12 {
+                    0 => "load_same_pair",
+                    1 => "replace_side_a",
+                    2 => "replace_side_b",
+                    3 => "swap",
+                    4 => "unavailable",
+                    5 => "reappear",
+                    6 => "compare_close",
+                    7 => "viewer_close",
+                    8 => "viewer_reload",
+                    9 => "compare_reopen",
+                    10 if recovery => "recovery_fail",
+                    11 if recovery => "recovery_recreate_and_close",
+                    _ => "reload_side_a",
+                };
+                let mut result = "requested";
+                match step % 12 {
+                    0 => {
+                        demo.closed = false;
+                        demo.load_pair(window, cx);
+                    }
+                    1 | 2 => {
+                        let side = if step % 12 == 1 {
+                            CompareSide::A
+                        } else {
+                            CompareSide::B
+                        };
+                        let pair = demo.presentation.compare_pair();
+                        let other = pair
+                            .as_ref()
+                            .map(|pair| candidate_index(&pair[1 - side.index()]));
+                        let current = pair
+                            .as_ref()
+                            .map(|pair| candidate_index(&pair[side.index()]));
+                        let index = match (other, current) {
+                            (Some(2), _) => 0,
+                            (Some(other), Some(2)) => 1 - other,
+                            _ => 2,
+                        };
+                        if demo.presentation.arm_change(side) {
+                            demo.select(index, window, cx);
+                        } else {
+                            result = "refused_no_pair";
+                        }
+                    }
+                    3 => {
+                        if demo.presentation.swap_compare() {
+                            let labels = demo.presentation.compare_pair().map(|pair| {
+                                pair.each_ref().map(|candidate| {
+                                    SharedString::from(CANDIDATES[candidate_index(candidate)].name)
+                                })
+                            });
+                            demo.compare.update(cx, |view, cx| {
+                                view.swap_resources(window, cx);
+                                if let Some(labels) = labels {
+                                    view.set_labels(labels, cx);
+                                }
+                            });
+                        } else {
+                            result = "refused_no_pair";
+                        }
+                    }
+                    4 => {
+                        demo.disappear(cx);
+                        if demo.missing.is_none() {
+                            result = "refused_no_pair";
+                        }
+                    }
+                    5 => {
+                        let had_missing = demo.missing.is_some();
+                        demo.reappear(window, cx);
+                        if !had_missing || demo.missing.is_some() {
+                            result = "refused_no_missing_source";
+                        }
+                    }
+                    6 => {
+                        let viewed = demo.presentation.viewed().map(candidate_index);
+                        let pair = demo
+                            .presentation
+                            .compare_pair()
+                            .map(|pair| [candidate_index(&pair[0]), candidate_index(&pair[1])]);
+                        let frames = demo.compare.read(cx).frames(cx);
+                        let withheld = viewed.is_some_and(|index| demo.missing == Some(index));
+                        demo.missing_frame = None;
+                        demo.presentation.close_compare();
+                        demo.compare.update(cx, |view, cx| view.close(cx));
+                        if withheld {
+                            demo.viewer.update(cx, |viewer, cx| {
+                                viewer.unavailable(
+                                    "Fixture source unavailable while Compare is closed.".into(),
+                                    cx,
+                                )
+                            });
+                        } else if let Some(frame) = viewed.and_then(|index| {
+                            pair.and_then(|pair| {
+                                pair.iter().position(|candidate| *candidate == index)
+                            })
+                            .and_then(|pane| frames[pane].clone())
+                        }) {
+                            demo.viewer.update(cx, |viewer, cx| {
+                                viewer.present_prepared(frame, window, cx);
+                            });
+                        }
+                        demo.closed = true;
+                        cx.notify();
+                    }
+                    7 => demo.viewer.update(cx, |viewer, cx| viewer.close(cx)),
+                    8 => {
+                        let index = demo.presentation.viewed().map(candidate_index).unwrap_or(0);
+                        demo.show_viewed(index, false, window, cx);
+                    }
+                    9 => {
+                        if demo.presentation.compare_pair().is_none() {
+                            let a = demo.selected % CANDIDATES.len();
+                            let b = (a + 1) % CANDIDATES.len();
+                            demo.presentation.select(ViewedCandidate(reference(a)));
+                            demo.presentation.select(ViewedCandidate(reference(b)));
+                        }
+                        demo.closed = false;
+                        demo.load_pair(window, cx);
+                    }
+                    _ if recovery => {
+                        #[cfg(feature = "gpu-recovery-test")]
+                        {
+                            let mode = if step % 12 == 10 {
+                                GpuDeviceRecoveryTest::Fail
+                            } else {
+                                GpuDeviceRecoveryTest::Recreate
+                            };
+                            if !demo.request_backend_recovery(
+                                mode,
+                                "REC2 backend hook; not an OS reset.",
+                                cx,
+                            ) {
+                                result = "refused_unsupported";
+                            }
+                            if step % 12 == 11 {
+                                // Close immediately after dispatch, before asynchronous backend completion.
+                                demo.missing_frame = None;
+                                demo.presentation.close_compare();
+                                demo.compare.update(cx, |view, cx| view.close(cx));
+                                demo.viewer.update(cx, |viewer, cx| viewer.close(cx));
+                                demo.closed = true;
+                                cx.notify();
+                            }
+                        }
+                        #[cfg(not(feature = "gpu-recovery-test"))]
+                        {
+                            result = "refused_feature_unavailable";
+                        }
+                    }
+                    _ => demo.load_side(CompareSide::A, window, cx),
+                }
+                (action, result)
+            });
+            // Observe the resulting scene on a later turn. A request is never a completed upload.
+            background.timer(Duration::from_secs(1)).await;
+            if let Ok((action, result)) = dispatched
+                && let Ok(mut sample) = this.update_in(cx, |demo, window, cx| {
+                    capture(demo, window, cx, "stress", step, action, result)
+                })
+            {
+                if result == "requested"
+                    && matches!(
+                        action,
+                        "load_same_pair"
+                            | "replace_side_a"
+                            | "replace_side_b"
+                            | "viewer_reload"
+                            | "compare_reopen"
+                            | "reload_side_a"
+                    )
+                {
+                    let observed = if action == "viewer_reload" {
+                        sample.viewer.complete_in_scene && sample.viewer.phase >= 2
+                    } else {
+                        sample
+                            .panes
+                            .iter()
+                            .all(|view| view.complete_in_scene && view.phase >= 2)
+                    };
+                    sample.result = if observed {
+                        "scene_complete"
+                    } else {
+                        "pending_or_unavailable"
+                    };
+                }
+                samples.push(sample);
+            }
+        }
+        let stress_end_elapsed_us = run_start.elapsed().as_micros().min(u64::MAX as u128) as u64;
+        background.timer(Duration::from_secs(5)).await;
+        if let Ok(sample) = this.update_in(cx, |demo, window, cx| {
+            capture(demo, window, cx, "settle", 60, "observe_settle", "observed")
+        }) {
+            samples.push(sample);
+        }
+        // First withdraw the other window. The surviving window must keep its own resource;
+        // its final withdrawal below is observed separately from process termination.
+        let others = this
+            .update_in(cx, |_, window, cx| {
+                cx.windows()
+                    .into_iter()
+                    .filter(|handle| handle.window_id() != window.window_handle().window_id())
+                    .filter_map(|handle| handle.downcast::<CompareDemo>())
+                    .collect::<Vec<_>>()
+            })
+            .unwrap_or_default();
+        for other in others {
+            let _ = other.update(cx, |demo, window, cx| {
+                demo.missing_frame = None;
+                demo.compare.update(cx, |view, cx| view.close(cx));
+                demo.viewer.update(cx, |viewer, cx| viewer.close(cx));
+                let service = desktop_gpui::image_upload::ImageUploadService::global();
+                let _ = service.evict_owned_by(window);
+                service.forget_window(window.window_handle().window_id().as_u64());
+                window.remove_window();
+            });
+        }
+        background.timer(Duration::from_secs(1)).await;
+        if let Ok(sample) = this.update_in(cx, |demo, window, cx| {
+            capture(
+                demo,
+                window,
+                cx,
+                "peer_closed",
+                60,
+                "close_other_window",
+                "observed",
+            )
+        }) {
+            samples.push(sample);
+        }
+        let _ = this.update_in(cx, |demo, _, cx| {
+            demo.missing_frame = None;
+            demo.presentation.close_compare();
+            demo.compare.update(cx, |view, cx| view.close(cx));
+            demo.viewer.update(cx, |viewer, cx| viewer.close(cx));
+            demo.closed = true;
+            cx.notify();
+        });
+        background.timer(Duration::from_secs(1)).await;
+        if let Ok(sample) = this.update_in(cx, |demo, window, cx| {
+            // Use the ordinary safe eviction result, never forget a live consumer to fake release.
+            let _ = desktop_gpui::image_upload::ImageUploadService::global().evict_owned_by(window);
+            capture(
+                demo,
+                window,
+                cx,
+                "post_close_teardown",
+                60,
+                "close_and_evict",
+                "observed",
+            )
+        }) {
+            samples.push(sample);
+        }
+        export_lifetime(LifetimeEvidence {
+            variant,
+            recovery,
+            run_start_unix_ms,
+            warmup_ms,
+            duration_ms: run_start.elapsed().as_millis().min(u64::MAX as u128) as u64,
+            stress_start_elapsed_us,
+            stress_end_elapsed_us,
+            samples,
+        });
+        let _ = this.update_in(cx, |_, _, cx| cx.quit());
+    })
+    .detach();
+}
 
 fn export_trace(
     samples: &[TraceSample],
@@ -601,13 +1108,15 @@ impl CompareDemo {
         mode: GpuDeviceRecoveryTest,
         label: &'static str,
         cx: &mut Context<Self>,
-    ) {
-        self.status = if cx.request_gpu_device_recreation(mode) {
+    ) -> bool {
+        let accepted = cx.request_gpu_device_recreation(mode);
+        self.status = if accepted {
             label.into()
         } else {
             "Test-support backend recreation is unsupported here.".into()
         };
         cx.notify();
+        accepted
     }
 
     fn backend_controls(&self, cx: &Context<Self>) -> impl IntoElement {
@@ -629,7 +1138,7 @@ impl CompareDemo {
                                 GpuDeviceRecoveryTest::Recreate,
                                 "Backend recreation requested; test-support only, not a physical reset.",
                                 cx,
-                            )
+                            );
                         })),
                 )
                 .child(
@@ -645,7 +1154,7 @@ impl CompareDemo {
                                 GpuDeviceRecoveryTest::Fail,
                                 "Controlled backend factory failure requested; not a physical reset.",
                                 cx,
-                            )
+                            );
                         })),
                 )
         }
@@ -1066,10 +1575,17 @@ impl Render for CompareDemo {
     }
 }
 
+#[derive(Clone, Copy)]
+enum ObservationMode {
+    Interactive,
+    Trace,
+    Lifetime { recovery: bool },
+}
+
 fn open_compare_window(
     cx: &mut App,
     treatment_shared: bool,
-    trace_enabled: bool,
+    observation: ObservationMode,
     distinct: bool,
     window_number: usize,
     window_count: usize,
@@ -1225,7 +1741,7 @@ fn open_compare_window(
                 demo.presentation
                     .select(ViewedCandidate(reference(if distinct { 2 } else { 1 })));
                 demo.load_pair(window, cx);
-                if trace_enabled {
+                if matches!(observation, ObservationMode::Trace) {
                     start_trace(
                         cx,
                         if window_count > 1 {
@@ -1243,6 +1759,15 @@ fn open_compare_window(
                         },
                     );
                 }
+                if let ObservationMode::Lifetime { recovery } = observation
+                    && window_number == 1 {
+                    start_lifetime(
+                        cx,
+                        if window_count > 1 { "windows2" } else if distinct { "distinct" }
+                        else if treatment_shared { "shared" } else { "independent" },
+                        recovery,
+                    );
+                }
             });
             let weak_compare = compare.downgrade();
             let weak_viewer = viewer.downgrade();
@@ -1258,7 +1783,9 @@ fn open_compare_window(
         },
     );
     if opened.is_ok() {
-        println!("COMPARE_WINDOW_OPENED window={window_number}");
+        if !matches!(observation, ObservationMode::Lifetime { .. }) {
+            println!("COMPARE_WINDOW_OPENED window={window_number}");
+        }
     } else {
         eprintln!("COMPARE_WINDOW_REFUSED window={window_number}");
     }
@@ -1275,19 +1802,45 @@ fn main() {
                 "--distinct",
                 "--windows2",
                 "--trace",
+                "--lifetime",
+                "--lifetime-recovery",
             ]
             .contains(&arg.as_str())
         })
     {
         eprintln!(
-            "Usage: compare --fixture [--shared|--independent|--distinct] [--windows2] [--trace]"
+            "Usage: compare --fixture [--shared|--independent|--distinct] [--windows2] [--trace|--lifetime [--lifetime-recovery]]"
         );
         std::process::exit(2);
     }
+    let trace_enabled = args.iter().any(|arg| arg == "--trace");
+    let lifetime_enabled = args.iter().any(|arg| arg == "--lifetime");
+    let lifetime_recovery = args.iter().any(|arg| arg == "--lifetime-recovery");
+    if trace_enabled && lifetime_enabled {
+        eprintln!("--trace and --lifetime are mutually exclusive");
+        std::process::exit(2);
+    }
+    if lifetime_recovery && !lifetime_enabled {
+        eprintln!("--lifetime-recovery requires --lifetime");
+        std::process::exit(2);
+    }
+    #[cfg(not(feature = "gpu-recovery-test"))]
+    if lifetime_recovery {
+        eprintln!("--lifetime-recovery requires --features gpu-recovery-test");
+        std::process::exit(2);
+    }
+    let observation = if lifetime_enabled {
+        ObservationMode::Lifetime {
+            recovery: lifetime_recovery,
+        }
+    } else if trace_enabled {
+        ObservationMode::Trace
+    } else {
+        ObservationMode::Interactive
+    };
     let treatment_shared = !args
         .iter()
         .any(|arg| arg == "--independent" || arg == "--distinct");
-    let trace_enabled = args.iter().any(|arg| arg == "--trace");
     let distinct = args.iter().any(|arg| arg == "--distinct");
     let windows2 = args.iter().any(|arg| arg == "--windows2");
     let independent = args.iter().any(|arg| arg == "--independent");
@@ -1327,10 +1880,10 @@ fn main() {
         })
         .detach();
         if windows2 {
-            open_compare_window(cx, true, trace_enabled, false, 1, 2);
-            open_compare_window(cx, true, trace_enabled, false, 2, 2);
+            open_compare_window(cx, true, observation, false, 1, 2);
+            open_compare_window(cx, true, observation, false, 2, 2);
         } else {
-            open_compare_window(cx, treatment_shared, trace_enabled, distinct, 1, 1);
+            open_compare_window(cx, treatment_shared, observation, distinct, 1, 1);
         }
         if cx.windows().is_empty() {
             cx.quit();

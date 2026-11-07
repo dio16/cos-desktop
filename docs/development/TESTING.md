@@ -192,6 +192,19 @@ Use `cargo run --locked --release -p cos-desktop --example compare -- --fixture`
 - Regression coverage in `image_upload` checks shared versus independent recovery ownership, reuse of the exact CPU pixels/packed tiles, stale/cancelled admission, monotonic generation, persistent quarantine charges and bounded repeated no-paint recovery. Run the documented full quality route and native smoke for the final immutable source; local-override evidence alone is not the portable pinned candidate's independent Gate or external review.
 - Record every unmet condition as `NOT_RUN`/`NOT_MEASURED`/HOLD. Backend recreation, successful tests and a clean review never substitute for physical-reset or product-acceptance evidence.
 
+### 6.4 MP-REC2 native cache-lifetime observations
+
+[DC-MP-REC2](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-rec2) and rendering §6.1 own acceptance; the observer does not replace their missing physical endpoints.
+
+- Build a clean committed source with `cargo build --locked --release -p cos-desktop --features gpu-recovery-test --example compare`. Use the ordinary local target for development, not a previous Gate's target. If MSVC reports a denied `_CL_…` temporary file, use an owned process-local `TEMP`/`TMP` directory; do not change security settings or silently ignore the compiler error.
+- `compare --fixture --lifetime --shared` performs 60 actions separated by a one-second observation delay, with bounded warmup, settle and final withdrawal. `--independent`, `--distinct` and `--windows2` select separate lifetime workloads. Add `--lifetime-recovery` for the existing feature-gated backend Fail/Recreate route and close immediately after recreation dispatch; this is not an OS GPU reset. `--trace` and `--lifetime` are mutually exclusive.
+- Run `pwsh -NoProfile -File scripts/measure-cache-lifetime.ps1 -Exe target/release/examples/compare.exe -EvidenceDir <new-private-directory> -Variant shared -Runs 5`, then `python -B scripts/check_cache_lifetime.py <new-private-directory> --output <new-report.json>`. Repeat in distinct new directories for `independent`, `distinct`, `windows2`, and `windows2 -Recovery`. These are not the deferred R5 cross-variant performance/fairness comparison.
+- Retain the build/source/GPUI and binary identities, frozen method, actual display topology, raw output hashes, PID/start-time-bound process and GPU counter samples, and each native `REC2_RESULT`. Each run must contain at least 60 seconds of actual stress and 60 post-action native observations. A dirty source, changed binary, reused lifetime, truncated output, invalid clock or missing required evidence cannot qualify a candidate.
+- Inspect the actual surface as well as the ledger. Report scene observations, pending/unavailable states, dispatch refusals, and final current/backup/retirement/consumer ownership separately. A scene is not Present; missing GPU counters are not zero; unavailable consumer locks are not proof of final withdrawal. Closing the peer window precedes the surviving window's final withdrawal.
+- Reconcile decoded and packed CPU allocations, registry/backup/quarantine owners, reservation bytes, safe eviction/drop calls and process/GPU gauges. Unproven transfers stay charged. Flat gauges caused by repeated refusal are not throughput plateau or release proof, and fresh processes are not OS/driver-cold runs. Unsupported presentation classes remain refused rather than widening admission to fill the matrix.
+- Full residency/release acceptance remains HOLD when atlas allocations/removal, GPU completion/resource lifetime, or ratified physical bounds cannot be measured. Successful observation collection, regression tests and an independent Gate do not change that disposition.
+
+
 
 ## 7. Deferred and external evidence
 

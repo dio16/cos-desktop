@@ -261,7 +261,16 @@ pub struct FrameProgress {
 /// Process-wide upload observations. These are admission/API-call counters, not GPU measurements.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct ImageUploadCounters {
+    /// Service registry frames; pane backup claims and quarantine wrappers are counted separately.
     pub retained_frames: usize,
+    /// Pane backup claims across all origins. Claims are not GPU references.
+    pub backup_claims: usize,
+    /// Distinct origins with one or more pane backup claims.
+    pub backup_origins: usize,
+    /// Service-owned quarantine wrappers for frames with recovery or unproven-transfer retention.
+    pub quarantined_frames: usize,
+    /// Upload pools currently registered by the service, across device generations.
+    pub pool_count: usize,
     pub staging_reservation_bytes: u64,
     pub in_flight_reservation_bytes: u64,
     pub resident_reservation_bytes: u64,
@@ -272,8 +281,11 @@ pub struct ImageUploadCounters {
     pub decode_calls: u64,
     /// Exact-identity frame reuses after content digest verification.
     pub reuse_calls: u64,
-    /// Packed tile payload bytes retained by viewer frames and quarantine.
+    /// Packed tile payload bytes across distinct tile caches retained by frames and quarantine.
     pub packed_retained_bytes: u64,
+    /// Distinct decoded RGBA raster bytes across registered frames and quarantine, deduplicated by
+    /// allocation identity. Does not measure GPU residency.
+    pub decoded_retained_bytes: u64,
     /// CPU-side retained raster and packed payload bytes; not GPU residency.
     pub cpu_retained_bytes: u64,
     pub period_index: u128,
@@ -296,8 +308,10 @@ pub struct ImageUploadCounters {
     /// Payload bytes currently quarantined across every device generation.
     pub quarantined_payload_bytes: u64,
     pub quarantine_capacity_bytes: u64,
-    /// Consumers currently attached across every retained frame.
+    /// Attached consumers observed without blocking. A lower bound when consumer_unknown_frames > 0.
     pub consumers: usize,
+    /// Registry frames whose consumer set could not be sampled because its paint state was locked.
+    pub consumer_unknown_frames: usize,
     /// Cumulative background queue wait; this is not UI latency.
     pub preparation_queue_wait_nanos: u64,
     pub preparation_queue_rejections: u64,
@@ -861,7 +875,7 @@ impl ImageUploadService {
                 } else {
                     FRAME_RGBA8_BYTES
                 };
-                if retained_bytes(&state).1.saturating_add(incoming) > STAGING_LIMIT_BYTES * 2 {
+                if retained_bytes(&state).cpu.saturating_add(incoming) > STAGING_LIMIT_BYTES * 2 {
                     return Err(ImageUploadError::RetainedFrameLimit);
                 }
             }
@@ -1068,7 +1082,7 @@ impl ImageUploadService {
             let incoming = missing.iter().try_fold(0u64, |sum, span| {
                 tile_transfer_layout(*span).map(|(_, bytes)| sum.saturating_add(bytes))
             })?;
-            if retained_bytes(&state).1.saturating_add(incoming) > STAGING_LIMIT_BYTES * 2 {
+            if retained_bytes(&state).cpu.saturating_add(incoming) > STAGING_LIMIT_BYTES * 2 {
                 return Err(ImageUploadError::RetainedFrameLimit);
             }
             missing
@@ -1421,9 +1435,23 @@ impl ImageUploadService {
             0
         };
         let queue = PROCESS_PREPARATION.state.lock().expect("preparation queue");
-        let (packed_retained_bytes, cpu_retained_bytes) = retained_bytes(&state);
+        let retained = retained_bytes(&state);
+        let (consumers, consumer_unknown_frames) =
+            state
+                .frames
+                .iter()
+                .fold((0, 0), |(consumers, unknown), frame| {
+                    match frame.paint_state.try_lock() {
+                        Ok(paint) => (consumers + paint.consumers.len(), unknown),
+                        Err(_) => (consumers, unknown + 1),
+                    }
+                });
         ImageUploadCounters {
             retained_frames: state.frames.len(),
+            backup_claims: state.backup_claims.values().copied().sum(),
+            backup_origins: state.backup_claims.len(),
+            quarantined_frames: state.quarantined_views.len(),
+            pool_count: state.pools.len(),
             staging_reservation_bytes: staging,
             in_flight_reservation_bytes: in_flight,
             resident_reservation_bytes: resident,
@@ -1432,8 +1460,9 @@ impl ImageUploadService {
             quarantined_resident_bytes: resident_stuck,
             decode_calls: state.decode_calls,
             reuse_calls: state.reuse_calls,
-            packed_retained_bytes,
-            cpu_retained_bytes,
+            packed_retained_bytes: retained.packed,
+            decoded_retained_bytes: retained.decoded,
+            cpu_retained_bytes: retained.cpu,
             period_index,
             reserved_bytes_this_period,
             period_capacity_bytes: PERIOD_UPLOAD_CAP_BYTES,
@@ -1445,17 +1474,8 @@ impl ImageUploadService {
             released_payload_bytes: state.released_payload_bytes,
             quarantined_payload_bytes: state.quarantined_payload_bytes,
             quarantine_capacity_bytes: quarantine_capacity(),
-            consumers: state
-                .frames
-                .iter()
-                .map(|frame| {
-                    frame
-                        .paint_state
-                        .try_lock()
-                        .map(|state| state.consumers.len())
-                        .unwrap_or(0)
-                })
-                .sum(),
+            consumers,
+            consumer_unknown_frames,
             preparation_queue_wait_nanos: queue.wait_nanos,
             preparation_queue_rejections: queue.rejections,
             preparation_queue_cancellations: queue.cancellations,
@@ -1476,32 +1496,66 @@ fn retain_cpu_frame(state: &mut ServiceState, frame: Arc<PreparedImage>) {
     state.quarantined_views.push(frame);
 }
 
-/// CPU payload accounting counts each distinct owned allocation once, however many retained
-/// frames and generations share it. Each frame is inspected under its own lock, so two paint
-/// states are never held at the same time.
-fn retained_bytes(state: &ServiceState) -> (u64, u64) {
-    let mut sources: Vec<*const u8> = Vec::new();
-    let mut caches: Vec<*const Mutex<Vec<PreparedTile>>> = Vec::new();
-    let mut raw = 0u64;
-    let mut packed = 0u64;
-    for frame in state.frames.iter().chain(&state.quarantined_views) {
+/// Retained CPU allocation accounting, deduplicated by allocation identity across service-owned
+/// registered frames and quarantine wrappers. The inventory is bounded and this scan uses no
+/// diagnostic heap allocation; each paint state is locked one at a time.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+struct RetainedBytes {
+    decoded: u64,
+    packed: u64,
+    cpu: u64,
+}
+
+fn retained_frame_at(state: &ServiceState, index: usize) -> &PreparedImage {
+    if index < state.frames.len() {
+        &state.frames[index]
+    } else {
+        &state.quarantined_views[index - state.frames.len()]
+    }
+}
+
+fn retained_bytes(state: &ServiceState) -> RetainedBytes {
+    let mut retained = RetainedBytes::default();
+    let frame_count = state.frames.len() + state.quarantined_views.len();
+    for index in 0..frame_count {
+        let frame = retained_frame_at(state, index);
         if let Some(source) = frame.source.as_ref() {
             let raster = source.raster().rgba.as_ptr();
-            if !sources.contains(&raster) {
-                sources.push(raster);
-                raw = raw.saturating_add(source.raster().rgba.len() as u64);
+            let already_counted = (0..index).any(|previous_index| {
+                retained_frame_at(state, previous_index)
+                    .source
+                    .as_ref()
+                    .is_some_and(|previous| previous.raster().rgba.as_ptr() == raster)
+            });
+            if !already_counted {
+                retained.decoded = retained
+                    .decoded
+                    .saturating_add(source.raster().rgba.len() as u64);
             }
         }
-        let paint = frame.paint_state.lock().expect("image frame paint state");
-        let cache = &*paint.tiles as *const Mutex<Vec<PreparedTile>>;
-        let cached = paint.tiles.lock().expect("CPU tile cache");
-        if !caches.contains(&cache) {
-            caches.push(cache);
-            packed =
-                packed.saturating_add(cached.iter().map(|tile| tile.transfer_bytes).sum::<u64>());
+
+        let (cache, bytes) = {
+            let paint = frame.paint_state.lock().expect("image frame paint state");
+            let cache = Arc::as_ptr(&paint.tiles);
+            let cached = paint.tiles.lock().expect("CPU tile cache");
+            let bytes = cached.iter().fold(0u64, |total, tile| {
+                total.saturating_add(tile.transfer_bytes)
+            });
+            (cache, bytes)
+        };
+        let already_counted = (0..index).any(|previous_index| {
+            let paint = retained_frame_at(state, previous_index)
+                .paint_state
+                .lock()
+                .expect("image frame paint state");
+            Arc::as_ptr(&paint.tiles) == cache
+        });
+        if !already_counted {
+            retained.packed = retained.packed.saturating_add(bytes);
         }
     }
-    (packed, raw.saturating_add(packed))
+    retained.cpu = retained.decoded.saturating_add(retained.packed);
+    retained
 }
 
 /// Drop pools that no retained frame owns and that hold no charged or quarantined bytes.
@@ -2550,6 +2604,11 @@ mod tests {
         assert_eq!(counters.reuse_calls, 1);
         assert_eq!(counters.resident_reservation_bytes, 2 * FRAME_RGBA8_BYTES);
         assert_eq!(counters.cpu_retained_bytes, FRAME_RGBA8_BYTES);
+        assert_eq!(counters.decoded_retained_bytes, FRAME_RGBA8_BYTES);
+        assert_eq!(counters.backup_claims, 0);
+        assert_eq!(counters.backup_origins, 0);
+        assert_eq!(counters.quarantined_frames, 0);
+        assert_eq!(counters.pool_count, 2);
 
         // Exercise real admission transitions without asserting unobservable GPU completion.
         let image = Bounds::new(point(px(0.0), px(0.0)), size(px(2048.0), px(2048.0)));
@@ -2571,11 +2630,10 @@ mod tests {
         service.invalidate_device_generation(2);
         assert!(!service.attach(&shared, ConsumerId::allocate(), None));
         assert!(service.detach(&shared, consumer));
-        assert_eq!(service.counters().retained_frames, 0);
-        assert_eq!(
-            service.counters().quarantined_payload_bytes,
-            2 * FRAME_RGBA8_BYTES
-        );
+        let invalidated = service.counters();
+        assert_eq!(invalidated.retained_frames, 0);
+        assert_eq!(invalidated.quarantined_frames, 2);
+        assert_eq!(invalidated.quarantined_payload_bytes, 2 * FRAME_RGBA8_BYTES);
 
         let recovered = service
             .recover_frame(&shared, 2, &cancellation)
@@ -2607,6 +2665,8 @@ mod tests {
         let usage = service.counters();
         assert_eq!(usage.cpu_retained_bytes, FRAME_RGBA8_BYTES + 1024 * 1024);
         assert_eq!(usage.packed_retained_bytes, 1024 * 1024);
+        assert_eq!(usage.decoded_retained_bytes, FRAME_RGBA8_BYTES);
+        assert_eq!(usage.quarantined_frames, 2);
         assert_eq!(usage.quarantined_payload_bytes, 2 * FRAME_RGBA8_BYTES);
         assert_eq!(
             usage.staging_reservation_bytes + usage.quarantined_staging_bytes,
@@ -2973,6 +3033,7 @@ mod tests {
         let _serial = PREPARATION_SERIAL.lock().expect("test serialization");
         let service = recovery_service();
         let frame = prepared_for_recovery(&service, 1, true);
+        assert_eq!(service.counters().pool_count, 1);
         let first = ConsumerId::allocate();
         let second = ConsumerId::allocate();
         assert!(service.attach(&frame, first, None));
@@ -2981,8 +3042,13 @@ mod tests {
         service.claim_backup(frame.origin());
         service.claim_backup(frame.origin());
         service.invalidate_device_generation(2);
-        let counted = service.counters().cpu_retained_bytes;
+        let inventory = service.counters();
+        let counted = inventory.cpu_retained_bytes;
         assert!(counted > 0);
+        assert_eq!(inventory.backup_claims, 2);
+        assert_eq!(inventory.backup_origins, 1);
+        assert_eq!(inventory.quarantined_frames, 1);
+        assert_eq!(inventory.pool_count, 0);
         assert!(
             !service.release_origin(frame.origin()),
             "a claimed backup is never released by a direct request"
@@ -2991,12 +3057,18 @@ mod tests {
         // One pane switches candidate: its claim leaves, the shared pixels stay counted.
         assert!(service.detach(&frame, first));
         assert!(!service.release_backup_claim(frame.origin()));
-        assert_eq!(service.counters().cpu_retained_bytes, counted);
-
+        let after_first = service.counters();
+        assert_eq!(after_first.cpu_retained_bytes, counted);
+        assert_eq!(after_first.backup_claims, 1);
+        assert_eq!(after_first.backup_origins, 1);
         // The last pane leaves: the owner is reclaimed.
         assert!(service.detach(&frame, second));
         assert!(service.release_backup_claim(frame.origin()));
-        assert_eq!(service.counters().cpu_retained_bytes, 0);
+        let released = service.counters();
+        assert_eq!(released.cpu_retained_bytes, 0);
+        assert_eq!(released.backup_claims, 0);
+        assert_eq!(released.backup_origins, 0);
+        assert_eq!(released.quarantined_frames, 0);
     }
 
     #[test]

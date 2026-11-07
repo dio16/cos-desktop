@@ -134,6 +134,12 @@ pub struct ViewerObservation {
     pub dpi: f64,
     pub viewport: Size,
     pub image_bounds: Option<Rect>,
+    /// Opaque origin of the frame currently attached for painting.
+    pub current_origin: Option<u64>,
+    /// Opaque origin held as this pane's recovery backup.
+    pub retained_origin: Option<u64>,
+    /// Detached frames held until a later composed scene permits retirement.
+    pub retiring_frames: usize,
 }
 
 /// GPU handles never leave this GPUI-boundary entity. Input must carry explicit local provenance.
@@ -470,6 +476,9 @@ impl ImageViewer {
                 .as_ref()
                 .and(self.transform.as_ref())
                 .map(ViewTransform::image_bounds),
+            current_origin: self.current.as_ref().map(|frame| frame.origin()),
+            retained_origin: self.retained.as_ref().map(|frame| frame.origin()),
+            retiring_frames: self.retiring.len(),
         }
     }
 
