@@ -1,0 +1,31 @@
+{
+  "date": "2026-11-08",
+  "interpreter": "bundled CPython 3.12.14 (Windows x64); PYTHONIOENCODING=utf-8",
+  "known_failure": {
+    "class": "pre-existing",
+    "reason": "the live manifests name an older consumer source (recorded in plan \u00a719.139); not repaired, not weakened and not used as acceptance",
+    "test": "test_live_manifest_and_build_metadata_name_the_current_consumer_source"
+  },
+  "python_version": "3.12.14",
+  "slice": "S2B full-source replay and published-set audit",
+  "source_head": "ac34502bbf7da80d0e5426988ac5c8cd1c0cc5ba",
+  "suites": [
+    {
+      "command": "python -B -m unittest discover -s apps/desktop/devtools/r0/tests -p test_s2b_replay.py",
+      "exit_code": 0,
+      "summary": [
+        "Ran 24 tests in 11.790s",
+        "OK"
+      ]
+    },
+    {
+      "command": "python -B -m unittest discover -s apps/desktop/devtools/r0/tests -p test_s2b_contracts.py",
+      "exit_code": 1,
+      "summary": [
+        "Ran 47 tests in 3.714s",
+        "FAILED (failures=1)"
+      ]
+    }
+  ],
+  "task": "MP-R0A"
+}

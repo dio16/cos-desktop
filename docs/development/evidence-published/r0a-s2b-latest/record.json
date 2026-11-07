@@ -1,0 +1,40 @@
+{
+  "date": "2026-11-08",
+  "files": {
+    "audit-a1-0c6.json": {
+      "bytes": 1507,
+      "sha256": "sha256:29561fd7766ac39192b66a516684bf4c0d4b746f8f83936f51e8fce5cf27fcf0"
+    },
+    "audit-a1-b9f.json": {
+      "bytes": 1603,
+      "sha256": "sha256:851ac5f357fac9bbc40de0470d6944bd1abbc8e6bb969d4c0ead6513b652639b"
+    },
+    "audit-a1-e31.json": {
+      "bytes": 1509,
+      "sha256": "sha256:a6738382358bff638bfbe15fa56f7bd725d9318c815ee8246633a9005f78b0d4"
+    },
+    "audit-a1-keyboard.json": {
+      "bytes": 1461,
+      "sha256": "sha256:77e1909a169e2c9fbd552c671b293ccaa97bd350e7964336cf81cb4e455232e3"
+    },
+    "bundle-n02d.json": {
+      "bytes": 2224,
+      "sha256": "sha256:e3a3e4dd93a9637f0be343d530bc31d3a0431b3c7ef1e1c90e994ab79f2aa705"
+    },
+    "bundle-n04b.json": {
+      "bytes": 2221,
+      "sha256": "sha256:6075d637caeaa7c8d8db01d78f75d3d75dca8b6aab2fc4fa244f15fd790de692"
+    },
+    "evidence.json": {
+      "bytes": 11437,
+      "sha256": "sha256:ea6e8f47ce52f55e7dcd6f6d12f9ee40898bee07c83b7cad425c632f0ee6cd24"
+    },
+    "test-results.json": {
+      "bytes": 1077,
+      "sha256": "sha256:9e74a96f4cf02fd70751e75636fe164d439c393b6d7baa3cd65d673979810a8b"
+    }
+  },
+  "record_version": 1,
+  "slice": "S2B full-source replay and published-set audit",
+  "task": "MP-R0A"
+}

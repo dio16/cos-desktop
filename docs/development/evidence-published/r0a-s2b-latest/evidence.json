@@ -1,0 +1,169 @@
+{
+  "task": "MP-R0A",
+  "slice": "S2B full-source replay and published-set audit",
+  "date": "2026-11-08",
+  "source_head": "ac34502bbf7da80d0e5426988ac5c8cd1c0cc5ba",
+  "implementation": {
+    "module": "apps/desktop/devtools/r0/s2b_replay.py",
+    "tests": "apps/desktop/devtools/r0/tests/test_s2b_replay.py",
+    "adds": [
+      "recompute the retained digests.json integrity index over the extracted archive: exact file coverage (35 of 36 file members; digests.json excludes itself), the documented producer/<tag>/ <-> <tag>/producer/ relocation, and the empty digest for commit-marker directories",
+      "bind bundle-root feature-manifest.json, default-manifest.json, build-record.json and source-identity.json to the replayed tag's copies and to each other",
+      "recompute every recorded source file from the declared commit's git blobs (CRLF -> LF exactly like s2b_contracts.source_digest) and require the aggregate to reproduce observer_source_sha256",
+      "run the unchanged s2b_capture.verify_bundle only after those bindings hold",
+      "audit a sanitised published set against its tracked record.json bytes, then bind capture/ledger/result/completion/observation/build/source-identity and, when supplied, the manifest, approval entry, helper/fixture identity and the unchanged S1 publication contract"
+    ],
+    "closed_outcomes": ["VERIFIED", "NOT_VERIFIED", "REFUSED"],
+    "unchanged": [
+      "s2b_capture.py", "s2b_contracts.py", "s2b_validate.py", "s3_native_replay.py",
+      "manifests/", "approved-executables.json", "all evidence originals"
+    ]
+  },
+  "bundle_replay": {
+    "archive": "docs/development/evidence/r0a-s2b/native-bundles.zip",
+    "bytes": 33669,
+    "sha256": "sha256:3a5bc6dabca7fcd804f51e888ec54ccfd87e119d4d3d78cf6b475f4314625bd9",
+    "integrity_index": {"status": "VERIFIED", "entries": 35, "bytes": 206544},
+    "source_commit": "edfebdaff1857f20fcf77e1bcf8440a557aaa758",
+    "source_aggregate": "sha256:44719e633e406bcf3e4179146a8a7f7b469029011a039812c0a169a616604147",
+    "source_files_verified": 10,
+    "manifests_bound": 2,
+    "command_template": "python -B apps/desktop/devtools/r0/s2b_replay.py bundle --bundle-zip <absolute-repo>/docs/development/evidence/r0a-s2b/native-bundles.zip --bundle-tag n02d|n04b --timeout-ms 120000",
+    "command_note": "the CLI requires an absolute --bundle-zip path, a carried qualification of the existing s2b_validate bundle path",
+    "tags": {
+      "n02d": {
+        "verdict": "VERIFIED",
+        "source_bound": true,
+        "execution_id": "fa1a53f2fc495f4e0ee8f965b02b2343",
+        "retained": 256,
+        "retention_dropped": 131,
+        "disposition": "CANCELLED",
+        "disposition_reason": "CLOSED_BEFORE_DECLARED_DURATION",
+        "full_coverage": false,
+        "retained_replay": {
+          "status": "DIVERGED",
+          "difference": {"field": "disposition", "recorded": "OBSERVED", "replayed": "CANCELLED"},
+          "reason": "the retained replay-n02d.json predates the scope-based cancellation rule; the original file is unchanged and the stricter current outcome is reported"
+        }
+      },
+      "n04b": {
+        "verdict": "VERIFIED",
+        "source_bound": true,
+        "execution_id": "41c2c71eaa469cb3084b9455dee7fd84",
+        "retained": 34,
+        "retention_dropped": 0,
+        "disposition": "CANCELLED",
+        "disposition_reason": "CLOSED_BEFORE_DECLARED_DURATION",
+        "full_coverage": false,
+        "retained_replay": {
+          "status": "DIVERGED",
+          "difference": {"field": "disposition", "recorded": "OBSERVED", "replayed": "CANCELLED"},
+          "reason": "same superseded rule as n02d; the retained record is unchanged"
+        }
+      }
+    }
+  },
+  "published_set_audits": {
+    "set": "docs/development/evidence-published/r0a-capture-latest",
+    "command_template": "python -B apps/desktop/devtools/r0/s2b_replay.py audit --set-dir docs/development/evidence-published/r0a-capture-latest --prefix <prefix>",
+    "digest_rule": "record.json documents two legitimate published digests (working-tree CRLF vs git-blob LF). Only the recomputed CRLF restoration of the published bytes is accepted, matching the existing s3_native_replay evidence rule; each accepted form is recorded per file in digest_forms, and nothing else is accepted.",
+    "sets": {
+      "a1-keyboard": {
+        "verdict": "NOT_VERIFIED",
+        "refusals": [],
+        "record_block": "keyboard_run",
+        "observation_version": 1,
+        "source_commit": "a732adc677cf28b414a5643cb72a519b156de7a1",
+        "source_aggregate": "sha256:3e0bec1d7a4969dcc110cb29e926be69ae932a33b77fe9cf90a50eaa3d3c47d9",
+        "source_tree": "VERIFIED",
+        "crlf_restored": [],
+        "retained": 256,
+        "retention_dropped": 1798,
+        "unverified": ["commit-markers", "executable-bytes", "feature-manifest", "fixture-bytes", "helper-bytes", "observation-endpoints-legacy-version", "source-files-as-bytes"]
+      },
+      "a1-e31": {
+        "verdict": "NOT_VERIFIED",
+        "refusals": [],
+        "record_block": "wm_close_runs/local-platform-end-e31",
+        "observation_version": 3,
+        "source_commit": "e31f58cbc0974d86725e96b00f4c04ede511ee5c",
+        "source_aggregate": "sha256:265efe50afed5fa0aea0d4c7bf9d276b00ef652cabf05e22b2fcc844aae63b01",
+        "source_tree": "VERIFIED",
+        "crlf_restored": ["build-record.json"],
+        "retained": 256,
+        "retention_dropped": 70,
+        "unverified": ["commit-markers", "executable-bytes", "feature-manifest", "fixture-bytes", "helper-bytes", "observation-endpoints-legacy-version", "source-files-as-bytes"]
+      },
+      "a1-0c6": {
+        "verdict": "NOT_VERIFIED",
+        "refusals": [],
+        "record_block": "wm_close_runs/local-accounting-0c6",
+        "observation_version": 2,
+        "source_commit": "0c6d581e7dd507182aa2f9b305fe06f34c238423",
+        "source_aggregate": "sha256:efb28b75efd3af99f414754a2bbb01959de92d0f371252e7944ed0a4b9030868",
+        "source_tree": "VERIFIED",
+        "crlf_restored": ["build-record.json"],
+        "retained": 256,
+        "retention_dropped": 71,
+        "unverified": ["commit-markers", "executable-bytes", "feature-manifest", "fixture-bytes", "helper-bytes", "observation-endpoints-legacy-version", "source-files-as-bytes"]
+      },
+      "a1-b9f": {
+        "verdict": "REFUSED",
+        "refusals": ["SOURCE_TREE_MISMATCH"],
+        "record_block": "wm_close_runs/first-frame-b9f",
+        "observation_version": 4,
+        "manifest": "apps/desktop/devtools/r0/manifests/s2b-feature-a1.json",
+        "timeout_bound_ms": 120000,
+        "timeout_note": "the original launcher deadline is absent; 120000 is the contract's maximum structural bound, not the historical declaration",
+        "declared_source_commit": "b9f6919e9037b05e3358f7f8cdd2642f86d6e360",
+        "recomputed_source_aggregate": "sha256:0e0514ffb68fd35638d2022f69109fa5a4526aba5645b3de4762f763238ea8b4",
+        "recorded_source_aggregate": "sha256:02898da88b867ddc3a849fd33d30d4c361dddf4766f97387da5553a37f086738",
+        "mismatched": ["apps/desktop/devtools/r0/s2b_capture.py"],
+        "source_tree": "MISMATCH",
+        "crlf_restored": ["build-record.json"],
+        "retained": 256,
+        "retention_dropped": 68,
+        "verified": ["approval-entry", "build-record", "capture-contract", "executable-identity", "feature-manifest", "fixture-identity", "helper-identity", "observation-binding", "observation-endpoints", "published digests (8 files)", "s1-publication", "source-agreement", "source-identity"],
+        "unverified": ["commit-markers", "executable-bytes", "fixture-bytes", "helper-bytes", "source-files-as-bytes"],
+        "separate_measurement": {
+          "method": "recompute every SOURCE_FILES blob at a commit and compare with the recorded per-file digests",
+          "commit_8dafa907": "10/10 files match the recorded source identity, aggregate sha256:02898da88b867ddc3a849fd33d30d4c361dddf4766f97387da5553a37f086738",
+          "commit_b9f6919e": "9/10 files match; s2b_capture.py recorded sha256:2f322270... differs from the commit blob sha256:539f2103...",
+          "meaning": "the declared commit does not reproduce the recorded source identity; the recorded identity is reproducible only from a later commit, so this set is not source-bound to its declared commit"
+        }
+      }
+    }
+  },
+  "tests": {
+    "new_suite": {
+      "command": "python -B -m unittest discover -s apps/desktop/devtools/r0/tests -p test_s2b_replay.py",
+      "result": "Ran 24 tests, OK, exit 0"
+    },
+    "existing_s2b_contracts": {
+      "command": "python -B -m unittest discover -s apps/desktop/devtools/r0/tests -p test_s2b_contracts.py",
+      "result": "Ran 47 tests, FAILED (failures=1), exit 1",
+      "failure": "test_live_manifest_and_build_metadata_name_the_current_consumer_source - pre-existing (live manifests name an older consumer source, plan 19.139); the assertion now reports 02898da8... vs the live d3b8c15c...; left unchanged and not counted as success"
+    }
+  },
+  "verified_claims": [
+    "the retained bundle archive's integrity index covers and reproduces every file member it names",
+    "the retained bundle's recorded source identity is recomputable from its declared commit for all 10 recorded source files",
+    "the retained bundle's root/tag manifest, build and source-identity records agree, and its n02d and n04b captures replay through the unchanged S1/S2B contracts",
+    "four published sets' artifacts match their tracked record digests (build-record only via the documented CRLF restoration), their capture/ledger/result/observation/build/source-identity chains bind, and three of the four declared source commits reproduce their recorded identities",
+    "the newest published set a1-b9f does not reproduce its recorded source identity from its declared commit and is refused"
+  ],
+  "not_verified": [
+    "commit-marker directories for published sets (empty directories were not published)",
+    "executable, helper and fixture bytes for published sets (only recorded digests are bound)",
+    "source files as published bytes (identity is recomputed from git blobs; the bytes are not part of the evidence set)",
+    "the original launcher timeout declaration for published sets",
+    "present/displayed/scanout/GPU/input-to-photon endpoints, visible-frame stall attribution, queue depth, cancellation, restoration and performance distributions",
+    "binary byte-for-byte reproducibility of the documented historical builds"
+  ],
+  "contract_ambiguity": "The frozen contract does not enumerate the exact contents of 'S2B full-source replay'. This slice adopts the strictest reading consistent with DC-MP-R0A's exit ('a replayer can reproduce aggregates from retained definitions/hashes'), TESTING's statement that 'bundle replays a committed source-bound bundle', and the S3-N1 missing-source list: integrity index, root/tag binding, source identity recomputed from the declared commit, then the unchanged S1/S2B contract replay. No new acceptance rule was added, and a partial input is reported as NOT_VERIFIED or REFUSED, never PASS.",
+  "non_claims": [
+    "MP-R0A is not complete; S2B Native measurement, R0B/R0C and R0D remain outside this slice",
+    "a CANCELLED or NOT_MEASURED disposition is not a frame, Present or displayed measurement",
+    "no Runtime, Product UX, DD, main or release approval follows"
+  ]
+}
