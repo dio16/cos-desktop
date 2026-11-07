@@ -5,7 +5,7 @@
   "contract": "DC-MP-REC2",
   "status": "OBSERVED_PHYSICAL_ENDPOINTS_HOLD",
   "source_commit": "cf0201806f030f8e2357c8e8e2e36d726313a606",
-  "source_commit_note": "The native binary and observer were measured from this commit. The successor adds documentation, replay regression coverage and type narrowing only; native and observer implementations are unchanged. The final replay is checked against the retained campaign results.",
+  "source_commit_note": "The native binary and observer were measured from this commit. Successors change independent replay validation, regression coverage and documentation only; native and observer implementations are unchanged. The final replay is checked against the retained campaign results.",
   "executable_sha256": "7bca475d98d8332a5d43079e856b805ade9653d917435a28e643f44d8e634180",
   "observer_sha256": "0d44728b9c1833ff79bde4d6c36193b91143e7aabc3deec8c5afd610371423c1",
   "method_sha256": "7c48c65af10781e1af1af009ee66d7e09024bd2a9c9ab07a7cff623ed8f4fa28",

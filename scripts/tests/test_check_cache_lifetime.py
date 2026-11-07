@@ -268,6 +268,41 @@ class CampaignEvidenceTests(unittest.TestCase):
         self.assertEqual(result["status"], "FAILED")
         self.assertTrue(any("cannot report" in failure for failure in result["runs"][0]["failures"]))
 
+    def test_required_refusals_cannot_be_relabelled_as_dispatch_or_scene(self):
+        for index, refusal, claims in (
+            (2, "refused_no_pair", ("pending_or_unavailable", "scene_complete")),
+            (3, "refused_no_pair", ("pending_or_unavailable", "scene_complete")),
+            (4, "refused_no_pair", ("requested",)),
+            (5, "refused_no_pair", ("requested",)),
+            (6, "refused_no_missing_source", ("requested",)),
+        ):
+            original = self.native_samples[index]
+            for claim in claims:
+                with self.subTest(action=original["action"], claim=claim):
+                    refused = self.sample(
+                        original["elapsed_us"], "stress", original["step"], original["action"],
+                        refusal, complete=(claim == "scene_complete"))
+                    refused.update(pair_present=False, missing_present=False)
+                    self.native_samples[index] = refused
+                    self._write_campaign()
+                    self.assertEqual(analyze_campaign(self.directory)["status"], "OBSERVED")
+                    # Keep the pre-action state and all view observations; change only the result.
+                    refused["result"] = claim
+                    self._write_campaign()
+                    result = analyze_campaign(self.directory)
+                    self.assertEqual(result["status"], "FAILED")
+                    self.assertTrue(any("pre-action" in failure
+                                        for failure in result["runs"][0]["failures"]))
+            self.native_samples[index] = original
+
+    def test_disappearance_preserves_an_already_withheld_source_without_a_pair(self):
+        self.native_samples[5]["pair_present"] = False
+        self._write_campaign()
+        self.assertEqual(analyze_campaign(self.directory)["status"], "OBSERVED")
+        self.native_samples[5]["result"] = "refused_no_pair"
+        self._write_campaign()
+        self.assertEqual(analyze_campaign(self.directory)["status"], "FAILED")
+
     def test_a_retained_backup_alone_is_not_a_completed_scene(self):
         view = self.native_samples[1]["views"][0]
         view["current_origin"] = None

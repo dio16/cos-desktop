@@ -231,6 +231,23 @@ def verify_results(samples: list[dict], failures: list[str]) -> None:
             if result == "refused_no_missing_source" and sample.get("missing_present") is not False:
                 failures.append(f"Action {action!r} claims no withheld source while one was present")
                 return
+        # The fixed workload constructs both sides in one update and closes both together;
+        # it never exposes a pending-only side A to a replacement action.
+        required_refusal = None
+        if action in ("replace_side_a", "replace_side_b", "swap") and not sample["pair_present"]:
+            required_refusal = "refused_no_pair"
+        elif action == "unavailable" and not (sample["pair_present"] or sample["missing_present"]):
+            required_refusal = "refused_no_pair"
+        elif action == "reappear" and not sample["missing_present"]:
+            required_refusal = "refused_no_missing_source"
+        if required_refusal is not None and result != required_refusal:
+            failures.append(
+                f"Action {action!r} pre-action state requires {required_refusal!r}, not {result!r}")
+            return
+        # Without a pair, disappear() leaves an existing withheld source untouched.
+        if action == "unavailable" and sample["missing_present"] and result == "refused_no_pair":
+            failures.append("Disappearance pre-action state already has a withheld source")
+            return
 
 
 def analyze_campaign(directory: Path) -> dict:
