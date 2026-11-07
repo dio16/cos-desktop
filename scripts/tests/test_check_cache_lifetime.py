@@ -126,6 +126,7 @@ class CampaignEvidenceTests(unittest.TestCase):
             (run_dir / "native.stderr").write_bytes(stderr.encode("utf-8"))
             process_samples = [{"pid": 1000 + n, "start_utc_ticks": 10000 + n,
                                 "alive_after": True, "identity_after_ticks": 10000 + n,
+                                "executable_path": "C:/dev/cos-desktop/target/release/examples/compare.exe",
                                 "qpc_start": i * 1_000_000, "qpc_end": i * 1_000_000 + 1,
                                 "private_bytes": 100, "working_set_bytes": 200,
                                 "gpu": {"status": "NOT_MEASURED"}}
@@ -133,6 +134,8 @@ class CampaignEvidenceTests(unittest.TestCase):
             record = {"status": "OBSERVED", "timed_out": False, "exit_code": 0,
                       "process_started": True, "native_stdout_truncated": False,
                       "native_stderr_truncated": False,
+                      "observed_executable_path": "C:/dev/cos-desktop/target/release/examples/compare.exe",
+                      "observed_path_matches_requested": True,
                       "variant": "shared", "pid": 1000 + n, "start_utc_ticks": 10000 + n,
                       "pair_id": "p", "scenario_id": "s", "launch_utc": "1970-01-01T00:01:40+00:00",
                       "launch_qpc": 0, "qpc_frequency": 1_000_000, "samples": process_samples,
@@ -231,6 +234,21 @@ class CampaignEvidenceTests(unittest.TestCase):
         self.manifest["driver_sha256_after"] = "d" * 64
         (self.directory / "manifest.json").write_text(json.dumps(self.manifest))
         self.assertEqual(analyze_campaign(self.directory)["status"], "FAILED")
+
+    def test_sampled_executable_identity_must_stay_one_file(self):
+        record_path = self.directory / "run-1/observations-0.json"
+        record = json.loads(record_path.read_text())
+        record["samples"][10]["executable_path"] = "C:/elsewhere/compare.exe"
+        record_path.write_text(json.dumps(record))
+        result = analyze_campaign(self.directory)
+        self.assertEqual(result["runs"][0]["status"], "FAILED")
+        self.assertTrue(any("path changed" in failure for failure in result["runs"][0]["failures"]))
+        self._write_campaign()
+        record = json.loads(record_path.read_text())
+        record["observed_executable_path"] = "C:/elsewhere/compare.exe"
+        record_path.write_text(json.dumps(record))
+        result = analyze_campaign(self.directory)
+        self.assertTrue(any("does not match its samples" in failure for failure in result["runs"][0]["failures"]))
 
     def test_final_consumer_withdrawal_does_not_erase_unproven_reservations(self):
         final = self.native_samples[-1]["counters"]

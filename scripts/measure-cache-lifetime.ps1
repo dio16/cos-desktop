@@ -206,6 +206,8 @@ foreach ($run in 1..$Runs) {
     $stdoutTruncated = $false
     $stderrTruncated = $false
     $previousSampleEndQpc = $startedQpc
+    $processExecutablePath = $null
+    $pathMatchesRequested = $null
     try {
         if (-not $process.Start()) { throw 'Native experiment did not start' }
         $processStarted = $true
@@ -226,9 +228,10 @@ foreach ($run in 1..$Runs) {
             if ($process.HasExited) { break }
             $before = $process.StartTime.ToUniversalTime().Ticks
             # A module read is a secondary executable check: Windows can transiently refuse or
-            # return an empty name while the process is being inspected. Retry briefly, and only
-            # treat a non-empty differing path as an identity change; PID plus start time already
-            # bind the sampled lifetime, and the binary hash binds the executable.
+            # return an empty name while the process is being inspected, and the reported path can
+            # differ from the caller's string by junction or short-name resolution. PID plus start
+            # time bind the sampled lifetime, and the file hash binds the executable, so the first
+            # readable path is the reference for later samples rather than the caller's spelling.
             $observedPath = $null
             for ($attempt = 0; $attempt -lt 3 -and -not $observedPath; $attempt++) {
                 try {
@@ -241,7 +244,11 @@ foreach ($run in 1..$Runs) {
                 }
                 if (-not $observedPath) { Start-Sleep -Milliseconds 100 }
             }
-            if ($before -ne $lifetimeTicks -or ($observedPath -and -not [StringComparer]::OrdinalIgnoreCase.Equals($observedPath, $exePath))) { throw 'Process identity changed before sampling' }
+            if ($null -eq $processExecutablePath -and $observedPath) {
+                $processExecutablePath = $observedPath
+                $pathMatchesRequested = [StringComparer]::OrdinalIgnoreCase.Equals($observedPath, $exePath)
+            }
+            if ($before -ne $lifetimeTicks -or ($observedPath -and -not [StringComparer]::OrdinalIgnoreCase.Equals($observedPath, $processExecutablePath))) { throw 'Process identity changed before sampling' }
             $observedTitle = [string]$process.MainWindowTitle
             $sampleQpcStart = [Diagnostics.Stopwatch]::GetTimestamp()
             if ($sampleQpcStart -lt $previousSampleEndQpc) { throw 'Process sample QPC intervals are not monotonic' }
@@ -390,6 +397,8 @@ foreach ($run in 1..$Runs) {
             status = if ($failures.Count) { 'FAILED' } else { 'OBSERVED' }
             reason = 'Gauge observations only; run check_cache_lifetime.py for validity, trends and endpoint HOLD disposition'
             executable_path = $exePath
+            observed_executable_path = $processExecutablePath
+            observed_path_matches_requested = $pathMatchesRequested
             process_started = [bool]$processStarted
             pid = if ($processStarted) { $process.Id } else { $null }
             start_utc_ticks = $lifetimeTicks

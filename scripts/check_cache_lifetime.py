@@ -267,6 +267,18 @@ def analyze_campaign(directory: Path) -> dict:
             if (len(qpc_starts) != len(process_rows) or len(ordered_qpc) != len(qpc_starts)
                     or any(b <= a for a, b in zip(ordered_qpc, ordered_qpc[1:]))):
                 run_failures.append("Observer process QPC sample clock is missing or not strictly ordered")
+            observed_paths = {
+                s.get("executable_path") for s in process_rows
+                if isinstance(s, dict) and isinstance(s.get("executable_path"), str) and s["executable_path"]
+            }
+            if len(observed_paths) > 1:
+                run_failures.append("Sampled executable path changed during the run")
+            recorded_path = record.get("observed_executable_path")
+            if recorded_path is not None:
+                if not isinstance(recorded_path, str) or not recorded_path:
+                    run_failures.append("Recorded executable path identity is malformed")
+                elif observed_paths and recorded_path not in observed_paths:
+                    run_failures.append("Recorded executable path does not match its samples")
             for sample in process_rows:
                 if not isinstance(sample, dict) or identity is None:
                     run_failures.append("Process sample identity is malformed")
