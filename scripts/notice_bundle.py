@@ -305,16 +305,18 @@ def _bind(package: dict, kind: str, workspace_root: Path, cargo_home: Path | Non
         if data is None:
             unresolved.append((logical, reason))
             continue
-        if kind == "git":
-            target = _pointer_target(data)
-            if target is not None:
-                resolved = _resolve_pointer(path.parent, target, cargo_home)
-                if resolved is None:
-                    unresolved.append((logical, "POINTER_NOT_RESOLVED"))
-                    continue
-                relative, blob = resolved
-                texts.append(Text(f"{logical} -> {relative}", _sha256(blob), blob, text_kind))
+        target = _pointer_target(data)
+        if target is not None:
+            # A pointer is a declaration, never a licence text. It is only followed
+            # inside the local Cargo Git checkouts; anywhere else the package stays
+            # unassessed instead of counting a pointer as a text.
+            resolved = _resolve_pointer(path.parent, target, cargo_home) if kind == "git" else None
+            if resolved is None:
+                unresolved.append((logical, "POINTER_NOT_RESOLVED"))
                 continue
+            relative, blob = resolved
+            texts.append(Text(f"{logical} -> {relative}", _sha256(blob), blob, text_kind))
+            continue
         texts.append(Text(logical, _sha256(data), data, text_kind))
     status = TEXT_FOUND if any(text.kind == "LICENSE" for text in texts) else TEXT_NOT_FOUND
     return tuple(texts), tuple(unresolved), status, declared_file

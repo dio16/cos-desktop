@@ -260,6 +260,22 @@ class NoticeBundleTests(unittest.TestCase):
         self.assertIn("POINTER_NOT_RESOLVED", data.decode("utf-8"))
         self.assertNotIn(b"outside terms must not be bundled", data)
 
+    def test_registry_pointer_only_package_is_unassessed(self):
+        # A registry package that ships only "see ../LICENSE" pointers has no licence
+        # text inside it; counting the pointer as a text would overclaim.
+        self.graph.dependency("pointer-only", "2.22.0", files={
+            "LICENSE-APACHE": b"../LICENSE-APACHE\n",
+            "LICENSE-MIT": b"../LICENSE-MIT\n",
+        })
+        data, claim = self.build()
+        self.assertEqual(1, claim["text_not_found"])
+        self.assertEqual(0, claim["text_found"])
+        row = notice_bundle.parse_bundle(data).rows[0]
+        self.assertEqual("TEXT_NOT_FOUND", row["status"])
+        self.assertEqual(["POINTER_NOT_RESOLVED", "POINTER_NOT_RESOLVED"],
+                         [item["reason"] for item in row["unresolved"]])
+        self.assertEqual({}, notice_bundle.parse_bundle(data).blobs)
+
     def test_claim_and_bundle_are_cross_checked(self):
         self.graph.dependency("alpha", "1.0.0", files={"LICENSE-MIT": b"MIT text\n"})
         data, claim = self.build()
