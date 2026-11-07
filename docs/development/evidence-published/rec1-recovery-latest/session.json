@@ -4,8 +4,8 @@
   "task": "MP-REC1",
   "contract": "DC-MP-REC1",
   "status": "OBSERVED_BACKEND_RECREATION_PHYSICAL_RESET_HOLD",
-  "source_commit": "8a71c8da7ff7f2368c41ab1423ffaeb43aaa7041",
-  "source_commit_note": "Binaries were built from a clean checkout of this commit. This manifest is added by a later commit that changes only documentation and evidence files; the code tree is unchanged between them.",
+  "source_commit": "5be9aa99c602443fb70256d687282ee933ae5b5a",
+  "source_commit_note": "Binaries were built from a clean checkout of this commit. This manifest is updated by a later documentation-and-evidence-only commit; `git diff --name-only 5be9aa9..HEAD` lists no source or manifest files.",
   "gpui_pin": {
     "repository": "https://github.com/dio16/zed",
     "branch": "cos-desktop-recovery",
@@ -22,22 +22,25 @@
     ],
     "target_dir": "C:/dev/cos-build-rec1",
     "binary_sha256": {
-      "image_upload": "d76387d71c3b71f7221eb5046c1355aa4a57ac27a1244bc9dd6e143ee49582ed",
-      "image_viewer": "648e9475658f01f73cb37e1d04049a8346ed64280d54fbff55790afa06da6533",
-      "compare": "7dd1e244269a036cdbc4a4f5a98bf8c8a77a7674b216815bccc3bbb0c6affc94"
+      "image_upload": "4ccfdb6ac2b450ca10494da4bbc8a999786d12864280b50088ad8f1f6a0c399f",
+      "image_viewer": "82496904dcd1634d12c7e86036a94c23af14c6a316bfb0409570aab579f3ee3c",
+      "compare": "9fff33ced12d2f805b7dc1fcda4451cd6c1f32ee25cdcb5e0b59f864259cd5a0"
     },
     "binaries": [
       {
+        "id": "image_upload",
         "path": "C:/dev/cos-build-rec1/release/examples/image_upload.exe",
-        "sha256": "d76387d71c3b71f7221eb5046c1355aa4a57ac27a1244bc9dd6e143ee49582ed"
+        "sha256": "4ccfdb6ac2b450ca10494da4bbc8a999786d12864280b50088ad8f1f6a0c399f"
       },
       {
+        "id": "image_viewer",
         "path": "C:/dev/cos-build-rec1/release/examples/image_viewer.exe",
-        "sha256": "648e9475658f01f73cb37e1d04049a8346ed64280d54fbff55790afa06da6533"
+        "sha256": "82496904dcd1634d12c7e86036a94c23af14c6a316bfb0409570aab579f3ee3c"
       },
       {
+        "id": "compare",
         "path": "C:/dev/cos-build-rec1/release/examples/compare.exe",
-        "sha256": "7dd1e244269a036cdbc4a4f5a98bf8c8a77a7674b216815bccc3bbb0c6affc94"
+        "sha256": "9fff33ced12d2f805b7dc1fcda4451cd6c1f32ee25cdcb5e0b59f864259cd5a0"
       }
     ]
   },
@@ -66,66 +69,75 @@
     {
       "id": "upload",
       "binary": "image_upload.exe",
+      "binary_sha256": "4ccfdb6ac2b450ca10494da4bbc8a999786d12864280b50088ad8f1f6a0c399f",
       "argv": [
         "--fixture"
       ],
       "steps": [
         {
           "action": "Load current revision",
-          "observed": "image painted; native generation 1; 16/16 tiles in the composed scene",
+          "observed_title": "MP-IMG3 Fixture upload feasibility",
+          "observed": "image painted; capture shows \"Native GPU backend: Ready { generation: 1 }\" and a completed 16-tile scene",
           "capture": "captures/01-upload-generation-1-painted.png"
         },
         {
           "action": "Backend: Recreate",
-          "observed": "window title \"MP-IMG3 Fixture upload feasibility — GPU復旧中\"; generation advanced",
+          "observed_title": "MP-IMG3 Fixture upload feasibility — GPU復旧中",
+          "observed": "generation advanced; the pane states recovering and keeps no stale picture",
           "capture": "captures/02-upload-recovering.png"
         },
         {
-          "action": "Load current revision (after recovery)",
-          "observed": "native generation 2; image painted again; no stale picture was kept during the transition",
+          "action": "Load current revision after recovery",
+          "observed_title": "MP-IMG3 Fixture upload feasibility",
+          "observed": "capture shows \"Ready { generation: 2 }\" and the same landmarks painted at the new generation",
           "capture": "captures/03-upload-generation-2-painted.png"
         },
         {
           "action": "Backend: Fail",
-          "observed": "window title \"… — GPU表示不可: アプリを再起動してください\"; client area drawn black; window still accepted input",
+          "observed_title": "MP-IMG3 Fixture upload feasibility — GPU表示不可: アプリを再起動してください",
+          "observed": "client area drawn black; the window still accepted further input (buttons remained operable)",
           "capture": "captures/04-upload-unavailable.png"
         },
         {
           "action": "Backend: Recreate then Load current revision",
-          "observed": "native generation 4 Ready; this probe retains no backup, so its next load was refused with \"Fixture unavailable: RetainedFrameLimit\" after the quarantine ledger filled",
-          "capture": "captures/05-upload-recovered-generation-3-painted.png"
+          "observed_title": "MP-IMG3 Fixture upload feasibility",
+          "observed": "capture shows \"Ready { generation: 4 }\" together with \"Fixture unavailable: RetainedFrameLimit; no complete frame published\" and \"No current prepared frame\": the probe keeps no backup and paints every transfer, so its re-admission is refused explicitly instead of showing a stale picture",
+          "capture": "captures/05-upload-after-failure-recreate-refused.png"
         }
       ],
-      "limitations": "The probe keeps no recovery backup and paints every transfer, so its own re-admission is charged each time; the refusal is the explicit ledger state, not a stale picture."
+      "limitations": "This probe has no recovery backup path; every load is a fresh admission and the explicit refusal is the documented ledger state (MP-REC2 owns plateau/release)."
     },
     {
       "id": "viewer",
       "binary": "image_viewer.exe",
+      "binary_sha256": "82496904dcd1634d12c7e86036a94c23af14c6a316bfb0409570aab579f3ee3c",
       "argv": [
         "--fixture"
       ],
       "steps": [
         {
-          "action": "zoom to 37.4%",
+          "action": "zoom in twice",
           "observed": "physical display scale 37.4%, cropped region",
           "capture": "captures/06-viewer-zoomed-before-recovery.png"
         },
         {
           "action": "Backend: Recreate",
-          "observed": "title \"MP-IMG5 Local Fixture Viewer — GPU復旧中\" during the transition",
+          "observed_title": "MP-IMG5 Local Fixture Viewer — GPU復旧中",
+          "observed": "recovering reported during the transition only",
           "capture": null
         },
         {
           "action": "after recovery",
-          "observed": "same 37.4% camera and the same crop restored; decoder count did not grow (retained CPU pixels were re-bound)",
+          "observed": "same 37.4% camera and the same crop restored from the retained CPU pixels",
           "capture": "captures/07-viewer-restored-after-recovery.png"
         }
       ],
-      "limitations": "One transition observed in this run; repeated transitions are bounded by the 32 MiB quarantine ledger (MP-REC2)."
+      "limitations": "One transition observed; deeper repetition is bounded by the 32 MiB quarantine ledger."
     },
     {
       "id": "compare-two-windows",
       "binary": "compare.exe",
+      "binary_sha256": "9fff33ced12d2f805b7dc1fcda4451cd6c1f32ee25cdcb5e0b59f864259cd5a0",
       "argv": [
         "--fixture",
         "--windows2"
@@ -138,31 +150,33 @@
         },
         {
           "action": "Backend: Recreate in window 1",
-          "observed": "both windows reported \"GPU復旧中\" for the same generation, proving one shared platform generation",
+          "observed_title": "both windows: \"… — GPU復旧中\"",
+          "observed": "both windows reported the recovering state for the same generation, proving one shared platform generation rather than a per-window counter",
           "capture": null
         },
         {
           "action": "after recovery",
-          "observed": "both windows restored A/B at 23.2%",
-          "capture": "captures/10-compare-window1-after-recovery.png, captures/11-compare-window2-after-recovery.png"
+          "observed": "window 1 restored A/B at 23.2%; window 2 restored and then changed its own camera to physical 1:1 (100.0%), which is a distinct post-recovery render, not a reused capture",
+          "capture": "captures/10-compare-window1-after-recovery.png, captures/11-compare-window2-after-recovery-physical-1to1.png"
         },
         {
           "action": "Backend: Fail in window 1",
-          "observed": "both windows reported \"GPU表示不可: アプリを再起動してください\"; input still accepted",
+          "observed_title": "both windows: \"… — GPU表示不可: アプリを再起動してください\"",
+          "observed": "input still accepted; no stale picture published",
           "capture": "captures/12-compare-unavailable.png"
         },
         {
           "action": "Backend: Recreate then observe",
-          "observed": "panes reported \"画像を利用できません: 保持上限に達したため、この画像を保持できません。\" with diagnostics retained_frames=0 consumers=0 cpu=35782656 B packed=2228224 B: the unproven-transfer ledger was full, so no unsafe release happened",
+          "observed": "panes report \"画像を利用できません: 保持上限に達したため、この画像を保持できません。\" and \"画像は未表示です\"; the probe diagnostics read \"retained_frames=0 consumers=0 pane_frames=0 cpu=39976960 B packed=6422528 B\": the unproven-transfer ledger was full, so no unsafe release or stale picture occurred",
           "capture": "captures/13-compare-after-failure-recreate.png"
         }
       ],
-      "limitations": "Two windows x repeated transitions exhaust the 32 MiB quarantine ledger. The refusal is explicit and no stale picture is shown; plateau/release accounting belongs to MP-REC2."
+      "limitations": "Two windows times repeated transitions exhaust the 32 MiB quarantine ledger; refusal is explicit. Plateau and release accounting belongs to MP-REC2."
     }
   ],
   "observations": [
     "Recovering is reported before device teardown and Ready only after the shared device, text resources and every window renderer were rebuilt.",
-    "A controlled recreation failure leaves the message loop responsive and states the restart requirement in the native window title even though GPU drawing is unavailable.",
+    "A controlled recreation failure leaves the message loop responsive and states the restart requirement in the native window title while GPU drawing is unavailable.",
     "No stale picture was published after any transition; panes that could not re-admit stated the reason instead.",
     "Compare with two windows observed one shared generation, not a per-window counter."
   ],
@@ -179,8 +193,8 @@
     },
     {
       "file": "captures/02-upload-recovering.png",
-      "sha256": "fac5b6577c3806211d43e1f9961d548b6627fa2ee2b7355b26eaf39242104e1b",
-      "bytes": 171712
+      "sha256": "844c61638170423cdf373a989317e5b7315102a0940d24eee3569a16841d620a",
+      "bytes": 173905
     },
     {
       "file": "captures/03-upload-generation-2-painted.png",
@@ -189,13 +203,13 @@
     },
     {
       "file": "captures/04-upload-unavailable.png",
-      "sha256": "9e919c26267dd6ccf7d07b106bcb1eee74a32f4d59f12dbead581bbfc4c9cd22",
-      "bytes": 28549
+      "sha256": "6f94215fb232a98af29c615ed2cf63a7606fb3376d3cb9a49f5d5219bb611f9d",
+      "bytes": 30388
     },
     {
-      "file": "captures/05-upload-recovered-generation-3-painted.png",
-      "sha256": "ff7def9d12fa854177a782e1e4c8da2e3fc858f31c2a4332359d1a4cf166f4d2",
-      "bytes": 161844
+      "file": "captures/05-upload-after-failure-recreate-refused.png",
+      "sha256": "78f8438f5af3423c1259c6fc64cba0db0581f4c3fbc3315da59cef611f55ff0e",
+      "bytes": 161946
     },
     {
       "file": "captures/06-viewer-zoomed-before-recovery.png",
@@ -204,13 +218,13 @@
     },
     {
       "file": "captures/07-viewer-restored-after-recovery.png",
-      "sha256": "6fb17a49ea45860b3001867caafe6f95ee0a91fa5a5788b691d137ed33653a69",
-      "bytes": 102857
+      "sha256": "093c7ee36cdac82ef34cf36ef94c0024201239fdfb239ec87624918caacee7f2",
+      "bytes": 102773
     },
     {
       "file": "captures/08-compare-window1-before-recovery.png",
-      "sha256": "b39ce082690f2183d0c36e3afb1c7e2c5fc16fface5b2042f917167351b8224e",
-      "bytes": 165724
+      "sha256": "f4a632eaf4c53592120a598df9389dfe1d57e35c2b7b327363d9aa7e6653f328",
+      "bytes": 165634
     },
     {
       "file": "captures/09-compare-window2-before-recovery.png",
@@ -223,9 +237,9 @@
       "bytes": 161068
     },
     {
-      "file": "captures/11-compare-window2-after-recovery.png",
-      "sha256": "7ce4401be17c97e748328be70ce487d5e98a522050b07457ee75e78c0e2ba06c",
-      "bytes": 165454
+      "file": "captures/11-compare-window2-after-recovery-physical-1to1.png",
+      "sha256": "fa107cc6d1182552a89016185a41b566ba8f8515cd6d8d97117526bbcb9ef20a",
+      "bytes": 171069
     },
     {
       "file": "captures/12-compare-unavailable.png",
@@ -234,8 +248,8 @@
     },
     {
       "file": "captures/13-compare-after-failure-recreate.png",
-      "sha256": "e9a449b0da8173ba857bbd24f0b6bc0f27c20cca4191ab2df74d75233e68a092",
-      "bytes": 148360
+      "sha256": "a15f028b6050569ecf4d32a0fa4e82c40c7b5060756a450568f3f84d5bd89352",
+      "bytes": 147863
     }
   ]
 }
