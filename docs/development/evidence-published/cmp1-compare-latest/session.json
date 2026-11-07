@@ -453,11 +453,11 @@
     },
     {
       "path": "captures/13-restore-before.png",
-      "sha256": "sha256:b9b0703fb8c683e166f6dea5c1db8e58ae6d1cb8999a5bb67e387d0935fa0b47",
+      "sha256": "sha256:e66995d8406caae3aebbc54f01dd1abbf0b3888cb1dfc0f6efe7479472a4c2ba",
       "width": 1275,
       "height": 932,
       "step": "13-restore-before",
-      "exercised": "a fresh process: side A is panned at 1:1 and its reference disappears",
+      "exercised": "side A is panned at physical 1:1 and its reference disappears",
       "pane_groups": [
         "Candidate A",
         "Candidate B"
@@ -466,7 +466,7 @@
         "画像を利用できません: この候補は現在閲覧できる情報に含まれていません。参照を保持しています。",
         "画像は未表示です",
         "ローカル画像・実験用タイル表示。GPU完了・常駐量・本番の画質受入は未計測。",
-        "物理表示倍率 25.8% / DIP変換 1.00 / 画像全体を表示"
+        "物理表示倍率 100.0% / DIP変換 1.00 / 画像の一部を切り抜いて表示"
       ],
       "controls": [
         "全体表示 (0)",
@@ -487,7 +487,7 @@
     },
     {
       "path": "captures/14-restore-after.png",
-      "sha256": "sha256:a4f69214bf8a6937ab948b5e87010f759f6e6d7fbddfd745b98a182435c2c4f3",
+      "sha256": "sha256:b529629c7a5e1d4ea6ed15b2f208cfeff4b07598f92a024958b2b027c1ebe8ce",
       "width": 1275,
       "height": 932,
       "step": "14-restore-after",
@@ -498,9 +498,9 @@
       ],
       "pane_texts": [
         "ローカル画像・実験用タイル表示。GPU完了・常駐量・本番の画質受入は未計測。",
-        "物理表示倍率 25.8% / DIP変換 1.00 / 画像全体を表示",
+        "物理表示倍率 100.0% / DIP変換 1.00 / 画像の一部を切り抜いて表示",
         "ローカル画像・実験用タイル表示。GPU完了・常駐量・本番の画質受入は未計測。",
-        "物理表示倍率 25.8% / DIP変換 1.00 / 画像全体を表示"
+        "物理表示倍率 100.0% / DIP変換 1.00 / 画像の一部を切り抜いて表示"
       ],
       "controls": [
         "全体表示 (0)",
@@ -521,7 +521,7 @@
     },
     {
       "path": "captures/15-viewed-outside-pair.png",
-      "sha256": "sha256:be29ffda5cd60e8d8a2ee831ee932fdb01abf14b8d992287ece824193806baa8",
+      "sha256": "sha256:eab4f485831fe519349cd4d2d5cf4dd840c912513a4c4d326232b9c73c4b3b0a",
       "width": 1275,
       "height": 932,
       "step": "15-viewed-outside-pair",
@@ -532,9 +532,9 @@
       ],
       "pane_texts": [
         "ローカル画像・実験用タイル表示。GPU完了・常駐量・本番の画質受入は未計測。",
-        "物理表示倍率 25.8% / DIP変換 1.00 / 画像全体を表示",
+        "物理表示倍率 100.0% / DIP変換 1.00 / 画像の一部を切り抜いて表示",
         "ローカル画像・実験用タイル表示。GPU完了・常駐量・本番の画質受入は未計測。",
-        "物理表示倍率 25.8% / DIP変換 1.00 / 画像全体を表示"
+        "物理表示倍率 100.0% / DIP変換 1.00 / 画像の一部を切り抜いて表示"
       ],
       "controls": [
         "全体表示 (0)",
@@ -555,7 +555,7 @@
     },
     {
       "path": "captures/16-close-shows-viewed-c.png",
-      "sha256": "sha256:53906806559bf9b63f8cae9985c848a23aa5472bdd462ba2c247a0b744a2ec67",
+      "sha256": "sha256:6c421723573b7b076bd82a227da5f9f4ec5f72b5b8694fdeb01b8c46ae33e6b3",
       "width": 1275,
       "height": 932,
       "step": "16-close-shows-viewed-c",
