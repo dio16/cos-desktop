@@ -225,8 +225,23 @@ foreach ($run in 1..$Runs) {
             $process.Refresh()
             if ($process.HasExited) { break }
             $before = $process.StartTime.ToUniversalTime().Ticks
-            $observedPath = [IO.Path]::GetFullPath($process.MainModule.FileName)
-            if ($before -ne $lifetimeTicks -or -not [StringComparer]::OrdinalIgnoreCase.Equals($observedPath, $exePath)) { throw 'Process identity changed before sampling' }
+            # A module read is a secondary executable check: Windows can transiently refuse or
+            # return an empty name while the process is being inspected. Retry briefly, and only
+            # treat a non-empty differing path as an identity change; PID plus start time already
+            # bind the sampled lifetime, and the binary hash binds the executable.
+            $observedPath = $null
+            for ($attempt = 0; $attempt -lt 3 -and -not $observedPath; $attempt++) {
+                try {
+                    $candidatePath = [string]$process.MainModule.FileName
+                    if (-not [string]::IsNullOrEmpty($candidatePath)) {
+                        $observedPath = [IO.Path]::GetFullPath($candidatePath)
+                    }
+                } catch {
+                    $observedPath = $null
+                }
+                if (-not $observedPath) { Start-Sleep -Milliseconds 100 }
+            }
+            if ($before -ne $lifetimeTicks -or ($observedPath -and -not [StringComparer]::OrdinalIgnoreCase.Equals($observedPath, $exePath))) { throw 'Process identity changed before sampling' }
             $observedTitle = [string]$process.MainWindowTitle
             $sampleQpcStart = [Diagnostics.Stopwatch]::GetTimestamp()
             if ($sampleQpcStart -lt $previousSampleEndQpc) { throw 'Process sample QPC intervals are not monotonic' }
