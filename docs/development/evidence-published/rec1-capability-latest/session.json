@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-07",
+  "task": "MP-REC1",
+  "contract": "DC-MP-REC1",
+  "status": "HOLD_MISSING_PUBLIC_DEVICE_RECOVERY_CONTRACT",
+  "source_commit": "59d0126d8757da6e4974e63142c03b21af7536b5",
+  "gpui_pin": "395def7a067b32ed598fcb3f048969ada9b54942",
+  "gpui_checkout": "HEAD matches locked pin; tracked files clean; only untracked .cargo-ok",
+  "taskern": {
+    "operation": "prepare",
+    "exit": 0,
+    "claim": "packet_compiled",
+    "plan_id": "cos-desktop-rec1",
+    "revision": 1,
+    "task_id": "MP-REC1",
+    "packet_sha256": "sha256:94db254e4bc97195510c8f7cff3ef48508f4e036c4ea3b652872372e8015627a",
+    "scope": "Entire DC-MP-REC1; unmet mandatory capability remains HOLD, not a reduced completed slice"
+  },
+  "source_files": [
+    {"path":"Cargo.lock","sha256":"501b68866a4b7f51afeaa552d8936c4a8d9e87edb0604b508c9b12fc3675b4b5"},
+    {"path":"crates/desktop-gpui/src/image_upload.rs","sha256":"36cfcce41eae8d095a6fbf2d729436783975e6217ec47e3f5c3cb259a202f8a6"},
+    {"path":"crates/desktop-gpui/src/image_viewer.rs","sha256":"9f75e1e055970097373c7b711caab49e05ccacfc092a072917b3c591d8402c83"},
+    {"path":"apps/desktop/examples/image_upload.rs","sha256":"77c6b13dfebbb3b987c67098231403f3833a551bb01da1929b3da99bc0474eda"}
+  ],
+  "upstream_evidence": [
+    {"path":"crates/gpui/src/platform.rs","lines":"879-962","observation":"Public PlatformWindow exposes frame/input/visibility/resize/close callbacks and atlas access, but no device-loss event or authoritative device generation"},
+    {"path":"crates/gpui_windows/src/platform.rs","lines":"380-398,1498-1562","observation":"Private VSync-thread GetDeviceRemovedReason polling recreates shared devices and sends private recovery/forced-redraw messages; recovery failure panics"},
+    {"path":"crates/gpui_windows/src/directx_renderer.rs","lines":"245-341","observation":"Present returns errors; private renderer recovery replaces resources and resets atlas; no public completion fence"},
+    {"path":"crates/gpui_windows/src/directx_atlas.rs","lines":"55-67","observation":"Internal reset clears atlas keys/textures and swaps device/context"},
+    {"path":"crates/gpui_windows/src/events.rs","lines":"1304-1319,1358-1367","observation":"Private window recovery marks forced render to rebuild atlas references; recovery failure panics"}
+  ],
+  "existing_cpu_cache": {
+    "encoded": "MediaCache retains bounded encoded input; outstanding Arc<EncodedMedia> handles remain charged after cache removal",
+    "decoded": "No reusable decoded-raster cache in media; prepared viewer frames retain CPU source under upload lifetime",
+    "generation": "UploadRequest current generation is caller-supplied; viewer copies it; no native authoritative update path",
+    "decoder_format": "DecodePolicy has generation identity; no stateful decoder-reset/output-format transition implementation",
+    "quarantine": "Logical generation advance is not proof that an old transfer terminated"
+  },
+  "native": {
+    "build_command": "cargo build --locked --release -p cos-desktop --example image_upload",
+    "build_exit": 0,
+    "toolchain": "1.98.1-x86_64-pc-windows-msvc",
+    "command": "image_upload.exe --fixture",
+    "binary_sha256": "0cb420c80a44bb544c7ea6692a4ae6188b40a11f9ca804f5995b0145ceb5eb76",
+    "method": "Load current revision -> Advance logical generation -> Load current revision -> Evict owned and close",
+    "hardware_reset_performed": false,
+    "capture_disclosure": "Three screenshots retained privately with these SHA-256 digests; this public summary does not supply image payloads or private host paths",
+    "observations": [
+      {"step":"generation-1","capture_sha256":"5df65ad200698751079aea7f612a8c076610e74a0d9e31ee587dbc300ddea9ce","fact":"Revision 1 generation 1 image visible; 16/16 tiles composed into GPUI scene"},
+      {"step":"stale-generation","capture_sha256":"fab31fce5698ba23319822fbcf5ab57d4ebfc49f603abd632b9aa4f7355ef9c8","fact":"Logical generation advanced to 2; old image area cleared and explicit Paint refused stale device generation 1; current=2 displayed"},
+      {"step":"generation-2-manual-load","capture_sha256":"2b7e3c4f185dcc06ba83c85b7a0193be4e9f9c9eead699cf6ed7c0aedfdc897c","fact":"Manual Load current revision prepares generation 2; image and 16/16 tiles visible; retained_frames=2, not automatic recovery or release evidence"}
+    ],
+    "exit_log": [
+      "event=img4-window-close evicted=2 skipped=0 unattributed=0 images=32 released_bytes=0 retained=0 consumers=0 resident=0 quarantined=100663296",
+      "event=img3-fixture-probe-exit Runtime-not-started"
+    ],
+    "remaining_probe_windows": 0,
+    "release_claim": "No GPU/CPU-quarantine release inferred from window close; the emitted quarantine figure is an application counter, not measured GPU residency or proof of a physical bound",
+    "gpu_completion": "NOT_MEASURED",
+    "gpu_residency": "NOT_MEASURED",
+    "present": "NOT_MEASURED"
+  },
+  "acceptance": {
+    "explained_shell_after_actual_reset": "NOT_RUN",
+    "no_stale_texture_after_actual_reset": "NOT_RUN",
+    "safe_cache_retained_after_actual_reset": "NOT_RUN",
+    "cancel_late_result_sharing_compare_shutdown_after_actual_reset": "NOT_RUN",
+    "automatic_native_recovery_integration": "NOT_IMPLEMENTED"
+  },
+  "required_decision": "A separately approved supported public GPUI device-loss/generation/recovery contract or equivalent owner-approved integration route is needed before full-contract implementation. No pin change, upstream mutation, unsafe or OS device reset was performed.",
+  "product_code_changed": false,
+  "refine_gate": "NOT_RUN: capability investigation only; no new product candidate",
+  "tern_review": "NOT_RUN for this investigation; earlier CMP1 CLEAN remains bound to 0b807f3"
+}
