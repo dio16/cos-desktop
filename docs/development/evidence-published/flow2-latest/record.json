@@ -1,0 +1,45 @@
+{
+  "measurement": "MP-FLOW2 Stage C incremental match-set build: same-run A/B at 10,000 nodes / 19,800 edges",
+  "date": "2026-11-08",
+  "build": "release",
+  "toolchain": {
+    "cargo": "1.98.1 (797e8a9bc 2026-08-05)",
+    "rustc": "1.98.1 (48a229cea 2026-09-01)"
+  },
+  "environment": {
+    "os": "Microsoft Windows 11 Pro 10.0.26300",
+    "cpu": "AMD Ryzen 7 3700X 8-Core Processor (8 cores / 16 logical)",
+    "note": "Single shared development machine. Other lanes were compiling during these runs, so absolute microseconds are higher than the historical section 19.143 references; the decision uses the same-run alternating A/B."
+  },
+  "base_commit": "206f8d335a2f518e8dccd57d64a837d02ab78772",
+  "candidate": "the commit that introduces flow.rs and lib.rs at the recorded source hashes",
+  "source_sha256": {
+    "crates/desktop-gpui/src/flow.rs": "sha256:eba97ca679d6fd6ff2799ff770ac52809044a4d70184305e3c27e8804626eab7",
+    "crates/desktop-gpui/src/lib.rs": "sha256:270779b44b8b1e18baccbb125a644a0f1b259abbc96d62ec09896e49ce614bdd"
+  },
+  "warmup": 3,
+  "iterations": 21,
+  "order": "alternating within each iteration: baseline rebuild, revision-only reuse, publication-only reuse, exact hit",
+  "graphs": {
+    "nodes": 10000,
+    "edges": 19800,
+    "topology": "100 layers x 100 nodes, two edges per node into the next layer, acyclic"
+  },
+  "timed_interval": "match-set obtain (rebuild or reuse) + diagram construction. Rows re-derivation runs on the background job and layers are cached/measured by the existing phase paths; both are excluded from this interval.",
+  "raw_samples_file": "raw-samples.txt",
+  "raw_samples_sha256": "sha256:41cc3c7708b17a6a83efbfb12ed59d7d115d64e954f9868b0f1b615a15eb156c",
+  "summary_file": "summary.json",
+  "commands": [
+    "cargo fmt -p desktop-gpui",
+    "cargo fmt -p desktop-gpui -- --check",
+    "cargo test --locked -p desktop-gpui --lib",
+    "cargo test --locked -p desktop-gpui --lib -- flow",
+    "cargo clippy --locked -p desktop-gpui --all-targets -- -D warnings",
+    "cargo test --release --locked -p desktop-gpui --lib ten_thousand_incremental -- --ignored --nocapture",
+    "cargo test --release --locked -p desktop-gpui --lib ten_thousand_cache_miss_and_hit_series -- --ignored --nocapture",
+    "cargo test --release --locked -p desktop-gpui --lib ten_thousand_revision_change_series -- --ignored --nocapture",
+    "cargo test --release --locked -p desktop-gpui --lib ten_thousand_node_flow_phases_stay_within_the_frame_budget -- --ignored --nocapture"
+  ],
+  "environment_variables": "TEMP=TMP=C:/dev/cos-desktop/target/flow2-tmp was set for every cargo invocation (host build workaround).",
+  "paint_gpu_present": "NOT_MEASURED"
+}

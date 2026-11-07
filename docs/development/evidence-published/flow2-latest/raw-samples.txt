@@ -1,0 +1,123 @@
+# MP-FLOW2 Stage C incremental build: raw measurement samples (2026-11-08, release)
+# Source: target/flow2-measure/*.log (target/ is not tracked; this file is the tracked sample record).
+
+## Run 1: ten_thousand_incremental_match_set_series (warmup 3, iterations 21, alternating)
+MP-FLOW2 incremental conditions release=true warmup=3 iterations=21 nodes=10000 edges=19800 order=alternating
+MP-FLOW2 incremental interval baseline=rebuild match sets+diagram; revision=projection-counter-only reuse+diagram; publication=publication-version-only reuse+diagram; hit=exact-key lookup+diagram
+MP-FLOW2 incremental aggregation n=21 median=odd:middle/even:mean(two middle) p95=nearest-rank ceil(n*0.95)-1 max=largest
+inc_sample iter=0 baseline_us=14010 revision_us=3240 publication_us=2898 hit_us=2896
+inc_sample iter=1 baseline_us=10707 revision_us=2161 publication_us=2511 hit_us=3590
+inc_sample iter=2 baseline_us=13629 revision_us=3572 publication_us=2947 hit_us=4175
+inc_sample iter=3 baseline_us=13422 revision_us=3146 publication_us=2997 hit_us=3290
+inc_sample iter=4 baseline_us=19623 revision_us=5191 publication_us=4215 hit_us=4648
+inc_sample iter=5 baseline_us=18291 revision_us=3696 publication_us=3505 hit_us=3723
+inc_sample iter=6 baseline_us=13340 revision_us=3959 publication_us=3859 hit_us=4125
+inc_sample iter=7 baseline_us=13712 revision_us=3041 publication_us=2881 hit_us=3118
+inc_sample iter=8 baseline_us=14089 revision_us=4016 publication_us=3727 hit_us=4451
+inc_sample iter=9 baseline_us=16986 revision_us=3049 publication_us=3207 hit_us=4885
+inc_sample iter=10 baseline_us=15263 revision_us=3167 publication_us=3066 hit_us=3788
+inc_sample iter=11 baseline_us=11764 revision_us=4125 publication_us=3703 hit_us=2944
+inc_sample iter=12 baseline_us=14804 revision_us=5043 publication_us=4118 hit_us=3711
+inc_sample iter=13 baseline_us=12313 revision_us=3543 publication_us=3012 hit_us=2719
+inc_sample iter=14 baseline_us=18538 revision_us=4468 publication_us=3044 hit_us=3299
+inc_sample iter=15 baseline_us=23226 revision_us=6018 publication_us=4193 hit_us=4782
+inc_sample iter=16 baseline_us=19823 revision_us=9369 publication_us=6149 hit_us=4750
+inc_sample iter=17 baseline_us=17256 revision_us=4232 publication_us=3613 hit_us=3221
+inc_sample iter=18 baseline_us=13018 revision_us=3852 publication_us=3949 hit_us=4211
+inc_sample iter=19 baseline_us=13191 revision_us=4301 publication_us=3084 hit_us=3115
+inc_sample iter=20 baseline_us=13187 revision_us=2434 publication_us=4294 hit_us=3560
+inc_summary series=baseline_rebuild n=21 median_us=14010 p95_us=19823 max_us=23226
+inc_summary series=incremental_revision n=21 median_us=3852 p95_us=6018 max_us=9369
+inc_summary series=incremental_publication n=21 median_us=3505 p95_us=4294 max_us=6149
+inc_summary series=hit n=21 median_us=3711 p95_us=4782 max_us=4885
+MP-FLOW2 incremental checksum=0x981149dcc0db425a reuse_equals_reference=true
+MP-FLOW2 incremental NOT_MEASURED paint/GPU/present
+
+## Run 2 (repeat): ten_thousand_incremental_match_set_series
+MP-FLOW2 incremental conditions release=true warmup=3 iterations=21 nodes=10000 edges=19800 order=alternating
+MP-FLOW2 incremental interval baseline=rebuild match sets+diagram; revision=projection-counter-only reuse+diagram; publication=publication-version-only reuse+diagram; hit=exact-key lookup+diagram
+MP-FLOW2 incremental aggregation n=21 median=odd:middle/even:mean(two middle) p95=nearest-rank ceil(n*0.95)-1 max=largest
+inc_sample iter=0 baseline_us=12687 revision_us=3377 publication_us=3950 hit_us=3227
+inc_sample iter=1 baseline_us=13426 revision_us=3118 publication_us=3440 hit_us=2990
+inc_sample iter=2 baseline_us=13349 revision_us=4171 publication_us=3315 hit_us=5366
+inc_sample iter=3 baseline_us=14219 revision_us=3129 publication_us=4678 hit_us=3377
+inc_sample iter=4 baseline_us=13075 revision_us=3722 publication_us=3550 hit_us=5046
+inc_sample iter=5 baseline_us=16240 revision_us=3686 publication_us=4114 hit_us=4046
+inc_sample iter=6 baseline_us=14212 revision_us=3848 publication_us=3599 hit_us=4180
+inc_sample iter=7 baseline_us=16104 revision_us=2979 publication_us=3175 hit_us=3979
+inc_sample iter=8 baseline_us=12845 revision_us=3629 publication_us=3011 hit_us=3144
+inc_sample iter=9 baseline_us=16252 revision_us=5420 publication_us=4147 hit_us=5007
+inc_sample iter=10 baseline_us=15053 revision_us=3385 publication_us=5042 hit_us=3549
+inc_sample iter=11 baseline_us=14434 revision_us=3592 publication_us=3417 hit_us=4630
+inc_sample iter=12 baseline_us=12983 revision_us=3265 publication_us=2987 hit_us=3731
+inc_sample iter=13 baseline_us=13234 revision_us=4788 publication_us=2942 hit_us=4050
+inc_sample iter=14 baseline_us=12649 revision_us=3432 publication_us=3156 hit_us=2837
+inc_sample iter=15 baseline_us=11608 revision_us=3411 publication_us=3364 hit_us=3982
+inc_sample iter=16 baseline_us=13365 revision_us=3424 publication_us=3080 hit_us=3315
+inc_sample iter=17 baseline_us=13475 revision_us=3338 publication_us=3249 hit_us=3972
+inc_sample iter=18 baseline_us=13688 revision_us=4081 publication_us=4120 hit_us=4214
+inc_sample iter=19 baseline_us=11640 revision_us=3295 publication_us=3052 hit_us=2658
+inc_sample iter=20 baseline_us=13439 revision_us=3031 publication_us=3225 hit_us=3063
+inc_summary series=baseline_rebuild n=21 median_us=13426 p95_us=16240 max_us=16252
+inc_summary series=incremental_revision n=21 median_us=3424 p95_us=4788 max_us=5420
+inc_summary series=incremental_publication n=21 median_us=3364 p95_us=4678 max_us=5042
+inc_summary series=hit n=21 median_us=3972 p95_us=5046 max_us=5366
+MP-FLOW2 incremental checksum=0x981149dcc0db425a reuse_equals_reference=true
+MP-FLOW2 incremental NOT_MEASURED paint/GPU/present
+
+## Existing measurement path: ten_thousand_cache_miss_and_hit_series (same session, release)
+MP-FLOW2 A/B conditions release=true warmup=3 iterations=21 nodes=10000 edges=19800 order=alternating
+MP-FLOW2 A/B interval build=set construction only; probe=contains() over every admitted node and edge; product miss=clear/replace outside timer then get_or_build+diagram inside timer; hit=lookup+diagram
+MP-FLOW2 A/B aggregation n=21 median=odd:middle/even:mean(two middle) p95=nearest-rank ceil(n*0.95)-1 max=largest
+MP-FLOW2 A/B checksums btree=0x981149dcc0db425a hash=0x981149dcc0db425a reference=0x981149dcc0db425a
+MP-FLOW2 key_invalidation session_generation=miss_then_hit
+MP-FLOW2 key_invalidation publication_version=miss_then_hit
+MP-FLOW2 key_invalidation epoch=miss_then_hit
+MP-FLOW2 key_invalidation revision=miss_then_hit
+MP-FLOW2 key_invalidation query=miss_then_hit
+ab_summary kind=btree_build n=21 median_us=14454 p95_us=17555 max_us=18958
+ab_summary kind=btree_probe n=21 median_us=24411 p95_us=28882 max_us=29840
+ab_summary kind=hash_build n=21 median_us=12363 p95_us=14420 max_us=16938
+ab_summary kind=hash_probe n=21 median_us=13637 p95_us=17507 max_us=20581
+summary series=miss_clear n=21 median_us=16130 p95_us=20116 max_us=20197 match_median_us=11754 match_p95_us=15535 match_max_us=15630 diagram_median_us=4187 diagram_p95_us=4962 diagram_max_us=4967
+summary series=miss_replace n=21 median_us=20010 p95_us=24345 max_us=24419 match_median_us=16856 match_p95_us=19932 match_max_us=20323 diagram_median_us=4016 diagram_p95_us=4991 diagram_max_us=5006
+summary series=hit n=21 median_us=3887 p95_us=4731 max_us=4893 match_median_us=0 match_p95_us=0 match_max_us=0 diagram_median_us=3887 diagram_p95_us=4731 diagram_max_us=4892
+MP-FLOW2 equivalence btree==hash==reference diagram_equal=true
+MP-FLOW2 NOT_MEASURED paint/GPU/present
+
+## Existing measurement path: ten_thousand_revision_change_series (same session, release)
+MP-FLOW2 revision conditions release=true warmup=3 iterations=21 nodes=10000 edges=19800 order=alternating
+MP-FLOW2 revision interval rows=background re-derivation (separate thread class); layers=display recompute (query-only reuses the cached layers, reported as 0); match=HashSet build/replace; diagram=Diagram build; display_total=layers+match+diagram (do not read as frame latency)
+MP-FLOW2 revision aggregation n=21 median=odd:middle/even:mean(two middle) p95=nearest-rank ceil(n*0.95)-1 max=largest
+MP-FLOW2 revision equivalence layers_equal=true diagram_nodes=120 truncated=true skipped_edges=19760
+MP-FLOW2 revision NOT_MEASURED paint/GPU/present
+rev_summary condition=query_only phase=rows_background n=21 median_us=693 p95_us=1096 max_us=1173
+rev_summary condition=query_only phase=layers_display n=21 median_us=0 p95_us=0 max_us=0
+rev_summary condition=query_only phase=match_display n=21 median_us=13094 p95_us=15508 max_us=16349
+rev_summary condition=query_only phase=diagram_display n=21 median_us=3259 p95_us=3848 max_us=4156
+rev_summary condition=query_only phase=display_total n=21 median_us=16418 p95_us=19341 max_us=19393
+rev_summary condition=revision phase=rows_background n=21 median_us=706 p95_us=1501 max_us=1895
+rev_summary condition=revision phase=layers_display n=21 median_us=6602 p95_us=9219 max_us=12656
+rev_summary condition=revision phase=match_display n=21 median_us=13421 p95_us=16508 max_us=16705
+rev_summary condition=revision phase=diagram_display n=21 median_us=3251 p95_us=5034 max_us=5469
+rev_summary condition=revision phase=display_total n=21 median_us=23281 p95_us=31393 max_us=32197
+
+## Test outcomes in the same session
+# cargo test --locked -p desktop-gpui --lib -> test result: ok. 222 passed; 0 failed; 5 ignored
+# cargo test --locked -p desktop-gpui --lib -- flow -> test result: ok. 35 passed; 0 failed; 5 ignored
+# cargo clippy --locked -p desktop-gpui --all-targets -- -D warnings -> exit 0
+
+## Existing measurement path: ten_thousand_node_flow_phases_stay_within_the_frame_budget (same session, release)
+MP-FLOW2 ten_thousand nodes=10000 edges=19800 iterations=20 warmup=3 checksum=0x1cfce993dc07a7c8
+MP-FLOW2 phase rows        median=831us p95=1535us
+MP-FLOW2 phase layers      median=7270us p95=10275us
+MP-FLOW2 phase matches     median=10326us p95=14746us
+MP-FLOW2 phase diagram     median=3506us p95=4361us
+MP-FLOW2 phase geometry    median=19us p95=27us
+MP-FLOW2 frame_path matches+diagram median=13928us p95=18161us max=19784us
+MP-FLOW2 full_baseline rows+layers+matches+diagram+geometry median=21945us p95=29478us max=33214us
+MP-FLOW2 budget 60Hz=16670us ui_p95_target=8330us frame_median=13928us frame_p95=18161us frame_within_ui_p95=false frame_within_60hz=true
+MP-FLOW2 steady (layers cached per revision) = frame_path; full_baseline is the recompute path
+MP-FLOW2 cache miss_first_frame=12612us hit_steady median=3437us p95=4623us max=4795us delta_median_vs_uncached=10491us
+MP-FLOW2 cache hit_within_ui_p95=true hit_within_60hz=true hit_ui_headroom_us=3707
+MP-FLOW2 verdict frame_within_ui_p95=false frame_within_60hz=false full_within_60hz=false (paint/GPU NOT_MEASURED)

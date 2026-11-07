@@ -191,6 +191,20 @@ pub fn revision_key(graphs: &[Arc<GraphDisplay>]) -> RevisionKey {
         .collect()
 }
 
+/// Whether two revision keys name the same canonical graph revisions in the same order.
+///
+/// [`revision_key`] pairs each exact [`GraphRef`] with its independent projection [`Counter`].
+/// When only those counters differ, the canonical displayed graph content is identical, so a
+/// match set built for the previous key is still exactly correct. Any `GraphRef` change, graph
+/// count change or graph order change makes the canonical content differ.
+pub fn same_canonical_revisions(left: &RevisionKey, right: &RevisionKey) -> bool {
+    left.len() == right.len()
+        && left
+            .iter()
+            .zip(right)
+            .all(|(left, right)| left.0 == right.0)
+}
+
 /// Nodes the prototype diagram draws; the lists stay complete.
 ///
 /// A bounded drawing keeps layout and paint cost predictable without ever
@@ -207,32 +221,93 @@ pub struct Matched {
 
 /// Bounded (single-entry) cache of the match sets, owned by the shell.
 ///
-/// It is keyed by the **complete** [`AdmissionKey`] — session generation, publication
-/// version, epoch, revision and query — so an authorization or session change can never
-/// reuse a stale set. It never grows past one entry; a miss replaces it. The cache holds
-/// only the match sets: the diagram itself is rebuilt from them.
+/// The entry is keyed by the **complete** [`AdmissionKey`]: an exact key is a hit, and a
+/// different key replaces the entry, so no identity component is silently ignored. The
+/// *rebuild* is incremental because not every component can change which rows match. The
+/// canonical [`GraphRef`] sequence identifies the exact displayed graph content (its
+/// node/edge identities and authoritative labels), and the query selects from it under the
+/// session/epoch authorization scope. A projection-revision-only or publication-version
+/// change therefore reuses the already-built set instead of rebuilding it; any
+/// content-identity change (scope, query, graph identity) rebuilds from the new rows. It
+/// never grows past one entry; a miss replaces it. The cache holds only the match sets: the
+/// diagram itself is rebuilt from them.
 #[derive(Debug, Default)]
 pub struct MatchCache {
     entry: Option<(AdmissionKey, Arc<Matched>)>,
 }
 
+/// How a [`MatchCache`] lookup was served.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum MatchLookup {
+    /// The complete admission key was already cached; the build closure did not run.
+    Hit,
+    /// The entry belonged to a different admission key with identical match content; the
+    /// set was reused and the entry re-keyed without running the build closure.
+    Reused,
+    /// The match content identity changed (or the cache was empty); the closure rebuilt it.
+    Rebuilt,
+}
+
+/// Whether two admission keys admit exactly the same match-set content.
+///
+/// The content is the set of `(GraphRef, identity)` pairs of the admitted rows. It can only
+/// change when the authorization scope (`session_generation`, `epoch`), the filter text, or
+/// the canonical displayed graph revisions change. The independent projection counters in
+/// `revision` and the publication version are snapshot-coordination values: they never change
+/// the authoritative node/edge identities or labels of a canonical [`GraphRef`], so they
+/// never change the set.
+fn same_match_content(left: &AdmissionKey, right: &AdmissionKey) -> bool {
+    left.session_generation == right.session_generation
+        && left.epoch == right.epoch
+        && left.query == right.query
+        && left.revision.len() == right.revision.len()
+        && left
+            .revision
+            .iter()
+            .zip(&right.revision)
+            .all(|(left, right)| left.0 == right.0)
+}
+
 impl MatchCache {
+    /// Return the match sets for `key`, rebuilding only when their content changed.
+    ///
+    /// This is [`Self::get_or_build`] with the lookup outcome exposed so tests and the
+    /// measurement path can distinguish an exact hit, an incremental reuse and a rebuild.
+    pub fn lookup(
+        &mut self,
+        key: &AdmissionKey,
+        build: impl FnOnce() -> Matched,
+    ) -> (Arc<Matched>, MatchLookup) {
+        let mut reused = None;
+        if let Some((cached, matched)) = self.entry.as_ref() {
+            if cached == key {
+                return (Arc::clone(matched), MatchLookup::Hit);
+            }
+            if same_match_content(cached, key) {
+                reused = Some(Arc::clone(matched));
+            }
+        }
+        if let Some(matched) = reused {
+            self.entry = Some((key.clone(), Arc::clone(&matched)));
+            return (matched, MatchLookup::Reused);
+        }
+        let matched = Arc::new(build());
+        self.entry = Some((key.clone(), Arc::clone(&matched)));
+        (matched, MatchLookup::Rebuilt)
+    }
+
     /// Return the cached sets for `key`, or build them once with `build`.
     ///
-    /// The returned flag is `true` for a hit. A hit never calls `build`.
+    /// The returned flag is `true` only for an exact-key hit. A content-identical incremental
+    /// reuse also avoids `build` but reports `false`, because the entry belongs to a different
+    /// complete admission identity. A hit never calls `build`.
     pub fn get_or_build(
         &mut self,
         key: &AdmissionKey,
         build: impl FnOnce() -> Matched,
     ) -> (Arc<Matched>, bool) {
-        if let Some((cached, matched)) = self.entry.as_ref()
-            && cached == key
-        {
-            return (Arc::clone(matched), true);
-        }
-        let matched = Arc::new(build());
-        self.entry = Some((key.clone(), Arc::clone(&matched)));
-        (matched, false)
+        let (matched, outcome) = self.lookup(key, build);
+        (matched, outcome == MatchLookup::Hit)
     }
 
     /// Drop the cached entry: authorization loss, scope switch or revision discard.
@@ -862,9 +937,9 @@ pub fn revision_label(graph: &GraphDisplay) -> String {
 #[cfg(test)]
 mod tests {
     use super::{
-        AdmissionKey, MAX_DIAGRAM_NODES, MatchCache, Matched, RevisionKey, SAME_LAYER_HEADROOM,
-        admit, connector, contains_edge, contains_node, diagram, layers, layers_preallocated,
-        revision_key, rows, rows_cancellable,
+        AdmissionKey, MAX_DIAGRAM_NODES, MatchCache, MatchLookup, Matched, RevisionKey,
+        SAME_LAYER_HEADROOM, admit, connector, contains_edge, contains_node, diagram, layers,
+        layers_preallocated, revision_key, rows, rows_cancellable, same_canonical_revisions,
     };
     use desktop_protocol::{ArtifactDigest, Counter, EpochId, GraphId, GraphRef};
     use std::sync::Arc;
@@ -1620,10 +1695,11 @@ mod tests {
         }
     }
 
-    /// Stage C: the match-set cache must hit only on the complete admission identity,
-    /// and every key component must invalidate it.
+    /// Stage C: every content-identity component must invalidate the cache and force a
+    /// rebuild. A publication-version or projection-counter change cannot change which rows a
+    /// canonical revision admits, so it reuses the built set instead (incremental build).
     #[test]
-    fn the_match_cache_invalidates_on_every_admission_key_component() {
+    fn the_match_cache_invalidates_on_every_content_identity_component() {
         let source_graph = graph(1, "digest/one", 4);
         let graphs = [Arc::clone(&source_graph)];
         let rows = rows(&graphs, "");
@@ -1631,42 +1707,111 @@ mod tests {
         let builds = std::cell::Cell::new(0usize);
         let mut cache = MatchCache::default();
 
-        let (first, hit) = cache.get_or_build(&base, || {
+        let (first, outcome) = cache.lookup(&base, || {
             builds.set(builds.get() + 1);
             matched_from_rows(&rows)
         });
-        assert!(!hit, "the first request is a miss");
+        assert_eq!(outcome, MatchLookup::Rebuilt, "the first request rebuilds");
         assert_eq!(cache.len(), 1);
-        let (cached, hit) = cache.get_or_build(&base, || panic!("a hit must not rebuild"));
-        assert!(hit);
-        assert_eq!(first, cached);
+        let (cached, outcome) = cache.lookup(&base, || panic!("a hit must not rebuild"));
+        assert_eq!(outcome, MatchLookup::Hit);
+        assert!(
+            Arc::ptr_eq(&first, &cached),
+            "a hit returns the cached instance"
+        );
         assert_eq!(builds.get(), 1);
+
+        // Neither a publication-version change nor a projection-counter-only change can
+        // change the canonical graph content, the query or the scope: the set is reused and
+        // the entry is re-keyed, so no rebuild happens and the next exact lookup is a hit.
+        let counter_only = revision_key(&[graph(1, "digest/one", 9)]);
+        let publication_only = cache_key(1, 3, None, base.revision.clone(), "");
+        let projection_only = cache_key(1, 2, None, counter_only, "");
+        for reuse in [publication_only, projection_only] {
+            let (matched, outcome) = cache.lookup(&reuse, || panic!("reuse must not rebuild"));
+            assert_eq!(outcome, MatchLookup::Reused);
+            assert_eq!(*matched, matched_from_rows(&rows));
+            let (again, outcome) = cache.lookup(&reuse, || panic!("the re-keyed entry hits"));
+            assert_eq!(outcome, MatchLookup::Hit);
+            assert!(Arc::ptr_eq(&matched, &again));
+            assert_eq!(cache.len(), 1);
+        }
+        assert_eq!(builds.get(), 1, "reuse never rebuilds");
 
         let other_graph = graph(1, "digest/two", 4);
         let other_revision = revision_key(&[Arc::clone(&other_graph)]);
+        let newer_graph = graph(2, "digest/three", 5);
+        let two_graphs = revision_key(&[Arc::clone(&source_graph), Arc::clone(&newer_graph)]);
+        let reversed = revision_key(&[Arc::clone(&newer_graph), Arc::clone(&source_graph)]);
+        let session_variant = cache_key(2, 2, None, base.revision.clone(), "");
+        let epoch_variant = cache_key(
+            1,
+            2,
+            Some(EpochId::fixture("epoch/one")),
+            base.revision.clone(),
+            "",
+        );
+        let query_variant = cache_key(1, 2, None, base.revision.clone(), "alpha");
+        let identity_variant = cache_key(1, 2, None, other_revision, "");
+        let count_variant = cache_key(1, 2, None, two_graphs, "");
+        let order_variant = cache_key(1, 2, None, reversed, "");
         let variants = [
-            cache_key(2, 2, None, base.revision.clone(), ""),
-            cache_key(1, 3, None, base.revision.clone(), ""),
-            cache_key(
-                1,
-                2,
-                Some(EpochId::fixture("epoch/one")),
-                base.revision.clone(),
-                "",
-            ),
-            cache_key(1, 2, None, other_revision, ""),
-            cache_key(1, 2, None, base.revision.clone(), "alpha"),
+            ("session_generation", session_variant),
+            ("epoch", epoch_variant),
+            ("query", query_variant),
+            ("graph_identity", identity_variant),
+            ("graph_count", count_variant),
+            ("graph_order", order_variant),
         ];
-        for (index, variant) in variants.iter().enumerate() {
-            assert_ne!(variant, &base, "variant {index} must actually differ");
-            let (_, hit) = cache.get_or_build(variant, || {
+        let variant_count = variants.len();
+        for (name, variant) in &variants {
+            assert_ne!(variant, &base, "{name} must actually differ");
+            let (_, outcome) = cache.lookup(variant, || {
                 builds.set(builds.get() + 1);
                 matched_from_rows(&rows)
             });
-            assert!(!hit, "variant {index} must invalidate the cache");
+            assert_eq!(
+                outcome,
+                MatchLookup::Rebuilt,
+                "{name} changes must invalidate the cache"
+            );
             assert_eq!(cache.len(), 1, "the cache never grows past one entry");
         }
-        assert_eq!(builds.get(), 1 + variants.len());
+        assert_eq!(builds.get(), 1 + variant_count);
+    }
+
+    /// Stage C incremental build: the shell keeps the cached match sets across a revision
+    /// change only when the canonical `GraphRef` sequence is identical. A projection-counter
+    /// change preserves the content; a graph identity, count or order change must clear.
+    #[test]
+    fn only_a_projection_counter_change_keeps_the_canonical_revision_identity() {
+        let first = graph(1, "digest/one", 4);
+        let second = graph(2, "digest/two", 5);
+        let base = revision_key(&[Arc::clone(&first)]);
+        let counter_only = revision_key(&[graph(1, "digest/one", 9)]);
+        assert_ne!(base, counter_only, "the full keys must differ");
+        assert!(same_canonical_revisions(&base, &counter_only));
+        assert!(same_canonical_revisions(&counter_only, &base));
+
+        let pair = revision_key(&[Arc::clone(&first), Arc::clone(&second)]);
+        let pair_counters = revision_key(&[graph(1, "digest/one", 8), graph(2, "digest/two", 9)]);
+        assert!(same_canonical_revisions(&pair, &pair_counters));
+        assert!(!same_canonical_revisions(
+            &pair,
+            &revision_key(&[Arc::clone(&second), Arc::clone(&first)])
+        ));
+
+        for changed in [
+            revision_key(&[graph(2, "digest/two", 4)]),
+            revision_key(&[graph(1, "digest/other", 4)]),
+            pair.clone(),
+        ] {
+            assert!(
+                !same_canonical_revisions(&base, &changed),
+                "a canonical identity or count change must not reuse"
+            );
+        }
+        assert!(!same_canonical_revisions(&base, &Vec::new()));
     }
 
     /// Stage C: a hit feeds `diagram` exactly the same structure as an uncached build.
@@ -1729,6 +1874,137 @@ mod tests {
             assert_eq!(cache.len(), 1);
         }
         assert!(!cache.is_empty());
+    }
+
+    /// Stage C incremental build: a revision-only change reuses the unchanged set and draws
+    /// exactly the same diagram as a full rebuild; the deterministic checksum must agree.
+    #[test]
+    fn a_revision_only_change_reuses_a_checksum_equal_match_set() {
+        let source_graph = graph(7, "digest/seven", 3);
+        let graphs = [Arc::clone(&source_graph)];
+        let rows = rows(&graphs, "a");
+        let first_key = cache_key(1, 1, None, revision_key(&graphs), "a");
+        let second_key = cache_key(
+            1,
+            1,
+            None,
+            revision_key(&[graph(7, "digest/seven", 4)]),
+            "a",
+        );
+        assert_ne!(first_key, second_key);
+        assert_eq!(first_key.revision[0].0, second_key.revision[0].0);
+        let computed = layers(&source_graph);
+        let mut cache = MatchCache::default();
+        let (first, outcome) = cache.lookup(&first_key, || matched_from_rows(&rows));
+        assert_eq!(outcome, MatchLookup::Rebuilt);
+        let (reused, outcome) =
+            cache.lookup(&second_key, || panic!("a revision-only change must reuse"));
+        assert_eq!(outcome, MatchLookup::Reused);
+        assert!(Arc::ptr_eq(&first, &reused), "the built instance is reused");
+        let rebuilt = matched_from_rows(&rows);
+        assert_eq!(*reused, rebuilt);
+        let reused_diagram = diagram(&source_graph, &computed, &reused.nodes, &reused.edges);
+        let rebuilt_diagram = diagram(&source_graph, &computed, &rebuilt.nodes, &rebuilt.edges);
+        assert_eq!(reused_diagram, rebuilt_diagram);
+        assert_eq!(
+            diagram_checksum(&reused_diagram, &rows, &computed),
+            diagram_checksum(&rebuilt_diagram, &rows, &computed)
+        );
+    }
+
+    /// Stage C incremental build: a publication-version change alone keeps the same canonical
+    /// graph revision and reuses the built set while re-keying the entry.
+    #[test]
+    fn a_publication_version_change_reuses_the_built_match_set() {
+        let source_graph = graph(2, "digest/two", 5);
+        let graphs = [Arc::clone(&source_graph)];
+        let rows = rows(&graphs, "");
+        let base = cache_key(1, 4, None, revision_key(&graphs), "");
+        let publication = cache_key(1, 5, None, revision_key(&graphs), "");
+        let mut cache = MatchCache::default();
+        let (built, outcome) = cache.lookup(&base, || matched_from_rows(&rows));
+        assert_eq!(outcome, MatchLookup::Rebuilt);
+        let builds = std::cell::Cell::new(0usize);
+        let (reused, outcome) = cache.lookup(&publication, || {
+            builds.set(builds.get() + 1);
+            matched_from_rows(&rows)
+        });
+        assert_eq!(outcome, MatchLookup::Reused);
+        assert_eq!(builds.get(), 0, "the publication change never rebuilds");
+        assert!(Arc::ptr_eq(&built, &reused));
+        let (again, outcome) = cache.lookup(&publication, || panic!("the re-keyed entry hits"));
+        assert_eq!(outcome, MatchLookup::Hit);
+        assert!(Arc::ptr_eq(&built, &again));
+        assert_eq!(cache.len(), 1);
+    }
+
+    /// Stage C: a canonical revision change never reuses the previous revision's set; the
+    /// rebuilt content only names the new revision and the old key cannot hit it.
+    #[test]
+    fn a_canonical_revision_change_never_reuses_stale_match_sets() {
+        let first = graph(4, "digest/first", 2);
+        let second = graph(5, "digest/second", 2);
+        let rows_first = rows(&[Arc::clone(&first)], "");
+        let rows_second = rows(&[Arc::clone(&second)], "");
+        let key_first = cache_key(1, 7, None, revision_key(&[Arc::clone(&first)]), "");
+        let key_second = cache_key(1, 7, None, revision_key(&[Arc::clone(&second)]), "");
+        let mut cache = MatchCache::default();
+        let (built_first, outcome) = cache.lookup(&key_first, || matched_from_rows(&rows_first));
+        assert_eq!(outcome, MatchLookup::Rebuilt);
+        let builds = std::cell::Cell::new(0usize);
+        let (built_second, outcome) = cache.lookup(&key_second, || {
+            builds.set(builds.get() + 1);
+            matched_from_rows(&rows_second)
+        });
+        assert_eq!(
+            outcome,
+            MatchLookup::Rebuilt,
+            "a graph identity change rebuilds"
+        );
+        assert_eq!(builds.get(), 1);
+        assert!(!Arc::ptr_eq(&built_first, &built_second));
+        assert!(
+            built_second
+                .nodes
+                .iter()
+                .all(|(graph_ref, _)| *graph_ref == second.graph_ref)
+        );
+        assert!(
+            built_second
+                .edges
+                .iter()
+                .all(|(graph_ref, _)| *graph_ref == second.graph_ref)
+        );
+        // The key that produced the stale content rebuilds again instead of hitting the
+        // entry that now holds the other revision.
+        let (again_first, outcome) = cache.lookup(&key_first, || matched_from_rows(&rows_first));
+        assert_eq!(outcome, MatchLookup::Rebuilt);
+        assert!(!Arc::ptr_eq(&again_first, &built_first));
+        assert!(
+            again_first
+                .nodes
+                .iter()
+                .all(|(graph_ref, _)| *graph_ref == first.graph_ref)
+        );
+        assert_eq!(cache.len(), 1);
+    }
+
+    /// Stage C: the exact-key hit path is unchanged: no rebuild, the same instance, bounded.
+    #[test]
+    fn the_match_cache_hit_path_is_unchanged() {
+        let source_graph = graph(1, "digest/one", 4);
+        let graphs = [Arc::clone(&source_graph)];
+        let rows = rows(&graphs, "");
+        let key = cache_key(1, 1, None, revision_key(&graphs), "");
+        let mut cache = MatchCache::default();
+        let (first, outcome) = cache.lookup(&key, || matched_from_rows(&rows));
+        assert_eq!(outcome, MatchLookup::Rebuilt);
+        for _ in 0..8 {
+            let (cached, outcome) = cache.lookup(&key, || panic!("a hit must not rebuild"));
+            assert_eq!(outcome, MatchLookup::Hit);
+            assert!(Arc::ptr_eq(&first, &cached));
+            assert_eq!(cache.len(), 1);
+        }
     }
 
     // ---------------------------------------------------------------------------------
@@ -2508,6 +2784,158 @@ mod tests {
         }
         println!("MP-FLOW2 equivalence btree==hash==reference diagram_equal=true");
         println!("MP-FLOW2 NOT_MEASURED paint/GPU/present");
+    }
+
+    /// MP-FLOW2 Stage C incremental build: same-run A/B of the pre-incremental rebuild
+    /// against the incremental reuse for a revision-only (projection counter) and a
+    /// publication-version-only admission key change, on the same 10,000-node /
+    /// 19,800-edge graph. Release-only evidence run; paint/GPU/Present are NOT_MEASURED.
+    ///
+    /// `cargo test --release -p desktop-gpui --lib ten_thousand_incremental -- --ignored --nocapture`
+    #[test]
+    #[ignore = "MP-FLOW2 incremental-build measurement; run explicitly with --release"]
+    fn ten_thousand_incremental_match_set_series() {
+        use std::time::Instant;
+
+        const LAYER_COUNT: usize = 100;
+        const WIDTH: usize = 100;
+        const NODES: usize = LAYER_COUNT * WIDTH;
+        const EDGES: usize = (LAYER_COUNT - 1) * WIDTH * 2;
+        const ITERATIONS: usize = 21;
+        const WARMUP: usize = 3;
+
+        println!(
+            "MP-FLOW2 incremental conditions release={} warmup={WARMUP} iterations={ITERATIONS} nodes={NODES} edges={EDGES} order=alternating",
+            !cfg!(debug_assertions)
+        );
+        println!(
+            "MP-FLOW2 incremental interval baseline=rebuild match sets+diagram; revision=projection-counter-only reuse+diagram; publication=publication-version-only reuse+diagram; hit=exact-key lookup+diagram"
+        );
+        println!(
+            "MP-FLOW2 incremental aggregation n={ITERATIONS} median=odd:middle/even:mean(two middle) p95=nearest-rank ceil(n*0.95)-1 max=largest"
+        );
+
+        let graph = Arc::new(ten_thousand_node_graph(LAYER_COUNT, WIDTH));
+        assert_eq!(graph.nodes.len(), NODES);
+        assert_eq!(graph.edges.len(), EDGES);
+        let rows = rows_cancellable(std::slice::from_ref(&graph), "", || false)
+            .expect("uncancelled admission");
+        assert_eq!(rows.nodes.len(), NODES);
+        assert_eq!(rows.edges.len(), EDGES);
+        let computed = layers(&graph);
+        let base_key = AdmissionKey {
+            session_generation: 21,
+            publication_version: 34,
+            epoch: Some(EpochId::fixture("epoch/incremental")),
+            revision: revision_key(std::slice::from_ref(&graph)),
+            query: String::new(),
+        };
+        // A projection-revision-only change: the canonical GraphRef is identical and only
+        // the independent projection counter differs.
+        let mut revision_only = base_key.clone();
+        revision_only.revision[0].1 = Counter::from_u128(2);
+        assert_ne!(revision_only, base_key);
+        assert_eq!(revision_only.revision[0].0, base_key.revision[0].0);
+        // A publication-version-only change: no other admission component differs.
+        let publication_only = AdmissionKey {
+            publication_version: base_key.publication_version + 1,
+            ..base_key.clone()
+        };
+        let reference_matched = matched_from_rows(&rows);
+        let reference = diagram(
+            &graph,
+            &computed,
+            &reference_matched.nodes,
+            &reference_matched.edges,
+        );
+        assert_eq!(reference.nodes.len(), MAX_DIAGRAM_NODES);
+        assert!(reference.truncated);
+
+        let mut cache = MatchCache::default();
+        let mut baseline_us = Vec::with_capacity(ITERATIONS);
+        let mut revision_us = Vec::with_capacity(ITERATIONS);
+        let mut publication_us = Vec::with_capacity(ITERATIONS);
+        let mut hit_us = Vec::with_capacity(ITERATIONS);
+        for iteration in 0..(WARMUP + ITERATIONS) {
+            // Baseline: the pre-incremental path — rebuild both sets from the admitted rows,
+            // then draw. This is exactly what the render build closure does.
+            let started = Instant::now();
+            let rebuilt = matched_from_rows(&rows);
+            let drawn = diagram(&graph, &computed, &rebuilt.nodes, &rebuilt.edges);
+            let baseline = started.elapsed().as_micros();
+            assert_eq!(drawn, reference);
+
+            // Incremental: the entry holds the base key; the revision-only key reuses it.
+            let _ = cache.get_or_build(&base_key, || matched_from_rows(&rows));
+            let started = Instant::now();
+            let (reused, outcome) = cache.lookup(&revision_only, || {
+                panic!("a revision-only change must reuse the built set")
+            });
+            let drawn_revision = diagram(&graph, &computed, &reused.nodes, &reused.edges);
+            let revision = started.elapsed().as_micros();
+            assert_eq!(outcome, MatchLookup::Reused);
+            assert_eq!(drawn_revision, reference);
+
+            // Publication-only: the same reuse applies to a publication-version change.
+            let started = Instant::now();
+            let (reused, outcome) = cache.lookup(&publication_only, || {
+                panic!("a publication-version-only change must reuse the built set")
+            });
+            let drawn_publication = diagram(&graph, &computed, &reused.nodes, &reused.edges);
+            let publication = started.elapsed().as_micros();
+            assert_eq!(outcome, MatchLookup::Reused);
+            assert_eq!(drawn_publication, reference);
+
+            // Exact hit stays the cheapest path.
+            let started = Instant::now();
+            let (cached, outcome) = cache.lookup(&publication_only, || {
+                panic!("a steady frame must hit the match cache")
+            });
+            let drawn_hit = diagram(&graph, &computed, &cached.nodes, &cached.edges);
+            let hit = started.elapsed().as_micros();
+            assert_eq!(outcome, MatchLookup::Hit);
+            assert_eq!(drawn_hit, reference);
+
+            if iteration >= WARMUP {
+                let index = iteration - WARMUP;
+                println!(
+                    "inc_sample iter={index} baseline_us={baseline} revision_us={revision} publication_us={publication} hit_us={hit}"
+                );
+                baseline_us.push(baseline);
+                revision_us.push(revision);
+                publication_us.push(publication);
+                hit_us.push(hit);
+            }
+        }
+        assert_eq!(baseline_us.len(), ITERATIONS);
+
+        let stats = |mut values: Vec<u128>| {
+            values.sort_unstable();
+            let count = values.len();
+            // Even counts: the median is the mean of the two middle values; odd counts use
+            // the single middle value. p95 keeps the nearest-rank definition.
+            let median = if count % 2 == 1 {
+                values[count / 2]
+            } else {
+                (values[count / 2 - 1] + values[count / 2]) / 2
+            };
+            let p95 = percentile(&values, 0.95);
+            (median, p95, values[count - 1])
+        };
+        for (name, values) in [
+            ("baseline_rebuild", baseline_us),
+            ("incremental_revision", revision_us),
+            ("incremental_publication", publication_us),
+            ("hit", hit_us),
+        ] {
+            let (median, p95, max) = stats(values);
+            println!(
+                "inc_summary series={name} n={ITERATIONS} median_us={median} p95_us={p95} max_us={max}"
+            );
+        }
+        let checksum = diagram_checksum(&reference, &rows, &computed);
+        println!("MP-FLOW2 incremental checksum=0x{checksum:016x} reuse_equals_reference=true");
+        println!("MP-FLOW2 incremental NOT_MEASURED paint/GPU/present");
     }
 
     /// Deterministic checksum over the drawn diagram and the admitted rows, so an
