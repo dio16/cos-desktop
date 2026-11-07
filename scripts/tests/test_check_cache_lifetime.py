@@ -250,6 +250,16 @@ class CampaignEvidenceTests(unittest.TestCase):
         self.assertEqual(result["status"], "OBSERVED")
         self.assertEqual(result["runs"][0]["actions"]["replace_side_a"]["refused_observations"], 1)
 
+    def test_successful_reappearance_cannot_be_relabelled_as_no_missing_source(self):
+        # Step 5 had a withheld source before dispatch; success may clear it afterward.
+        # Change only the result, leaving the independently captured pre-action state intact.
+        self.native_samples[6]["result"] = "refused_no_missing_source"
+        self._write_campaign()
+        result = analyze_campaign(self.directory)
+        self.assertEqual(result["status"], "FAILED")
+        self.assertTrue(any("claims no withheld source" in failure
+                            for failure in result["runs"][0]["failures"]))
+
     def test_a_refusal_reason_must_belong_to_that_action(self):
         self.native_samples[4]["result"] = "refused_no_missing_source"
         self.native_samples[4]["missing_present"] = False
@@ -288,6 +298,14 @@ class CampaignEvidenceTests(unittest.TestCase):
         }
         record_path.write_text(json.dumps(record))
         self.assertEqual(analyze_campaign(self.directory)["status"], "OBSERVED")
+        # The same adapter/counter cannot be counted twice, even if its total is forged to match.
+        rows.append(rows[0].copy())
+        record["samples"][0]["gpu"]["dedicated_bytes"] += rows[0]["bytes"]
+        record_path.write_text(json.dumps(record))
+        result = analyze_campaign(self.directory)
+        self.assertEqual(result["status"], "FAILED")
+        self.assertTrue(any("GPU Process Memory counters" in failure
+                            for failure in result["runs"][0]["failures"]))
 
     def test_a_run_without_any_attached_consumer_cannot_claim_withdrawal(self):
         for sample in self.native_samples:

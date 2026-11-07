@@ -179,7 +179,7 @@ def gpu_instances_belong_to(gpu: dict, pid: int) -> bool:
 def verify_results(samples: list[dict], failures: list[str]) -> None:
     """Recompute each reported outcome from the observation it claims, never trusting `result`."""
     for sample in samples:
-        phase, action, result = sample.get("phase"), sample.get("action"), sample.get("result")
+        phase, action, result = sample["phase"], sample["action"], sample["result"]
         views = sample.get("views")
         if not isinstance(views, list) or len(views) != 3:
             failures.append("A sample does not carry exactly three view observations")

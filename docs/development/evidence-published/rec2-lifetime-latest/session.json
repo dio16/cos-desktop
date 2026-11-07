@@ -4,10 +4,11 @@
   "task": "MP-REC2",
   "contract": "DC-MP-REC2",
   "status": "OBSERVED_PHYSICAL_ENDPOINTS_HOLD",
-  "source_commit": "2b7807252228fdee2a30d343337f329cc5d2184a",
-  "source_commit_note": "The native binary was built from this commit. This manifest and the plan record are added by a documentation-only successor commit; no source file changes after it.",
-  "executable_sha256": "76e97830085eb40da68683d27433d6db541d3b9ae52d201e500d67e6b3a79fc8",
-  "observer_sha256": "7c48c65af10781e1af1af009ee66d7e09024bd2a9c9ab07a7cff623ed8f4fa28",
+  "source_commit": "cf0201806f030f8e2357c8e8e2e36d726313a606",
+  "source_commit_note": "The native binary and observer were measured from this commit. The successor adds documentation, replay regression coverage and type narrowing only; native and observer implementations are unchanged. The final replay is checked against the retained campaign results.",
+  "executable_sha256": "7bca475d98d8332a5d43079e856b805ade9653d917435a28e643f44d8e634180",
+  "observer_sha256": "0d44728b9c1833ff79bde4d6c36193b91143e7aabc3deec8c5afd610371423c1",
+  "method_sha256": "7c48c65af10781e1af1af009ee66d7e09024bd2a9c9ab07a7cff623ed8f4fa28",
   "environment": {
     "os": "Microsoft Windows 11 Pro 10.0.26300 build 26300",
     "gpu": [
@@ -38,15 +39,10 @@
   ],
   "percentiles": {
     "reason": "Correlated gauge samples; no tail-latency certification",
-    "p99": null,
-    "p95": null
+    "p95": null,
+    "p99": null
   },
   "endpoints": {
-    "process_memory": "Diagnostics.Process PrivateMemorySize64/WorkingSet64; process-wide, sampled, not allocator attribution",
-    "gpu_completion": {
-      "reason": "Backend Ready and paint/drop calls are not GPU completion",
-      "status": "NOT_MEASURED"
-    },
     "generation_resources": {
       "reason": "Native generation and service pool/wrapper counts are not physical GPU resource counts",
       "status": "NOT_MEASURED"
@@ -56,6 +52,11 @@
       "status": "NOT_MEASURED"
     },
     "consumer_sets": "Sampled service count is a lower bound whenever consumer_unknown_frames is nonzero",
+    "process_memory": "Diagnostics.Process PrivateMemorySize64/WorkingSet64; process-wide, sampled, not allocator attribution",
+    "gpu_completion": {
+      "reason": "Backend Ready and paint/drop calls are not GPU completion",
+      "status": "NOT_MEASURED"
+    },
     "encoded_and_decode_scratch": {
       "reason": "Source callback buffers and decoder scratch are transient; retained service bytes do not measure their peaks",
       "status": "NOT_MEASURED"
@@ -178,16 +179,16 @@
         3
       ],
       "process_private_bytes_last_minus_first": [
-        26370048,
-        59654144
+        25735168,
+        29773824
       ],
       "process_private_bytes_final_third_range": [
-        25346048,
-        29974528
+        118784,
+        626688
       ],
       "process_working_set_bytes_last_minus_first": [
-        30834688,
-        55988224
+        30306304,
+        34267136
       ],
       "gpu_dedicated_bytes_last_minus_first": [
         -4202496,
@@ -198,11 +199,11 @@
         0
       ],
       "gpu_committed_bytes_last_minus_first": [
-        -5332992,
-        -5193728
+        -5324800,
+        -5136384
       ],
-      "manifest_sha256": "03921c363799deb8d1719fe1c3dc30c1079d4c26d9c91411a36ad5bf525c9006",
-      "analysis_sha256": "94b7a9b325b53217e6263fc2fbae8e0018653242f85259a8ae9fba48f5708da5"
+      "manifest_sha256": "625048b054a8f4607506cc4d371874275e1374d6aaada4f4c84be7c96b137bdd",
+      "analysis_sha256": "6bd206ba1e0038ddd9dd1fdff17599e61159925b33a2136ba6f92c7b6a519ef9"
     },
     {
       "campaign": "independent",
@@ -320,30 +321,30 @@
       ],
       "process_private_bytes_last_minus_first": [
         6471680,
-        36753408
+        10551296
       ],
       "process_private_bytes_final_third_range": [
-        102400,
-        29843456
+        94208,
+        667648
       ],
       "process_working_set_bytes_last_minus_first": [
-        10989568,
-        40239104
+        11190272,
+        15020032
       ],
       "gpu_dedicated_bytes_last_minus_first": [
         -4202496,
-        -4198400
+        -4202496
       ],
       "gpu_dedicated_bytes_final_third_range": [
         0,
         0
       ],
       "gpu_committed_bytes_last_minus_first": [
-        -6516736,
-        -5246976
+        -6389760,
+        -6299648
       ],
-      "manifest_sha256": "620b9ecce3cd1a0424dc193a1648b81bcb0efaecfca24717b4120b900d1c2240",
-      "analysis_sha256": "e37aa015ce247494a5948286bb2d00481196942fe81c8a480108c4039eebd7a4"
+      "manifest_sha256": "98e679946b583946fd302f9f55e6ce9c20456c9d2b4174270883ee24650946d3",
+      "analysis_sha256": "ae4a00874b150a80a7e3ab998b2ad310b5c441c07f0de9beb22e080d248f7601"
     },
     {
       "campaign": "distinct",
@@ -460,31 +461,31 @@
         3
       ],
       "process_private_bytes_last_minus_first": [
-        6012928,
-        35819520
+        6582272,
+        10108928
       ],
       "process_private_bytes_final_third_range": [
-        110592,
-        29839360
+        114688,
+        520192
       ],
       "process_working_set_bytes_last_minus_first": [
-        10743808,
-        29241344
+        11206656,
+        14614528
       ],
       "gpu_dedicated_bytes_last_minus_first": [
         -4206592,
-        -4202496
+        -4194304
       ],
       "gpu_dedicated_bytes_final_third_range": [
         0,
         0
       ],
       "gpu_committed_bytes_last_minus_first": [
-        -6623232,
-        -6488064
+        -6619136,
+        -6496256
       ],
-      "manifest_sha256": "52ecbc1b686cc645dd16d0bb25a6889b4277855cbdbcc1c38fba23a1bfa5bdd7",
-      "analysis_sha256": "932b019c320bcd1e7f0eb5451eb4ccc2587ae7c942500e50cd3a24767fd3ee0b"
+      "manifest_sha256": "59751c515f7b6c1aecf90a050fbfa18dbdab1105bec8b9d2bc8cb2aca83785b4",
+      "analysis_sha256": "e9456b863da7d2a491b70cbc4ba7460c60a5a7be70a14f4b7fd7f2a491662df5"
     },
     {
       "campaign": "windows2",
@@ -601,19 +602,19 @@
         3
       ],
       "process_private_bytes_last_minus_first": [
-        8155136,
-        37371904
+        6455296,
+        11096064
       ],
       "process_private_bytes_final_third_range": [
-        114688,
-        29868032
+        106496,
+        573440
       ],
       "process_working_set_bytes_last_minus_first": [
-        12779520,
-        40599552
+        11071488,
+        15581184
       ],
       "gpu_dedicated_bytes_last_minus_first": [
-        -4198400,
+        -4202496,
         -4132864
       ],
       "gpu_dedicated_bytes_final_third_range": [
@@ -621,11 +622,11 @@
         0
       ],
       "gpu_committed_bytes_last_minus_first": [
-        -5255168,
+        -6307840,
         -5181440
       ],
-      "manifest_sha256": "ab61d9bd503267215adb8065888e88767b73871dbb3b94b6e530927906f6736b",
-      "analysis_sha256": "d1d27761b11a1440c37b4ae5b6658188a45e03822acd64b8a1b61e5ddb53891e"
+      "manifest_sha256": "1486b01cd52a0e00e2cd0f841418964a46fbef7b2b9f0923cf5f77af627a2e3f",
+      "analysis_sha256": "159fea7556814fffb72ec919990a700bd15b2a0472ff7c415b2dedf30d6e5d79"
     },
     {
       "campaign": "windows2-recovery",
@@ -749,16 +750,16 @@
         4
       ],
       "process_private_bytes_last_minus_first": [
-        6180864,
-        68947968
+        64180224,
+        73216000
       ],
       "process_private_bytes_final_third_range": [
-        61870080,
-        66990080
+        62418944,
+        70033408
       ],
       "process_working_set_bytes_last_minus_first": [
-        15548416,
-        17620992
+        16785408,
+        20930560
       ],
       "gpu_dedicated_bytes_last_minus_first": [
         -18903040,
@@ -766,14 +767,14 @@
       ],
       "gpu_dedicated_bytes_final_third_range": [
         5246976,
-        5259264
+        5251072
       ],
       "gpu_committed_bytes_last_minus_first": [
-        -8433664,
-        -8343552
+        -9515008,
+        -8318976
       ],
-      "manifest_sha256": "09a67db23251abb53b64e15dffab41580fbe83d0e891e322b9d21a924df8f382",
-      "analysis_sha256": "bd24c173652a795f038549af38621746f8ce3aefcfa9ccd144a081e2a6197b75"
+      "manifest_sha256": "fb89f2350ac2fc353c7cb276c34d55689110f997fa5b53bea07bda4fac8e4d7e",
+      "analysis_sha256": "88d053fe3b48a5421765c2b93b111d4540247bf4214e8431cd1df86a73b8983c"
     }
   ]
 }
