@@ -1,0 +1,28 @@
+{
+  "date": "2026-11-08",
+  "files": {
+    "analyze.py": {
+      "bytes": 38171,
+      "sha256": "sha256:ee5911b39b4a611e83dfa9570e1e2d0383b2571106a99fc84fd3e0f7e52176ef"
+    },
+    "matrix.json": {
+      "bytes": 162574,
+      "sha256": "sha256:03634d05d4a2d8495dd18ba7462b309e241915ab027326c674c21951522aa890"
+    },
+    "run_matrix.py": {
+      "bytes": 8381,
+      "sha256": "sha256:6250ca54e16839722a5f5bf2847c34224b40093672ecd07d05acbdbfcd26128c"
+    },
+    "runs.json": {
+      "bytes": 38805,
+      "sha256": "sha256:f734b762f42a05622ab2818e268a2ed007900806337505253a85e0ef5ff14fc8"
+    },
+    "session.json": {
+      "bytes": 27300,
+      "sha256": "sha256:f13ab206496b8e65262fc6d3bdee9cdbb4e147ae9ca120b535866da5a544914a"
+    }
+  },
+  "record_version": 1,
+  "slice": "R5 reuse/fairness fixed matrix",
+  "task": "MP-CMP1"
+}

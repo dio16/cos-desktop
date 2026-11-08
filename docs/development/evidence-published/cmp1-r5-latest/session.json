@@ -1,0 +1,1119 @@
+{
+  "task": "MP-CMP1",
+  "slice": "R5 reuse/fairness fixed matrix executed (5 runs x 4 variants)",
+  "date": "2026-11-08",
+  "status": "EXECUTED_LIMITED \u2014 measured CPU/cache reuse and fairness facts; paint/GPU/Present NOT_MEASURED; no product or R5 PASS claim",
+  "authority": {
+    "assignment": "Lead task-8: run the fixed MP-CMP1 R5 matrix without product acceptance",
+    "contract": "DC-MP-CMP1 reuse/fairness comparison protocol",
+    "gate": "MP-R0D is RATIFIED_DECLARED_BASIS_NOT_MEASURED (ADR-0008); the matrix executes the declared basis, it does not ratify numeric gates"
+  },
+  "harness_change": {
+    "file": "apps/desktop/examples/compare.rs",
+    "reason": "the fixed trace export did not emit the cache/quarantine accounting that the matrix must record; the counters already existed on ImageUploadCounters",
+    "change": "the trace JSON now also carries consumer_unknown_frames, backup_claims, backup_origins, evicted_frames, decoded_retained_bytes, staging/in_flight/resident reservation bytes, quarantined_frames, quarantined staging/in-flight/resident/payload bytes and quarantine_capacity_bytes; the JSON construction moved into trace_document so it can be unit-tested",
+    "behavior_unchanged": "the fixed scenario, command schedule, sample fields, NOT_MEASURED declarations and existing counter names are unchanged; only additional JSON fields are emitted",
+    "tests": [
+      "cargo test --locked -p cos-desktop --example compare \u2192 1 passed, 0 failed (trace_document_emits_the_cache_and_quarantine_accounting_fields)",
+      "cargo clippy --locked -p cos-desktop --example compare -- -D warnings \u2192 clean",
+      "cargo fmt --all -- --check \u2192 clean"
+    ]
+  },
+  "source": {
+    "analysis_head": "ae82b9d9c63a5f20699be0d24e87b1ce094331ca",
+    "build_head": "1e204a503d59d7f6a0810f122025151402a32b77",
+    "build_head_basis": "git reflog: 1e204a5 was HEAD from 10:07:48 JST when the release example used by the matrix was written at 10:12 JST",
+    "worktree_changes_at_build": [
+      "apps/desktop/examples/compare.rs (this slice's trace accounting extension; committed with this evidence)",
+      "crates/desktop-gpui/src/palette.rs (another lane's in-flight work; not part of this slice and not committed here)"
+    ],
+    "build_command": "cargo build --locked --release -p cos-desktop --example compare",
+    "reproducibility": "NOT_VERIFIED: this is a shared checkout; the executed binary includes the uncommitted worktree changes listed above, so only its sha256 binds the executed bytes and a rebuild from a commit is not claimed to reproduce them",
+    "executable": {
+      "path": "target/release/examples/compare.exe",
+      "sha256": "sha256:d24fb3573d73bbc7de0c18ec927d558d519aa1ae0cbe0f26a75ca2ab61c3b4d3",
+      "bytes": 12171264
+    },
+    "cargo_lock": "sha256:0f9e500debbefcedddb6f9a82430848a90a8245db6575124ef3c10af122da7a5",
+    "cargo_lock_at_build_head": "sha256:0f9e500debbefcedddb6f9a82430848a90a8245db6575124ef3c10af122da7a5",
+    "source_changes_after_build": [],
+    "git_revisions": {
+      "collections": "bf1429a63e9d04fec0eb49464cb97bbfcb39d5e6",
+      "derive_refineable": "bf1429a63e9d04fec0eb49464cb97bbfcb39d5e6",
+      "gpui": "bf1429a63e9d04fec0eb49464cb97bbfcb39d5e6",
+      "gpui_apple": "bf1429a63e9d04fec0eb49464cb97bbfcb39d5e6",
+      "gpui_linux": "bf1429a63e9d04fec0eb49464cb97bbfcb39d5e6",
+      "gpui_macos": "bf1429a63e9d04fec0eb49464cb97bbfcb39d5e6",
+      "gpui_macros": "bf1429a63e9d04fec0eb49464cb97bbfcb39d5e6",
+      "gpui_platform": "bf1429a63e9d04fec0eb49464cb97bbfcb39d5e6",
+      "gpui_shared_string": "bf1429a63e9d04fec0eb49464cb97bbfcb39d5e6",
+      "gpui_util": "bf1429a63e9d04fec0eb49464cb97bbfcb39d5e6",
+      "gpui_web": "bf1429a63e9d04fec0eb49464cb97bbfcb39d5e6",
+      "gpui_wgpu": "bf1429a63e9d04fec0eb49464cb97bbfcb39d5e6",
+      "gpui_windows": "bf1429a63e9d04fec0eb49464cb97bbfcb39d5e6",
+      "http_client": "bf1429a63e9d04fec0eb49464cb97bbfcb39d5e6",
+      "perf": "bf1429a63e9d04fec0eb49464cb97bbfcb39d5e6",
+      "proptest": "3dca198a8fef1b32e3a66f1e1897c955b4dc5b5b",
+      "proptest-macro": "3dca198a8fef1b32e3a66f1e1897c955b4dc5b5b",
+      "refineable": "bf1429a63e9d04fec0eb49464cb97bbfcb39d5e6",
+      "scheduler": "bf1429a63e9d04fec0eb49464cb97bbfcb39d5e6",
+      "sum_tree": "bf1429a63e9d04fec0eb49464cb97bbfcb39d5e6",
+      "util_macros": "bf1429a63e9d04fec0eb49464cb97bbfcb39d5e6",
+      "wasm_thread": "0cf96c7708dfb97ccf3da50347e25edcf75d6937",
+      "zed-scap": "4afea48c3b002197176fb19cd0f9b180dd36eaac",
+      "zlog": "bf1429a63e9d04fec0eb49464cb97bbfcb39d5e6",
+      "ztracing": "bf1429a63e9d04fec0eb49464cb97bbfcb39d5e6",
+      "ztracing_macro": "bf1429a63e9d04fec0eb49464cb97bbfcb39d5e6"
+    },
+    "host": "Windows-11-10.0.26300-SP0",
+    "python": "3.12.14"
+  },
+  "protocol": {
+    "harness": "examples/compare.exe --fixture --trace <variant> (unchanged)",
+    "variants": [
+      "shared",
+      "independent",
+      "distinct",
+      "windows2"
+    ],
+    "runs_per_variant": 5,
+    "run_scope": "each trace is the harness's own fixed 60 s command schedule",
+    "isolation": "fresh LOCALAPPDATA/APPDATA/TEMP per run under a private scratch root",
+    "serialization": "one native lock for the whole matrix; released afterwards",
+    "aggregation": "per-sample achieved_us from the trace ledger; median=p50 of observed samples; p95=nearest rank ceil(n*0.95)-1; min/max exact",
+    "requested_cadence_us": 16000,
+    "achieved_cadence_note": "requested_us advances by 16 ms per sample but the measured loop cadence is the achieved_us interval distribution; it is observation-loop cadence, not frame pacing",
+    "camera_metric": "pair_delta = hypot(anchor_a - anchor_b) from the trace camera tuple; linked state starts linked and toggles at step 64 and every 240 steps; the two samples after each re-link are treated as the re-synchronization transient; unlinked cross-pane change counts samples where a gesture targeted one side and the other side's camera tuple changed",
+    "fairness_scope": "pane fairness is measured as per-pane camera/entry progress and cross-pane camera non-interference; window fairness is the two concurrently traced windows' own samples and counters under one process-wide upload service",
+    "raw_ledger_policy": "raw JSONL ledgers stay private under target/ and are cited by sha256/bytes in runs.json; committed evidence carries the per-run summaries, distributions and digests"
+  },
+  "results": {
+    "shared": {
+      "runs": 5,
+      "traces": 5,
+      "decode_calls": [
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "retained_frames": [
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "consumers": [
+        2,
+        2,
+        2,
+        2,
+        2
+      ],
+      "cpu_retained_bytes": [
+        27328512,
+        27328512,
+        27328512,
+        27328512,
+        27328512
+      ],
+      "packed_retained_bytes": [
+        10551296,
+        10551296,
+        10551296,
+        10551296,
+        10551296
+      ],
+      "decoded_retained_bytes": [
+        16777216,
+        16777216,
+        16777216,
+        16777216,
+        16777216
+      ],
+      "backup_claims": [
+        2,
+        2,
+        2,
+        2,
+        2
+      ],
+      "backup_origins": [
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "evicted_frames": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "consumer_unknown_frames": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "quarantined_frames": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "quarantined_staging_bytes": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "quarantined_in_flight_bytes": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "quarantined_resident_bytes": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "quarantined_payload_bytes": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "quarantine_capacity_bytes": [
+        67108864,
+        67108864,
+        67108864,
+        67108864,
+        67108864
+      ],
+      "staging_reservation_bytes": [
+        16777216,
+        16777216,
+        16777216,
+        16777216,
+        16777216
+      ],
+      "in_flight_reservation_bytes": [
+        16777216,
+        16777216,
+        16777216,
+        16777216,
+        16777216
+      ],
+      "peak_reservation_bytes": [
+        16777216,
+        16777216,
+        16777216,
+        16777216,
+        16777216
+      ],
+      "queue_wait_ns": {
+        "values": [
+          23441900,
+          20685200,
+          18157700,
+          19321500,
+          17486100
+        ],
+        "min": 17486100,
+        "median": 19321500,
+        "p95": 23441900,
+        "max": 23441900
+      },
+      "queue_rejections": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "queue_cancellations": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "samples": {
+        "values": [
+          1985,
+          1992,
+          1989,
+          1990,
+          1993
+        ],
+        "min": 1985,
+        "median": 1990,
+        "p95": 1993,
+        "max": 1993
+      },
+      "cadence_median_us": {
+        "values": [
+          30292.0,
+          30285,
+          30296.0,
+          30301,
+          30324.5
+        ],
+        "min": 30285,
+        "median": 30296.0,
+        "p95": 30324.5,
+        "max": 30324.5
+      },
+      "max_gap_us": {
+        "values": [
+          50258,
+          41357,
+          36316,
+          37472,
+          35775
+        ],
+        "min": 35775,
+        "median": 37472,
+        "p95": 50258,
+        "max": 50258
+      },
+      "ready_true": 5,
+      "settled_true": 5,
+      "input_digests_equal": [
+        true,
+        true,
+        true,
+        true,
+        true
+      ]
+    },
+    "independent": {
+      "runs": 5,
+      "traces": 5,
+      "decode_calls": [
+        2,
+        2,
+        2,
+        2,
+        2
+      ],
+      "retained_frames": [
+        2,
+        2,
+        2,
+        2,
+        2
+      ],
+      "consumers": [
+        2,
+        2,
+        2,
+        2,
+        2
+      ],
+      "cpu_retained_bytes": [
+        54657024,
+        54657024,
+        54657024,
+        54657024,
+        54657024
+      ],
+      "packed_retained_bytes": [
+        21102592,
+        21102592,
+        21102592,
+        21102592,
+        21102592
+      ],
+      "decoded_retained_bytes": [
+        33554432,
+        33554432,
+        33554432,
+        33554432,
+        33554432
+      ],
+      "backup_claims": [
+        2,
+        2,
+        2,
+        2,
+        2
+      ],
+      "backup_origins": [
+        2,
+        2,
+        2,
+        2,
+        2
+      ],
+      "evicted_frames": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "consumer_unknown_frames": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "quarantined_frames": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "quarantined_staging_bytes": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "quarantined_in_flight_bytes": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "quarantined_resident_bytes": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "quarantined_payload_bytes": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "quarantine_capacity_bytes": [
+        67108864,
+        67108864,
+        67108864,
+        67108864,
+        67108864
+      ],
+      "staging_reservation_bytes": [
+        33554432,
+        33554432,
+        33554432,
+        33554432,
+        33554432
+      ],
+      "in_flight_reservation_bytes": [
+        33554432,
+        33554432,
+        33554432,
+        33554432,
+        33554432
+      ],
+      "peak_reservation_bytes": [
+        33554432,
+        33554432,
+        33554432,
+        33554432,
+        33554432
+      ],
+      "queue_wait_ns": {
+        "values": [
+          152769100,
+          154619100,
+          158812600,
+          156434200,
+          158730700
+        ],
+        "min": 152769100,
+        "median": 156434200,
+        "p95": 158812600,
+        "max": 158812600
+      },
+      "queue_rejections": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "queue_cancellations": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "samples": {
+        "values": [
+          1987,
+          1990,
+          1993,
+          1991,
+          1990
+        ],
+        "min": 1987,
+        "median": 1990,
+        "p95": 1993,
+        "max": 1993
+      },
+      "cadence_median_us": {
+        "values": [
+          30312.5,
+          30324,
+          30309.5,
+          30330.5,
+          30324
+        ],
+        "min": 30309.5,
+        "median": 30324,
+        "p95": 30330.5,
+        "max": 30330.5
+      },
+      "max_gap_us": {
+        "values": [
+          35900,
+          38055,
+          36082,
+          32255,
+          33949
+        ],
+        "min": 32255,
+        "median": 35900,
+        "p95": 38055,
+        "max": 38055
+      },
+      "ready_true": 5,
+      "settled_true": 5,
+      "input_digests_equal": [
+        true,
+        true,
+        true,
+        true,
+        true
+      ]
+    },
+    "distinct": {
+      "runs": 5,
+      "traces": 5,
+      "decode_calls": [
+        2,
+        2,
+        2,
+        2,
+        2
+      ],
+      "retained_frames": [
+        2,
+        2,
+        2,
+        2,
+        2
+      ],
+      "consumers": [
+        2,
+        2,
+        2,
+        2,
+        2
+      ],
+      "cpu_retained_bytes": [
+        54657024,
+        54657024,
+        54657024,
+        54657024,
+        54657024
+      ],
+      "packed_retained_bytes": [
+        21102592,
+        21102592,
+        21102592,
+        21102592,
+        21102592
+      ],
+      "decoded_retained_bytes": [
+        33554432,
+        33554432,
+        33554432,
+        33554432,
+        33554432
+      ],
+      "backup_claims": [
+        2,
+        2,
+        2,
+        2,
+        2
+      ],
+      "backup_origins": [
+        2,
+        2,
+        2,
+        2,
+        2
+      ],
+      "evicted_frames": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "consumer_unknown_frames": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "quarantined_frames": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "quarantined_staging_bytes": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "quarantined_in_flight_bytes": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "quarantined_resident_bytes": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "quarantined_payload_bytes": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "quarantine_capacity_bytes": [
+        67108864,
+        67108864,
+        67108864,
+        67108864,
+        67108864
+      ],
+      "staging_reservation_bytes": [
+        33554432,
+        33554432,
+        33554432,
+        33554432,
+        33554432
+      ],
+      "in_flight_reservation_bytes": [
+        33554432,
+        33554432,
+        33554432,
+        33554432,
+        33554432
+      ],
+      "peak_reservation_bytes": [
+        33554432,
+        33554432,
+        33554432,
+        33554432,
+        33554432
+      ],
+      "queue_wait_ns": {
+        "values": [
+          170900500,
+          175614300,
+          164203100,
+          171654700,
+          159762400
+        ],
+        "min": 159762400,
+        "median": 170900500,
+        "p95": 175614300,
+        "max": 175614300
+      },
+      "queue_rejections": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "queue_cancellations": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "samples": {
+        "values": [
+          1985,
+          1990,
+          1995,
+          1992,
+          1988
+        ],
+        "min": 1985,
+        "median": 1990,
+        "p95": 1995,
+        "max": 1995
+      },
+      "cadence_median_us": {
+        "values": [
+          30302.5,
+          30330,
+          30291.0,
+          30348,
+          30338
+        ],
+        "min": 30291.0,
+        "median": 30330,
+        "p95": 30348,
+        "max": 30348
+      },
+      "max_gap_us": {
+        "values": [
+          36052,
+          33179,
+          37699,
+          36708,
+          31983
+        ],
+        "min": 31983,
+        "median": 36052,
+        "p95": 37699,
+        "max": 37699
+      },
+      "ready_true": 5,
+      "settled_true": 5,
+      "input_digests_equal": [
+        false,
+        false,
+        false,
+        false,
+        false
+      ]
+    },
+    "windows2": {
+      "runs": 5,
+      "traces": 10,
+      "decode_calls": [
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2
+      ],
+      "retained_frames": [
+        2,
+        2,
+        2,
+        2,
+        2,
+        1,
+        2,
+        2,
+        2,
+        2
+      ],
+      "consumers": [
+        4,
+        4,
+        4,
+        4,
+        4,
+        2,
+        4,
+        4,
+        4,
+        4
+      ],
+      "cpu_retained_bytes": [
+        54657024,
+        54657024,
+        54657024,
+        54657024,
+        54657024,
+        54657024,
+        54657024,
+        54657024,
+        54657024,
+        54657024
+      ],
+      "packed_retained_bytes": [
+        21102592,
+        21102592,
+        21102592,
+        21102592,
+        21102592,
+        21102592,
+        21102592,
+        21102592,
+        21102592,
+        21102592
+      ],
+      "decoded_retained_bytes": [
+        33554432,
+        33554432,
+        33554432,
+        33554432,
+        33554432,
+        33554432,
+        33554432,
+        33554432,
+        33554432,
+        33554432
+      ],
+      "backup_claims": [
+        4,
+        4,
+        4,
+        4,
+        4,
+        2,
+        4,
+        4,
+        4,
+        4
+      ],
+      "backup_origins": [
+        2,
+        2,
+        2,
+        2,
+        2,
+        1,
+        2,
+        2,
+        2,
+        2
+      ],
+      "evicted_frames": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0
+      ],
+      "consumer_unknown_frames": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "quarantined_frames": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0
+      ],
+      "quarantined_staging_bytes": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        16777216,
+        0,
+        0,
+        0,
+        0
+      ],
+      "quarantined_in_flight_bytes": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        16777216,
+        0,
+        0,
+        0,
+        0
+      ],
+      "quarantined_resident_bytes": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        16777216,
+        0,
+        0,
+        0,
+        0
+      ],
+      "quarantined_payload_bytes": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        16777216,
+        0,
+        0,
+        0,
+        0
+      ],
+      "quarantine_capacity_bytes": [
+        67108864,
+        67108864,
+        67108864,
+        67108864,
+        67108864,
+        67108864,
+        67108864,
+        67108864,
+        67108864,
+        67108864
+      ],
+      "staging_reservation_bytes": [
+        33554432,
+        33554432,
+        33554432,
+        33554432,
+        33554432,
+        16777216,
+        33554432,
+        33554432,
+        33554432,
+        33554432
+      ],
+      "in_flight_reservation_bytes": [
+        33554432,
+        33554432,
+        33554432,
+        33554432,
+        33554432,
+        16777216,
+        33554432,
+        33554432,
+        33554432,
+        33554432
+      ],
+      "peak_reservation_bytes": [
+        33554432,
+        33554432,
+        33554432,
+        33554432,
+        33554432,
+        33554432,
+        33554432,
+        33554432,
+        33554432,
+        33554432
+      ],
+      "queue_wait_ns": {
+        "values": [
+          268874300,
+          268874300,
+          384805400,
+          384805400,
+          261889500,
+          261889500,
+          222020300,
+          222020300,
+          256913400,
+          256913400
+        ],
+        "min": 222020300,
+        "median": 261889500.0,
+        "p95": 384805400,
+        "max": 384805400
+      },
+      "queue_rejections": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "queue_cancellations": [
+        1,
+        1,
+        1,
+        1,
+        0,
+        0,
+        1,
+        1,
+        1,
+        1
+      ],
+      "samples": {
+        "values": [
+          1856,
+          1855,
+          1987,
+          1988,
+          1989,
+          1988,
+          1988,
+          1988,
+          1994,
+          1994
+        ],
+        "min": 1855,
+        "median": 1988.0,
+        "p95": 1994,
+        "max": 1994
+      },
+      "cadence_median_us": {
+        "values": [
+          30278,
+          30278.0,
+          30297.5,
+          30297,
+          30352.5,
+          30351,
+          30370,
+          30364,
+          30388,
+          30386
+        ],
+        "min": 30278,
+        "median": 30351.75,
+        "p95": 30388,
+        "max": 30388
+      },
+      "max_gap_us": {
+        "values": [
+          544210,
+          544268,
+          54688,
+          54748,
+          36114,
+          36188,
+          47536,
+          47607,
+          42359,
+          42361
+        ],
+        "min": 36114,
+        "median": 47571.5,
+        "p95": 544268,
+        "max": 544268
+      },
+      "ready_true": 10,
+      "settled_true": 10,
+      "input_digests_equal": [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+      ]
+    }
+  },
+  "measured_adoption_checks": {
+    "same_key_shared_one_decode": true,
+    "same_key_shared_one_retained": true,
+    "same_key_shared_two_consumers": true,
+    "same_key_independent_two_decodes": true,
+    "same_key_independent_two_retained": true,
+    "shared_cpu_payload_below_independent": true,
+    "linked_pair_camera_delta_zero": true,
+    "linked_stable_delta_changes_zero": true,
+    "unlinked_never_moves_the_other_pane": true,
+    "unlinked_gestures_do_move_the_target": true,
+    "relink_resynchronizes_both_panes": true,
+    "all_traces_ready": true,
+    "settled_trace_count": 25,
+    "trace_count": 25,
+    "unsettled_traces": [],
+    "cancel_probe_verified": true,
+    "no_refusals": true
+  },
+  "measured_findings": [
+    "same-key shared: 5/5 traces report one decode, 5/5 one retained entry and 5/5 two consumers; CPU retained payload 27328512 B, packed 10551296 B and peak reservation 16777216 B",
+    "same-key independent: 5/5 traces report two decodes, 5/5 two retained entries and 5/5 two consumers; CPU retained payload 54657024 B, packed 21102592 B and peak reservation 33554432 B \u2014 sharing halves the retained CPU payload for this class",
+    "distinct keys: 5/5 traces report two independent entries and 5/5 traces report different decoded RGBA digests per pane, so distinct keys are never deduplicated",
+    "transform independence: in every unlinked window, zoom/pan gestures targeted one pane and never changed the other pane's camera tuple (5/5 shared traces, 5/5 independent); linked pair camera delta stayed exactly 0.0 image units and each re-link re-synchronized both panes (4 times per shared trace)",
+    "two windows: both traced windows were ready and settled in 10/10 ready and 10/10 settled trace lines with 0 refusals; the process-wide service reported 2 decodes and 1..2 retained entries at each trace end with 2..4 consumers; cumulative CPU preparation queue wait was 222020300..384805400 ns versus 17486100..23441900 ns for one shared window \u2014 a measured contention signal, not a frame-pacing result. Per-window attribution is not separable because these counters are process-wide",
+    "quarantine accounting over all 25 traces: quarantined_frames [0,1], quarantined staging/in-flight/resident bytes [0,16777216/0,16777216/0,16777216], quarantined payload bytes [0,16777216], quarantine capacity [67108864], decoded retained bytes [16777216,33554432], evicted frames [0,1], backup claims/origins [2,4/1,2], consumer_unknown_frames [0]",
+    "observation-loop cadence: median achieved interval 30285..30324.5 us (shared) against a requested 16,000 us, max gaps 35775..50258 us; this is the trace loop's own cadence, not frame pacing",
+    "readiness: 25/25 traces ready, 25/25 settled, 0 traces with refusals, cancel probe stage 3 in every trace",
+    "reuse_calls stayed 0 in every trace even when one entry served two panes; the one-decode/two-consumer binding is carried by decode_calls, retained_frames and consumers"
+  ],
+  "not_measured": [
+    "Present, GPU, displayed/scanout and input-to-photon; frame pacing and the ratified \u00a710 frame/readiness gates",
+    "unequal dimensions, orientations, aspect ratios and mixed DPI (both panes were the same 2048-square class at dpi [1.0, 1.0]); cursor-anchored zoom and physical 1:1",
+    "GPU residency/VRAM, process private bytes/working set and the backend's real decode/upload queue beyond the service's CPU counters",
+    "true cold/warm cache separation and cross-process fairness"
+  ],
+  "evidence": [
+    "session.json",
+    "matrix.json",
+    "runs.json",
+    "run_matrix.py",
+    "analyze.py",
+    "record.json"
+  ],
+  "commands": [
+    "cargo build --locked --release -p cos-desktop --example compare",
+    "python -B docs/development/evidence-published/cmp1-r5-latest/run_matrix.py (driver; each run executes examples/compare.exe --fixture --trace <variant> under an isolated profile)",
+    "python -B docs/development/evidence-published/cmp1-r5-latest/analyze.py (derives matrix.json and session.json from runs.json and the retained ledger digests)"
+  ]
+}

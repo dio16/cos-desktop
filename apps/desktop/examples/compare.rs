@@ -715,19 +715,49 @@ fn export_trace(
     counters: desktop_gpui::image_upload::ImageUploadCounters,
     evidence: TraceEvidence,
 ) {
+    print!(
+        "{}",
+        trace_document(
+            samples, ready, warmup_ms, refusals, variant, counters, evidence
+        )
+    );
+}
+
+fn trace_document(
+    samples: &[TraceSample],
+    ready: bool,
+    warmup_ms: u128,
+    refusals: u64,
+    variant: &'static str,
+    counters: desktop_gpui::image_upload::ImageUploadCounters,
+    evidence: TraceEvidence,
+) -> String {
     use std::fmt::Write;
     let mut output = String::with_capacity(samples.len() * 1024 + 4096);
     let _ = write!(
         output,
-        "{{\"scenario\":\"cmp1_native_fixed_trace\",\"variant\":\"{variant}\",\"ready\":{ready},\"warmup_ms\":{warmup_ms},\"samples\":{},\"refusals\":{refusals},\"phase\":\"initial_detail_then_warm_cache\",\"timing_scope\":\"CPU_scene_request_and_readiness_only\",\"frame_metric_scope\":\"per_entry_repeats_if_shared_across_panes_do_not_sum\",\"command_legend\":\"1=link_toggle,2=fit,3=warm_cache_zoom,4=pan,5=initial_detail_zoom_8x\",\"present\":\"NOT_MEASURED\",\"gpu\":\"NOT_MEASURED\",\"8k\":\"NOT_MEASURED\",\"mixed_dpi\":\"NOT_MEASURED\",\"one_to_one\":\"NOT_MEASURED\",\"cursor_anchored_zoom\":\"NOT_MEASURED\",\"decode_calls\":{},\"reuse_calls\":{},\"retained_frames\":{},\"consumers\":{},\"packed_retained_bytes\":{},\"cpu_retained_bytes\":{},\"resident_reservation_bytes\":{},\"queue_wait_ns\":{},\"queue_rejections\":{},\"queue_cancellations\":{},\"ledger\":[",
+        "{{\"scenario\":\"cmp1_native_fixed_trace\",\"variant\":\"{variant}\",\"ready\":{ready},\"warmup_ms\":{warmup_ms},\"samples\":{},\"refusals\":{refusals},\"phase\":\"initial_detail_then_warm_cache\",\"timing_scope\":\"CPU_scene_request_and_readiness_only\",\"frame_metric_scope\":\"per_entry_repeats_if_shared_across_panes_do_not_sum\",\"command_legend\":\"1=link_toggle,2=fit,3=warm_cache_zoom,4=pan,5=initial_detail_zoom_8x\",\"present\":\"NOT_MEASURED\",\"gpu\":\"NOT_MEASURED\",\"8k\":\"NOT_MEASURED\",\"mixed_dpi\":\"NOT_MEASURED\",\"one_to_one\":\"NOT_MEASURED\",\"cursor_anchored_zoom\":\"NOT_MEASURED\",\"decode_calls\":{},\"reuse_calls\":{},\"retained_frames\":{},\"consumers\":{},\"consumer_unknown_frames\":{},\"backup_claims\":{},\"backup_origins\":{},\"evicted_frames\":{},\"packed_retained_bytes\":{},\"decoded_retained_bytes\":{},\"cpu_retained_bytes\":{},\"staging_reservation_bytes\":{},\"in_flight_reservation_bytes\":{},\"resident_reservation_bytes\":{},\"quarantined_frames\":{},\"quarantined_staging_bytes\":{},\"quarantined_in_flight_bytes\":{},\"quarantined_resident_bytes\":{},\"quarantined_payload_bytes\":{},\"quarantine_capacity_bytes\":{},\"queue_wait_ns\":{},\"queue_rejections\":{},\"queue_cancellations\":{},\"ledger\":[",
         samples.len(),
         counters.decode_calls,
         counters.reuse_calls,
         counters.retained_frames,
         counters.consumers,
+        counters.consumer_unknown_frames,
+        counters.backup_claims,
+        counters.backup_origins,
+        counters.evicted_frames,
         counters.packed_retained_bytes,
+        counters.decoded_retained_bytes,
         counters.cpu_retained_bytes,
+        counters.staging_reservation_bytes,
+        counters.in_flight_reservation_bytes,
         counters.resident_reservation_bytes,
+        counters.quarantined_frames,
+        counters.quarantined_staging_bytes,
+        counters.quarantined_in_flight_bytes,
+        counters.quarantined_resident_bytes,
+        counters.quarantined_payload_bytes,
+        counters.quarantine_capacity_bytes,
         counters.preparation_queue_wait_nanos,
         counters.preparation_queue_rejections,
         counters.preparation_queue_cancellations
@@ -815,7 +845,7 @@ fn export_trace(
     output.push_str(
         "],\"scene_sample_order\":\"before_input;camera_and_entry_progress_after_input\"}\n",
     );
-    print!("{output}");
+    output
 }
 
 fn same_entries(
@@ -1946,4 +1976,58 @@ fn main() {
             cx.quit();
         }
     });
+}
+
+#[cfg(test)]
+mod trace_export_tests {
+    use super::*;
+
+    #[test]
+    fn trace_document_emits_the_cache_and_quarantine_accounting_fields() {
+        let counters = desktop_gpui::image_upload::ImageUploadService::global().counters();
+        let document = trace_document(
+            &[],
+            true,
+            12,
+            0,
+            "shared",
+            counters,
+            TraceEvidence {
+                peak: [0, 0, 0],
+                digests: [None, None],
+                cancel_probe_stage: 0,
+                settled: true,
+            },
+        );
+        for field in [
+            "\"decode_calls\":",
+            "\"reuse_calls\":",
+            "\"retained_frames\":",
+            "\"consumers\":",
+            "\"consumer_unknown_frames\":",
+            "\"backup_claims\":",
+            "\"backup_origins\":",
+            "\"evicted_frames\":",
+            "\"packed_retained_bytes\":",
+            "\"decoded_retained_bytes\":",
+            "\"cpu_retained_bytes\":",
+            "\"staging_reservation_bytes\":",
+            "\"in_flight_reservation_bytes\":",
+            "\"resident_reservation_bytes\":",
+            "\"quarantined_frames\":",
+            "\"quarantined_staging_bytes\":",
+            "\"quarantined_in_flight_bytes\":",
+            "\"quarantined_resident_bytes\":",
+            "\"quarantined_payload_bytes\":",
+            "\"quarantine_capacity_bytes\":",
+            "\"queue_wait_ns\":",
+            "\"queue_rejections\":",
+            "\"queue_cancellations\":",
+            "\"ledger\":[",
+        ] {
+            assert!(document.contains(field), "missing {field}");
+        }
+        assert!(document.starts_with("{\"scenario\":\"cmp1_native_fixed_trace\""));
+        assert!(document.ends_with("}\n"));
+    }
 }
