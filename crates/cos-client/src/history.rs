@@ -315,6 +315,11 @@ impl HistoryDocument {
         if self.items.len() > MAX_HISTORY_ITEMS {
             return Err(HistoryFetchError::Malformed);
         }
+        // A further page from an empty page would never advance the keyset; the
+        // Runtime never serves it, so it is refused rather than looped on.
+        if self.items.is_empty() && self.has_more {
+            return Err(HistoryFetchError::Malformed);
+        }
         for item in &self.items {
             item.validate(&self.task_ref)?;
         }
@@ -507,6 +512,9 @@ mod tests {
         assert_eq!(page.validate(), Err(HistoryFetchError::Malformed));
         // A cursor without `has_more` is equally contradictory.
         let page = document(Vec::new(), Some("cursor"), false);
+        assert_eq!(page.validate(), Err(HistoryFetchError::Malformed));
+        // An empty page that claims more can never advance the keyset.
+        let page = document(Vec::new(), Some("cursor"), true);
         assert_eq!(page.validate(), Err(HistoryFetchError::Malformed));
     }
 
