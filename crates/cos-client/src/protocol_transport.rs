@@ -32,10 +32,20 @@
 //! (observation open, snapshot read, delta read) because reads are bound to the
 //! issuing principal; the handshake route and every other path never see it.
 //!
-//! `409 RESYNC_REQUIRED` publishes no frame and fabricates no cursor: the
-//! stream stops and the client's own recovery re-opens the observation. Every
-//! failure maps to a [`TransportError`]; a malformed or oversized document
-//! publishes nothing.
+//! `409 RESYNC_REQUIRED` is not an I/O failure: the Runtime's closed reason is
+//! published as a `RESYNC_REQUIRED` frame and the client's own bounded recovery
+//! re-opens the observation. A resumed open that the Runtime accepts carries a
+//! fresh grant and a replay position; the transport publishes `READ_GRANT` then
+//! a stamped `REPLAY_ACCEPTED` and keeps polling deltas from that cursor. The
+//! three resume coordinates travel only as a complete triplet: the Runtime
+//! refuses a partial one as invalid, so a fresh re-open that still knows its
+//! previous scope identity is normalised to a fresh open, never a `422`. After
+//! a delta-gap resync the next fresh open is served by one explicit
+//! `GET /api/cos/desktop/snapshot` refresh for the still-granted scope (same
+//! staging and identity rules as the open snapshot) before falling back to a
+//! fresh observation open. The retained-command list is bounded at the frozen
+//! contract maximum of 448 distinct identities. Every failure maps to a
+//! [`TransportError`]; a malformed or oversized document publishes nothing.
 //!
 //! # Streams, generations and bounds
 //!
@@ -48,7 +58,7 @@
 //! inbound queue, the job queue and the accepted response size are bounded; no
 //! call panics.
 
-use std::collections::VecDeque;
+use std::collections::{HashSet, VecDeque};
 use std::fmt;
 use std::marker::PhantomData;
 use std::sync::{Arc, Condvar, Mutex, MutexGuard, PoisonError};
@@ -56,9 +66,10 @@ use std::thread::{self, JoinHandle};
 use std::time::Duration;
 
 use desktop_protocol::{
-    ClientMessage, ClientWire, Cursor, DeltaTransaction, HelloAccepted, Limits,
-    ObservationScopeRequest, OpenAuthorizedObservation, ProtocolVersions, ReadContextId, ReadGrant,
-    ReadRequestId, ReadStamp, ServerFrame, ServerId, ServerMessage, ServerWire, SnapshotBegin,
+    ClientMessage, ClientWire, Cursor, DeltaTransaction, EpochId, HelloAccepted, Limits,
+    ObservationScope, ObservationScopeRequest, OpenAuthorizedObservation, ProtocolVersions,
+    ReadContextId, ReadGrant, ReadRequestId, ReadStamp, ReplayAccepted, ResyncReason,
+    ResyncRequired, ScopeId, ServerFrame, ServerId, ServerMessage, ServerWire, SnapshotBegin,
     SnapshotChunk, SnapshotEnd, Version,
 };
 use serde::{Deserialize, Serialize};
@@ -76,6 +87,16 @@ pub const OBSERVATION_PATH: &str = "/api/cos/desktop/observation";
 pub const SNAPSHOT_PATH: &str = "/api/cos/desktop/snapshot";
 /// `GET` route that polls one delta transaction after a cursor.
 pub const DELTAS_PATH: &str = "/api/cos/desktop/deltas";
+
+/// Frozen contract maximum of distinct retained command identities per open.
+///
+/// The protocol freezes the grant list at 448 (`docs/architecture/DESKTOP_PROTOCOL.md`),
+/// derived from the registry bound rather than a new allowance. A client frame
+/// above it is refused before any exchange.
+pub const MAX_RETAINED_COMMANDS: usize = 448;
+
+/// Longest Runtime safe message copied into a resync frame, in characters.
+const MAX_RESYNC_MESSAGE_CHARS: usize = 512;
 
 /// Routes that carry the Desktop credential.
 ///
@@ -318,6 +339,9 @@ impl<E: ProtocolHttp> Transport for ProtocolTransport<E> {
                 Some(request)
             }
         };
+        if let Some(request) = open.as_ref() {
+            validate_open_request(request)?;
+        }
         {
             let mut state = lock(&self.shared);
             let generation = state.generation;
@@ -367,6 +391,7 @@ impl<E: ProtocolHttp> Transport for ProtocolTransport<E> {
             // may treat any server statement as verified.
             state.hello = None;
             state.server = None;
+            state.refresh = None;
         }
         self.shared.1.notify_all();
     }
@@ -388,6 +413,8 @@ struct Shared {
     /// Server identity verified by that handshake.
     server: Option<ServerId>,
     control: Option<ObservationControl>,
+    /// Granted scope held for one explicit snapshot refresh after a delta gap.
+    refresh: Option<RefreshSnapshot>,
     limits: Limits,
 }
 
@@ -405,6 +432,7 @@ impl Shared {
             hello: None,
             server: None,
             control: None,
+            refresh: None,
             limits,
         }
     }
@@ -436,6 +464,7 @@ struct PollSession {
     cursor: Cursor,
     context: ReadContextId,
     stamp: ReadStamp,
+    scope: ObservationScope,
     /// Whether the first poll still has to happen immediately.
     first: bool,
 }
@@ -453,6 +482,68 @@ enum WorkerAction {
 
 fn lock(shared: &SharedState) -> MutexGuard<'_, Shared> {
     shared.0.lock().unwrap_or_else(PoisonError::into_inner)
+}
+
+/// Frozen-contract admission for one observation open.
+///
+/// The list is bounded at [`MAX_RETAINED_COMMANDS`] distinct identities; a
+/// duplicate or oversized list is refused before the executor is involved, so
+/// no partial or truncated request reaches the Runtime.
+fn validate_open_request(request: &OpenAuthorizedObservation) -> Result<(), TransportError> {
+    let retained = request.retained_commands.as_slice();
+    if retained.len() > MAX_RETAINED_COMMANDS {
+        return Err(TransportError::Io(format!(
+            "observation request carries {} retained command identities; the contract bounds the list at {MAX_RETAINED_COMMANDS}",
+            retained.len()
+        )));
+    }
+    let mut unique = HashSet::with_capacity(retained.len());
+    if retained.iter().any(|command| !unique.insert(command)) {
+        return Err(TransportError::Io(
+            "observation request repeats a retained command identity".to_owned(),
+        ));
+    }
+    Ok(())
+}
+
+/// All-or-none resume coordinates.
+///
+/// The Runtime contract requires the scope identity, the last completely applied
+/// cursor and the expected epoch together; a partial triplet is refused as an
+/// invalid request (422) because a lone scope identity is not a resume request.
+/// The Protocol wire carries the three fields independently, and an ordinary
+/// fresh re-open still knows its previous scope id, so this adapter normalises a
+/// partial triplet to a fresh open instead of forwarding an invalid resume.
+fn resume_coordinates(
+    observation: &desktop_protocol::OpenObservation,
+) -> (Option<&ScopeId>, Option<&Cursor>, Option<&EpochId>) {
+    match (
+        observation.scope_id.as_ref(),
+        observation.last_seen_cursor.as_ref(),
+        observation.epoch.as_ref(),
+    ) {
+        (Some(scope_id), Some(cursor), Some(epoch)) => (Some(scope_id), Some(cursor), Some(epoch)),
+        _ => (None, None, None),
+    }
+}
+
+/// A granted scope whose next fresh open may be served by the snapshot route.
+struct RefreshSnapshot {
+    scope: ObservationScope,
+    context: ReadContextId,
+    stamp: ReadStamp,
+}
+
+/// Whether an open request asks for the same scope the grant describes.
+fn scope_request_matches(request: &ObservationScopeRequest, granted: &ObservationScope) -> bool {
+    let requested_tasks: HashSet<&desktop_protocol::TaskId> = request.task_ids.iter().collect();
+    let granted_tasks: HashSet<&desktop_protocol::TaskId> = granted.task_ids.iter().collect();
+    requested_tasks == granted_tasks
+        && request.filters.len() == granted.filters.len()
+        && request
+            .filters
+            .iter()
+            .all(|filter| granted.filters.contains(filter))
 }
 
 fn wait<'a>(shared: &'a SharedState, state: MutexGuard<'a, Shared>) -> MutexGuard<'a, Shared> {
@@ -557,16 +648,72 @@ fn run_worker<E: ProtocolHttp>(
                 generation,
                 request,
             } => {
+                // After a delta-gap resync the next fresh open of the same scope
+                // is served by one explicit snapshot refresh under the held grant.
+                // Any refusal or identity mismatch falls through to a fresh open,
+                // which mints a new grant.
+                let refresh = {
+                    let mut state = lock(&shared);
+                    if state.closed || generation != state.generation {
+                        continue;
+                    }
+                    if resume_coordinates(&request.observation).1.is_some() {
+                        state.refresh = None;
+                        None
+                    } else {
+                        state.refresh.take().filter(|refresh| {
+                            scope_request_matches(&request.observation.scope, &refresh.scope)
+                        })
+                    }
+                };
+                if let Some(refresh) = refresh
+                    && let Ok(Some(snapshot)) = get_snapshot(&mut executor, &config, &refresh)
+                {
+                    let mut state = lock(&shared);
+                    if state.closed || generation != state.generation {
+                        continue;
+                    }
+                    let identity_matches = state.hello.as_ref().is_some_and(|hello| {
+                        snapshot.end.epoch == hello.epoch
+                            && snapshot.end.scope.scope_id == refresh.scope.scope_id
+                    });
+                    if identity_matches {
+                        match apply_snapshot_refresh(&mut state, &snapshot, &refresh) {
+                            Ok(()) => {}
+                            Err(error) => state.pending_error = Some(error),
+                        }
+                        wake_after(state);
+                        continue;
+                    }
+                    // A refresh document describing another identity is never
+                    // published; the fresh open below recovers.
+                }
                 let outcome = post_open(&mut executor, &config, versions, &request);
                 let mut state = lock(&shared);
                 if state.closed || generation != state.generation {
                     continue;
                 }
                 match outcome {
-                    Ok(document) => match apply_open(&mut state, &document) {
+                    Ok(OpenOutcome::Document(document)) => match apply_open(
+                        &mut state,
+                        &document,
+                        resume_coordinates(&request.observation).1,
+                    ) {
                         Ok(()) => {}
                         Err(error) => state.pending_error = Some(error),
                     },
+                    Ok(OpenOutcome::Resync(payload)) => {
+                        state.poll = None;
+                        match encode_frame(
+                            versions.protocol,
+                            versions.schema,
+                            None,
+                            ServerMessage::ResyncRequired(payload),
+                        ) {
+                            Ok(frame) => push_inbound(&mut state, frame),
+                            Err(error) => state.pending_error = Some(error),
+                        }
+                    }
                     Err(error) => state.pending_error = Some(error),
                 }
                 wake_after(state);
@@ -612,9 +759,29 @@ fn run_worker<E: ProtocolHttp>(
                         }
                         wake_after(state);
                     }
-                    // The endpoint reports the stable code only; publishing no
-                    // frame leaves the decision to the client's own recovery,
-                    // which re-opens the observation.
+                    // The Runtime states why replay is not possible. The reason
+                    // is published as a protocol frame and the client's bounded
+                    // recovery re-opens the observation; no cursor is fabricated.
+                    Ok(DeltaOutcome::Resync(payload)) => {
+                        state.refresh = Some(RefreshSnapshot {
+                            scope: poll.scope.clone(),
+                            context: poll.context.clone(),
+                            stamp: poll.stamp.clone(),
+                        });
+                        state.poll = None;
+                        match encode_frame(
+                            poll.protocol,
+                            poll.schema,
+                            None,
+                            ServerMessage::ResyncRequired(payload),
+                        ) {
+                            Ok(frame) => push_inbound(&mut state, frame),
+                            Err(error) => state.pending_error = Some(error),
+                        }
+                        wake_after(state);
+                    }
+                    // A transport failure is not a resync decision: publish
+                    // nothing and let the client's recovery decide.
                     Err(error) => {
                         state.poll = None;
                         state.pending_error = Some(error);
@@ -646,7 +813,11 @@ fn take_first_poll(state: &mut Shared, poll: &PollSession) -> bool {
 }
 
 /// Publish one observation document after the accepted handshake.
-fn apply_open(state: &mut Shared, document: &OpenDocument) -> Result<(), TransportError> {
+fn apply_open(
+    state: &mut Shared,
+    document: &OpenDocument,
+    requested_resume: Option<&Cursor>,
+) -> Result<(), TransportError> {
     let Some(hello) = state.hello.as_ref() else {
         return Err(TransportError::Io(
             "observation document arrived before an accepted handshake".to_owned(),
@@ -657,23 +828,130 @@ fn apply_open(state: &mut Shared, document: &OpenDocument) -> Result<(), Transpo
             "observation document handshake differs from the accepted hello".to_owned(),
         ));
     }
+    let Some(grant) = document.grant.as_ref() else {
+        return Err(TransportError::Io(
+            "observation document carries no read grant".to_owned(),
+        ));
+    };
     let protocol = document.server.protocol;
     let schema = document.server.schema;
-    let stamp = Some(document.grant.stamp.clone());
-    let mut frames = Vec::with_capacity(3 + document.snapshot.chunks.len());
-    frames.push(encode_frame(
-        protocol,
-        schema,
-        None,
-        ServerMessage::ReadGrant(document.grant.clone()),
-    )?);
+    let stamp = Some(grant.stamp.clone());
+    match (&document.snapshot, &document.replay) {
+        (Some(snapshot), None) => {
+            let mut frames = Vec::with_capacity(3 + snapshot.chunks.len());
+            frames.push(encode_frame(
+                protocol,
+                schema,
+                None,
+                ServerMessage::ReadGrant(grant.clone()),
+            )?);
+            frames.push(encode_frame(
+                protocol,
+                schema,
+                stamp.clone(),
+                ServerMessage::SnapshotBegin(snapshot.begin.clone()),
+            )?);
+            for chunk in &snapshot.chunks {
+                frames.push(encode_frame(
+                    protocol,
+                    schema,
+                    stamp.clone(),
+                    ServerMessage::SnapshotChunk(chunk.clone()),
+                )?);
+            }
+            frames.push(encode_frame(
+                protocol,
+                schema,
+                stamp,
+                ServerMessage::SnapshotEnd(snapshot.end.clone()),
+            )?);
+            for frame in frames {
+                push_inbound(state, frame);
+            }
+            state.poll = Some(PollSession {
+                generation: state.generation,
+                protocol,
+                schema,
+                cursor: snapshot.end.cursor.clone(),
+                context: grant.stamp.context_id.clone(),
+                stamp: grant.stamp.clone(),
+                scope: grant.scope.clone(),
+                first: true,
+            });
+            Ok(())
+        }
+        (None, Some(replay)) => {
+            let Some(requested) = requested_resume else {
+                return Err(TransportError::Io(
+                    "replay acceptance arrived without a resume request".to_owned(),
+                ));
+            };
+            if &replay.cursor != requested {
+                return Err(TransportError::Io(
+                    "replay acceptance cursor differs from the requested cursor".to_owned(),
+                ));
+            }
+            let frames = [
+                encode_frame(
+                    protocol,
+                    schema,
+                    None,
+                    ServerMessage::ReadGrant(grant.clone()),
+                )?,
+                encode_frame(
+                    protocol,
+                    schema,
+                    stamp,
+                    ServerMessage::ReplayAccepted(replay.clone()),
+                )?,
+            ];
+            for frame in frames {
+                push_inbound(state, frame);
+            }
+            state.poll = Some(PollSession {
+                generation: state.generation,
+                protocol,
+                schema,
+                cursor: replay.cursor.clone(),
+                context: grant.stamp.context_id.clone(),
+                stamp: grant.stamp.clone(),
+                scope: grant.scope.clone(),
+                first: true,
+            });
+            Ok(())
+        }
+        _ => Err(TransportError::Io(
+            "observation document must carry exactly one snapshot or replay".to_owned(),
+        )),
+    }
+}
+
+/// Publish one fresh snapshot read under the still-current grant binding.
+///
+/// The snapshot route returns only the bundle; the client keeps the binding the
+/// last `READ_GRANT` installed, so the frames carry that same stamp and no new
+/// grant is invented.
+fn apply_snapshot_refresh(
+    state: &mut Shared,
+    snapshot: &SnapshotDocument,
+    refresh: &RefreshSnapshot,
+) -> Result<(), TransportError> {
+    let Some(hello) = state.hello.as_ref() else {
+        return Err(TransportError::Io(
+            "snapshot refresh arrived before an accepted handshake".to_owned(),
+        ));
+    };
+    let protocol = hello.protocol;
+    let schema = hello.schema;
+    let stamp = Some(refresh.stamp.clone());
+    let mut frames = Vec::with_capacity(2 + snapshot.chunks.len());
     frames.push(encode_frame(
         protocol,
         schema,
         stamp.clone(),
-        ServerMessage::SnapshotBegin(document.snapshot.begin.clone()),
+        ServerMessage::SnapshotBegin(snapshot.begin.clone()),
     )?);
-    for chunk in &document.snapshot.chunks {
+    for chunk in &snapshot.chunks {
         frames.push(encode_frame(
             protocol,
             schema,
@@ -685,7 +963,7 @@ fn apply_open(state: &mut Shared, document: &OpenDocument) -> Result<(), Transpo
         protocol,
         schema,
         stamp,
-        ServerMessage::SnapshotEnd(document.snapshot.end.clone()),
+        ServerMessage::SnapshotEnd(snapshot.end.clone()),
     )?);
     for frame in frames {
         push_inbound(state, frame);
@@ -694,9 +972,10 @@ fn apply_open(state: &mut Shared, document: &OpenDocument) -> Result<(), Transpo
         generation: state.generation,
         protocol,
         schema,
-        cursor: document.snapshot.end.cursor.clone(),
-        context: document.grant.stamp.context_id.clone(),
-        stamp: document.grant.stamp.clone(),
+        cursor: snapshot.end.cursor.clone(),
+        context: refresh.context.clone(),
+        stamp: refresh.stamp.clone(),
+        scope: snapshot.end.scope.clone(),
         first: true,
     });
     Ok(())
@@ -740,6 +1019,15 @@ struct OpenRequestBody<'a> {
     protocol: Version,
     schema: Version,
     scope: &'a ObservationScopeRequest,
+    /// Server-issued scope identity from the previous session, when resuming.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    scope_id: Option<&'a ScopeId>,
+    /// Last completely applied cursor, when resuming.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    last_seen_cursor: Option<&'a Cursor>,
+    /// Expected Runtime epoch, when resuming.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    epoch: Option<&'a EpochId>,
     retained_commands: &'a [desktop_protocol::CommandId],
 }
 
@@ -747,8 +1035,12 @@ struct OpenRequestBody<'a> {
 struct OpenDocument {
     schema_version: u32,
     server: HelloAccepted,
-    grant: ReadGrant,
-    snapshot: SnapshotDocument,
+    #[serde(default)]
+    grant: Option<ReadGrant>,
+    #[serde(default)]
+    snapshot: Option<SnapshotDocument>,
+    #[serde(default)]
+    replay: Option<ReplayAccepted>,
 }
 
 #[derive(Deserialize)]
@@ -759,6 +1051,13 @@ struct SnapshotDocument {
     end: SnapshotEnd,
 }
 
+/// Document served by the explicit fresh-snapshot read (bundle only, no grant).
+#[derive(Deserialize)]
+struct SnapshotRefreshDocument {
+    schema_version: u32,
+    snapshot: SnapshotDocument,
+}
+
 #[derive(Deserialize)]
 struct DeltasDocument {
     schema_version: u32,
@@ -766,9 +1065,15 @@ struct DeltasDocument {
     transaction: Option<DeltaTransaction>,
 }
 
+enum OpenOutcome {
+    Document(Box<OpenDocument>),
+    Resync(ResyncRequired),
+}
+
 enum DeltaOutcome {
     Empty,
     Transaction(Box<DeltaTransaction>),
+    Resync(ResyncRequired),
 }
 
 fn get_server<E: ProtocolHttp>(
@@ -805,13 +1110,17 @@ fn post_open<E: ProtocolHttp>(
     config: &ProtocolTransportConfig,
     versions: ProtocolVersions,
     request: &OpenAuthorizedObservation,
-) -> Result<OpenDocument, TransportError> {
+) -> Result<OpenOutcome, TransportError> {
+    let (scope_id, last_seen_cursor, epoch) = resume_coordinates(&request.observation);
     let body = OpenRequestBody {
         schema_version: OBSERVATION_DOCUMENT_SCHEMA_VERSION,
         request_id: &request.request_id,
         protocol: versions.protocol,
         schema: versions.schema,
         scope: &request.observation.scope,
+        scope_id,
+        last_seen_cursor,
+        epoch,
         retained_commands: &request.retained_commands,
     };
     let body = serde_json::to_vec(&body).map_err(|error| {
@@ -834,6 +1143,9 @@ fn post_open<E: ProtocolHttp>(
     // oversized body must never reach the JSON parser or the error classifier.
     bound_response(config, &response, "observation open")?;
     if !is_success(response.status) {
+        if let Some(payload) = resync_required(&response) {
+            return Ok(OpenOutcome::Resync(payload));
+        }
         return Err(http_error("observation open", &response));
     }
     let document: OpenDocument = serde_json::from_slice(&response.body)
@@ -844,7 +1156,54 @@ fn post_open<E: ProtocolHttp>(
             document.schema_version
         )));
     }
-    Ok(document)
+    Ok(OpenOutcome::Document(Box::new(document)))
+}
+
+/// One explicit fresh-snapshot read under a still-granted scope and context.
+///
+/// `Ok(None)` means the Runtime refused the refresh (`401`/`403`/`409` or any
+/// other non-success), so the caller falls back to a fresh observation open;
+/// a malformed success document is a transport failure.
+fn get_snapshot<E: ProtocolHttp>(
+    executor: &mut E,
+    config: &ProtocolTransportConfig,
+    refresh: &RefreshSnapshot,
+) -> Result<Option<SnapshotDocument>, TransportError> {
+    let path = format!(
+        "{SNAPSHOT_PATH}?scope={}",
+        encode_query_value(refresh.scope.scope_id.as_str())
+    );
+    let mut headers = vec![
+        ("accept".to_owned(), "application/json".to_owned()),
+        (
+            "x-cos-context".to_owned(),
+            refresh.context.as_str().to_owned(),
+        ),
+    ];
+    authorize(config, &mut headers, &path);
+    let response = executor
+        .execute(HttpRequest {
+            method: HttpMethod::Get,
+            path,
+            headers,
+            body: Vec::new(),
+        })
+        .map_err(|message| TransportError::Io(format!("snapshot refresh failed: {message}")))?;
+    bound_response(config, &response, "snapshot refresh")?;
+    if !is_success(response.status) {
+        return Ok(None);
+    }
+    let document: SnapshotRefreshDocument =
+        serde_json::from_slice(&response.body).map_err(|error| {
+            TransportError::Io(format!("malformed snapshot refresh document: {error}"))
+        })?;
+    if document.schema_version != OBSERVATION_DOCUMENT_SCHEMA_VERSION {
+        return Err(TransportError::Io(format!(
+            "unsupported snapshot refresh schema version {}",
+            document.schema_version
+        )));
+    }
+    Ok(Some(document.snapshot))
 }
 
 fn get_deltas<E: ProtocolHttp>(
@@ -873,6 +1232,9 @@ fn get_deltas<E: ProtocolHttp>(
     // oversized body must never reach the JSON parser or the error classifier.
     bound_response(config, &response, "delta poll")?;
     if !is_success(response.status) {
+        if let Some(payload) = resync_required(&response) {
+            return Ok(DeltaOutcome::Resync(payload));
+        }
         return Err(http_error("delta poll", &response));
     }
     let document: DeltasDocument = serde_json::from_slice(&response.body)
@@ -908,20 +1270,61 @@ fn bound_response(
     Ok(())
 }
 
-fn http_error(what: &str, response: &HttpResponse) -> TransportError {
-    let code = serde_json::from_slice::<serde_json::Value>(&response.body)
+/// Stable Runtime error code from one bounded error document, when present.
+fn error_code(response: &HttpResponse) -> Option<String> {
+    serde_json::from_slice::<serde_json::Value>(&response.body)
         .ok()
         .and_then(|value| {
             value
                 .get("code")
                 .and_then(serde_json::Value::as_str)
                 .map(str::to_owned)
-        });
-    match code {
-        Some(code) => {
-            TransportError::Io(format!("{what} rejected: HTTP {} {code}", response.status))
+        })
+}
+
+/// One `RESYNC_REQUIRED` refusal, mapped to the protocol's closed reason.
+///
+/// The Runtime states the stable code; a recognized `reason` is preserved, and
+/// an absent or unrecognized one falls back to `HISTORY_UNAVAILABLE` (the
+/// closed meaning: this history cannot be replayed). The safe `detail` text is
+/// bounded and control-free; nothing else from the body is copied.
+fn resync_required(response: &HttpResponse) -> Option<ResyncRequired> {
+    if error_code(response).as_deref() != Some("RESYNC_REQUIRED") {
+        return None;
+    }
+    let value: serde_json::Value = serde_json::from_slice(&response.body).ok()?;
+    let reason = value
+        .get("reason")
+        .and_then(serde_json::Value::as_str)
+        .map(ResyncReason::from_wire)
+        .filter(ResyncReason::is_known)
+        .unwrap_or(ResyncReason::HistoryUnavailable);
+    let message = value
+        .get("detail")
+        .and_then(serde_json::Value::as_str)
+        .map(safe_message);
+    Some(ResyncRequired { reason, message })
+}
+
+/// Bound one Runtime safe message for a protocol frame.
+fn safe_message(raw: &str) -> String {
+    raw.chars()
+        .filter(|character| !character.is_control())
+        .take(MAX_RESYNC_MESSAGE_CHARS)
+        .collect()
+}
+
+fn http_error(what: &str, response: &HttpResponse) -> TransportError {
+    // Only the status and the stable code are classified; the body text never
+    // reaches a message, so a diagnostic cannot leak a Runtime detail string.
+    let code = error_code(response);
+    match (response.status, code) {
+        (422, Some(code)) => TransportError::Io(format!("{what} rejected: HTTP 422 {code}")),
+        (422, None) => TransportError::Io(format!("{what} rejected: HTTP 422")),
+        (status, Some(code)) => {
+            TransportError::Io(format!("{what} rejected: HTTP {status} {code}"))
         }
-        None => TransportError::Io(format!("{what} rejected: HTTP {}", response.status)),
+        (status, None) => TransportError::Io(format!("{what} rejected: HTTP {status}")),
     }
 }
 

@@ -13,16 +13,17 @@ use std::time::{Duration, Instant};
 use cos_client::{
     ClientConfig, ClientEvent, ClientSource, ConnectionState, CosClient, DELTAS_PATH, HttpMethod,
     HttpRequest, HttpResponse, OBSERVATION_PATH, ProtocolHttp, ProtocolTransport,
-    ProtocolTransportConfig, SERVER_PATH, Transport, TransportError,
+    ProtocolTransportConfig, SERVER_PATH, SNAPSHOT_PATH, Transport, TransportError,
 };
 use desktop_protocol::{
     ClientFrame, ClientMessage, ClientWire, CommandEnvelope, CommandId, CommandPayload,
     CommandTarget, Counter, Cursor, DeltaTransaction, EpochId, HelloAccepted, HelloRequest, Limits,
     ObservationScope, ObservationScopeRequest, OpenAuthorizedObservation, OpenObservation,
     PhaseLabel, Projection, ProjectionMutation, ProtocolVersions, ReadContextId, ReadGrant,
-    ReadRequestId, ReadRevision, ReadStamp, ScopeFilter, ScopeId, ServerId, ServerWire,
-    SnapshotBegin, SnapshotChunk, SnapshotCounts, SnapshotEnd, SnapshotId, StopTaskCommand, TaskId,
-    TaskSnapshot, TaskStatus, TransactionId, Version, VersionRange, projection_bundle_digest,
+    ReadRequestId, ReadRevision, ReadStamp, ResyncReason, ScopeFilter, ScopeId, ServerId,
+    ServerMessage, ServerWire, SnapshotBegin, SnapshotChunk, SnapshotCounts, SnapshotEnd,
+    SnapshotId, StopTaskCommand, TaskId, TaskSnapshot, TaskStatus, TransactionId, Version,
+    VersionRange, projection_bundle_digest,
 };
 
 const SERVER_IDENTITY: &str = "runtime-server";
@@ -37,9 +38,23 @@ struct ServerState {
     gate: Option<Gate>,
     /// Remaining delta polls answered with `409 RESYNC_REQUIRED`.
     resync_polls: u32,
+    /// Answer the next observation open with a `409 RESYNC_REQUIRED` document.
+    resync_open: bool,
+    /// Answer a resume open with a replay acceptance instead of a snapshot.
+    replay_open: bool,
+    /// Reason copied into the next `409 RESYNC_REQUIRED` document.
+    resync_reason: Option<String>,
+    /// Answer the next fresh-snapshot read with `401 UNAUTHORIZED_CONTEXT`.
+    refresh_refused: bool,
+    /// Fresh-snapshot reads served, and the scope/context the grant described.
+    refresh_served: u32,
+    granted_scope: Option<ObservationScope>,
+    granted_context: Option<ReadContextId>,
+    granted_stamp: Option<ReadStamp>,
     /// Serve one delta transaction on the next successful poll.
     delta: bool,
     next_session: u64,
+    next_snapshot: u64,
     cursor: String,
 }
 
@@ -50,8 +65,17 @@ impl ServerState {
             threads: Vec::new(),
             gate: None,
             resync_polls: 0,
+            resync_open: false,
+            replay_open: false,
+            resync_reason: None,
+            refresh_refused: false,
+            refresh_served: 0,
+            granted_scope: None,
+            granted_context: None,
+            granted_stamp: None,
             delta: false,
             next_session: 0,
+            next_snapshot: 0,
             cursor: String::new(),
         }
     }
@@ -101,15 +125,31 @@ impl ProtocolHttp for StubHttp {
             (HttpMethod::Post, OBSERVATION_PATH) => {
                 let body: serde_json::Value = serde_json::from_slice(&request.body)
                     .map_err(|error| format!("request body: {error}"))?;
+                if state.resync_open {
+                    state.resync_open = false;
+                    return Ok(resync_error(state.resync_reason.take()));
+                }
+                if state.replay_open && body.get("last_seen_cursor").is_some() {
+                    state.replay_open = false;
+                    return Ok(json_response(replay_document(&mut state, &body)));
+                }
                 Ok(json_response(open_document(&mut state, &body)))
+            }
+            (HttpMethod::Get, path) if path.starts_with(SNAPSHOT_PATH) => {
+                if state.refresh_refused {
+                    state.refresh_refused = false;
+                    return Ok(HttpResponse {
+                        status: 401,
+                        body: br#"{"code":"UNAUTHORIZED_CONTEXT","detail":"context expired"}"#
+                            .to_vec(),
+                    });
+                }
+                Ok(json_response(snapshot_refresh_document(&mut state, path)))
             }
             (HttpMethod::Get, path) if path.starts_with(DELTAS_PATH) => {
                 if state.resync_polls > 0 {
                     state.resync_polls -= 1;
-                    return Ok(HttpResponse {
-                        status: 409,
-                        body: br#"{"code":"RESYNC_REQUIRED"}"#.to_vec(),
-                    });
+                    return Ok(resync_error(state.resync_reason.take()));
                 }
                 let transaction = if state.delta {
                     state.delta = false;
@@ -127,6 +167,21 @@ impl ProtocolHttp for StubHttp {
                 body: b"{}".to_vec(),
             }),
         }
+    }
+}
+
+/// One closed Runtime resync refusal document.
+fn resync_error(reason: Option<String>) -> HttpResponse {
+    let mut value = serde_json::json!({
+        "code": "RESYNC_REQUIRED",
+        "detail": "history cannot be replayed",
+    });
+    if let Some(reason) = reason {
+        value["reason"] = serde_json::Value::String(reason);
+    }
+    HttpResponse {
+        status: 409,
+        body: serde_json::to_vec(&value).expect("resync body"),
     }
 }
 
@@ -176,7 +231,14 @@ fn task_mutations(title: &str, revision: &str) -> Vec<ProjectionMutation> {
     }]
 }
 
-fn open_document(state: &mut ServerState, body: &serde_json::Value) -> serde_json::Value {
+/// One session the stub minted, with the grant the Desktop client must accept.
+struct GrantedSession {
+    session: u64,
+    scope: ObservationScope,
+    stamp: ReadStamp,
+}
+
+fn mint_grant(state: &mut ServerState, body: &serde_json::Value) -> GrantedSession {
     let request_id = body["request_id"].as_str().expect("request id").to_owned();
     let protocol: Version =
         serde_json::from_value(body["protocol"].clone()).expect("request protocol");
@@ -185,20 +247,54 @@ fn open_document(state: &mut ServerState, body: &serde_json::Value) -> serde_jso
         serde_json::from_value(body["scope"].clone()).expect("request scope");
     state.next_session += 1;
     let session = state.next_session;
-    let scope_id = format!("scope-{session}");
-    let context_id = format!("context-{session}");
-    let snapshot_id = SnapshotId::new(format!("snapshot-{session}")).expect("snapshot id");
-    let cursor = format!("cursor-{session}");
-    let title = format!("REST task {session}");
-    state.cursor.clone_from(&cursor);
     let scope = ObservationScope {
-        scope_id: ScopeId::new(scope_id).expect("scope id"),
+        scope_id: ScopeId::new(format!("scope-{session}")).expect("scope id"),
         task_ids: scope_request.task_ids.clone(),
         filters: scope_request.filters.clone(),
         protocol,
         schema,
     };
-    let mutations = task_mutations(&title, "1");
+    let context_id = ReadContextId::new(format!("context-{session}")).expect("context id");
+    let stamp = ReadStamp {
+        request_id: ReadRequestId::new(request_id).expect("request id"),
+        server_id: ServerId::new(SERVER_IDENTITY).expect("server id"),
+        epoch: EpochId::new(EPOCH).expect("epoch"),
+        context_id: context_id.clone(),
+        read_revision: ReadRevision::new(Counter::new("1").expect("counter")),
+        scope_id: scope.scope_id.clone(),
+    };
+    state.granted_scope = Some(scope.clone());
+    state.granted_context = Some(context_id);
+    state.granted_stamp = Some(stamp.clone());
+    GrantedSession {
+        session,
+        scope,
+        stamp,
+    }
+}
+
+fn grant_value(session: &GrantedSession) -> serde_json::Value {
+    serde_json::to_value(ReadGrant {
+        stamp: session.stamp.clone(),
+        scope: session.scope.clone(),
+        local_intents_readable: false,
+        command_reads: Vec::new(),
+    })
+    .expect("grant encodes")
+}
+
+/// One complete atomic snapshot document for a granted scope.
+fn snapshot_value(
+    state: &mut ServerState,
+    scope: &ObservationScope,
+    title: &str,
+) -> serde_json::Value {
+    state.next_snapshot += 1;
+    let snapshot_id =
+        SnapshotId::new(format!("snapshot-{}", state.next_snapshot)).expect("snapshot id");
+    let cursor = format!("cursor-{}", state.next_snapshot);
+    state.cursor.clone_from(&cursor);
+    let mutations = task_mutations(title, "1");
     let begin = SnapshotBegin {
         snapshot_id: snapshot_id.clone(),
     };
@@ -215,31 +311,58 @@ fn open_document(state: &mut ServerState, body: &serde_json::Value) -> serde_jso
         expected: SnapshotCounts::of(&mutations),
         integrity_digest: projection_bundle_digest(&mutations).expect("digest"),
     };
-    let grant = ReadGrant {
-        stamp: ReadStamp {
-            request_id: ReadRequestId::new(request_id).expect("request id"),
-            server_id: ServerId::new(SERVER_IDENTITY).expect("server id"),
-            epoch: EpochId::new(EPOCH).expect("epoch"),
-            context_id: ReadContextId::new(context_id).expect("context id"),
-            read_revision: ReadRevision::new(Counter::new("1").expect("counter")),
-            scope_id: scope.scope_id.clone(),
-        },
-        scope,
-        local_intents_readable: false,
-        command_reads: Vec::new(),
-    };
+    serde_json::json!({
+        "begin": serde_json::to_value(begin).expect("begin encodes"),
+        "chunks": chunks
+            .iter()
+            .map(|chunk| serde_json::to_value(chunk).expect("chunk encodes"))
+            .collect::<Vec<_>>(),
+        "end": serde_json::to_value(end).expect("end encodes"),
+    })
+}
+
+fn open_document(state: &mut ServerState, body: &serde_json::Value) -> serde_json::Value {
+    let session = mint_grant(state, body);
+    let title = format!("REST task {}", session.session);
+    let snapshot = snapshot_value(state, &session.scope, &title);
     serde_json::json!({
         "schema_version": 1,
         "server": serde_json::to_value(hello()).expect("hello encodes"),
-        "grant": serde_json::to_value(grant).expect("grant encodes"),
-        "snapshot": {
-            "begin": serde_json::to_value(begin).expect("begin encodes"),
-            "chunks": chunks
-                .iter()
-                .map(|chunk| serde_json::to_value(chunk).expect("chunk encodes"))
-                .collect::<Vec<_>>(),
-            "end": serde_json::to_value(end).expect("end encodes"),
-        },
+        "grant": grant_value(&session),
+        "snapshot": snapshot,
+    })
+}
+
+/// One resume acceptance: a fresh grant plus the requested replay position.
+fn replay_document(state: &mut ServerState, body: &serde_json::Value) -> serde_json::Value {
+    let session = mint_grant(state, body);
+    let requested = body["last_seen_cursor"]
+        .as_str()
+        .expect("requested resume cursor")
+        .to_owned();
+    state.cursor.clone_from(&requested);
+    serde_json::json!({
+        "schema_version": 1,
+        "server": serde_json::to_value(hello()).expect("hello encodes"),
+        "grant": grant_value(&session),
+        "replay": {"cursor": requested},
+    })
+}
+
+/// One explicit fresh-snapshot read for the scope the grant already authorized.
+fn snapshot_refresh_document(state: &mut ServerState, path: &str) -> serde_json::Value {
+    state.refresh_served += 1;
+    let scope = state.granted_scope.clone().expect("granted scope");
+    let requested = path
+        .split("scope=")
+        .nth(1)
+        .expect("the refresh names its scope");
+    assert_eq!(requested, scope.scope_id.as_str(), "scope query identity");
+    let title = format!("REST task refreshed {}", state.refresh_served);
+    let snapshot = snapshot_value(state, &scope, &title);
+    serde_json::json!({
+        "schema_version": 1,
+        "snapshot": snapshot,
     })
 }
 
@@ -578,11 +701,16 @@ fn cos_client_applies_a_delta_from_the_delta_poll() {
     assert!(delta_calls >= 1);
 }
 
-/// (f) `409 RESYNC_REQUIRED` publishes no frame and leaves resync to the client.
+/// (f) A delta-gap resync becomes a protocol frame; the client's bounded
+/// recovery is served by one explicit snapshot refresh under the same grant.
 #[test]
-fn delta_poll_409_leaves_resync_to_the_client() {
+fn delta_gap_resync_is_a_frame_and_the_next_open_refreshes_the_snapshot() {
     let (executor, state) = StubHttp::new();
-    state.lock().expect("stub state").resync_polls = 1;
+    {
+        let mut state = state.lock().expect("stub state");
+        state.resync_polls = 1;
+        state.resync_reason = Some("HISTORY_UNAVAILABLE".to_owned());
+    }
     let transport = ProtocolTransport::new(executor, config(), versions());
     let mut client = client(transport);
     client
@@ -596,24 +724,352 @@ fn delta_poll_409_leaves_resync_to_the_client() {
         .expect("observation begins");
 
     let events = drive_until(&mut client, |client| {
-        task_title(client).as_deref() == Some("REST task 2")
+        task_title(client).as_deref() == Some("REST task refreshed 1")
     });
     assert!(matches!(client.connection(), ConnectionState::Live));
     assert!(
         events.iter().any(|event| matches!(
             event,
-            ClientEvent::Error(cos_client::ClientError::Transport(message))
-                if message.contains("RESYNC_REQUIRED")
+            ClientEvent::ResyncRequested {
+                reason: ResyncReason::HistoryUnavailable
+            }
         )),
-        "the client observes the transport failure"
+        "the client receives the closed resync reason, not an I/O failure"
     );
     let state = state.lock().expect("stub state");
     assert_eq!(
         state.calls_to(HttpMethod::Post, OBSERVATION_PATH),
-        2,
-        "the client re-opens the observation instead of guessing a cursor"
+        1,
+        "the refresh must not mint a second observation session"
     );
-    assert_eq!(task_title(&client), Some("REST task 2".to_owned()));
+    let refresh_calls: Vec<&HttpRequest> = state
+        .calls
+        .iter()
+        .filter(|call| call.method == HttpMethod::Get && call.path.starts_with(SNAPSHOT_PATH))
+        .collect();
+    assert_eq!(refresh_calls.len(), 1, "one explicit snapshot refresh");
+    assert!(
+        refresh_calls[0].path.contains("scope=scope-1"),
+        "the refresh names the granted scope: {}",
+        refresh_calls[0].path
+    );
+    assert!(
+        refresh_calls[0]
+            .headers
+            .iter()
+            .any(|(name, value)| name == "x-cos-context" && value == "context-1"),
+        "the refresh presents the grant context"
+    );
+}
+
+/// (f2) A refused refresh falls back to a fresh observation open.
+#[test]
+fn refused_snapshot_refresh_falls_back_to_a_fresh_open() {
+    let (executor, state) = StubHttp::new();
+    {
+        let mut state = state.lock().expect("stub state");
+        state.resync_polls = 1;
+        state.refresh_refused = true;
+    }
+    let transport = ProtocolTransport::new(executor, config(), versions());
+    let mut client = client(transport);
+    client
+        .begin_authorized_observation(client.observation_request(ObservationScopeRequest {
+            task_ids: Vec::new(),
+            filters: vec![ScopeFilter {
+                name: "view".to_owned(),
+                value: "all".to_owned(),
+            }],
+        }))
+        .expect("observation begins");
+
+    drive_until(&mut client, |client| {
+        task_title(client).as_deref() == Some("REST task 2")
+    });
+    assert!(matches!(client.connection(), ConnectionState::Live));
+    let state = state.lock().expect("stub state");
+    assert_eq!(
+        state.calls_to(HttpMethod::Post, OBSERVATION_PATH),
+        2,
+        "the refusal recovers through a fresh grant and snapshot"
+    );
+    let refresh_calls = state
+        .calls
+        .iter()
+        .filter(|call| call.method == HttpMethod::Get && call.path.starts_with(SNAPSHOT_PATH))
+        .count();
+    assert_eq!(refresh_calls, 1, "exactly one refresh was attempted");
+}
+
+/// (f3) Resume coordinates from the client reach the Runtime request body.
+#[test]
+fn resume_coordinates_reach_the_observation_body() {
+    let (mut transport, state) = transport();
+    transport.send(hello_frame()).expect("hello enqueues");
+    assert_eq!(
+        message_kind(&decoded(&next_frame(&mut transport))),
+        "HELLO_ACCEPTED"
+    );
+    let mut request = open_request("resume-wire");
+    request.observation.scope_id = Some(ScopeId::new("scope-7").expect("scope id"));
+    request.observation.last_seen_cursor = Some(Cursor::new("cursor-7").expect("cursor"));
+    request.observation.epoch = Some(EpochId::new(EPOCH).expect("epoch"));
+    transport.send(open_frame(request)).expect("open enqueues");
+    let body = wait_for_open_body(&state);
+    assert_eq!(body["scope_id"], "scope-7");
+    assert_eq!(body["last_seen_cursor"], "cursor-7");
+    assert_eq!(body["epoch"], EPOCH);
+}
+
+/// (f4) A fresh open keeps the pre-resume body shape byte-for-byte.
+#[test]
+fn fresh_open_body_omits_resume_coordinates() {
+    let (mut transport, state) = transport();
+    transport.send(hello_frame()).expect("hello enqueues");
+    assert_eq!(
+        message_kind(&decoded(&next_frame(&mut transport))),
+        "HELLO_ACCEPTED"
+    );
+    transport
+        .send(open_frame(open_request("fresh-wire")))
+        .expect("open enqueues");
+    let body = wait_for_open_body(&state);
+    assert!(body.get("scope_id").is_none());
+    assert!(body.get("last_seen_cursor").is_none());
+    assert!(body.get("epoch").is_none());
+}
+
+/// (f4b) A partial resume triplet is normalised to a fresh open, never a 422.
+#[test]
+fn partial_resume_triplet_is_normalised_to_a_fresh_open() {
+    let scope_id = ScopeId::new("scope-7").expect("scope id");
+    let cursor = Cursor::new("cursor-7").expect("cursor");
+    let epoch = EpochId::new(EPOCH).expect("epoch");
+    let partial = [
+        (Some(scope_id.clone()), None, None),
+        (None, Some(cursor.clone()), None),
+        (None, None, Some(epoch.clone())),
+        (Some(scope_id.clone()), Some(cursor), None),
+        (Some(scope_id), None, Some(epoch)),
+    ];
+    for (index, (scope, cursor, epoch)) in partial.into_iter().enumerate() {
+        let (mut transport, state) = transport();
+        transport.send(hello_frame()).expect("hello enqueues");
+        assert_eq!(
+            message_kind(&decoded(&next_frame(&mut transport))),
+            "HELLO_ACCEPTED"
+        );
+        let mut request = open_request(&format!("partial-{index}"));
+        request.observation.scope_id = scope;
+        request.observation.last_seen_cursor = cursor;
+        request.observation.epoch = epoch;
+        transport.send(open_frame(request)).expect("open enqueues");
+        let body = wait_for_open_body(&state);
+        assert!(body.get("scope_id").is_none(), "case {index}: {body}");
+        assert!(
+            body.get("last_seen_cursor").is_none(),
+            "case {index}: {body}"
+        );
+        assert!(body.get("epoch").is_none(), "case {index}: {body}");
+    }
+}
+
+fn wait_for_open_body(state: &Arc<Mutex<ServerState>>) -> serde_json::Value {
+    let deadline = Instant::now() + Duration::from_secs(5);
+    while Instant::now() < deadline {
+        let body = state
+            .lock()
+            .expect("stub state")
+            .calls
+            .iter()
+            .rev()
+            .find_map(|call| {
+                (call.method == HttpMethod::Post && call.path == OBSERVATION_PATH)
+                    .then(|| serde_json::from_slice::<serde_json::Value>(&call.body).ok())
+                    .flatten()
+            });
+        if let Some(body) = body {
+            return body;
+        }
+        std::thread::sleep(Duration::from_millis(1));
+    }
+    panic!("timed out waiting for the observation request body");
+}
+
+/// (f5) A replay acceptance publishes a stamped `REPLAY_ACCEPTED` frame.
+#[test]
+fn replay_acceptance_is_published_as_a_stamped_frame() {
+    let (mut transport, state) = transport();
+    state.lock().expect("stub state").replay_open = true;
+    transport.send(hello_frame()).expect("hello enqueues");
+    assert_eq!(
+        message_kind(&decoded(&next_frame(&mut transport))),
+        "HELLO_ACCEPTED"
+    );
+    let mut request = open_request("resume-replay");
+    request.observation.scope_id = Some(ScopeId::new("scope-7").expect("scope id"));
+    request.observation.last_seen_cursor = Some(Cursor::new("cursor-7").expect("cursor"));
+    request.observation.epoch = Some(EpochId::new(EPOCH).expect("epoch"));
+    transport.send(open_frame(request)).expect("open enqueues");
+
+    let grant = decoded(&next_frame(&mut transport));
+    let grant_stamp = match grant {
+        ServerWire::Frame(frame) => match frame.message {
+            ServerMessage::ReadGrant(grant) => {
+                assert!(frame.read_stamp.is_none());
+                grant.stamp
+            }
+            other => panic!("expected READ_GRANT, got {:?}", other.kind()),
+        },
+        other => panic!("expected a server frame, got {other:?}"),
+    };
+    let replay = decoded(&next_frame(&mut transport));
+    match replay {
+        ServerWire::Frame(frame) => {
+            assert_eq!(frame.read_stamp.as_ref(), Some(&grant_stamp));
+            match frame.message {
+                ServerMessage::ReplayAccepted(payload) => {
+                    assert_eq!(payload.cursor.as_str(), "cursor-7")
+                }
+                other => panic!("expected REPLAY_ACCEPTED, got {:?}", other.kind()),
+            }
+        }
+        other => panic!("expected a server frame, got {other:?}"),
+    }
+}
+
+/// (f6) A Runtime resync refusal maps to the protocol frame and its reason.
+#[test]
+fn resync_refusal_maps_to_a_frame_with_its_closed_reason() {
+    let (mut transport, state) = transport();
+    {
+        let mut state = state.lock().expect("stub state");
+        state.resync_open = true;
+        state.resync_reason = Some("EPOCH_CHANGED".to_owned());
+    }
+    transport.send(hello_frame()).expect("hello enqueues");
+    assert_eq!(
+        message_kind(&decoded(&next_frame(&mut transport))),
+        "HELLO_ACCEPTED"
+    );
+    transport
+        .send(open_frame(open_request("resync-open")))
+        .expect("open enqueues");
+    match decoded(&next_frame(&mut transport)) {
+        ServerWire::Frame(frame) => {
+            assert!(frame.read_stamp.is_none());
+            match frame.message {
+                ServerMessage::ResyncRequired(payload) => {
+                    assert_eq!(payload.reason, ResyncReason::EpochChanged);
+                    assert_eq!(
+                        payload.message.as_deref(),
+                        Some("history cannot be replayed")
+                    );
+                }
+                other => panic!("expected RESYNC_REQUIRED, got {:?}", other.kind()),
+            }
+        }
+        other => panic!("expected a server frame, got {other:?}"),
+    }
+}
+
+/// (f7) An absent or unrecognized reason falls back to a closed meaning.
+#[test]
+fn resync_without_a_recognized_reason_falls_back_closed() {
+    for reason in [None, Some("BRAND_NEW_REASON".to_owned())] {
+        let (mut transport, state) = transport();
+        {
+            let mut state = state.lock().expect("stub state");
+            state.resync_open = true;
+            state.resync_reason = reason;
+        }
+        transport.send(hello_frame()).expect("hello enqueues");
+        assert_eq!(
+            message_kind(&decoded(&next_frame(&mut transport))),
+            "HELLO_ACCEPTED"
+        );
+        transport
+            .send(open_frame(open_request("resync-fallback")))
+            .expect("open enqueues");
+        match decoded(&next_frame(&mut transport)) {
+            ServerWire::Frame(frame) => match frame.message {
+                ServerMessage::ResyncRequired(payload) => {
+                    assert_eq!(payload.reason, ResyncReason::HistoryUnavailable)
+                }
+                other => panic!("expected RESYNC_REQUIRED, got {:?}", other.kind()),
+            },
+            other => panic!("expected a server frame, got {other:?}"),
+        }
+    }
+}
+
+/// (f8) The retained-command list is bounded at the frozen 448 identities.
+#[test]
+fn retained_commands_above_the_contract_bound_are_refused() {
+    let (mut transport, state) = transport();
+    let mut oversized = open_request("retained-449");
+    oversized.retained_commands = (0..449)
+        .map(|index| CommandId::new(format!("command-{index}")).expect("command id"))
+        .collect();
+    let error = transport
+        .send(open_frame(oversized))
+        .expect_err("449 retained identities are over the contract bound");
+    match error {
+        TransportError::Io(message) => assert!(message.contains("448"), "{message}"),
+        other => panic!("unexpected error: {other:?}"),
+    }
+    assert!(
+        state.lock().expect("stub state").calls.is_empty(),
+        "nothing reached the executor"
+    );
+
+    let mut repeated = open_request("retained-duplicate");
+    repeated.retained_commands = vec![
+        CommandId::new("command-1").expect("command id"),
+        CommandId::new("command-1").expect("command id"),
+    ];
+    let error = transport
+        .send(open_frame(repeated))
+        .expect_err("a duplicate retained identity is refused");
+    match error {
+        TransportError::Io(message) => assert!(message.contains("repeats"), "{message}"),
+        other => panic!("unexpected error: {other:?}"),
+    }
+
+    let mut allowed = open_request("retained-448");
+    allowed.retained_commands = (0..448)
+        .map(|index| CommandId::new(format!("command-{index}")).expect("command id"))
+        .collect();
+    transport
+        .send(open_frame(allowed))
+        .expect("448 distinct identities are admitted");
+}
+
+/// (f9) A Runtime 422 is classified by status and code without its body text.
+#[test]
+fn runtime_422_is_classified_without_its_body_text() {
+    let hello = json_http(server_document(&ServerState::new()));
+    let rejected = http(
+        422,
+        br#"{"code":"UNSUPPORTED_PROTOCOL","detail":"SECRET-MARKER"}"#.to_vec(),
+    );
+    let mut transport = scripted(vec![hello, rejected]);
+    transport.send(hello_frame()).expect("hello enqueues");
+    assert_eq!(
+        message_kind(&decoded(&next_frame(&mut transport))),
+        "HELLO_ACCEPTED"
+    );
+    transport
+        .send(open_frame(open_request("rejected-open")))
+        .expect("open enqueues");
+    match next_error(&mut transport) {
+        TransportError::Io(message) => {
+            assert!(message.contains("422"), "{message}");
+            assert!(message.contains("UNSUPPORTED_PROTOCOL"), "{message}");
+            assert!(!message.contains("SECRET-MARKER"), "{message}");
+        }
+        other => panic!("unexpected error: {other:?}"),
+    }
 }
 
 /// (g) The bounded inbound queue reports an overflow instead of growing.

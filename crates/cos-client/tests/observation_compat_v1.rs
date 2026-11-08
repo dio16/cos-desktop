@@ -28,7 +28,8 @@ use cos_client::{
 };
 use desktop_protocol::{
     DeltaTransaction, HelloAccepted, Limits, ProjectionMutation, ProtocolVersions, ReadGrant,
-    SnapshotBegin, SnapshotChunk, SnapshotCounts, SnapshotEnd, Version, projection_bundle_digest,
+    ResyncReason, SnapshotBegin, SnapshotChunk, SnapshotCounts, SnapshotEnd, Version,
+    projection_bundle_digest,
 };
 use serde::Deserialize;
 
@@ -759,8 +760,9 @@ fn recorded_delta_changed_applies_the_recorded_transaction() {
     );
 }
 
-/// A recorded `409 RESYNC_REQUIRED` surfaces a transport failure; the client
-/// re-observes on its own, without a fabricated cursor or mutation.
+/// A recorded `409 RESYNC_REQUIRED` surfaces as the protocol `RESYNC_REQUIRED`
+/// frame with a closed reason; the client re-observes on its own, without a
+/// fabricated cursor or mutation and without a transport I/O failure.
 #[test]
 fn recorded_delta_resync_reobserves_without_fabrication() {
     let grant = grant_document();
@@ -790,16 +792,34 @@ fn recorded_delta_resync_reobserves_without_fabrication() {
     let mut now = 0;
     let mut events = wait_for(&mut client, &mut now, live);
 
-    // The 409 reaches the client as a transport failure, not as a frame.
-    let error_events = wait_for(&mut client, &mut now, |client| {
-        client.last_error().is_some_and(|error| {
-            matches!(error, ClientError::Transport(message) if message.contains("RESYNC_REQUIRED"))
-        })
-    });
-    events.extend(error_events);
+    // The 409 reaches the client as the protocol RESYNC_REQUIRED frame with a
+    // closed reason (the legacy body carries only the code, so the adapter's
+    // closed fallback is HISTORY_UNAVAILABLE); it is not a transport failure.
+    let mut saw_resync = false;
+    let mut resync_events = Vec::new();
+    let deadline = Instant::now() + Duration::from_secs(30);
+    while Instant::now() < deadline && !saw_resync {
+        now += 10;
+        let chunk = client.pump(now);
+        saw_resync = chunk.iter().any(|event| {
+            matches!(
+                event,
+                ClientEvent::ResyncRequested {
+                    reason: ResyncReason::HistoryUnavailable
+                }
+            )
+        });
+        resync_events.extend(chunk);
+        std::thread::sleep(Duration::from_millis(1));
+    }
+    events.extend(resync_events);
     assert!(
-        transport_error_containing(&events, "RESYNC_REQUIRED"),
-        "the recorded 409 is surfaced as a transport failure"
+        saw_resync,
+        "the recorded 409 is published as the RESYNC_REQUIRED frame"
+    );
+    assert!(
+        client.last_error().is_none(),
+        "the resync refusal is a protocol frame, not a transport I/O failure"
     );
     // No cursor was fabricated and nothing was applied from the 409 body.
     assert_eq!(
