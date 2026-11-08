@@ -1,0 +1,28 @@
+TASK_SEARCH found=True value_before=''
+TASK_SEARCH click screen=(1200,501) client=(120,193)
+TASK_SEARCH after_click_x='x'
+PALETTE_OPEN delta=9
+NEW id='' name='判断の根拠を表示 — 確認 — 利用不可: 表示中の候補の判断の根拠は利用できません。' type=ControlType.ListItem patterns=[] value='<no-value-pattern>'
+NEW id='' name='候補を比較 — 移動' type=ControlType.ListItem patterns=[Invoke] value='<no-value-pattern>'
+NEW id='' name='コマンド検索' type=ControlType.Edit patterns=[Value] value='コマンドを入力…'
+NEW id='' name='評価を表示 — 確認 — 利用不可: 表示中の候補の評価は利用できません。' type=ControlType.ListItem patterns=[] value='<no-value-pattern>'
+NEW id='' name='処理の流れを表示 — 移動' type=ControlType.ListItem patterns=[Invoke] value='<no-value-pattern>'
+NEW id='' name='成果物を表示 — 移動' type=ControlType.ListItem patterns=[Invoke] value='<no-value-pattern>'
+NEW id='' name='選択中の候補を開く — 候補' type=ControlType.ListItem patterns=[Invoke] value='<no-value-pattern>'
+NEW id='' name='診断情報の表示を切り替え — 診断' type=ControlType.ListItem patterns=[Invoke] value='<no-value-pattern>'
+NEW id='' name='タスクを停止 — タスク' type=ControlType.ListItem patterns=[Invoke] value='<no-value-pattern>'
+NEW id='' name='コマンド' type=ControlType.List patterns=[] value='<no-value-pattern>'
+NEW id='' name='選択中のタスクを開く — タスク — 利用不可: タスク一覧で操作対象が選ばれていません。' type=ControlType.ListItem patterns=[] value='<no-value-pattern>'
+NEW id='' name='停止結果を確認 — タスク — 利用不可: 受付状況を確認できる停止要求はありません。' type=ControlType.ListItem patterns=[] value='<no-value-pattern>'
+NEW id='' name='次の画面へ — 移動' type=ControlType.ListItem patterns=[Invoke] value='<no-value-pattern>'
+NEW id='' name='コマンドパレット' type=ControlType.Window patterns=[] value='<no-value-pattern>'
+PALETTE_INPUT found=True value_initial='コマンドを入力…'
+PALETTE_INPUT after_abc='abc'
+RAIL during_palette='x'
+AFTER_ESCAPE palette_delta=-5 palette_keys_left=0 rail_present=True
+AFTER_ESCAPE rail_value='xz'
+REOPEN palette_delta=14
+AFTER_ENTER palette_delta=0
+AFTER_ENTER descendant_count=51
+stderr:
+DONE

@@ -1,0 +1,11 @@
+mutation: pointer_activation guard replaced with 'if !open' (composition guard removed)
+    slot: usize,
+) -> Option<(Command, Option<String>)> {
+    if !open { // MUTATION: composition guard removed
+        return None;
+    }
+test palette::tests::a_marked_composition_blocks_the_pointer_activation_route ... FAILED
+assertion `left == right` failed
+  left: Some((ShowArtifact, None))
+ right: None
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 229 filtered out; finished in 0.00s

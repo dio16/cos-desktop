@@ -1,0 +1,87 @@
+{
+  "measurement": "MP-AX1 IME pointer-path execution test and native Command Palette focus restoration observation",
+  "date": "2026-11-08",
+  "base_commit": "812894a28e435c3f3fa3f9b6a90e467d1b3eafbf",
+  "candidate": "the commit that introduces palette.rs and this evidence directory at the recorded source hash",
+  "source_sha256": {
+    "crates/desktop-gpui/src/palette.rs": "sha256:49bc5a5b9859dcb3e4cde859cdfdda1fe81e8739ef78af4b973c7f63a88101f4"
+  },
+  "build": {
+    "profile": "release",
+    "command": "cargo build --locked --release -p cos-desktop --bin cos-desktop",
+    "exe_sha256": "sha256:74bf34480c56c26894dc339c685916b5e4a238313f9200804f5c615856c00fec",
+    "environment_variables": "TEMP=TMP=C:/dev/cos-desktop/target/flow2-tmp"
+  },
+  "execution_path_test": {
+    "change": "palette_invoke_slot (the pointer route) now delegates to pointer_activation(...), which applies the composition guard and re-derives availability for one inventory slot. The test module calls that exact function, not only the palette_dispatch_allowed predicate.",
+    "new_tests": [
+      "palette::tests::a_marked_composition_blocks_the_pointer_activation_route",
+      "palette::tests::the_pointer_activation_route_applies_the_same_boundary"
+    ],
+    "command": "cargo test --locked -p desktop-gpui --lib -- palette",
+    "result": "14 passed; 0 failed; 0 ignored",
+    "assertion_sensitivity": {
+      "mutation": "the pointer_activation composition guard was replaced with `if !open` (guard removed)",
+      "command": "cargo test --locked -p desktop-gpui --lib -- palette::tests::a_marked_composition_blocks_the_pointer_activation_route",
+      "result": "FAILED: assertion `left == right` failed; left: Some((ShowArtifact, None)); right: None; test result: FAILED. 0 passed; 1 failed",
+      "restored": "PASS (test result: ok. 1 passed)",
+      "file": "mutation-result.txt"
+    }
+  },
+  "scoped_gates": {
+    "cargo fmt -p desktop-gpui -- --check": "clean",
+    "cargo test --locked -p desktop-gpui --lib": "225 passed; 0 failed; 5 ignored",
+    "cargo clippy --locked -p desktop-gpui --all-targets -- -D warnings": "exit 0, no warnings"
+  },
+  "native_observation": {
+    "command": "powershell -NoProfile -ExecutionPolicy Bypass -File probe.ps1 (driver stored beside this file; it waits on the shared C:/tmp/cos-desktop-native.lock directory and removes it afterwards)",
+    "driver": "synthetic window messages: WM_MOUSEMOVE/WM_LBUTTONDOWN/WM_LBUTTONUP for the click, keybd_event(VK_CONTROL) + WM_KEYDOWN/WM_KEYUP for Ctrl+K, WM_CHAR for text, WM_KEYDOWN/WM_KEYUP for Escape and Enter",
+    "why_synthetic": "the window cannot be granted foreground focus in this session (SetForegroundWindow fails; recorded in docs/development/evidence-published/REPRODUCING.md), so a real keyboard session is unavailable. The messages enter the application's own window procedure and input handler; no product behaviour was changed for the observation.",
+    "environment": {
+      "windows": "10.0.26300",
+      "dpi": 96,
+      "profile_isolation": "fresh LOCALAPPDATA per run under C:/dev/cos-desktop/target/ax1-native-<guid>, deleted after the run. Deviation from the C:/tmp guideline is measured: an isolated LOCALAPPDATA under C:/tmp and under %TEMP% makes the instance guard refuse startup with open-lock-file on this sandboxed host, while the workspace target path starts normally."
+    },
+    "reads": [
+      "TASK_SEARCH found=True value_before=''",
+      "TASK_SEARCH click screen=(1200,501) client=(120,193)",
+      "TASK_SEARCH after_click_x='x' (the click focused the invoking rail search; the typed character landed there)",
+      "PALETTE_OPEN delta=9; palette dialog exposed as ControlType.Window named 'コマンドパレット'; query field ControlType.Edit named 'コマンド検索' with ValuePattern value 'コマンドを入力…'; 11 ListItems present (available rows expose InvokePattern; unavailable rows do not)",
+      "PALETTE_INPUT after_abc='abc' (text entry landed in the palette while the invoking control kept 'x')",
+      "RAIL during_palette='x'",
+      "AFTER_ESCAPE palette_delta=-5 palette_keys_left=0 rail_present=True (every element introduced by the palette is gone)",
+      "AFTER_ESCAPE rail_value='xz' (after Escape, typing 'z' changed the invoking rail search value from 'x' to 'xz' and reached no other control)",
+      "REOPEN palette_delta=14; AFTER_ENTER palette_delta=0 descendant_count=51 (Enter on the active row closed the palette through the keyboard activation path)",
+      "stderr: empty"
+    ],
+    "uia_limits": [
+      "GPUI exposes no UIA focus property (no HasKeyboardFocus/FocusedElement provider exists in the pinned gpui_windows source), so focus restoration is observed behaviourally: after Escape, a typed character changes the invoking rail search value and reaches no other control.",
+      "Palette elements carry no AutomationId; they were identified by UIA Name/ControlType and by diffing the element set across the open/close boundary.",
+      "task-search is ControlType.Edit and supports ValuePattern but not InvokePattern; the accessibility Click listener was therefore exercised with a synthetic mouse click at its UIA bounding rectangle (DPI 96, 1:1).",
+      "No screen-reader announcement, preedit rendering, caret/selection during composition, TSF internals, real keyboard repeat or AT quality is claimed."
+    ],
+    "result": "The palette opened through the Ctrl+K keyboard path, accepted query text, closed on Escape with the invoking control focused again (behavioural proof), and closed on Enter through the keyboard activation path."
+  },
+  "files": {
+    "probe.ps1": {
+      "sha256": "sha256:9054e70944b3eb87956b093ed2606bfd1c7cd7d18c66a3463992a999da598aaa",
+      "bytes": 8833
+    },
+    "native-focus-probe.txt": {
+      "sha256": "sha256:ec55a424af08763c6e6602c5673f1a12b74c8063f7f0d385bbbf8f5e6cde1373",
+      "bytes": 2433
+    },
+    "mutation-result.txt": {
+      "sha256": "sha256:3aa182be5cad56d44836f737b5d80d7883c8c1c50c6be1a17553095849392847",
+      "bytes": 497
+    }
+  },
+  "limits": [
+    "One run on one machine (Windows 11 10.0.26300, 96 DPI).",
+    "Synthetic window messages, not a real keyboard or mouse session; the window could not be foregrounded.",
+    "No UIA focus property exists for GPUI elements; focus restoration is behavioural, not an accessibility-tree property.",
+    "The composition-guard test is in-process (unit execution path), not a native IME session; no IME preedit/candidate-window claim is made.",
+    "Fixture mode (task-184) only; no Runtime connection or real authorization is involved.",
+    "No AT quality, screen-reader acceptance, High Contrast or DPI claim."
+  ]
+}

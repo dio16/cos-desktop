@@ -380,20 +380,12 @@ impl Shell {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        if !palette_dispatch_allowed(self.palette_open, &self.palette_marked_range) {
-            return;
-        }
         let authorized = self.authorized_text().is_some();
-        let selection = {
-            let facts = self.palette_facts(authorized, self.cache.text());
-            let entries = entries(&facts);
-            let Some(entry) = entries.get(slot) else {
-                return;
-            };
-            (
-                entry.descriptor.command,
-                entry.unavailable.map(str::to_owned),
-            )
+        let facts = self.palette_facts(authorized, self.cache.text());
+        let Some(selection) =
+            pointer_activation(self.palette_open, &self.palette_marked_range, &facts, slot)
+        else {
+            return;
         };
         self.palette_close(window, cx);
         self.dispatch_palette(selection, window, cx);
@@ -766,9 +758,34 @@ fn palette_dispatch_allowed(open: bool, marked: &Option<std::ops::Range<usize>>)
     open && marked.is_none()
 }
 
+/// Resolve one pointer activation for an inventory slot.
+///
+/// This is the pointer route itself: it applies the composition guard and re-derives
+/// availability at the moment of dispatch, exactly like the keyboard route in
+/// [`palette_dispatch_allowed`] and [`palette_activate`]. `None` means no command may run —
+/// the palette is closed, a composition is marked, or the slot is not in the inventory.
+fn pointer_activation(
+    open: bool,
+    marked: &Option<std::ops::Range<usize>>,
+    facts: &Facts,
+    slot: usize,
+) -> Option<(Command, Option<String>)> {
+    if !palette_dispatch_allowed(open, marked) {
+        return None;
+    }
+    let entries = entries(facts);
+    let entry = entries.get(slot)?;
+    Some((
+        entry.descriptor.command,
+        entry.unavailable.map(str::to_owned),
+    ))
+}
+
 #[cfg(test)]
 mod tests {
-    use super::{ActionFacts, Facts, entries, palette_dispatch_allowed, require};
+    use super::{
+        ActionFacts, Facts, entries, palette_dispatch_allowed, pointer_activation, require,
+    };
     use std::sync::Arc;
     use ui_model::palette::{Command, Entry};
 
@@ -896,5 +913,43 @@ mod tests {
         assert!(!palette_dispatch_allowed(true, &Some(0..0)));
         assert!(!palette_dispatch_allowed(false, &None));
         assert!(!palette_dispatch_allowed(false, &Some(3..9)));
+    }
+
+    /// The pointer route itself (not only the shared predicate) refuses while a composition
+    /// is marked, and the same slot dispatches once the composition is committed.
+    ///
+    /// Mutation sensitivity: removing the guard from `pointer_activation` makes the blocked
+    /// cases return `Some`, so this test fails. The committed case proves the slot and facts
+    /// are otherwise dispatchable, so a refusal is attributable to the composition guard.
+    #[test]
+    fn a_marked_composition_blocks_the_pointer_activation_route() {
+        let facts = facts();
+        assert!(
+            !super::entries(&facts).is_empty(),
+            "the slot exists, so a refusal is attributable to the composition guard"
+        );
+        assert_eq!(pointer_activation(true, &Some(3..9), &facts, 0), None);
+        assert_eq!(pointer_activation(true, &Some(0..0), &facts, 0), None);
+        let committed = pointer_activation(true, &None, &facts, 0)
+            .expect("the same slot dispatches after the composition commits");
+        assert_eq!(committed.1, None, "an available command carries no reason");
+    }
+
+    /// The pointer route keeps the same boundary as the keyboard route: closed palette,
+    /// out-of-range slot and unavailable state all refuse or report honestly.
+    #[test]
+    fn the_pointer_activation_route_applies_the_same_boundary() {
+        let facts = facts();
+        assert_eq!(pointer_activation(false, &None, &facts, 0), None);
+        assert_eq!(
+            pointer_activation(true, &None, &facts, ui_model::palette::INVENTORY.len()),
+            None
+        );
+        let mut unauthorized = facts.clone();
+        unauthorized.authorized = false;
+        let slot = ui_model::palette::INVENTORY.len() - 1;
+        let selection = pointer_activation(true, &None, &unauthorized, slot)
+            .expect("every inventory slot stays listed");
+        assert_eq!(selection.1.as_deref(), Some(super::STALE));
     }
 }
