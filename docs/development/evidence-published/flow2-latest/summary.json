@@ -1,120 +1,126 @@
 {
-  "measurement": "MP-FLOW2 Stage C incremental match-set build: same-run A/B",
+  "measurement": "MP-FLOW2 Stage C incremental match-set build: same-run A/B (post-review repair)",
   "build": "release",
   "warmup": 3,
   "iterations": 21,
   "aggregation": "median = odd: middle, even: mean of the two middle values; p95 = nearest-rank ceil(n*0.95)-1; max = largest. All values in microseconds.",
+  "contract_change": {
+    "previous_candidate": "d6f398fd16b088ea53c5fd386cc3b3c4e9889898 reuses the match set across a projection-counter-only change and skips the shell clear.",
+    "repair": "The projection revision (GraphDisplay.source_revision Counter) is row content identity per DC-MP-FLOW1 (a row is reused only when both the projection revision and the full GraphRef match). same_match_content now requires full revision equality, the shell clears the cache on every revision change again, and a projection-counter-only change rebuilds. Publication-version-only reuse is retained because the admitted rows are pinned by the exact projection revision and canonical GraphRef.",
+    "withdrawn_claim": "The d6f398f evidence's projection-counter reuse series is withdrawn; this directory records the repaired behavior."
+  },
   "series_us": {
-    "run1": {
-      "baseline_rebuild": { "median": 14010, "p95": 19823, "max": 23226 },
-      "incremental_revision": { "median": 3852, "p95": 6018, "max": 9369 },
-      "incremental_publication": { "median": 3505, "p95": 4294, "max": 6149 },
-      "exact_hit": { "median": 3711, "p95": 4782, "max": 4885 }
+    "run1_loaded": {
+      "baseline_rebuild": { "median": 19810, "p95": 45876, "max": 48636 },
+      "publication_only_reuse": { "median": 4530, "p95": 6828, "max": 7754 },
+      "projection_counter_rebuild": { "median": 17275, "p95": 28428, "max": 50005 },
+      "exact_hit": { "median": 4520, "p95": 8163, "max": 16189 }
     },
-    "run2_repeat": {
-      "baseline_rebuild": { "median": 13426, "p95": 16240, "max": 16252 },
-      "incremental_revision": { "median": 3424, "p95": 4788, "max": 5420 },
-      "incremental_publication": { "median": 3364, "p95": 4678, "max": 5042 },
-      "exact_hit": { "median": 3972, "p95": 5046, "max": 5366 }
+    "run2_clean": {
+      "baseline_rebuild": { "median": 14287, "p95": 17470, "max": 17880 },
+      "publication_only_reuse": { "median": 3332, "p95": 4293, "max": 4594 },
+      "projection_counter_rebuild": { "median": 13850, "p95": 16023, "max": 16552 },
+      "exact_hit": { "median": 3505, "p95": 4586, "max": 4616 }
     }
   },
-  "same_run_effect": {
-    "run1": { "baseline_median_us": 14010, "incremental_publication_median_us": 3505, "saved_median_us": 10505, "baseline_p95_us": 19823, "incremental_publication_p95_us": 4294, "saved_p95_us": 15529 },
-    "run2_repeat": { "baseline_median_us": 13426, "incremental_publication_median_us": 3364, "saved_median_us": 10062, "baseline_p95_us": 16240, "incremental_publication_p95_us": 4678, "saved_p95_us": 11562 }
+  "pre_repair_reference_us": {
+    "note": "The d6f398f evidence recorded the same publication-only reuse path earlier the same day: run1 publication reuse median 3505 / p95 4294, run2 median 3364 / p95 4678. The post-repair run2 values above are consistent with those; the repair changed only the projection-revision behavior.",
+    "publication_only_reuse_run1": { "median": 3505, "p95": 4294 },
+    "publication_only_reuse_run2": { "median": 3364, "p95": 4678 }
   },
   "budget": {
+    "measured_interval": "match-set obtain + diagram construction only (publication reuse or projection rebuild). Rows re-derivation and layers are excluded; the timer is not a frame timer.",
     "ui_p95_target_us": 8330,
-    "incremental_publication_p95_us": { "run1": 4294, "run2_repeat": 4678 },
-    "incremental_revision_p95_us": { "run1": 6018, "run2_repeat": 4788 },
-    "both_within_ui_p95": true,
-    "baseline_rebuild_p95_us": { "run1": 19823, "run2_repeat": 16240 },
-    "baseline_within_ui_p95": false,
-    "historical_reference_us": {
-      "note": "Section 19.143 recorded product miss_replace median 12,593 / p95 13,410 on an unloaded machine before this change; this session ran under concurrent build load, so only the same-run A/B is compared directly.",
-      "miss_replace_median": 12593,
-      "miss_replace_p95": 13410
-    }
+    "publication_only_reuse_match_plus_diagram_p95_us": { "run1_loaded": 6828, "run2_clean": 4293 },
+    "publication_only_reuse_within_target_for_measured_interval": true,
+    "projection_counter_rebuild_match_plus_diagram_p95_us": { "run1_loaded": 28428, "run2_clean": 16023 },
+    "projection_counter_rebuild_within_target": false,
+    "frame_wide_within_ui_p95": false,
+    "frame_wide_note": "No frame-wide compliance is claimed. The same session's ten_thousand_node_flow_phases_stay_within_the_frame_budget test reports frame_within_ui_p95=false (frame path median 15,064 / p95 21,400 us) and the revision-change series display_total p95 is 27,262 us (query-only) and 37,390 us (revision). For the publication-version-only path, layers stay cached (revision key unchanged) and rows run in the background, so the display composition is match reuse + diagram; that composition was not measured together with paint."
   },
   "checksum": {
     "diagram_checksum_value": "0x981149dcc0db425a",
-    "incremental_reuse_equals_full_rebuild": true,
+    "publication_reuse_equals_reference": true,
+    "projection_rebuild_equals_reference": true,
     "btree_equals_hash_equals_reference_same_run": true,
     "frame_phase_checksum_value": "0x1cfce993dc07a7c8",
     "frame_phase_checksum_equals_historical_19_121": true,
-    "note": "The incremental path and the full rebuild produce the same Matched value and the same drawn diagram; the measurement tests assert diagram equality and the deterministic checksum. The frame-phase test's checksum is unchanged from section 19.121's recorded 0x1cfce993dc07a7c8, so the displayed topology/order/depths are unchanged. The two checksum strings come from different test helpers and are not compared with each other."
+    "note": "The publication-reuse path, the projection-rebuild path and the full rebuild draw the same diagram and share the deterministic test checksum. The frame-phase checksum is unchanged from section 19.121's recorded 0x1cfce993dc07a7c8, so the displayed topology/order/depths are unchanged. The two checksum strings come from different test helpers and are not compared with each other."
   },
   "invalidations": [
     "session_generation change -> Rebuilt",
     "epoch change -> Rebuilt",
     "query change -> Rebuilt",
+    "projection-revision (Counter) change -> Rebuilt (row content identity per DC-MP-FLOW1; the previous Matched is not reused)",
     "canonical GraphRef identity (graph id / version / digest) change -> Rebuilt",
     "graph count change -> Rebuilt",
     "graph order change -> Rebuilt",
-    "projection-counter-only change -> Reused (entry re-keyed, build closure not called)",
     "publication-version-only change -> Reused (entry re-keyed, build closure not called)",
     "clear() (authorization loss / scope switch) -> Rebuilt",
     "exact key -> Hit, same Arc instance, build closure not called"
   ],
-  "shell_retention_hunk": {
+  "shell_behavior": {
     "file": "crates/desktop-gpui/src/lib.rs",
-    "behavior": "On a revision change the shell keeps the cached match sets only when flow::same_canonical_revisions says the canonical GraphRef sequence is identical (projection-counter-only change); otherwise it clears them. Authorization loss, scope switch and every canonical revision change still clear at their own sites.",
-    "test": "flow_match_cache_reuse_tests::a_match_set_survives_only_a_projection_counter_change"
+    "behavior": "The shell clears the match cache on every revision change again (projection counter or GraphRef); no lib.rs retention hunk remains. Publication-version-only changes do not change the revision key, so the cache entry and the layer cache are retained while MatchCache reuses the built set.",
+    "tests": "flow::tests::a_projection_counter_change_rebuilds_the_match_set and flow::tests::the_match_cache_invalidates_on_every_content_identity_component (projection_revision case)"
   },
   "test_results": {
-    "cargo test --locked -p desktop-gpui --lib": "222 passed; 0 failed; 5 ignored",
-    "cargo test --locked -p desktop-gpui --lib -- flow": "35 passed; 0 failed; 5 ignored (includes 6 new flow cache tests and the new lib.rs reuse-predicate test)",
+    "cargo test --locked -p desktop-gpui --lib": "223 passed; 0 failed; 5 ignored",
+    "cargo test --locked -p desktop-gpui --lib -- flow": "33 passed; 0 failed; 5 ignored",
     "cargo clippy --locked -p desktop-gpui --all-targets -- -D warnings": "exit 0, no warnings",
     "cargo fmt -p desktop-gpui -- --check": "clean"
   },
   "phase_split_us_same_session": {
     "ten_thousand_node_flow_phases_stay_within_the_frame_budget": {
-      "rows_query_background": { "median": 831, "p95": 1535 },
-      "layers_layout_display": { "median": 7270, "p95": 10275 },
-      "match_sets_display": { "median": 10326, "p95": 14746 },
-      "diagram_geometry_display": { "median": 3506, "p95": 4361 },
-      "connector_geometry_display": { "median": 19, "p95": 27 },
-      "frame_path_match_plus_diagram": { "median": 13928, "p95": 18161, "max": 19784 },
-      "full_recompute_baseline": { "median": 21945, "p95": 29478, "max": 33214 },
-      "cache_miss_first_frame_single_sample": 12612,
-      "cache_hit_steady": { "median": 3437, "p95": 4623, "max": 4795 }
+      "rows_query_background": { "median": 860, "p95": 1437 },
+      "layers_layout_display": { "median": 8213, "p95": 10783 },
+      "match_sets_display": { "median": 11515, "p95": 16024 },
+      "diagram_geometry_display": { "median": 3644, "p95": 4678 },
+      "connector_geometry_display": { "median": 23, "p95": 30 },
+      "frame_path_match_plus_diagram": { "median": 15064, "p95": 21400, "max": 23911 },
+      "full_recompute_baseline": { "median": 24324, "p95": 33650, "max": 36652 },
+      "cache_miss_first_frame_single_sample": 13746,
+      "cache_hit_steady": { "median": 3207, "p95": 3917, "max": 4033 }
     },
     "ten_thousand_revision_change_series": {
       "query_only": {
-        "rows_background": { "median": 693, "p95": 1096, "max": 1173 },
+        "rows_background": { "median": 853, "p95": 1169, "max": 1771 },
         "layers_display": { "median": 0, "p95": 0, "max": 0 },
-        "match_display": { "median": 13094, "p95": 15508, "max": 16349 },
-        "diagram_display": { "median": 3259, "p95": 3848, "max": 4156 },
-        "display_total": { "median": 16418, "p95": 19341, "max": 19393 }
+        "match_display": { "median": 14933, "p95": 22604, "max": 22710 },
+        "diagram_display": { "median": 3618, "p95": 4804, "max": 5659 },
+        "display_total": { "median": 17972, "p95": 27262, "max": 28263 }
       },
       "canonical_graphref_change": {
-        "rows_background": { "median": 706, "p95": 1501, "max": 1895 },
-        "layers_display": { "median": 6602, "p95": 9219, "max": 12656 },
-        "match_display": { "median": 13421, "p95": 16508, "max": 16705 },
-        "diagram_display": { "median": 3251, "p95": 5034, "max": 5469 },
-        "display_total": { "median": 23281, "p95": 31393, "max": 32197 }
+        "rows_background": { "median": 737, "p95": 1207, "max": 1794 },
+        "layers_display": { "median": 7238, "p95": 9287, "max": 9824 },
+        "match_display": { "median": 15261, "p95": 23103, "max": 26117 },
+        "diagram_display": { "median": 3731, "p95": 4510, "max": 4975 },
+        "display_total": { "median": 26099, "p95": 37390, "max": 39751 }
       },
-      "note": "display_total = layers + match + diagram, not frame latency. Query changes remain a real content change and still rebuild the match sets."
+      "note": "display_total = layers + match + diagram, not frame latency. Query and projection/graph revision changes remain real content changes and still rebuild the match sets."
     },
     "paint_gpu_present": "NOT_MEASURED"
   },
-  "decision": "ADOPT the incremental match-set build",
+  "decision": "ADOPT the publication-version-only match-set reuse; projection-revision changes rebuild",
   "reached": [
-    "A publication-version-only or projection-counter-only admission-key change reuses the already-built match set; the 13-17 ms rebuild is skipped on the display thread.",
-    "Same-run publication-only display interval p95 4.29 / 4.68 ms (median 3.51 / 3.36 ms) against the 8.33 ms UI-period target; the same-run rebuild baseline was p95 19.82 / 16.24 ms.",
+    "A publication-version-only admission-key change reuses the already-built match set; the rebuild is skipped on the display thread.",
+    "Same-run publication-only display interval (match+diagram) median 4.53 / 3.33 ms and p95 6.83 / 4.29 ms against the 8.33 ms UI-period target; the same-run rebuild baseline was median 19.81 / 14.29 ms and p95 45.88 / 17.47 ms.",
+    "A projection-counter-only change rebuilds (content identity per DC-MP-FLOW1); the old Matched is asserted not reused.",
     "The incremental output is checksum-equal to a full rebuild and to the independent BTreeSet reference, and the diagram is exactly equal.",
-    "The shell keeps the cache across a projection-counter-only revision change and still clears it on authorization loss, scope switch and every canonical revision change.",
+    "The shell clears the cache on every revision change again; authorization loss, scope switch, projection-revision and canonical-revision changes all rebuild.",
     "No painter/element/pin/dependency/unsafe change; labels, accessibility, list/search route and displayed topology are untouched (frame-phase checksum unchanged)."
   ],
   "not_measured_or_held": [
     "paint / submit / GPU / Present / input-to-photon: NOT_MEASURED.",
     "Real Runtime projection graphs: NOT_MEASURED (synthetic 100x100 graph only).",
-    "Query-change replace remains a full rebuild (a real content change): miss_replace p95 24,345 us in this loaded run, above 8.33 ms; not claimed as improved.",
-    "Projection-counter-only path: the match set is reused, but the shell's layer cache is still keyed by the full RevisionKey, so layers recompute (~6.6 ms median this run). Publication-version-only changes do not change the revision key, so their layers stay cached. Reusing layers across a projection-counter-only change would need a further lib.rs change; NOT IMPLEMENTED in this slice.",
-    "Rows re-derivation (~0.7-0.8 ms) runs on the background job and is outside the display interval.",
-    "Single shared machine under concurrent build load; absolute values are not a hardware-matrix or SLO claim."
+    "Frame-wide p95 is not within 8.33 ms for the rebuild/miss path (frame-path p95 21,400 us this session); no frame-wide compliance is claimed for any path.",
+    "Projection-counter-only and canonical-revision changes still rebuild the match sets and recompute layers; that is required by the content contract and remains above the 8.33 ms target on the measured interval.",
+    "Query-change replace remains a full rebuild (a real content change): miss_replace p95 29,856 us in the loaded run.",
+    "Rows re-derivation (~0.8 ms) runs on the background job and is outside the display interval.",
+    "Single shared machine under concurrent build load; the two runs show a wide spread, so absolute values are not a hardware-matrix or SLO claim."
   ],
   "known_limits": [
-    "The reuse predicate treats the canonical GraphRef sequence, the query and the session/epoch scope as the content identity. It relies on the contract invariant that a canonical GraphRef pins the authoritative node/edge content and labels (DC-MP-FLOW1 and rendering section 8.1 stage C keying); a re-projection under an unchanged GraphRef cannot legitimately change them.",
+    "The reuse predicate treats the exact projection revision counters and the canonical GraphRef sequence, plus the query and session/epoch scope, as the content identity (DC-MP-FLOW1: a row is reused only when both the projection revision and the full GraphRef match). Only the publication version may differ for a reuse.",
     "The cache remains single-entry, shell-owned and bounded; there is no global state.",
     "The measurements time CPU path generation only; they are not window frame times."
   ]

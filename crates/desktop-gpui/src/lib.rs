@@ -3228,22 +3228,12 @@ impl Render for Shell {
                 let revision = flow::revision_key(&graph);
                 let revision_changed = self.flow_revision_key.as_ref() != Some(&revision);
                 if revision_changed {
-                    // Stage C incremental build: a projection-counter-only change still
-                    // replaces the admission key (the rows are re-derived), but it cannot
-                    // change the canonical graph content, so the cached match sets stay valid.
-                    // A canonical `GraphRef`, count or order change clears them here;
-                    // authorization loss and scope switches clear them at their own sites.
-                    if !flow_revision_change_keeps_match_set(
-                        self.flow_revision_key.as_ref(),
-                        &revision,
-                    ) {
-                        self.flow_match_cache.clear();
-                    }
                     self.flow_revision_key = Some(revision.clone());
                     self.flow_node_active = None;
                     self.flow_edge_active = None;
                     self.flow_admitted = None;
                     self.flow_pending = None;
+                    self.flow_match_cache.clear();
                     if let Ok(mut job) = self.flow_jobs.lock() {
                         *job = None;
                     }
@@ -5749,21 +5739,6 @@ impl Render for Shell {
     }
 }
 
-/// Whether a Flow revision change can leave the cached match sets valid.
-///
-/// The sets name exact `(GraphRef, identity)` pairs of the admitted rows. Only a canonical
-/// revision change — a different `GraphRef` or a different graph count or order — can change
-/// which identities a canonical revision admits. A projection-counter-only change re-derives
-/// the rows for the new admission key but reuses the same canonical graph content, so the
-/// built sets are still exactly correct. Authorization loss and a scope switch clear the cache
-/// at their own sites, independent of this predicate.
-fn flow_revision_change_keeps_match_set(
-    cached: Option<&flow::RevisionKey>,
-    current: &flow::RevisionKey,
-) -> bool {
-    cached.is_some_and(|cached| flow::same_canonical_revisions(cached, current))
-}
-
 /// The admitted Flow rows together with the layer geometry built from exactly those rows.
 ///
 /// They are one value because the diagram zips them: a row set paired with another revision's
@@ -7158,59 +7133,6 @@ mod ",
                 "{call} no longer appears in any accessibility handler"
             );
         }
-    }
-}
-
-#[cfg(test)]
-mod flow_match_cache_reuse_tests {
-    use desktop_protocol::{ArtifactDigest, Counter, GraphId, GraphRef};
-
-    use super::flow_revision_change_keeps_match_set;
-
-    fn reference(version: u64, digest: &str) -> GraphRef {
-        GraphRef {
-            graph_id: GraphId::fixture("graph/reuse"),
-            version,
-            digest: ArtifactDigest::fixture(digest),
-        }
-    }
-
-    fn revision(refs: &[GraphRef], counter: u128) -> Vec<(GraphRef, Counter)> {
-        refs.iter()
-            .map(|graph_ref| (graph_ref.clone(), Counter::from_u128(counter)))
-            .collect()
-    }
-
-    /// A projection-counter-only change keeps the cached match sets; every canonical
-    /// `GraphRef`, graph-count or graph-order change clears them.
-    #[test]
-    fn a_match_set_survives_only_a_projection_counter_change() {
-        let first = reference(1, "digest/one");
-        let second = reference(2, "digest/two");
-        let base = revision(std::slice::from_ref(&first), 4);
-        assert!(!flow_revision_change_keeps_match_set(None, &base));
-        assert!(flow_revision_change_keeps_match_set(Some(&base), &base));
-        let counter_only = revision(std::slice::from_ref(&first), 9);
-        assert_ne!(base, counter_only);
-        assert!(flow_revision_change_keeps_match_set(
-            Some(&base),
-            &counter_only
-        ));
-
-        for changed in [
-            revision(std::slice::from_ref(&second), 4),
-            revision(&[first.clone(), second.clone()], 4),
-            revision(&[second.clone(), first.clone()], 4),
-        ] {
-            assert!(!flow_revision_change_keeps_match_set(Some(&base), &changed));
-        }
-        // A graph-order change only differs from a two-graph key of the same count.
-        let pair = revision(&[first.clone(), second.clone()], 4);
-        let reversed = revision(&[second, first], 4);
-        assert!(!flow_revision_change_keeps_match_set(
-            Some(&pair),
-            &reversed
-        ));
     }
 }
 
