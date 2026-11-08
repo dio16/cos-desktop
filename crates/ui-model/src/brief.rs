@@ -28,8 +28,9 @@ use app_core::{
     CatalogRecipe, CatalogRecipeRef,
 };
 use desktop_protocol::{
-    ArtifactDigest, ArtifactId, CommandId, CreateTaskCommand, GraphId, GraphRef, HarnessVersionId,
-    NamedParameter, ParameterValue, ProfileId, RecipeId, RecipeRef, TaskId,
+    ArtifactDigest, ArtifactId, CommandEnvelope, CommandId, CommandPayload, CommandTarget,
+    CreateTaskCommand, EpochId, GraphId, GraphRef, HarnessVersionId, NamedParameter,
+    ParameterValue, ProfileId, RecipeId, RecipeRef, TaskId,
 };
 
 /// Maximum Goal characters (after trim).
@@ -130,6 +131,11 @@ pub struct BriefCatalog {
     pub can_submit: bool,
     /// Stable capability reasons when submission is unavailable.
     pub reason_codes: Vec<String>,
+    /// Observation epoch the authenticated catalog was served under.
+    ///
+    /// The create command must carry this epoch; a catalog without a validated
+    /// epoch cannot produce a submittable brief.
+    pub server_epoch: Option<EpochId>,
     /// Submittable recipes.
     pub recipes: Vec<BriefRecipe>,
 }
@@ -141,6 +147,8 @@ pub enum BriefCatalogError {
     InvalidIdentity,
     /// A parameter type or value was not one of the frozen controls.
     InvalidParameter,
+    /// The catalog carried no usable observation epoch.
+    MissingEpoch,
 }
 
 /// Brief validation failure (field-addressed, bounded text).
@@ -176,6 +184,8 @@ pub enum BriefValidationError {
     DecimalNotCanonical { id: String },
     /// Submission is already in flight.
     Submitting,
+    /// The authenticated catalog carried no usable observation epoch.
+    EpochUnavailable,
 }
 
 /// Submit state machine (accepted is a receipt, never an observed task).
@@ -207,6 +217,26 @@ pub struct BriefSubmission {
     pub recipe_ref: RecipeRef,
     /// Create-task payload.
     pub payload: CreateTaskCommand,
+    /// Observation epoch the authenticated catalog was served under.
+    pub epoch: EpochId,
+}
+
+impl BriefSubmission {
+    /// Build the wire create command for this submission.
+    ///
+    /// The epoch is the catalog's server epoch (never a locally invented one);
+    /// a create carries no `expected_revision`, by contract.
+    pub fn into_envelope(self) -> CommandEnvelope {
+        CommandEnvelope {
+            command_id: self.command_id,
+            target: CommandTarget::Creation {
+                recipe_ref: self.recipe_ref,
+            },
+            expected_revision: None,
+            epoch: Some(self.epoch),
+            payload: CommandPayload::CreateTask(self.payload),
+        }
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -500,6 +530,11 @@ impl BriefForm {
         if matches!(self.state, BriefState::Submitting { .. }) {
             return Err(BriefValidationError::Submitting);
         }
+        let epoch = self
+            .catalog
+            .as_ref()
+            .and_then(|catalog| catalog.server_epoch.clone())
+            .ok_or(BriefValidationError::EpochUnavailable)?;
         let (recipe_ref, payload, fingerprint) = self.validate()?;
         let command_id = match (&self.state, &self.pending) {
             (BriefState::Unknown { command_id }, Some((pending_id, pending)))
@@ -517,6 +552,7 @@ impl BriefForm {
             command_id,
             recipe_ref,
             payload,
+            epoch,
         })
     }
 
@@ -747,8 +783,20 @@ fn split_fraction(text: &str) -> (&str, &str) {
 
 impl BriefCatalog {
     /// Map the authenticated app-core catalog document into the Brief view.
+    ///
+    /// The document's server epoch is validated here and carried with the view;
+    /// an empty or invalid epoch refuses the whole catalog (no submit without
+    /// the epoch the Runtime served the recipe under).
     pub fn from_authenticated(document: &CatalogDocument) -> Result<Self, BriefCatalogError> {
-        Self::from_catalog(&document.catalog)
+        let raw_epoch = document.server.epoch.trim();
+        if raw_epoch.is_empty() {
+            return Err(BriefCatalogError::MissingEpoch);
+        }
+        let epoch =
+            EpochId::new(raw_epoch.to_owned()).map_err(|_| BriefCatalogError::MissingEpoch)?;
+        let mut catalog = Self::from_catalog(&document.catalog)?;
+        catalog.server_epoch = Some(epoch);
+        Ok(catalog)
     }
 
     /// Map one authenticated catalog body.
@@ -760,6 +808,7 @@ impl BriefCatalog {
         Ok(Self {
             can_submit: catalog.can_submit,
             reason_codes: catalog.reason_codes.clone(),
+            server_epoch: None,
             recipes,
         })
     }
@@ -945,7 +994,7 @@ mod tests {
         }
     }
 
-    fn sample_recipe() -> BriefRecipe {
+    pub(super) fn sample_recipe() -> BriefRecipe {
         let mut seed = parameter(
             "seed",
             BriefParameterKind::Integer,
@@ -993,6 +1042,7 @@ mod tests {
         BriefCatalog {
             can_submit: true,
             reason_codes: Vec::new(),
+            server_epoch: Some(EpochId::new("epoch-1").expect("epoch")),
             recipes: vec![sample_recipe()],
         }
     }
@@ -1149,6 +1199,10 @@ mod tests {
         let first = form.request_submit().expect("submit");
         assert!(matches!(form.state(), BriefState::Submitting { .. }));
         assert_eq!(first.recipe_ref, sample_recipe_ref());
+        assert_eq!(first.epoch, EpochId::new("epoch-1").expect("catalog epoch"));
+        let envelope = first.clone().into_envelope();
+        assert_eq!(envelope.epoch, Some(first.epoch.clone()));
+        assert_eq!(envelope.expected_revision, None);
         assert!(!form.set_goal("blocked while submitting"));
         assert_eq!(
             form.request_submit().err(),
@@ -1242,6 +1296,71 @@ mod tests {
         assert_eq!(
             recipe.parameters[0].default_value,
             BriefParameterValue::Integer(7)
+        );
+    }
+}
+
+#[cfg(test)]
+mod epoch_tests {
+    use super::*;
+
+    fn catalog_with_epoch(epoch: &str) -> CatalogDocument {
+        CatalogDocument {
+            schema_version: 1,
+            server: app_core::CatalogServer {
+                server_identity: "cos-runtime-orchestrator".to_owned(),
+                epoch: epoch.to_owned(),
+            },
+            catalog: Catalog {
+                schema_version: 1,
+                can_submit: true,
+                reason_codes: Vec::new(),
+                recipes: Vec::new(),
+            },
+        }
+    }
+
+    #[test]
+    fn authenticated_catalog_carries_its_server_epoch() {
+        let document = catalog_with_epoch("epoch-9");
+        let view = BriefCatalog::from_authenticated(&document).expect("catalog view");
+        assert_eq!(
+            view.server_epoch,
+            Some(EpochId::new("epoch-9").expect("epoch"))
+        );
+    }
+
+    #[test]
+    fn an_empty_or_invalid_server_epoch_is_refused() {
+        for raw in ["", "   "] {
+            let document = catalog_with_epoch(raw);
+            assert_eq!(
+                BriefCatalog::from_authenticated(&document),
+                Err(BriefCatalogError::MissingEpoch)
+            );
+        }
+        // An opaque epoch beyond the id bound is not usable either.
+        let document = catalog_with_epoch(&"e".repeat(10_000));
+        assert_eq!(
+            BriefCatalog::from_authenticated(&document),
+            Err(BriefCatalogError::MissingEpoch)
+        );
+    }
+
+    #[test]
+    fn a_catalog_without_an_epoch_cannot_submit() {
+        let mut form = BriefForm::new();
+        form.set_catalog(BriefCatalog {
+            can_submit: true,
+            reason_codes: Vec::new(),
+            server_epoch: None,
+            recipes: vec![super::tests::sample_recipe()],
+        });
+        assert!(form.select_recipe(0));
+        assert!(form.set_goal("goal"));
+        assert_eq!(
+            form.request_submit().err(),
+            Some(BriefValidationError::EpochUnavailable)
         );
     }
 }

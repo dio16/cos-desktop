@@ -6,7 +6,6 @@
 //! task appears only when the observation projection delivers it.
 
 use super::*;
-use desktop_protocol::{CommandEnvelope, CommandPayload, CommandTarget};
 use ui_model::brief::BriefState;
 
 /// Catalog load state for the Brief surface.
@@ -112,6 +111,7 @@ impl Shell {
         self.brief_catalog_state = BriefCatalogState::Loading;
         self.brief_notice = None;
         self.brief_command = None;
+        self.brief_catalog_epoch = None;
         self.brief_input_selection = 0..0;
         self.brief_goal_focus.focus(window, cx);
         self.load_brief_catalog(cx);
@@ -140,6 +140,7 @@ impl Shell {
                     Ok(document) => {
                         match ui_model::brief::BriefCatalog::from_authenticated(&document) {
                             Ok(catalog) => {
+                                this.brief_catalog_epoch = catalog.server_epoch.clone();
                                 this.brief_form.set_catalog(catalog);
                                 this.brief_catalog_state = BriefCatalogState::Loaded;
                                 this.brief_notice = None;
@@ -173,6 +174,12 @@ impl Shell {
             cx.notify();
             return;
         };
+        if self.brief_catalog_epoch.is_none() {
+            self.brief_notice =
+                Some("カタログのエポックが不明です。再読み込みしてください".to_owned());
+            cx.notify();
+            return;
+        }
         let submission = match self.brief_form.request_submit() {
             Ok(submission) => submission,
             Err(error) => {
@@ -184,15 +191,7 @@ impl Shell {
         let submission_id = submission.command_id.clone();
         self.brief_command = Some(submission_id.clone());
         self.brief_notice = Some("送信中…".to_owned());
-        let envelope = CommandEnvelope {
-            command_id: submission.command_id,
-            target: CommandTarget::Creation {
-                recipe_ref: submission.recipe_ref,
-            },
-            expected_revision: None,
-            epoch: None,
-            payload: CommandPayload::CreateTask(submission.payload),
-        };
+        let envelope = submission.into_envelope();
         let request = handle.request_create_task(envelope);
         self.brief_submit_task = cx.spawn(async move |this, cx| {
             let result = request.await;
@@ -644,6 +643,7 @@ fn brief_validation_label(error: &ui_model::brief::BriefValidationError) -> &'st
         E::ParameterChoice { .. } => "選択肢にない値です",
         E::DecimalNotCanonical { .. } => "小数の形式が不正です",
         E::Submitting => "送信中です",
+        E::EpochUnavailable => "カタログのエポックが不明です。再読み込みしてください",
     }
 }
 
