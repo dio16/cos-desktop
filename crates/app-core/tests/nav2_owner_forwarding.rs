@@ -112,10 +112,7 @@ impl DesktopClient for RecordingClient {
     ) -> Result<(), ClientError> {
         self.inner.lookup_receipt_authorized(request)
     }
-    fn observation_request(
-        &self,
-        scope: ObservationScopeRequest,
-    ) -> OpenAuthorizedObservation {
+    fn observation_request(&self, scope: ObservationScopeRequest) -> OpenAuthorizedObservation {
         self.inner.observation_request(scope)
     }
     fn adopt_retained_registry(
@@ -189,8 +186,7 @@ struct RunningOwner {
 
 impl Drop for RunningOwner {
     fn drop(&mut self) {
-        self.stop
-            .store(true, std::sync::atomic::Ordering::Release);
+        self.stop.store(true, std::sync::atomic::Ordering::Release);
         if let Some(thread) = self.thread.take() {
             let _ = thread.join();
         }
@@ -291,10 +287,7 @@ fn create_task_forwards_the_envelope_and_returns_the_command_id() {
         recorded[0].epoch,
         Some(desktop_protocol::EpochId::new("epoch-1").expect("epoch"))
     );
-    assert!(matches!(
-        recorded[0].payload,
-        CommandPayload::CreateTask(_)
-    ));
+    assert!(matches!(recorded[0].payload, CommandPayload::CreateTask(_)));
 }
 
 #[test]
