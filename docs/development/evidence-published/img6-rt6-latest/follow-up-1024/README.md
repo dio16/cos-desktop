@@ -28,7 +28,7 @@ the DB copy is read only and only existing artifacts are fetched.
 |---|---|
 | `session.json` | Verdict, per-scenario results, source hashes, Runtime identity, attributed native facts. |
 | `record.json` | Full record: descriptor fields, byte counts, digests, admission/decode/presentation outcome, negative matrix, native UIA texts, screenshot diff, log excerpts, leak check. |
-| `descriptor.json` | Harness probe descriptor for the selected artifact. |
+| `descriptor.json` | Harness probe descriptor for the selected artifact. This is a sanitized probe: its `access_handle` is deliberately redacted/absent, while `executor-observations.json` records the handle's presence/length; the absent handle is a redaction, not a contract gap. |
 | `executor-observations.json` | The executor live test's own descriptor/bytes/admission/decode/presentation-request results (a second issuance for the same canonical bytes). |
 | `artifact-surface-before.png` | Artifact surface before the Dock candidate is viewed. |
 | `artifact-surface-media.png` | Artifact surface after the viewed candidate's media was fetched, admitted, decoded and painted: the picture is visible and the status sentence names the admitted low-resolution preview. |
