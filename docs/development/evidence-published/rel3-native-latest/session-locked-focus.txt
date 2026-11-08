@@ -1,0 +1,106 @@
+APP_PID=2976
+A_EXIT=0
+B_EXIT=0
+APP_EXIT=0
+LOCK_RELEASED
+-----A-----
+ENV|os=Microsoft Windows NT 10.0.26300.0|64bit=True
+DPI|96
+WINDOW|COS Desktop|Zed::Window|HWND|3083066|pid=2976
+FOCUSED|ControlType.Group||
+FOREGROUND_IS_APP|False
+TREE_INITIAL|COUNT|62
+TOGGLE_PRESENT|True
+PANEL_OPENED_BY|invoke
+TREE_PANEL|COUNT|70
+ID|about-desktop|present=True|type=ControlType.Text|name=Desktop 0.1.0|focusable=False|enabled=True|offscreen=False
+ID|diagnostics-toggle|present=True|type=ControlType.Button|name=診断情報を閉じる|focusable=True|enabled=True|offscreen=False
+ID|support-preview-button|present=True|type=ControlType.Button|name=サポート情報を表示|focusable=True|enabled=True|offscreen=False
+ID|support-preview-readonly|present=False
+ID|support-export-button|present=False
+ID|support-export-status|present=False
+ID|support-export-trace|present=False
+ID|support-preview-trace|present=True|type=ControlType.Text|name=action=none;build=none;install=none;render=absent|focusable=False|enabled=True|offscreen=False
+PREVIEW_ENTER_SENT|True
+REPORT|present=True|chars=573|utf8_bytes=573|lines=19|sha256=67f69633cd6fe90c4ff20dfc02cbbdfce6be5e2e4b16c5b56eeb394b837b90e3|focusable=False|type=ControlType.Text|within_12288=True|within_24_lines=True
+PREVIEW_TRACE|action=reached;build=finished;install=accepted;render=assumed
+TREE_PANEL_PREVIEW|COUNT|72
+ID|support-preview-button|present=True|type=ControlType.Button|name=サポート情報を表示|focusable=True|enabled=True|offscreen=False
+ID|support-preview-readonly|present=True|type=ControlType.Text|name=Desktop version: 0.1.0\nRuntime version: unknown (Runtime version is not exposed through observation)\nProtocol version: unknown (no protocol version pair was n...|focusable=False|enabled=True|offscreen=False
+ID|support-export-button|present=True|type=ControlType.Button|name=サポート情報をエクスポート|focusable=True|enabled=True|offscreen=False
+ID|support-export-status|present=False
+ID|support-export-trace|present=False
+ID|support-preview-trace|present=True|type=ControlType.Text|name=action=reached;build=finished;install=accepted;render=assumed|focusable=False|enabled=True|offscreen=False
+FOCUS_READY_FORWARD|True
+FOCUSED|ControlType.Button|diagnostics-toggle|診断情報を閉じる
+TAB_FWD|0|ControlType.Button|support-preview-button|サポート情報を表示
+TAB_FWD|1|ControlType.Button|support-export-button|サポート情報をエクスポート
+TAB_FWD|2|ControlType.Button||成果物  Ctrl+1
+TAB_FWD|3|ControlType.Button||候補を比較  Ctrl+2
+TAB_FWD|4|ControlType.Button||処理の流れ  Ctrl+3
+TAB_FWD|5|ControlType.Button||目的 — 利用可能: Task-184 — 新製品キービジュアル
+TAB_FWD|6|ControlType.Button||評価 — 利用不可: 候補は選択されていません。
+TAB_FWD|7|ControlType.Button||判断の根拠 — 利用不可: 候補は選択されていません。
+TAB_FWD|8|ControlType.Button||改善 — 利用不可: 候補は選択されていません。
+TAB_FWD|9|ControlType.Button||結果 — 利用不可: このタスクの正式な結果は、受信した情報に含まれていません。
+TAB_FWD|10|ControlType.Button|candidate:21:fixture:task/Task-18422:fixture:run/Task-184/11:119:fixture:candidate/a18:fixture:artifact/a|fixture:task/Task-184 — 第1回 — A キーボード操作対象
+TAB_FWD|11|ControlType.Button||タスクを停止
+TAB_FWD|12|ControlType.Button||停止要求の受付状況を確認（現在は操作できません）
+TAB_FWD|13|ControlType.Edit|task-search|タスクを検索
+TAB_FWD|14|ControlType.ListItem|task-row-fixture:task/Task-184|Task-184 — 新製品キービジュアル
+TAB_FWD|15|ControlType.Group||画像表示。0: 全体、1: 物理等倍、+/-: 拡大縮小、矢印: 移動、F11: 全画面、Escape: 復帰
+TAB_FWD|16|ControlType.Button|diagnostics-toggle|診断情報を閉じる
+TAB_FWD|17|ControlType.Button|support-preview-button|サポート情報を表示
+TAB_FWD|18|ControlType.Button|support-export-button|サポート情報をエクスポート
+TAB_FWD|19|ControlType.Button||成果物  Ctrl+1
+TAB_FWD|20|ControlType.Button||候補を比較  Ctrl+2
+TAB_FWD|21|ControlType.Button||処理の流れ  Ctrl+3
+TAB_FWD|22|ControlType.Button||目的 — 利用可能: Task-184 — 新製品キービジュアル
+TAB_FWD|23|ControlType.Button||評価 — 利用不可: 候補は選択されていません。
+TAB_FWD_HAS_PREVIEW|True
+TAB_FWD_HAS_EXPORT|True
+TAB_FWD_HAS_STATUS|False
+FOCUS_READY_BACKWARD|True
+FOCUSED|ControlType.Button|support-export-button|サポート情報をエクスポート
+TAB_BACK|0|ControlType.Button|support-preview-button|サポート情報を表示
+TAB_BACK|1|ControlType.Button|diagnostics-toggle|診断情報を閉じる
+TAB_BACK|2|ControlType.Group||画像表示。0: 全体、1: 物理等倍、+/-: 拡大縮小、矢印: 移動、F11: 全画面、Escape: 復帰
+TAB_BACK|3|ControlType.ListItem|task-row-fixture:task/Task-184|Task-184 — 新製品キービジュアル
+TAB_BACK|4|ControlType.Edit|task-search|タスクを検索
+TAB_BACK|5|ControlType.Button||停止要求の受付状況を確認（現在は操作できません）
+TAB_BACK|6|ControlType.Button||タスクを停止
+TAB_BACK|7|ControlType.Button|candidate:21:fixture:task/Task-18422:fixture:run/Task-184/11:119:fixture:candidate/a18:fixture:artifact/a|fixture:task/Task-184 — 第1回 — A キーボード操作対象
+TAB_BACK|8|ControlType.Button||結果 — 利用不可: このタスクの正式な結果は、受信した情報に含まれていません。
+TAB_BACK|9|ControlType.Button||改善 — 利用不可: 候補は選択されていません。
+TAB_BACK|10|ControlType.Button||判断の根拠 — 利用不可: 候補は選択されていません。
+TAB_BACK|11|ControlType.Button||評価 — 利用不可: 候補は選択されていません。
+TAB_BACK|12|ControlType.Button||目的 — 利用可能: Task-184 — 新製品キービジュアル
+TAB_BACK|13|ControlType.Button||処理の流れ  Ctrl+3
+TAB_BACK|14|ControlType.Button||候補を比較  Ctrl+2
+TAB_BACK|15|ControlType.Button||成果物  Ctrl+1
+TAB_BACK|16|ControlType.Button|support-export-button|サポート情報をエクスポート
+TAB_BACK|17|ControlType.Button|support-preview-button|サポート情報を表示
+TAB_BACK|18|ControlType.Button|diagnostics-toggle|診断情報を閉じる
+TAB_BACK|19|ControlType.Group||画像表示。0: 全体、1: 物理等倍、+/-: 拡大縮小、矢印: 移動、F11: 全画面、Escape: 復帰
+TAB_BACK|20|ControlType.ListItem|task-row-fixture:task/Task-184|Task-184 — 新製品キービジュアル
+TAB_BACK|21|ControlType.Edit|task-search|タスクを検索
+TAB_BACK|22|ControlType.Button||停止要求の受付状況を確認（現在は操作できません）
+TAB_BACK|23|ControlType.Button||タスクを停止
+TAB_BACK_HAS_PREVIEW|True
+TAB_BACK_HAS_TOGGLE|True
+-----B-----
+WINDOW|COS Desktop
+PREVIEW_PRESENT|True
+EXPORT_BUTTON_PRESENT|True
+DIALOG_OPEN|False
+DIALOG_OPEN_SUCCESS|False|
+DIALOG_AFTER_SAVE|False
+ID|support-export-status|present=False
+ID|support-export-trace|present=False
+STATUS_AFTER_SAVE|<absent>
+TRACE_AFTER_SAVE|<absent>
+SAVED_EXISTS|False
+AFTER_CLOSE_RUNNING|False
+-----app stderr-----
+observation shutdown confirmed
+preferences save confirmed

@@ -1,0 +1,73 @@
+COUNT|72
+ELEMENT|0|ControlType.TitleBar|TitleBar|COS Desktop|focusable=False|enabled=True|offscreen=False|rect=1080,285,1280,23
+ELEMENT|1|ControlType.MenuBar|SystemMenuBar|System Menu Bar|focusable=True|enabled=True|offscreen=False|rect=1080,285,22,22
+ELEMENT|2|ControlType.MenuItem|Item 1|System|focusable=True|enabled=True|offscreen=False|rect=1080,285,22,22
+ELEMENT|3|ControlType.Button|Minimize|Minimize|focusable=False|enabled=True|offscreen=False|rect=2221,278,47,30
+ELEMENT|4|ControlType.Button|Maximize|Maximize|focusable=False|enabled=True|offscreen=False|rect=2268,278,46,30
+ELEMENT|5|ControlType.Button|Close|Close|focusable=False|enabled=True|offscreen=False|rect=2314,278,47,30
+ELEMENT|6|ControlType.Pane||COS Desktop 作業画面|focusable=True|enabled=True|offscreen=False|rect=1080,308,1280,800
+ELEMENT|7|ControlType.Group||現在のタスクと状態|focusable=False|enabled=True|offscreen=False|rect=1080,308,1280,130
+ELEMENT|8|ControlType.Text||Task-184  新製品キービジュアル|focusable=False|enabled=True|offscreen=False|rect=1139,316,1058,20
+ELEMENT|9|ControlType.Text||テストデータ / 模擬表示|focusable=False|enabled=True|offscreen=False|rect=2209,316,131,20
+ELEMENT|10|ControlType.Text||タスクの状態: 実行中（ACTIVE）|focusable=False|enabled=True|offscreen=False|rect=1100,340,403,20
+ELEMENT|11|ControlType.Text||処理段階: REFINE|focusable=False|enabled=True|offscreen=False|rect=1519,340,402,20
+ELEMENT|12|ControlType.Text||反復回数: 第3回|focusable=False|enabled=True|offscreen=False|rect=1937,340,403,20
+ELEMENT|13|ControlType.Text||成果物の利用状態: 取得可能（AVAILABLE）（5件）|focusable=False|enabled=True|offscreen=False|rect=1100,368,403,20
+ELEMENT|14|ControlType.Text||接続・情報の鮮度: 情報を受信中|focusable=False|enabled=True|offscreen=False|rect=1519,368,402,20
+ELEMENT|15|ControlType.Text||正式な結果: 不明 — 正式な結果の情報を受け取れていません|focusable=False|enabled=True|offscreen=False|rect=1937,368,403,20
+ELEMENT|16|ControlType.Group||停止の操作と現在の受付状況|focusable=False|enabled=True|offscreen=False|rect=1100,392,1240,38
+ELEMENT|17|ControlType.Button||タスクを停止|focusable=True|enabled=True|offscreen=False|rect=1100,392,105,38
+ELEMENT|18|ControlType.Button||停止要求の受付状況を確認（現在は操作できません）|focusable=True|enabled=False|offscreen=False|rect=1213,392,130,38
+ELEMENT|19|ControlType.Text||この画面から停止要求は送っていません|focusable=False|enabled=True|offscreen=False|rect=1355,392,985,16
+ELEMENT|20|ControlType.Text||停止要求を1回送ります。受付状況とタスクの終了結果は別に確認します。|focusable=False|enabled=True|offscreen=False|rect=1355,412,985,16
+ELEMENT|21|ControlType.Group||タスク一覧|focusable=False|enabled=True|offscreen=False|rect=1080,438,240,486
+ELEMENT|22|ControlType.Edit|task-search|タスクを検索|focusable=True|enabled=True|offscreen=False|rect=1096,486,208,30
+ELEMENT|23|ControlType.List|||focusable=True|enabled=True|offscreen=False|rect=1096,528,208,380
+ELEMENT|24|ControlType.ListItem|task-row-fixture:task/Task-184|Task-184 — 新製品キービジュアル|focusable=False|enabled=True|offscreen=False|rect=1096,528,208,218
+ELEMENT|25|ControlType.Text||実行中（ACTIVE）|focusable=False|enabled=True|offscreen=False|rect=1105,537,190,40
+ELEMENT|26|ControlType.Text||REFINE|focusable=False|enabled=True|offscreen=False|rect=1105,581,190,20
+ELEMENT|27|ControlType.Text||3|focusable=False|enabled=True|offscreen=False|rect=1105,605,190,20
+ELEMENT|28|ControlType.Text||キーボード操作対象|focusable=False|enabled=True|offscreen=False|rect=1105,629,190,16
+ELEMENT|29|ControlType.Group||作業領域：成果物|focusable=False|enabled=True|offscreen=False|rect=1320,438,720,486
+ELEMENT|30|ControlType.Text||成果物|focusable=False|enabled=True|offscreen=False|rect=1344,462,672,20
+ELEMENT|31|ControlType.Text||表示中|focusable=False|enabled=True|offscreen=False|rect=1344,502,672,20
+ELEMENT|32|ControlType.Text||現在の版では、成果物の画像を表示できません。候補の説明情報のみを表示しています。|focusable=False|enabled=True|offscreen=False|rect=1344,602,672,20
+ELEMENT|33|ControlType.Button||全体表示 (0)|focusable=False|enabled=True|offscreen=False|rect=1344,622,102,30
+ELEMENT|34|ControlType.Button||物理ピクセル1:1 (1)|focusable=False|enabled=False|offscreen=False|rect=1454,622,136,30
+ELEMENT|35|ControlType.Button||拡大 (+)|focusable=False|enabled=True|offscreen=False|rect=1598,622,76,30
+ELEMENT|36|ControlType.Button||縮小 (-)|focusable=False|enabled=True|offscreen=False|rect=1682,622,72,30
+ELEMENT|37|ControlType.Button||全画面 / 復帰 (F11)|focusable=False|enabled=True|offscreen=False|rect=1762,622,144,30
+ELEMENT|38|ControlType.Text||画像を利用できません: 認可済みの画像入力がありません。実行基盤からの取得は未対応です。|focusable=False|enabled=True|offscreen=False|rect=1344,660,672,20
+ELEMENT|39|ControlType.Text||画像は未表示です|focusable=False|enabled=True|offscreen=False|rect=1344,688,672,20
+ELEMENT|40|ControlType.Group||画像表示。0: 全体、1: 物理等倍、+/-: 拡大縮小、矢印: 移動、F11: 全画面、Escape: 復帰|focusable=True|enabled=True|offscreen=False|rect=1344,716,672,144
+ELEMENT|41|ControlType.Group||候補の詳細|focusable=False|enabled=True|offscreen=False|rect=2040,438,320,486
+ELEMENT|42|ControlType.Group||詳細と説明|focusable=False|enabled=True|offscreen=False|rect=2056,486,288,278
+ELEMENT|43|ControlType.Text||候補は表示されていません|focusable=False|enabled=True|offscreen=False|rect=2056,486,288,20
+ELEMENT|44|ControlType.Button||目的 — 利用可能: Task-184 — 新製品キービジュアル|focusable=True|enabled=True|offscreen=False|rect=2056,514,288,50
+ELEMENT|45|ControlType.Button||評価 — 利用不可: 候補は選択されていません。|focusable=True|enabled=True|offscreen=False|rect=2056,572,288,34
+ELEMENT|46|ControlType.Button||判断の根拠 — 利用不可: 候補は選択されていません。|focusable=True|enabled=True|offscreen=False|rect=2056,614,288,50
+ELEMENT|47|ControlType.Button||改善 — 利用不可: 候補は選択されていません。|focusable=True|enabled=True|offscreen=False|rect=2056,672,288,34
+ELEMENT|48|ControlType.Button||結果 — 利用不可: このタスクの正式な結果は、受信した情報に含まれていません。|focusable=True|enabled=True|offscreen=False|rect=2056,714,288,50
+ELEMENT|49|ControlType.Button|diagnostics-toggle|診断情報を閉じる|focusable=True|enabled=True|offscreen=False|rect=2056,776,288,40
+ELEMENT|50|ControlType.Text||このアプリについて|focusable=False|enabled=True|offscreen=False|rect=2056,828,288,20
+ELEMENT|51|ControlType.Text|about-desktop|Desktop 0.1.0|focusable=False|enabled=True|offscreen=False|rect=2056,852,288,20
+ELEMENT|52|ControlType.Text|about-runtime|Runtime 未確認|focusable=False|enabled=True|offscreen=False|rect=2056,876,288,20
+ELEMENT|53|ControlType.Text|about-protocol|Protocol 未確認|focusable=False|enabled=True|offscreen=False|rect=2056,900,288,20
+ELEMENT|54|ControlType.Text|about-schema|Schema 未確認|focusable=False|enabled=True|offscreen=False|rect=2056,924,288,20
+ELEMENT|55|ControlType.Button|support-preview-button|サポート情報を表示|focusable=True|enabled=True|offscreen=False|rect=2056,948,288,40
+ELEMENT|56|ControlType.Text|diagnostic-readonly|Desktop 0.1.0 · テスト用記録 · 世代 1 · 公開 2 · エラー なし · コマンド 0件|focusable=False|enabled=True|offscreen=False|rect=2056,992,288,40
+ELEMENT|57|ControlType.Text|support-preview-readonly|Desktop version: 0.1.0\nRuntime version: unknown (Runtime version is not exposed through observation)\nProtocol version: unknown (no protocol version pair was negotiated)\nConnection: observing\nSource: fixture\nStale projection: no\nProjection revision: 1\nSession generation: 1\nPublication version: 2\nLast error: unknown\nCommand views: 0\nUnavailable: none\nRetained events: 6\nLatest sequence: ...|focusable=False|enabled=True|offscreen=False|rect=2056,1036,288,460
+ELEMENT|58|ControlType.Button|support-export-button|サポート情報をエクスポート|focusable=True|enabled=True|offscreen=False|rect=2056,1500,288,40
+ELEMENT|59|ControlType.Text|support-preview-trace|action=reached;build=finished;install=accepted;render=assumed|focusable=False|enabled=True|offscreen=False|rect=2056,1544,288,40
+ELEMENT|60|ControlType.Group||反復ごとの候補一覧|focusable=False|enabled=True|offscreen=False|rect=1080,924,1280,120
+ELEMENT|61|ControlType.Text||反復ごとの候補一覧。閲覧中と比較対象はこの画面の選択です。正式採用は実行基盤から通知されます。|focusable=False|enabled=True|offscreen=False|rect=1096,940,1248,20
+ELEMENT|62|ControlType.Group||候補一覧|focusable=True|enabled=True|offscreen=False|rect=1096,972,1248,56
+ELEMENT|63|ControlType.Button|candidate:21:fixture:task/Task-18422:fixture:run/Task-184/11:119:fixture:candidate/a18:fixture:artifact/a|fixture:task/Task-184 — 第1回 — A キーボード操作対象|focusable=False|enabled=True|offscreen=False|rect=1097,973,220,54
+ELEMENT|64|ControlType.Button|candidate:21:fixture:task/Task-18422:fixture:run/Task-184/11:119:fixture:candidate/b18:fixture:artifact/b|fixture:task/Task-184 — 第1回 — B |focusable=False|enabled=True|offscreen=False|rect=1329,973,220,54
+ELEMENT|65|ControlType.Button|candidate:21:fixture:task/Task-18422:fixture:run/Task-184/11:219:fixture:candidate/c18:fixture:artifact/c|fixture:task/Task-184 — 第2回 — C |focusable=False|enabled=True|offscreen=False|rect=1561,973,220,54
+ELEMENT|66|ControlType.Button|candidate:21:fixture:task/Task-18422:fixture:run/Task-184/11:219:fixture:candidate/d18:fixture:artifact/d|fixture:task/Task-184 — 第2回 — D |focusable=False|enabled=True|offscreen=False|rect=1793,973,220,54
+ELEMENT|67|ControlType.Button|candidate:21:fixture:task/Task-18422:fixture:run/Task-184/11:319:fixture:candidate/e18:fixture:artifact/e|fixture:task/Task-184 — 第3回 — E |focusable=False|enabled=True|offscreen=False|rect=2025,973,220,54
+ELEMENT|68|ControlType.Group||作業画面の切り替え|focusable=False|enabled=True|offscreen=False|rect=1080,1044,1280,64
+ELEMENT|69|ControlType.Button||成果物  Ctrl+1|focusable=True|enabled=True|offscreen=False|rect=1092,1056,133,40
+ELEMENT|70|ControlType.Button||候補を比較  Ctrl+2|focusable=True|enabled=True|offscreen=False|rect=1237,1056,158,40
+ELEMENT|71|ControlType.Button||処理の流れ  Ctrl+3|focusable=True|enabled=True|offscreen=False|rect=1407,1056,157,40

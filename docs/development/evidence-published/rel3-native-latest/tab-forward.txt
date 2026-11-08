@@ -1,0 +1,24 @@
+0|ControlType.Button|support-preview-button|サポート情報を表示
+1|ControlType.Button|support-export-button|サポート情報をエクスポート
+2|ControlType.Button||成果物  Ctrl+1
+3|ControlType.Button||候補を比較  Ctrl+2
+4|ControlType.Button||処理の流れ  Ctrl+3
+5|ControlType.Button||目的 — 利用可能: Task-184 — 新製品キービジュアル
+6|ControlType.Button||評価 — 利用不可: 候補は選択されていません。
+7|ControlType.Button||判断の根拠 — 利用不可: 候補は選択されていません。
+8|ControlType.Button||改善 — 利用不可: 候補は選択されていません。
+9|ControlType.Button||結果 — 利用不可: このタスクの正式な結果は、受信した情報に含まれていません。
+10|ControlType.Button|candidate:21:fixture:task/Task-18422:fixture:run/Task-184/11:119:fixture:candidate/a18:fixture:artifact/a|fixture:task/Task-184 — 第1回 — A キーボード操作対象
+11|ControlType.Button||タスクを停止
+12|ControlType.Button||停止要求の受付状況を確認（現在は操作できません）
+13|ControlType.Edit|task-search|タスクを検索
+14|ControlType.ListItem|task-row-fixture:task/Task-184|Task-184 — 新製品キービジュアル
+15|ControlType.Group||画像表示。0: 全体、1: 物理等倍、+/-: 拡大縮小、矢印: 移動、F11: 全画面、Escape: 復帰
+16|ControlType.Button|diagnostics-toggle|診断情報を閉じる
+17|ControlType.Button|support-preview-button|サポート情報を表示
+18|ControlType.Button|support-export-button|サポート情報をエクスポート
+19|ControlType.Button||成果物  Ctrl+1
+20|ControlType.Button||候補を比較  Ctrl+2
+21|ControlType.Button||処理の流れ  Ctrl+3
+22|ControlType.Button||目的 — 利用可能: Task-184 — 新製品キービジュアル
+23|ControlType.Button||評価 — 利用不可: 候補は選択されていません。
