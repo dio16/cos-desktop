@@ -550,6 +550,21 @@ and an unavailable Desktop states no measurement. No exporter exists under DD-22
 so there is no artifact to scan end to end and no Native surface changed; Native
 stays `NOT_RUN` for this task.
 
+**2026-11-08 native reachability (§19.305, plan):** a later evidence-only slice
+observed the fixture surface on the release binary built from a clean `abf2310`
+archive with an isolated `LOCALAPPDATA`: the diagnostics toggle opens the panel by
+UIA `InvokePattern`; preview/export buttons are focusable with their names; forward
+Tab order is toggle → preview → export and Shift+Tab reverses it; the status label
+is not a Tab stop; the save dialog `#32770 名前を付けて保存` opens from Enter; cancel
+writes no file with `dialog=Cancelled;data=Rejected;writer=NotStarted;ui=StatusPreserved`;
+a successful save writes 573 bytes byte-identical to the preview with
+`writer=Success;ui=StatusUpdated`; the report is 573 UTF-8 bytes / 19 lines,
+`Source: fixture`, Runtime version unknown. Keyboard rows come only from the
+controlled session; the earlier foreign-focus exception is disclosed and its rows
+excluded. DD-22 and Runtime/Provider log collection stay OPEN, and screen-reader
+quality, overwrite wording, publication-stale rejection and the render/DPI matrix
+stay `NOT_MEASURED`. Evidence: `evidence-published/rel3-native-latest/record.json`.
+
 ## 27. MP-TYP1 fractional-DPI capture frame (2026-11-08)
 
 The identity-bound typography capture now maps the display cross-check in the
@@ -584,3 +599,59 @@ diagram construction interval only; it never claims frame-wide compliance. The
 frame-phase checksum must remain equal to §19.121 (`0x1cfce993…`), and incremental
 reuse, projection rebuild and full rebuild must share the `0x981149dc…` checksum.
 Paint/GPU/Present and real Runtime graphs stay `NOT_MEASURED`.
+
+## 29. MP-INS1 native switch and identity observation (2026-11-08)
+
+Evidence-only qualification (no product test changed): build the release binary from
+a clean detached worktree of the measured source, launch the fixture with the real
+UIA tree, and record the four rows in
+`docs/development/evidence-published/ins1-native-latest/session-20261108-a2b.json`:
+A→B switch (caption/dock/caption changes), identity-change clearing (A evaluation
+values disappear, B shows its own fixture values), keyboard section disclosure
+(state change only — the route is explicitly not independently evidenced), and
+viewed-vs-formal labelling (formal marker absent; fixture best candidate never
+presented as formal). `RawView` and `ControlView` are byte-identical, so projected
+detail values are read from the retained PNGs and are not a UIA-value claim. The
+driver log is committed as `driver-log.txt` (the `*.log` ignore would otherwise drop
+it). DPI above 96, AT quality, Runtime projections and the physical mouse route stay
+`NOT_MEASURED`.
+
+## 30. MP-CMP1 R5 matrix execution (2026-11-08)
+
+Build the release compare example and run the committed reproducer:
+`cargo build --locked --release -p cos-desktop --example compare`, then
+`python -B docs/development/evidence-published/cmp1-r5-latest/run_matrix.py` and
+`python -B .../analyze.py`. Twenty runs cover shared/independent/distinct/two-window
+variants (25 traces, two per two-window run); the analysis derives `matrix.json`
+and `session.json` from the retained ledger digests, and the reviewer reproduced
+them independently from `runs.json` plus the raw ledgers. The matrix reports CPU
+retained bytes and cache/quarantine counters, not GPU residency; Present/GPU/
+frame pacing and unequal media/DPI stay `NOT_MEASURED`. The raw ledgers remain
+private under `target/` and are hash-cited per run; the committed `runs.json` does
+not copy every new counter (recorded NIT).
+
+## 31. MP-AX1 IME-guarded pointer path and palette focus (2026-11-08)
+
+Run `cargo test --locked -p desktop-gpui --lib -- pointer_activation` (and the
+palette module) to exercise the real pointer path: marked IME composition returns
+`None`, the committed slot returns `Some((ShowArtifact, None))`, and closed,
+out-of-range or unauthorized states return `STALE`. The recorded mutation replaces
+the composition guard with `if !open`, and the test must then fail with
+`left: Some((ShowArtifact, None)) / right: None`. The native probe
+(`evidence-published/ax1-pointer-latest/probe.ps1`) opens the palette with Ctrl+K,
+types into the query, closes with Escape and re-types into the invoking rail search
+to prove behavioural focus restoration; it uses synthetic window messages because
+the host cannot foreground the window, and the pinned GPUI exposes no UIA focus
+property. IME preedit, AT quality, High Contrast and DPI stay `NOT_MEASURED`.
+
+## 32. MP-REL3 native support-report reachability (2026-11-08)
+
+The native rows are recorded in `docs/development/evidence-published/rel3-native-latest/`
+(controlled session logs + UIA trees + tab trails + `report-preview.txt`): UIA
+`InvokePattern` on the diagnostics toggle, focusable preview/export buttons with
+names, forward/reverse Tab order with the status label excluded, the save dialog
+opened from the focused export button, cancel with no file and the documented
+`dialog=Cancelled;...` trace, a 573-byte save byte-identical to the preview, and the
+bounded 573-byte/19-line report. The earlier foreign-focus sessions are disclosed
+and excluded from the keyboard rows; their titles are redacted. DD-22 stays OPEN
+and screen-reader/DPI/pixel quality stays `NOT_MEASURED`.
