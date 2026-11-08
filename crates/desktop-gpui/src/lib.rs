@@ -215,6 +215,9 @@ pub fn bind_keys(cx: &mut App) {
         KeyBinding::new("ctrl-a", PaletteSelectAll, Some("CommandPalette")),
         KeyBinding::new("ctrl-n", BriefOpen, None),
         KeyBinding::new("escape", BriefClose, Some("Brief")),
+        KeyBinding::new("ctrl-enter", BriefSubmit, Some("Brief")),
+        KeyBinding::new("ctrl-shift-enter", BriefRecheck, Some("Brief")),
+        KeyBinding::new("ctrl-r", BriefReload, Some("Brief")),
     ]);
 }
 
@@ -726,6 +729,9 @@ pub struct Shell {
     brief_catalog_epoch: Option<desktop_protocol::EpochId>,
     brief_catalog_task: Task<()>,
     brief_submit_task: Task<()>,
+    brief_submit_focus: FocusHandle,
+    brief_recheck_focus: FocusHandle,
+    brief_reload_focus: FocusHandle,
     brief_goal_focus: FocusHandle,
     brief_direction_focus: FocusHandle,
     brief_focus: FocusHandle,
@@ -1013,9 +1019,12 @@ impl Shell {
             brief_catalog_epoch: None,
             brief_catalog_task: cx.spawn(async move |_this, _cx| {}),
             brief_submit_task: cx.spawn(async move |_this, _cx| {}),
-            brief_goal_focus: cx.focus_handle(),
-            brief_direction_focus: cx.focus_handle(),
-            brief_focus: cx.focus_handle(),
+            brief_submit_focus: cx.focus_handle().tab_index(42).tab_stop(true),
+            brief_recheck_focus: cx.focus_handle().tab_index(43).tab_stop(true),
+            brief_reload_focus: cx.focus_handle().tab_index(44).tab_stop(true),
+            brief_goal_focus: cx.focus_handle().tab_index(40).tab_stop(true),
+            brief_direction_focus: cx.focus_handle().tab_index(41).tab_stop(true),
+            brief_focus: cx.focus_handle().tab_index(39).tab_stop(true),
             brief_input_selection: 0..0,
             brief_marked_range: None,
             stop_intent: StopTracker::default(),
@@ -2848,6 +2857,35 @@ fn ime_splice(current: &str, range: &Range<usize>, new_text: &str) -> (String, u
     (replacement, caret)
 }
 
+/// Which Brief text field receives composition while the surface is open.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum BriefCompositionField {
+    /// Goal / objective_text.
+    Goal,
+    /// Creative Direction / text_prompt.
+    Direction,
+}
+
+/// Route IME composition into the Brief, and never into the rail, whenever the
+/// Brief surface is open. Without a focused field the Goal is the safe default,
+/// so an open dialog cannot leak composition text into the task rail.
+fn brief_composition_field(
+    brief_open: bool,
+    goal_focused: bool,
+    direction_focused: bool,
+) -> Option<BriefCompositionField> {
+    if !brief_open {
+        return None;
+    }
+    if goal_focused {
+        Some(BriefCompositionField::Goal)
+    } else if direction_focused {
+        Some(BriefCompositionField::Direction)
+    } else {
+        Some(BriefCompositionField::Goal)
+    }
+}
+
 fn utf16_offset(text: &str, byte_offset: usize) -> usize {
     text.char_indices()
         .take_while(|(index, _)| *index < byte_offset)
@@ -2877,10 +2915,15 @@ impl EntityInputHandler for Shell {
         window: &mut Window,
         _cx: &mut Context<Self>,
     ) -> Option<String> {
-        let text = if self.brief_open && self.brief_goal_focus.is_focused(window) {
-            self.brief_form.goal().to_owned()
-        } else if self.brief_open && self.brief_direction_focus.is_focused(window) {
-            self.brief_form.direction().to_owned()
+        let text = if let Some(field) = brief_composition_field(
+            self.brief_open,
+            self.brief_goal_focus.is_focused(window),
+            self.brief_direction_focus.is_focused(window),
+        ) {
+            match field {
+                BriefCompositionField::Goal => self.brief_form.goal().to_owned(),
+                BriefCompositionField::Direction => self.brief_form.direction().to_owned(),
+            }
         } else if self.palette_focus.is_focused(window) {
             self.palette_query.clone()
         } else if self.flow_input_focus.is_focused(window) {
@@ -2900,16 +2943,16 @@ impl EntityInputHandler for Shell {
         window: &mut Window,
         _cx: &mut Context<Self>,
     ) -> Option<UTF16Selection> {
-        let (text, selection) = if self.brief_open && self.brief_goal_focus.is_focused(window) {
-            (
-                self.brief_form.goal().to_owned(),
-                self.brief_input_selection.clone(),
-            )
-        } else if self.brief_open && self.brief_direction_focus.is_focused(window) {
-            (
-                self.brief_form.direction().to_owned(),
-                self.brief_input_selection.clone(),
-            )
+        let (text, selection) = if let Some(field) = brief_composition_field(
+            self.brief_open,
+            self.brief_goal_focus.is_focused(window),
+            self.brief_direction_focus.is_focused(window),
+        ) {
+            let text = match field {
+                BriefCompositionField::Goal => self.brief_form.goal().to_owned(),
+                BriefCompositionField::Direction => self.brief_form.direction().to_owned(),
+            };
+            (text, self.brief_input_selection.clone())
         } else if self.palette_focus.is_focused(window) {
             (
                 self.palette_query.clone(),
@@ -2934,15 +2977,15 @@ impl EntityInputHandler for Shell {
         window: &mut Window,
         _cx: &mut Context<Self>,
     ) -> Option<Range<usize>> {
-        let (text, range) = if self.brief_open
-            && (self.brief_goal_focus.is_focused(window)
-                || self.brief_direction_focus.is_focused(window))
-        {
+        let (text, range) = if let Some(field) = brief_composition_field(
+            self.brief_open,
+            self.brief_goal_focus.is_focused(window),
+            self.brief_direction_focus.is_focused(window),
+        ) {
             let range = self.brief_marked_range.as_ref()?;
-            let text = if self.brief_goal_focus.is_focused(window) {
-                self.brief_form.goal()
-            } else {
-                self.brief_form.direction()
+            let text = match field {
+                BriefCompositionField::Goal => self.brief_form.goal(),
+                BriefCompositionField::Direction => self.brief_form.direction(),
             };
             (text, range)
         } else if self.palette_focus.is_focused(window) {
@@ -2959,10 +3002,11 @@ impl EntityInputHandler for Shell {
     }
 
     fn unmark_text(&mut self, window: &mut Window, _cx: &mut Context<Self>) {
-        if self.brief_open
-            && (self.brief_goal_focus.is_focused(window)
-                || self.brief_direction_focus.is_focused(window))
-        {
+        if let Some(_field) = brief_composition_field(
+            self.brief_open,
+            self.brief_goal_focus.is_focused(window),
+            self.brief_direction_focus.is_focused(window),
+        ) {
             self.brief_marked_range = None;
         } else if self.palette_focus.is_focused(window) {
             self.palette_marked_range = None;
@@ -2980,8 +3024,15 @@ impl EntityInputHandler for Shell {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        if self.brief_open && self.brief_goal_focus.is_focused(window) {
-            let current = self.brief_form.goal().to_owned();
+        if let Some(field) = brief_composition_field(
+            self.brief_open,
+            self.brief_goal_focus.is_focused(window),
+            self.brief_direction_focus.is_focused(window),
+        ) {
+            let current = match field {
+                BriefCompositionField::Goal => self.brief_form.goal().to_owned(),
+                BriefCompositionField::Direction => self.brief_form.direction().to_owned(),
+            };
             let range = ime_byte_range(
                 &current,
                 range_utf16,
@@ -2989,21 +3040,15 @@ impl EntityInputHandler for Shell {
                 &self.brief_input_selection,
             );
             let (replacement, cursor) = ime_splice(&current, &range, new_text);
-            self.brief_form.set_goal(replacement);
-            self.brief_input_selection = cursor..cursor;
-            cx.notify();
-            return;
-        }
-        if self.brief_open && self.brief_direction_focus.is_focused(window) {
-            let current = self.brief_form.direction().to_owned();
-            let range = ime_byte_range(
-                &current,
-                range_utf16,
-                self.brief_marked_range.clone(),
-                &self.brief_input_selection,
-            );
-            let (replacement, cursor) = ime_splice(&current, &range, new_text);
-            self.brief_form.set_direction(replacement);
+            match field {
+                BriefCompositionField::Goal => {
+                    self.brief_form.set_goal(replacement);
+                }
+                BriefCompositionField::Direction => {
+                    self.brief_form.set_direction(replacement);
+                }
+            }
+            self.brief_marked_range = None;
             self.brief_input_selection = cursor..cursor;
             cx.notify();
             return;
@@ -3057,9 +3102,24 @@ impl EntityInputHandler for Shell {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
+        let brief_field = brief_composition_field(
+            self.brief_open,
+            self.brief_goal_focus.is_focused(window),
+            self.brief_direction_focus.is_focused(window),
+        );
         let palette = self.palette_focus.is_focused(window);
         let flow = self.flow_input_focus.is_focused(window);
-        let (current, marked, selection) = if palette {
+        let (current, marked, selection) = if let Some(field) = brief_field {
+            let current = match field {
+                BriefCompositionField::Goal => self.brief_form.goal().to_owned(),
+                BriefCompositionField::Direction => self.brief_form.direction().to_owned(),
+            };
+            (
+                current,
+                self.brief_marked_range.clone(),
+                self.brief_input_selection.clone(),
+            )
+        } else if palette {
             (
                 self.palette_query.clone(),
                 self.palette_marked_range.clone(),
@@ -3089,7 +3149,18 @@ impl EntityInputHandler for Shell {
                 range.start + start..range.start + end
             })
             .unwrap_or_else(|| caret..caret);
-        if palette {
+        if let Some(field) = brief_field {
+            match field {
+                BriefCompositionField::Goal => {
+                    self.brief_form.set_goal(replacement);
+                }
+                BriefCompositionField::Direction => {
+                    self.brief_form.set_direction(replacement);
+                }
+            }
+            self.brief_marked_range = new_marked;
+            self.brief_input_selection = new_selection;
+        } else if palette {
             self.palette_set_query(&replacement, cx);
             self.palette_marked_range = new_marked;
             self.palette_input_selection = new_selection;
@@ -5071,8 +5142,20 @@ impl Render for Shell {
             .on_action(cx.listener(|this, _: &NextSurface, _, cx| {
                 this.advance_surface(cx);
             }))
-            .on_action(cx.listener(|_, _: &FocusNext, window, cx| window.focus_next(cx)))
-            .on_action(cx.listener(|_, _: &FocusPrevious, window, cx| window.focus_prev(cx)))
+            .on_action(cx.listener(|this, _: &FocusNext, window, cx| {
+                if this.brief_open {
+                    this.brief_cycle_focus(window, cx, true);
+                } else {
+                    window.focus_next(cx);
+                }
+            }))
+            .on_action(cx.listener(|this, _: &FocusPrevious, window, cx| {
+                if this.brief_open {
+                    this.brief_cycle_focus(window, cx, false);
+                } else {
+                    window.focus_prev(cx);
+                }
+            }))
             .on_action(cx.listener(|this, _: &Activate, window, cx| {
                 if let Some(index) = this.surface_focus.iter().position(|f| f.is_focused(window)) {
                     this.navigate(Surface::ALL[index], cx);
@@ -7298,5 +7381,35 @@ mod restore_notice_tests {
             ),
             Some(format!("{TASK_NOTICE} {VIEWED_NOTICE}"))
         );
+    }
+}
+
+#[cfg(test)]
+mod brief_ime_tests {
+    use super::{BriefCompositionField, brief_composition_field};
+
+    #[test]
+    fn japanese_composition_in_the_brief_never_routes_to_the_rail() {
+        // With the Brief open, every focus shape resolves to a Brief field.
+        assert_eq!(
+            brief_composition_field(true, true, false),
+            Some(BriefCompositionField::Goal)
+        );
+        assert_eq!(
+            brief_composition_field(true, false, true),
+            Some(BriefCompositionField::Direction)
+        );
+        // No field focused still defaults to the Brief Goal, never the rail.
+        assert_eq!(
+            brief_composition_field(true, false, false),
+            Some(BriefCompositionField::Goal)
+        );
+    }
+
+    #[test]
+    fn composition_falls_through_to_the_rail_only_when_the_brief_is_closed() {
+        assert_eq!(brief_composition_field(false, false, false), None);
+        assert_eq!(brief_composition_field(false, true, false), None);
+        assert_eq!(brief_composition_field(false, false, true), None);
     }
 }

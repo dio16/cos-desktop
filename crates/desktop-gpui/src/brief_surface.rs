@@ -95,7 +95,118 @@ fn catalog_read_label(error: &app_core::CommandReadError) -> &'static str {
         | app_core::CommandReadError::AuthorizationDenied => "観測の許可がありません",
         app_core::CommandReadError::Superseded => "接続が更新されました。開き直してください",
         app_core::CommandReadError::CapacityExceeded => "読み取り上限に達しました",
+        app_core::CommandReadError::Client(app_core::PublicationError::NotConnected) => {
+            "ランタイムに接続できません"
+        }
+        app_core::CommandReadError::Client(app_core::PublicationError::Unauthorized) => {
+            "カタログの読み取りが許可されていません"
+        }
         app_core::CommandReadError::Client(_) => "ランタイムからカタログを取得できません",
+    }
+}
+
+/// One classified command-receipt observation.
+///
+/// The variants never conflate local pending with a server rejection: a missing
+/// receipt, an unconfirmed outcome, a denied read, an observed canonical effect
+/// and a definitive rejection are separate states.
+#[derive(Clone, Debug, PartialEq, Eq)]
+enum ReceiptObservation {
+    /// The read was refused by the visibility fence.
+    Denied,
+    /// The client holds no retained receipt (positive "not retained" answer).
+    NotRetained,
+    /// The command is prepared or awaiting a response; no receipt yet.
+    Pending,
+    /// A receipt is expected but absent from the view.
+    ReceiptMissing,
+    /// Server receipt accepted the intent.
+    Accepted {
+        task_id: Option<desktop_protocol::TaskId>,
+    },
+    /// A canonical effect referenced the command; no receipt is needed.
+    CanonicalObserved,
+    /// Definitive server rejection with its explicit reason.
+    Rejected {
+        reason: Option<desktop_protocol::RejectReason>,
+        message: Option<String>,
+    },
+    /// The command family is unsupported (stale recipe/capability).
+    Unsupported,
+    /// Definitive local/server failure.
+    Failed,
+    /// The outcome is unknown; never treated as rejection.
+    Unknown,
+}
+
+fn classify_receipt(
+    read_error: Option<&app_core::CommandReadError>,
+    view: Option<&app_core::CommandReadView>,
+) -> ReceiptObservation {
+    if let Some(error) = read_error {
+        return match error {
+            app_core::CommandReadError::AuthorizationUnavailable
+            | app_core::CommandReadError::AuthorizationDenied => ReceiptObservation::Denied,
+            _ => ReceiptObservation::Unknown,
+        };
+    }
+    let Some(view) = view else {
+        return ReceiptObservation::NotRetained;
+    };
+    match view.presentation {
+        app_core::CommandPresentation::ReceiptAvailable => match &view.receipt {
+            Some(receipt) => match receipt.state {
+                desktop_protocol::ReceiptState::Accepted => ReceiptObservation::Accepted {
+                    task_id: receipt.task_id.clone(),
+                },
+                desktop_protocol::ReceiptState::CanonicalReflected => {
+                    ReceiptObservation::CanonicalObserved
+                }
+                desktop_protocol::ReceiptState::Rejected => ReceiptObservation::Rejected {
+                    reason: receipt.reject_reason.clone(),
+                    message: receipt.message.clone(),
+                },
+                desktop_protocol::ReceiptState::Unknown(_) => ReceiptObservation::Unknown,
+            },
+            None => ReceiptObservation::ReceiptMissing,
+        },
+        app_core::CommandPresentation::CanonicalEffectObserved => {
+            ReceiptObservation::CanonicalObserved
+        }
+        app_core::CommandPresentation::Unsupported => ReceiptObservation::Unsupported,
+        app_core::CommandPresentation::Prepared
+        | app_core::CommandPresentation::AwaitingResponse => ReceiptObservation::Pending,
+        app_core::CommandPresentation::OutcomeUnconfirmed => ReceiptObservation::Unknown,
+        app_core::CommandPresentation::Failed => ReceiptObservation::Failed,
+    }
+}
+
+fn reject_code(reason: &desktop_protocol::RejectReason) -> &'static str {
+    match reason {
+        desktop_protocol::RejectReason::ValidationFailed => "VALIDATION_FAILED",
+        desktop_protocol::RejectReason::Unauthorized => "UNAUTHORIZED",
+        desktop_protocol::RejectReason::Forbidden => "FORBIDDEN",
+        desktop_protocol::RejectReason::RevisionConflict => "REVISION_CONFLICT",
+        desktop_protocol::RejectReason::UnsupportedCommand => "UNSUPPORTED_COMMAND",
+        desktop_protocol::RejectReason::CommandIdConflict => "COMMAND_ID_CONFLICT",
+        desktop_protocol::RejectReason::InternalError => "INTERNAL_ERROR",
+        desktop_protocol::RejectReason::Unknown(_) => "UNKNOWN_REJECTION",
+    }
+}
+
+fn bounded_message(message: Option<&str>, fallback: &'static str) -> String {
+    let Some(message) = message else {
+        return fallback.to_owned();
+    };
+    let bounded: String = message
+        .chars()
+        .filter(|character| !character.is_control())
+        .take(200)
+        .collect();
+    if bounded.trim().is_empty() {
+        fallback.to_owned()
+    } else {
+        bounded
     }
 }
 
@@ -198,16 +309,17 @@ impl Shell {
             let _ = this.update(cx, |this, cx| {
                 match result {
                     Ok(command_id) => {
-                        // Admission only; the receipt decides accepted/rejected.
-                        let _ = this.brief_form.on_unknown(&command_id);
-                        this.brief_notice = Some(
-                            "受付票を確認しています。結果が不明な場合は同じ内容で再試行できます。"
-                                .to_owned(),
-                        );
+                        // The channel admitted the intent; the receipt is still
+                        // pending, so the state is Sent, not Unknown.
+                        let _ = this.brief_form.on_sent(&command_id);
+                        this.brief_notice = Some("送信済み — 受付票を確認してください".to_owned());
                         this.brief_check_receipt(cx);
                     }
                     Err(error) => {
-                        let _ = this.brief_form.on_unknown(&submission_id);
+                        // Local refusal: nothing was sent, so return to editing
+                        // instead of claiming an unknown outcome.
+                        let _ = this.brief_form.on_not_sent();
+                        this.brief_command = None;
                         this.brief_notice = Some(brief_command_label(&error).to_owned());
                     }
                 }
@@ -221,77 +333,135 @@ impl Shell {
     pub(super) fn brief_check_receipt(&mut self, cx: &mut Context<Self>) {
         let (Some(handle), Some(command_id)) = (self.handle.clone(), self.brief_command.clone())
         else {
+            self.brief_notice = Some("確認できる受付票がありません".to_owned());
+            cx.notify();
             return;
         };
         let read = handle.read_command(command_id.clone());
         self.brief_submit_task = cx.spawn(async move |this, cx| {
-            let answer = read.await;
-            let mut derived = None;
-            if let Ok(authorized) = answer {
-                let tagged = authorized.read(|read| match read {
-                    app_core::CommandRead::Found(view) => {
-                        Some((view.presentation, view.receipt.clone(), view.issue.clone()))
+            let (view, read_error) = match read.await {
+                Ok(authorized) => {
+                    let mut found = None;
+                    match authorized.read(|read| match read {
+                        app_core::CommandRead::Found(view) => Some(view.clone()),
+                        app_core::CommandRead::NotRetained => None,
+                    }) {
+                        Ok(tagged) => {
+                            let _ = tagged.consume(|value| found = value.clone());
+                            (found, None)
+                        }
+                        Err(_) => (None, Some(app_core::CommandReadError::Superseded)),
                     }
-                    app_core::CommandRead::NotRetained => None,
-                });
-                if let Ok(tagged) = tagged {
-                    let _ = tagged.consume(|value| derived = value.clone());
                 }
-            }
+                Err(error) => (None, Some(error)),
+            };
+            let observation = classify_receipt(read_error.as_ref(), view.as_ref());
             let _ = this.update(cx, |this, cx| {
-                match derived {
-                    Some((presentation, receipt, _issue)) => match presentation {
-                        app_core::CommandPresentation::ReceiptAvailable => {
-                            if let Some(receipt) = receipt {
-                                match receipt.state {
-                                    desktop_protocol::ReceiptState::Accepted
-                                    | desktop_protocol::ReceiptState::CanonicalReflected => {
-                                        let task_id = receipt.task_id.clone();
-                                        if this.brief_form.on_accepted(&command_id, task_id) {
-                                            this.brief_notice = None;
-                                        }
-                                    }
-                                    desktop_protocol::ReceiptState::Rejected => {
-                                        let reason = receipt
-                                            .message
-                                            .clone()
-                                            .unwrap_or_else(|| "拒否されました".to_owned());
-                                        let _ = this.brief_form.on_rejected(&command_id, reason);
-                                    }
-                                    desktop_protocol::ReceiptState::Unknown(_) => {
-                                        this.brief_notice = Some(
-                                            "受付状態が不明です。同じ内容で再試行できます。"
-                                                .to_owned(),
-                                        );
-                                    }
-                                }
-                            }
-                        }
-                        app_core::CommandPresentation::OutcomeUnconfirmed => {
-                            this.brief_notice =
-                                Some("結果を確認できません。同じ内容で再試行できます。".to_owned());
-                        }
-                        app_core::CommandPresentation::Failed => {
-                            let _ = this
-                                .brief_form
-                                .on_rejected(&command_id, "コマンドは失敗しました");
-                        }
-                        _ => {
-                            this.brief_notice = Some(
-                                "受付票はまだ観測されていません。少し後に再確認してください。"
-                                    .to_owned(),
-                            );
-                        }
-                    },
-                    None => {
-                        this.brief_notice =
-                            Some("受付票を保持していません。同じ内容で再試行できます。".to_owned());
-                    }
-                }
+                this.apply_receipt_observation(&command_id, observation);
                 cx.notify();
             });
         });
         cx.notify();
+    }
+
+    /// Apply one classified receipt observation without conflating local
+    /// pending, unknown, denial or server rejection.
+    fn apply_receipt_observation(
+        &mut self,
+        command_id: &desktop_protocol::CommandId,
+        observation: ReceiptObservation,
+    ) {
+        match observation {
+            ReceiptObservation::Denied => {
+                self.brief_notice =
+                    Some("受付票を開示できません（観測の許可がありません）".to_owned());
+            }
+            ReceiptObservation::NotRetained => {
+                let _ = self.brief_form.on_unknown(command_id);
+                self.brief_notice = Some("受付票は保持されていません — 結果は不明です".to_owned());
+            }
+            ReceiptObservation::Pending | ReceiptObservation::ReceiptMissing => {
+                self.brief_notice = Some("送信済み — 受付票を待っています".to_owned());
+            }
+            ReceiptObservation::Accepted { task_id } => {
+                if self.brief_form.on_accepted(command_id, task_id) {
+                    self.brief_notice = None;
+                } else {
+                    self.brief_notice = Some("この受付票は現在の提出には一致しません".to_owned());
+                }
+            }
+            ReceiptObservation::CanonicalObserved => {
+                if self.brief_form.on_accepted(command_id, None) {
+                    self.brief_notice =
+                        Some("実行結果が観測されました（受付票はありません）".to_owned());
+                }
+            }
+            ReceiptObservation::Rejected { reason, message } => match reason {
+                Some(desktop_protocol::RejectReason::UnsupportedCommand) => {
+                    let _ = self.brief_form.on_stale_recipe();
+                    self.brief_notice =
+                        Some("レシピが利用できません。カタログを再読み込みしてください".to_owned());
+                }
+                Some(reason) => {
+                    let code = reject_code(&reason);
+                    let _ = self.brief_form.on_rejected(command_id, code);
+                    self.brief_notice = Some(bounded_message(
+                        message.as_deref(),
+                        "コマンドは拒否されました",
+                    ));
+                }
+                None => {
+                    let _ = self.brief_form.on_rejected(command_id, "REJECTED");
+                    self.brief_notice = Some(bounded_message(
+                        message.as_deref(),
+                        "コマンドは拒否されました",
+                    ));
+                }
+            },
+            ReceiptObservation::Unsupported => {
+                let _ = self.brief_form.on_stale_recipe();
+                self.brief_notice =
+                    Some("コマンドが利用できません。カタログを再読み込みしてください".to_owned());
+            }
+            ReceiptObservation::Failed => {
+                let _ = self.brief_form.on_rejected(command_id, "FAILED");
+                self.brief_notice = Some("コマンドは失敗しました".to_owned());
+            }
+            ReceiptObservation::Unknown => {
+                let _ = self.brief_form.on_unknown(command_id);
+                self.brief_notice = Some(
+                    "結果不明 — 受付票を確認するか、新しい提出として送り直してください".to_owned(),
+                );
+            }
+        }
+    }
+
+    /// Cycle keyboard focus only inside the open Brief surface (focus trap).
+    pub(super) fn brief_cycle_focus(
+        &mut self,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+        forward: bool,
+    ) {
+        if !self.brief_open {
+            return;
+        }
+        let handles = [
+            &self.brief_goal_focus,
+            &self.brief_direction_focus,
+            &self.brief_submit_focus,
+            &self.brief_recheck_focus,
+            &self.brief_reload_focus,
+        ];
+        let count = handles.len();
+        let current = handles.iter().position(|handle| handle.is_focused(window));
+        let next = match (current, forward) {
+            (Some(index), true) => (index + 1) % count,
+            (Some(0), false) => count - 1,
+            (Some(index), false) => index - 1,
+            (None, _) => 0,
+        };
+        handles[next].focus(window, cx);
     }
 
     /// Render the central Brief surface (hidden unless open).
@@ -357,6 +527,7 @@ impl Shell {
                         .id("brief-reload")
                         .role(Role::Button)
                         .aria_label("カタログを再読み込み")
+                        .track_focus(&self.brief_reload_focus)
                         .px_3()
                         .py_1()
                         .border_1()
@@ -375,10 +546,19 @@ impl Shell {
                 .map(|catalog| catalog.can_submit)
                 .unwrap_or(false);
             if !can_submit {
+                let reasons = self
+                    .brief_form
+                    .catalog()
+                    .map(|catalog| catalog.reason_codes.join(" / "))
+                    .unwrap_or_default();
                 children.push(
                     div()
                         .text_color(rgb(colors.danger_text))
-                        .child("この環境ではタスクを作成できません（理由コードを確認してください）")
+                        .child(SharedString::from(if reasons.is_empty() {
+                            "この環境ではタスクを作成できません（理由コードなし）".to_owned()
+                        } else {
+                            format!("この環境ではタスクを作成できません。理由: {reasons}")
+                        }))
                         .into_any_element(),
                 );
             }
@@ -505,7 +685,7 @@ impl Shell {
                     let value = self
                         .brief_form
                         .effective_parameter(&parameter.id)
-                        .map(|value| format!("{value:?}"))
+                        .map(|value| value.to_string())
                         .unwrap_or_default();
                     children.push(
                         div()
@@ -538,6 +718,132 @@ impl Shell {
                     .into_any_element(),
             );
         }
+        let state = self.brief_form.state().clone();
+        let busy = matches!(
+            state,
+            BriefState::Submitting { .. } | BriefState::Sent { .. }
+        );
+        if matches!(state, BriefState::Accepted { .. }) {
+            children.push(
+                div()
+                    .text_color(muted)
+                    .child("受付済みのため編集できません")
+                    .into_any_element(),
+            );
+        }
+        if matches!(state, BriefState::StaleRecipe) {
+            children.push(
+                div()
+                    .id("brief-stale-reload")
+                    .role(Role::Button)
+                    .aria_label("カタログを再読み込み")
+                    .track_focus(&self.brief_reload_focus)
+                    .px_3()
+                    .py_1()
+                    .border_1()
+                    .border_color(rgb(colors.focus))
+                    .on_click(cx.listener(|this, _, _, cx| this.brief_reload_catalog(cx)))
+                    .child("カタログを再読み込み")
+                    .into_any_element(),
+            );
+        }
+        let validation = self.brief_form.validation_error();
+        if let Some(error) = validation.as_ref()
+            && !busy
+        {
+            children.push(
+                div()
+                    .text_color(rgb(colors.danger_text))
+                    .child(SharedString::from(brief_validation_label(error)))
+                    .into_any_element(),
+            );
+        }
+        let mut actions: Vec<AnyElement> = Vec::new();
+        if self.brief_command.is_some() {
+            actions.push(
+                div()
+                    .id("brief-recheck")
+                    .role(Role::Button)
+                    .aria_label("受付票を再確認")
+                    .track_focus(&self.brief_recheck_focus)
+                    .px_3()
+                    .py_1()
+                    .border_1()
+                    .border_color(rgb(colors.border))
+                    .on_click(cx.listener(|this, _, _, cx| this.brief_check_receipt(cx)))
+                    .child("受付票を確認")
+                    .into_any_element(),
+            );
+        }
+        let can_attempt = matches!(
+            state,
+            BriefState::Editing | BriefState::Unknown { .. } | BriefState::Rejected { .. }
+        );
+        if !matches!(state, BriefState::Sent { .. }) {
+            let enabled = can_attempt
+                && !busy
+                && self.handle.is_some()
+                && self.brief_catalog_epoch.is_some()
+                && matches!(self.brief_catalog_state, BriefCatalogState::Loaded)
+                && self
+                    .brief_form
+                    .catalog()
+                    .is_some_and(|catalog| catalog.can_submit)
+                && validation.is_none();
+            let disabled_reason = if self.handle.is_none() {
+                "観測が構成されていません"
+            } else if self.brief_catalog_epoch.is_none() {
+                "カタログのエポックが不明です"
+            } else if validation.is_some() {
+                "入力内容を確認してください"
+            } else if matches!(state, BriefState::StaleRecipe) {
+                "カタログを再読み込みしてください"
+            } else {
+                "提出は現在できません"
+            };
+            actions.push(
+                div()
+                    .id("brief-submit")
+                    .role(Role::Button)
+                    .aria_label(if enabled {
+                        "ブリーフを提出"
+                    } else {
+                        "ブリーフを提出（無効）"
+                    })
+                    .track_focus(&self.brief_submit_focus)
+                    .aria_description(SharedString::from(if enabled {
+                        "入力を検証して提出します"
+                    } else {
+                        disabled_reason
+                    }))
+                    .when(enabled, |element| {
+                        element.on_click(cx.listener(|this, _, _, cx| this.brief_submit(cx)))
+                    })
+                    .px_3()
+                    .py_1()
+                    .border_1()
+                    .border_color(rgb(if enabled {
+                        colors.focus
+                    } else {
+                        colors.disabled_border
+                    }))
+                    .text_color(rgb(if enabled {
+                        colors.text
+                    } else {
+                        colors.disabled
+                    }))
+                    .child(if busy { "送信中" } else { "提出" })
+                    .into_any_element(),
+            );
+        }
+        children.push(
+            div()
+                .flex()
+                .flex_row()
+                .gap_2()
+                .children(actions)
+                .into_any_element(),
+        );
         if let Some(notice) = self.brief_notice.clone() {
             children.push(
                 div()
@@ -546,54 +852,6 @@ impl Shell {
                     .into_any_element(),
             );
         }
-        let submitting = matches!(self.brief_form.state(), BriefState::Submitting { .. });
-        let action = if self.brief_command.is_some() && !submitting {
-            div()
-                .id("brief-recheck")
-                .role(Role::Button)
-                .aria_label("受付票を再確認")
-                .px_3()
-                .py_1()
-                .border_1()
-                .border_color(rgb(colors.border))
-                .on_click(cx.listener(|this, _, _, cx| this.brief_check_receipt(cx)))
-                .child("受付票を確認")
-                .into_any_element()
-        } else {
-            let enabled = !submitting
-                && matches!(self.brief_catalog_state, BriefCatalogState::Loaded)
-                && self.brief_form.validation_error().is_none();
-            div()
-                .id("brief-submit")
-                .role(Role::Button)
-                .aria_label("ブリーフを提出")
-                .when(enabled, |element| {
-                    element.on_click(cx.listener(|this, _, _, cx| this.brief_submit(cx)))
-                })
-                .px_3()
-                .py_1()
-                .border_1()
-                .border_color(rgb(if enabled {
-                    colors.focus
-                } else {
-                    colors.disabled_border
-                }))
-                .text_color(rgb(if enabled {
-                    colors.text
-                } else {
-                    colors.disabled
-                }))
-                .child(if submitting { "送信中" } else { "提出" })
-                .into_any_element()
-        };
-        children.push(
-            div()
-                .flex()
-                .flex_row()
-                .gap_2()
-                .child(action)
-                .into_any_element(),
-        );
 
         div()
             .id("brief-surface")
@@ -644,6 +902,7 @@ fn brief_validation_label(error: &ui_model::brief::BriefValidationError) -> &'st
         E::DecimalNotCanonical { .. } => "小数の形式が不正です",
         E::Submitting => "送信中です",
         E::EpochUnavailable => "カタログのエポックが不明です。再読み込みしてください",
+        E::AwaitingReceipt => "送信済みの受付票を待っています",
     }
 }
 
@@ -653,6 +912,12 @@ fn brief_command_label(error: &app_core::CommandReadError) -> &'static str {
         | app_core::CommandReadError::AuthorizationDenied => "観測の許可がありません",
         app_core::CommandReadError::Superseded => "接続が更新されました。開き直してください",
         app_core::CommandReadError::CapacityExceeded => "コマンド容量に達しました",
+        app_core::CommandReadError::Client(app_core::PublicationError::NotConnected) => {
+            "コマンド経路が接続されていません"
+        }
+        app_core::CommandReadError::Client(app_core::PublicationError::InvalidCommand(_)) => {
+            "コマンドがローカルで拒否されました"
+        }
         app_core::CommandReadError::Client(_) => "コマンドを送信できません",
     }
 }
@@ -701,5 +966,131 @@ mod tests {
             assert!(!brief_command_label(&failure).is_empty());
         }
         assert!(!catalog_read_label(&CommandReadError::Superseded).contains("token"));
+    }
+}
+
+#[cfg(test)]
+mod receipt_taxonomy_tests {
+    use super::*;
+    use app_core::{CommandPresentation, CommandReadView};
+
+    fn view(presentation: CommandPresentation) -> CommandReadView {
+        CommandReadView {
+            presentation,
+            receipt: None,
+            issue: None,
+        }
+    }
+
+    fn receipt(
+        state: desktop_protocol::ReceiptState,
+        reason: Option<desktop_protocol::RejectReason>,
+    ) -> desktop_protocol::CommandReceipt {
+        desktop_protocol::CommandReceipt {
+            command_id: desktop_protocol::CommandId::generate(),
+            operation: desktop_protocol::CommandOperation::CreateTask,
+            state,
+            task_id: None,
+            accepted_at: None,
+            reject_reason: reason,
+            effect_refs: Vec::new(),
+            dedupe_expires_at: None,
+            message: Some("safe detail".to_owned()),
+        }
+    }
+
+    #[test]
+    fn every_receipt_answer_keeps_its_own_state() {
+        assert_eq!(
+            classify_receipt(Some(&app_core::CommandReadError::AuthorizationDenied), None),
+            ReceiptObservation::Denied
+        );
+        assert_eq!(
+            classify_receipt(None, None),
+            ReceiptObservation::NotRetained
+        );
+        assert_eq!(
+            classify_receipt(None, Some(&view(CommandPresentation::Prepared))),
+            ReceiptObservation::Pending
+        );
+        assert_eq!(
+            classify_receipt(None, Some(&view(CommandPresentation::AwaitingResponse))),
+            ReceiptObservation::Pending
+        );
+        assert_eq!(
+            classify_receipt(None, Some(&view(CommandPresentation::ReceiptAvailable))),
+            ReceiptObservation::ReceiptMissing
+        );
+        assert_eq!(
+            classify_receipt(
+                None,
+                Some(&view(CommandPresentation::CanonicalEffectObserved))
+            ),
+            ReceiptObservation::CanonicalObserved
+        );
+        assert_eq!(
+            classify_receipt(None, Some(&view(CommandPresentation::Unsupported))),
+            ReceiptObservation::Unsupported
+        );
+        assert_eq!(
+            classify_receipt(None, Some(&view(CommandPresentation::Failed))),
+            ReceiptObservation::Failed
+        );
+        assert_eq!(
+            classify_receipt(None, Some(&view(CommandPresentation::OutcomeUnconfirmed))),
+            ReceiptObservation::Unknown
+        );
+    }
+
+    #[test]
+    fn accepted_and_rejected_receipts_are_distinguished() {
+        let mut accepted = view(CommandPresentation::ReceiptAvailable);
+        accepted.receipt = Some(receipt(desktop_protocol::ReceiptState::Accepted, None));
+        assert_eq!(
+            classify_receipt(None, Some(&accepted)),
+            ReceiptObservation::Accepted { task_id: None }
+        );
+
+        let mut stale = view(CommandPresentation::ReceiptAvailable);
+        stale.receipt = Some(receipt(
+            desktop_protocol::ReceiptState::Rejected,
+            Some(desktop_protocol::RejectReason::UnsupportedCommand),
+        ));
+        assert_eq!(
+            classify_receipt(None, Some(&stale)),
+            ReceiptObservation::Rejected {
+                reason: Some(desktop_protocol::RejectReason::UnsupportedCommand),
+                message: Some("safe detail".to_owned()),
+            }
+        );
+
+        let mut validation = view(CommandPresentation::ReceiptAvailable);
+        validation.receipt = Some(receipt(
+            desktop_protocol::ReceiptState::Rejected,
+            Some(desktop_protocol::RejectReason::ValidationFailed),
+        ));
+        assert_eq!(
+            classify_receipt(None, Some(&validation)),
+            ReceiptObservation::Rejected {
+                reason: Some(desktop_protocol::RejectReason::ValidationFailed),
+                message: Some("safe detail".to_owned()),
+            }
+        );
+    }
+
+    #[test]
+    fn rejection_codes_are_explicit_for_every_reason() {
+        use desktop_protocol::RejectReason;
+        for reason in [
+            RejectReason::ValidationFailed,
+            RejectReason::Unauthorized,
+            RejectReason::Forbidden,
+            RejectReason::RevisionConflict,
+            RejectReason::UnsupportedCommand,
+            RejectReason::CommandIdConflict,
+            RejectReason::InternalError,
+        ] {
+            assert!(!reject_code(&reason).is_empty());
+        }
     }
 }

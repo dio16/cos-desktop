@@ -200,6 +200,8 @@ pub enum BriefValidationError {
     Submitting,
     /// The authenticated catalog carried no usable observation epoch.
     EpochUnavailable,
+    /// A sent command's receipt is still pending; no second intent is allowed.
+    AwaitingReceipt,
 }
 
 /// Submit state machine (accepted is a receipt, never an observed task).
@@ -207,8 +209,10 @@ pub enum BriefValidationError {
 pub enum BriefState {
     /// Editing a draft.
     Editing,
-    /// One create command is in flight; the form is frozen.
+    /// One create command is being handed to the command channel.
     Submitting { command_id: CommandId },
+    /// The command channel admitted the intent; the receipt is still pending.
+    Sent { command_id: CommandId },
     /// The Runtime accepted the receipt; the task is not yet observed.
     Accepted {
         command_id: CommandId,
@@ -216,7 +220,8 @@ pub enum BriefState {
     },
     /// The command was definitively rejected.
     Rejected { command_id: CommandId, code: String },
-    /// The response was lost; only an identical retry may reuse the id.
+    /// The outcome is unknown; the receipt stays recheckable and any later
+    /// submit is a new intent with a new command id (never an id resend).
     Unknown { command_id: CommandId },
     /// The recipe reference is stale; refresh the catalog and resubmit.
     StaleRecipe,
@@ -553,6 +558,9 @@ impl BriefForm {
         if matches!(self.state, BriefState::Submitting { .. }) {
             return Err(BriefValidationError::Submitting);
         }
+        if matches!(self.state, BriefState::Sent { .. }) {
+            return Err(BriefValidationError::AwaitingReceipt);
+        }
         let epoch = self
             .catalog
             .as_ref()
@@ -570,6 +578,30 @@ impl BriefForm {
             payload,
             epoch,
         })
+    }
+
+    /// Mark the admitted intent as sent; the receipt is still pending.
+    pub fn on_sent(&mut self, command_id: &CommandId) -> bool {
+        if !self.matches_pending(command_id) {
+            return false;
+        }
+        self.state = BriefState::Sent {
+            command_id: command_id.clone(),
+        };
+        true
+    }
+
+    /// A local refusal means nothing was sent; return to editing honestly.
+    pub fn on_not_sent(&mut self) -> bool {
+        if !matches!(
+            self.state,
+            BriefState::Submitting { .. } | BriefState::Sent { .. }
+        ) {
+            return false;
+        }
+        self.pending = None;
+        self.state = BriefState::Editing;
+        true
     }
 
     /// Apply an accepted receipt.
@@ -632,6 +664,7 @@ impl BriefForm {
         match self.state {
             BriefState::Editing => "編集中",
             BriefState::Submitting { .. } => "送信中",
+            BriefState::Sent { .. } => "送信済み — 受付票を確認してください",
             BriefState::Accepted { .. } => "受付済み — 観測待ち",
             BriefState::Rejected { .. } => "拒否されました",
             BriefState::Unknown { .. } => {
