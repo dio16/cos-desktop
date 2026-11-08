@@ -3,6 +3,7 @@
 pub mod crash_report;
 pub mod diagnostics;
 pub mod fence;
+pub mod history;
 pub mod media_presentation;
 pub mod navigation;
 pub mod observation;
@@ -11,6 +12,11 @@ pub mod preferences;
 pub mod redaction;
 pub mod support_report;
 
+/// Opaque server-issued continuation cursor of one history page.
+///
+/// Re-exported because it is part of the history boundary app-core exposes to
+/// ui-model; ui-model does not depend on the client crate.
+pub use cos_client::HistoryCursor;
 pub use cos_client::SnapshotHandle;
 /// Value-free cooperative cancellation token for one media fetch.
 ///
@@ -32,6 +38,10 @@ pub use diagnostics::{
 pub use fence::{
     AuthorizedCommandRead, ObservationLease, PublicationChange, PublicationSubscription,
     TaggedRead, VisibilityFence,
+};
+pub use history::{
+    HISTORY_MAX_ENTRIES, HISTORY_PAGE_LIMIT, HistoryEntry, HistoryError, HistoryFetchReply,
+    HistoryPublication, HistoryRequest, HistoryStatus,
 };
 pub use media_presentation::{
     AdmittedMedia, MediaAvailability, MediaIdentity, MediaPresentation, MediaRepository,

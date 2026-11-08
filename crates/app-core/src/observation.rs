@@ -14,7 +14,7 @@ use std::time::{Duration, Instant};
 
 use cos_client::{
     ClientError, ClientEvent, ClientSource, CommandLookup, CommandStatus, ConnectionState,
-    DesktopClient, ObservationControl, PublicationAccess, SnapshotHandle,
+    DesktopClient, HistoryQuery, ObservationControl, PublicationAccess, SnapshotHandle,
 };
 use desktop_protocol::{
     CommandId, CommandReceipt, Counter, ErrorCode, ObservationScopeRequest, ReadStamp,
@@ -22,6 +22,7 @@ use desktop_protocol::{
 };
 
 use crate::diagnostics::{DiagnosticBatch, DiagnosticKind, DiagnosticRing};
+use crate::history::{HistoryAccumulator, HistoryFetchReply, HistoryPublication};
 
 use crate::fence::{
     AuthorizedCommandRead, ObservationLease, PublicationSubscription, VisibilityFence,
@@ -295,6 +296,11 @@ enum ObservationCommand {
     FetchCatalog {
         reply: Reply<Result<cos_client::CatalogDocument, CommandReadError>>,
     },
+    FetchHistory {
+        /// Validated bounded query; boxed because the other arms are small.
+        query: Box<HistoryQuery>,
+        reply: Reply<HistoryFetchReply>,
+    },
     RequestCreateTask {
         /// Boxed: the envelope is the only large variant payload and the rest of
         /// the command enum is two/three machine words.
@@ -434,6 +440,10 @@ pub struct ObservationSessionOwner {
     shutdown: Arc<Mutex<ShutdownCompletion>>,
     /// Credits and pending releases under one lock.
     references: Arc<Mutex<ReferenceLedger>>,
+    /// Bounded history view and its request sequence (owner-side accumulator).
+    history: HistoryAccumulator,
+    /// Shared immutable history publication read by surfaces.
+    history_shared: Arc<Mutex<Arc<HistoryPublication>>>,
     publication_version: u64,
     /// Strong last-snapshot reference: identity comparison without ABA reuse.
     last_snapshot: Option<SnapshotHandle>,
@@ -524,6 +534,8 @@ pub struct ObservationHandle {
     shutdown: Arc<Mutex<ShutdownCompletion>>,
     /// Credits and pending releases under one lock.
     references: Arc<Mutex<ReferenceLedger>>,
+    /// Shared immutable history publication for this owner.
+    history: Arc<Mutex<Arc<HistoryPublication>>>,
 }
 
 /// Credits (references the owner granted) and releases awaiting application.
@@ -562,6 +574,7 @@ impl Clone for ObservationHandle {
             generation: Arc::clone(&self.generation),
             shutdown: Arc::clone(&self.shutdown),
             references: Arc::clone(&self.references),
+            history: Arc::clone(&self.history),
         }
     }
 }
@@ -633,6 +646,29 @@ impl ObservationHandle {
         let (reply, resolver) = OwnerReply::new();
         self.enqueue(ObservationCommand::FetchCatalog { reply: resolver });
         reply
+    }
+
+    /// Request one bounded task history page through the owner thread.
+    ///
+    /// The reply is value-free: it says only whether the request became the
+    /// current publication. The served page is read from [`Self::history`],
+    /// which is a bounded view and never a canonical history store.
+    pub fn fetch_history(&self, query: HistoryQuery) -> OwnerReply<HistoryFetchReply> {
+        let (reply, resolver) = OwnerReply::new();
+        self.enqueue(ObservationCommand::FetchHistory {
+            query: Box::new(query),
+            reply: resolver,
+        });
+        reply
+    }
+
+    /// The current bounded history publication of this owner.
+    ///
+    /// Reading it is not a grant: the view is invalidated on every scope or
+    /// authorization change, and an unloaded view is reported as
+    /// [`HistoryStatus::Idle`], never as an empty history.
+    pub fn history(&self) -> Arc<HistoryPublication> {
+        Arc::clone(&self.history.lock().expect("history lock"))
     }
 
     /// Submit one create-task command through the owner thread.
@@ -810,6 +846,9 @@ fn reject_stale(command: ObservationCommand) {
         ObservationCommand::FetchCatalog { reply } => {
             reply.resolve(Err(CommandReadError::Superseded));
         }
+        ObservationCommand::FetchHistory { reply, .. } => {
+            reply.resolve(HistoryFetchReply::Superseded);
+        }
         ObservationCommand::ChangeScope { .. }
         | ObservationCommand::AuthenticationChanged { .. } => {}
     }
@@ -838,6 +877,9 @@ fn reject(command: ObservationCommand) {
         ObservationCommand::FetchCatalog { reply } => {
             reply.resolve(Err(CommandReadError::CapacityExceeded));
         }
+        ObservationCommand::FetchHistory { reply, .. } => {
+            reply.resolve(HistoryFetchReply::Closed);
+        }
     }
 }
 
@@ -857,6 +899,9 @@ impl ObservationSessionOwner {
             Arc::new(Mutex::new(ShutdownCompletion::default()));
         let references: Arc<Mutex<ReferenceLedger>> =
             Arc::new(Mutex::new(ReferenceLedger::default()));
+        let history: HistoryAccumulator = HistoryAccumulator::default();
+        let history_shared: Arc<Mutex<Arc<HistoryPublication>>> =
+            Arc::new(Mutex::new(history.publication()));
         let owner = Self {
             client,
             fence: Arc::clone(&fence),
@@ -878,6 +923,8 @@ impl ObservationSessionOwner {
             deadline_ms: None,
             pump_saturated: false,
             shutdown_applied: false,
+            history,
+            history_shared: Arc::clone(&history_shared),
         };
         let handle = ObservationHandle {
             mailbox,
@@ -888,6 +935,7 @@ impl ObservationSessionOwner {
             generation: generation_cell,
             shutdown,
             references,
+            history: Arc::clone(&history_shared),
         };
         (owner, handle)
     }
@@ -917,6 +965,9 @@ impl ObservationSessionOwner {
         // Replacement closes first: the old authorized publication must never stay
         // readable, whether or not the transfer succeeds.
         let _ = self.fence.close_visibility();
+        // A loaded history view is bound to the replaced client's observation
+        // context, so no page survives the replacement.
+        self.reset_history();
         self.last_snapshot = None;
         self.projection_marker = None;
         // One boundary covers release application, the registry snapshot and the
@@ -1143,6 +1194,38 @@ impl ObservationSessionOwner {
         )
     }
 
+    /// Publish the accumulator's current immutable history view.
+    fn publish_history(&self) {
+        *self.history_shared.lock().expect("history lock") = self.history.publication();
+    }
+
+    /// Drop the loaded history view (scope/authorization/client change, shutdown).
+    fn reset_history(&mut self) {
+        self.history.reset();
+        self.publish_history();
+    }
+
+    /// Perform one history read on the owner thread and publish its outcome.
+    ///
+    /// The answer is applied only while its request sequence is current; a
+    /// result that lost the race (or arrived for another task) is discarded and
+    /// never published as the current view.
+    fn fetch_history(&mut self, query: &HistoryQuery) -> HistoryFetchReply {
+        let sequence = self.history.begin(query.task_ref());
+        self.publish_history();
+        let first_page = query.cursor().is_none();
+        let applied = match self.client.fetch_history(query) {
+            Ok(document) => self.history.apply(sequence, &document, first_page),
+            Err(error) => self.history.failed_with(sequence, error),
+        };
+        if applied {
+            self.publish_history();
+            HistoryFetchReply::Published
+        } else {
+            HistoryFetchReply::Superseded
+        }
+    }
+
     /// Clear the read diagnostic once the condition it described no longer holds.
     fn clear_read_diagnostic(&mut self) {
         if self.last_read_error.take().is_some() {
@@ -1228,6 +1311,7 @@ impl ObservationSessionOwner {
             ObservationCommand::Retain { tag, .. } => self.intent_tag_valid(*tag, false),
             ObservationCommand::RequestCreateTask { tag, .. } => self.intent_tag_valid(*tag, false),
             ObservationCommand::FetchCatalog { .. } => true,
+            ObservationCommand::FetchHistory { .. } => true,
             ObservationCommand::ChangeScope { .. }
             | ObservationCommand::AuthenticationChanged { .. } => true,
         }
@@ -1236,11 +1320,15 @@ impl ObservationSessionOwner {
     fn handle_intent(&mut self, command: ObservationCommand, now_ms: u64) {
         match command {
             ObservationCommand::ChangeScope { scope, reply } => {
+                // History is context-bound: the previous scope's rows must not
+                // remain readable while the new binding is established.
+                self.reset_history();
                 let result = self.begin_scope(scope);
                 reply.resolve(result);
                 let _ = now_ms;
             }
             ObservationCommand::AuthenticationChanged { reply } => {
+                self.reset_history();
                 let result = match self.scope.clone() {
                     Some(scope) => self.begin_scope(scope),
                     None => Err(CommandReadError::AuthorizationUnavailable),
@@ -1259,6 +1347,9 @@ impl ObservationSessionOwner {
                     CommandReadError::Client(PublicationError::from_client(&error))
                 });
                 reply.resolve(result);
+            }
+            ObservationCommand::FetchHistory { query, reply } => {
+                reply.resolve(self.fetch_history(&query));
             }
             ObservationCommand::RequestCreateTask {
                 envelope, reply, ..
@@ -1300,6 +1391,7 @@ impl ObservationSessionOwner {
         self.shutdown_applied = true;
         self.fence.close_visibility();
         self.fence.close_subscriptions();
+        self.reset_history();
         {
             let mut mailbox = self.mailbox.lock().expect("mailbox lock");
             mailbox.closed = true;
