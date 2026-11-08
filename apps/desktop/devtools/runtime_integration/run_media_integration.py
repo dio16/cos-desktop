@@ -19,6 +19,7 @@ status codes, UIA texts and screenshot hashes.
 
 from __future__ import annotations
 
+import argparse
 import base64
 import contextlib
 import ctypes
@@ -86,6 +87,44 @@ def sha256_file(path: Path) -> str:
         for chunk in iter(lambda: handle.read(1 << 20), b""):
             digest.update(chunk)
     return "sha256:" + digest.hexdigest()
+
+
+def screenshot_pair_stats(before: Path, after: Path) -> dict | None:
+    """Measured pixel difference between the two PrintWindow captures.
+
+    This records what the captures show; it does not by itself prove GPU composition. A media
+    surface that stayed an empty panel changes only its status text, while a shown picture changes
+    a large region with many distinct colours.
+    """
+    try:
+        from PIL import Image, ImageChops
+    except Exception:  # pragma: no cover - optional analysis dependency
+        return None
+    if not (before.is_file() and after.is_file()):
+        return None
+    with Image.open(before) as before_image, Image.open(after) as after_image:
+        if before_image.size != after_image.size:
+            return {
+                "same_size": False,
+                "before_size": list(before_image.size),
+                "after_size": list(after_image.size),
+            }
+        left = before_image.convert("RGB")
+        right = after_image.convert("RGB")
+        difference = ImageChops.difference(left, right)
+        box = difference.getbbox()
+        changed = sum(1 for pixel in difference.getdata() if pixel != (0, 0, 0))
+        distinct = 0
+        if box is not None:
+            distinct = len(set(difference.crop(box).getdata()))
+        return {
+            "same_size": True,
+            "size": list(left.size),
+            "changed_pixels": changed,
+            "total_pixels": left.size[0] * left.size[1],
+            "changed_bbox": list(box) if box is not None else None,
+            "distinct_diff_colours": distinct,
+        }
 
 
 def free_port_fixed() -> None:
@@ -910,7 +949,7 @@ def run_once() -> dict:
             "PREVIEW stays UNSUPPORTED on this route (no transcode).",
             "THUMBNAIL/METADATA byte routes are not exercised by this slice.",
             "No EXIF/orientation interpretation; Orientation::Normal is the only admitted class.",
-            "The admitted presentation class is the pinned 2048x2048 RGB8 media proof; a smaller live artifact is admitted and decoded but explicitly refused for display (recorded, not fabricated).",
+            "A real handle-TTL expiry and a Runtime-instance-change 410 are not separately measured.",
             "No product/UX, GPU residency or Present claim; PrintWindow evidence only.",
         ],
     }
@@ -1073,6 +1112,23 @@ def run_once() -> dict:
                 bool(decoded) and int(decoded.get("rgba_bytes") or 0) > 0,
                 {"decoded": decoded, "decode_error": observed.get("decode_error")},
             )
+            check(
+                "presentation_request_built",
+                observed.get("presentation") == "request"
+                and int(decoded.get("width") or 0) == int(observed.get("width") or 0)
+                and int(decoded.get("height") or 0) == int(observed.get("height") or 0),
+                {
+                    "presentation": observed.get("presentation"),
+                    "descriptor_geometry": {
+                        "width": observed.get("width"),
+                        "height": observed.get("height"),
+                    },
+                    "decoded_geometry": {
+                        "width": decoded.get("width"),
+                        "height": decoded.get("height"),
+                    },
+                },
+            )
             negatives = observed.get("negatives") or {}
             check(
                 "negative_matrix",
@@ -1170,6 +1226,10 @@ def run_once() -> dict:
                 for name in ("artifact-surface-before.png", "artifact-surface-media.png")
                 if (evidence / name).is_file()
             }
+            native["screenshot_diff"] = screenshot_pair_stats(
+                evidence / "artifact-surface-before.png",
+                evidence / "artifact-surface-media.png",
+            )
             closed = app.close()
             native["close"] = closed
             native["media_requests"] = media_request_summary(
@@ -1244,8 +1304,9 @@ def run_once() -> dict:
                 rendered_verdict = "NOT_MEASURED"
                 rendered_state = (
                     "the admitted artifact is %sx%s (PNG bit depth %s, colour type %s); "
-                    "the pinned presentation class is 2048x2048 RGB8, so the picture is "
-                    "explicitly refused instead of fabricated"
+                    "the admitted presentation class is the explicit square set "
+                    "media::APPROVED_EDGES = [320, 1024, 2048], so the surface refused "
+                    "instead of fabricating a picture"
                     % (
                         png.get("width"),
                         png.get("height"),
@@ -1262,6 +1323,16 @@ def run_once() -> dict:
                 "requested_artifact": facts,
                 "status_excerpt": native.get("media_status_excerpt"),
             }
+            if rendered_verdict == "PASS":
+                record["residuals"].append(
+                    "The shown picture is the admitted preview mip (viewer PreviewOnly mode); "
+                    "product full-detail, GPU residency and Present acceptance remain open."
+                )
+            else:
+                record["residuals"].append(
+                    "The live artifact was admitted and decoded but the presentation surface did "
+                    "not show a picture; the observed state is recorded, not fabricated."
+                )
 
             # --- shutdown / evidence ----------------------------------------
             server_stop = server.stop()
@@ -1290,8 +1361,42 @@ def run_once() -> dict:
         cleanup_credential_store(ENDPOINT)
 
 
+def configure(argv: list[str] | None = None) -> None:
+    """Bind the run's port, work label and evidence directory.
+
+    Defaults keep the original stage-3 run unchanged (8127 / run1 / img6-rt6-latest); a follow-up
+    slice passes its own port, label and time-stamped evidence directory so earlier evidence is
+    never overwritten.
+    """
+    global PORT, ENDPOINT, LABEL, EVIDENCE_DIR
+    parser = argparse.ArgumentParser(
+        description="Isolated Desktop<->Runtime media integration evidence run."
+    )
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=int(os.environ.get("COS_MEDIA_PORT", str(PORT))),
+        help="loopback port the harness owns (default 8127)",
+    )
+    parser.add_argument(
+        "--label",
+        default=os.environ.get("COS_MEDIA_LABEL", LABEL),
+        help="work-directory label under target/media-live (default run1)",
+    )
+    parser.add_argument(
+        "--evidence-dir",
+        default=os.environ.get("COS_MEDIA_EVIDENCE_DIR", str(EVIDENCE_DIR)),
+        help="evidence output directory (default img6-rt6-latest)",
+    )
+    args = parser.parse_args(argv)
+    PORT = args.port
+    ENDPOINT = f"http://127.0.0.1:{PORT}"
+    LABEL = args.label
+    EVIDENCE_DIR = Path(args.evidence_dir)
+
+
 def main(argv: list[str] | None = None) -> int:
-    del argv
+    configure(argv)
     if not DESKTOP_EXE.is_file():
         raise RuntimeError("build the release Desktop first: cargo build --locked --release -p cos-desktop")
     record = run_once()
