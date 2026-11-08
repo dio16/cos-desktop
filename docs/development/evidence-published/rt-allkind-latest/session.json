@@ -1,0 +1,155 @@
+{
+  "task": "MP-RT3/R5 all-kind Desktop projection fixtures, validation and live evidence",
+  "slice": "Regenerated all-kind observation fixtures consumed and validated on the Desktop",
+  "date": "2026-11-08",
+  "status": "LIVE_OBSERVED_LIMITED",
+  "runtime": {
+    "capture_head": "c513d8b8ae3d739742410917ce540293d277124d",
+    "fixtures_frozen_at": "6f1708e7363ed2ceab7f60e98c03498ea0b4fc7b",
+    "provenance_repair_commit": "3b4ad83e66b8fb219c11a012f62ed887dc27ca9b",
+    "source_db_bytes": 11493376,
+    "source_db_sha256": "sha256:fbfe3ababb9f53dfb1c373774ce99bdfed813d7b64ad743164fa6adfbc0c56f6",
+    "db_copy_sha256": "sha256:f87711008a546c31caf75ed6d24c3a5c95b1d824c8b43868f13e1e852bfb3e3d",
+    "port": 8124,
+    "sessions": 2
+  },
+  "fixtures": {
+    "directory": "crates/cos-client/fixtures/desktop-observation-v1/",
+    "files": {
+      "context-missing.json": {
+        "bytes": 268,
+        "sha256": "sha256:c123048236353fb005f1e14cdcbe938a24e161a0597b945a67f4c7a6a5086470"
+      },
+      "deltas-changed.json": {
+        "bytes": 1404,
+        "sha256": "sha256:7f277288beb263d2bc7faa70b42a464e6f9b1963548293476a5ab27c9f5da705"
+      },
+      "deltas-none.json": {
+        "bytes": 393,
+        "sha256": "sha256:e4b4aaf567f128b4875b4df0476dc2932b839064f3928f4a2d1880b77d30943f"
+      },
+      "deltas-resync.json": {
+        "bytes": 358,
+        "sha256": "sha256:15a033c1c885d60554ca5e636120704f23a2af0f0d2a85d6d97456e1090881f2"
+      },
+      "hello.json": {
+        "bytes": 569,
+        "sha256": "sha256:730dcbc340d839d1d929fb4edf4fd40f2a115c5f4f0aad9463487bfaa8213107"
+      },
+      "observation-grant.json": {
+        "bytes": 237346,
+        "sha256": "sha256:bc5e1cf39a1b29719521801fe83e0282df453a548cdf90aec1078dda36ee46bd"
+      },
+      "observation-unauthorized.json": {
+        "bytes": 287,
+        "sha256": "sha256:4ee1e255e4171afb7fb9c8f752908a1804e35de5a5f4b07348c733fe4161c88e"
+      },
+      "snapshot.json": {
+        "bytes": 236232,
+        "sha256": "sha256:b5c85e17c75a2319ebd8ecb5504cc984c53405cf4eead7104cd10ce330c06c94"
+      },
+      "version-rejected.json": {
+        "bytes": 395,
+        "sha256": "sha256:28c3eb650ee6f6b5587dc81a8c2989162eccb066431a64113db14b4730a953ba"
+      },
+      "README.md": {
+        "bytes": 4588,
+        "sha256": "sha256:6243c693d24bc9e79100be2727431449453cf3f9c436573f40045d3dfaf7a669"
+      }
+    },
+    "counts": {
+      "tasks": 39,
+      "iterations": 37,
+      "candidates": 37,
+      "artifacts": 36,
+      "evaluations": 37,
+      "outcomes": 37,
+      "graphs": 37,
+      "capabilities": 0
+    },
+    "total_mutations": 260,
+    "task_reference_axes": {
+      "with_iteration": 37,
+      "with_formal_outcome": 37,
+      "run_less": 2,
+      "best_candidate": 0,
+      "accepted_brief": 0,
+      "capabilities": 0
+    },
+    "note": "Copied byte-identically from the Runtime capture; README is the corrected provenance from 3b4ad83e. The bundle digest and counts are verified by the Desktop tests, not restated from the README."
+  },
+  "tests": {
+    "commands": [
+      "cargo test --locked -p cos-client",
+      "cargo fmt -p cos-client -- --check",
+      "cargo clippy --locked -p cos-client --all-targets -- -D warnings"
+    ],
+    "cos_client": {
+      "passed": 198,
+      "failed": 0,
+      "ignored": 1
+    },
+    "runtime_side": {
+      "command": "./.venv/Scripts/python.exe -m pytest -q tests/test_cos_frontend_contract.py -k desktop",
+      "passed": 40,
+      "deselected": 64
+    },
+    "desktop_package_tests": "none consume the recorded fixtures (only cos-client does); no extra apps/desktop test target was run"
+  },
+  "live_harness": {
+    "source": "apps/desktop/devtools/runtime_integration/run_integration.py",
+    "source_sha256": "84339de1247594ec7271f00692d4d3e0136f6a6d93fd0e02f2ca443098ff7918",
+    "patched_copy_sha256": "751606a6147695406c3762b120bcebe80d93db56dc9c7306d6caab873cfd9cdc",
+    "patch": "scratch copy only: DESKTOP_ROOT pinned to C:/dev/cos-desktop, PROBE pinned to the repo probe_window.ps1, EVIDENCE_DIR redirected to target/rt-allkind-tmp/harness-evidence; task-16 evidence untouched",
+    "command": "python target/rt-allkind-tmp/run_integration_scratch.py --runs 2 --no-build",
+    "binary": {
+      "path": "target/release/cos-desktop.exe",
+      "bytes": 19278336,
+      "sha256": "sha256:c4b75e65e4c7a2276fee8632887a5fb12045fe0c688eca399f1b98a0dcfbe6ab",
+      "built_at": "2026-11-08 13:49 local",
+      "built_from_note": "pre-existing release binary; the harness could not rebuild because another lane's untracked NAV2 brief_surface.rs has a non-exhaustive ReceiptState match (not this task's file), so --no-build was used"
+    },
+    "runs": 2,
+    "scenarios": {
+      "connect_snapshot": "PASS",
+      "runtime_stop": "PASS",
+      "runtime_restart": "PASS",
+      "clean_close": "PASS",
+      "relaunch_recovery": "PASS"
+    },
+    "deterministic": true,
+    "findings": [],
+    "printwindow_sha256": {
+      "connected.png": "68a8669485f7c6ce981fc29214cf369a8198da30f9ba5411719efe0186c0d80d",
+      "recovered.png": "32ed2292fa5995a7fa3d144408eec0382a6f0b355811ea42c88ab19b0bdddec8",
+      "restart-withheld.png": "8f988ebfac7b2a5171ce808a24aa6187a5325ecea8371ea56fb541da4fac971a",
+      "withheld.png": "8f988ebfac7b2a5171ce808a24aa6187a5325ecea8371ea56fb541da4fac971a"
+    },
+    "uia_excerpts": [
+      "成果物の利用状態: 取得可能（AVAILABLE）（1件）",
+      "作業領域：成果物",
+      "成果物",
+      "現在の版では、成果物の画像を表示できません。候補の説明情報のみを表示しています。",
+      "候補の詳細",
+      "候補は表示されていません",
+      "評価 — 利用不可: 候補は選択されていません。",
+      "判断の根拠 — 利用不可: 候補は選択されていません。",
+      "改善 — 利用不可: 候補は選択されていません。",
+      "反復ごとの候補一覧",
+      "反復ごとの候補一覧。閲覧中と比較対象はこの画面の選択です。正式採用は実行基盤から通知されます。",
+      "候補一覧"
+    ]
+  },
+  "native_surfaces": {
+    "artifacts": "PASS: UIA shows 成果物の利用状態: 取得可能（AVAILABLE）（1件）, 作業領域：成果物, 成果物 Ctrl+1 with real task data",
+    "candidates": "NOT_MEASURED: the candidate pane is present but reports 候補は表示されていません / 候補は選択されていません; the Runtime capture has no best_candidate_ref (0) and the harness performs no selection input",
+    "flow": "NOT_MEASURED: the flow surface is not reached by the harness scenario and no navigation input is performed"
+  },
+  "limits": [
+    "UIA exposes automation names only; no focus/screen-reader/IME/High Contrast/DPI claim",
+    "one host (Windows 11, 96 DPI), loopback Runtime, fixture-free Desktop",
+    "the release binary predates the current HEAD because NAV2's in-flight brief_surface.rs does not compile; the harness used --no-build and recorded its hashes",
+    "candidate selection/display and flow-surface display are NOT_MEASURED, not claimed; the all-kind projections are proven accepted and reference-closed by the cos-client tests",
+    "PrintWindow captures were not interpreted as visual approval (the harness reports printed=false as a bounded limitation)"
+  ]
+}

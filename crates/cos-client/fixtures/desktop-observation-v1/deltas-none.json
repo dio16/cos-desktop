@@ -2,9 +2,10 @@
   "name": "deltas-none",
   "request": {
     "method": "GET",
-    "path": "/api/cos/desktop/deltas?cursor=cursor-7b36f4e2806a47789d58230d0c4ea294",
+    "path": "/api/cos/desktop/deltas?cursor=cursor-7a522c255d25479e85f265b3c92b0901",
     "headers": {
-      "X-Cos-Context": "context-a81d239793f34b9c9f5eabb90391581e"
+      "X-Cos-Context": "context-5954068da69a4c15a5667e2070946698",
+      "Authorization": "Bearer <redacted>"
     }
   },
   "response": {

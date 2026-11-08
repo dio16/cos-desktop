@@ -2,7 +2,7 @@
   "name": "context-missing",
   "request": {
     "method": "GET",
-    "path": "/api/cos/desktop/deltas?cursor=cursor-7b36f4e2806a47789d58230d0c4ea294",
+    "path": "/api/cos/desktop/deltas?cursor=cursor-7a522c255d25479e85f265b3c92b0901",
     "headers": {}
   },
   "response": {

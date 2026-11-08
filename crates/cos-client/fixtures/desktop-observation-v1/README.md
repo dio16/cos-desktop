@@ -6,30 +6,38 @@ with the script, then freeze the directory.
 
 ## Provenance
 
-- Captured at (UTC): 2026-11-01T07:03:38.073787+00:00
+- Captured at (UTC): 2026-11-08T06:47:09.343278+00:00
 - Server command: `python -m orchestrator_app.api --config <temp config> --host 127.0.0.1 --port <free port>`
 - Server build: `orchestrator-runtime/0.1.0`
 - Server identity: `cos-runtime-orchestrator`
-- Capture HEAD: `4b3e377d4deb28d8d7da4c34ccd65e6afe5d6c93`
+- Capture HEAD: `c513d8b8ae3d739742410917ce540293d277124d`
 - Capture worktree state at capture
   (`git -C <repo root> status --porcelain --untracked-files=no`):
 
-      M orchestrator/orchestrator_app/cos_desktop_protocol.py
-      M orchestrator/tests/test_cos_frontend_contract.py
+      M orchestrator/docs/guides/development-loop.md
+      M orchestrator/orchestrator_app/dev_caller.py
+      M orchestrator/tests/test_dev_caller.py
+      M orchestrator/tests/test_dev_caller_e2e.py
 
-- These fixtures were produced by running the capture script against the
-  **capture-HEAD worktree including the uncommitted tracked changes listed
-  above** (the capture was not taken from a clean checkout). A clean
-  checkout of the capture HEAD therefore does not reproduce every recorded
-  response; `version-rejected.json` needs the `UNSUPPORTED_PROTOCOL`
-  rejection that was uncommitted at capture time.
-- Frozen at commit: `3f99954d86d7db189bcb2ab2e5233881ae48aea8`
-  (the commit that first adds this directory). The JSON documents are
-  byte-identical to their capture output at and after that commit.
+- The capture ran from a worktree whose only uncommitted changes were the
+  unrelated files listed above; every Desktop protocol and
+  fixture-generation path matched capture HEAD `c513d8b8ae3d739742410917ce540293d277124d`. A clean
+  worktree at that HEAD reproduces the deterministic error scenarios
+  `observation-unauthorized.json` and `version-rejected.json`
+  (`UNSUPPORTED_PROTOCOL`) byte-identically; capture-generated
+  identifiers (context/stamp, snapshot ids, cursors) in the other
+  documents are expected to differ.
+- Fixtures frozen at: `6f1708e7363ed2ceab7f60e98c03498ea0b4fc7b`
+  (the directory was first added by
+  `3f99954d86d7db189bcb2ab2e5233881ae48aea8`; the JSON documents are
+  byte-identical to their capture output at and after this freeze).
 - DB source: copy of `db/generation.sqlite` (opened read-only for the
   backup; the production file was verified unchanged during capture:
   11493376 bytes, mtime_ns 1789425446986011400)
-- Scoped task count at capture: 39 (37 with run history, 2 without)
+- Production DB content: 11493376 bytes, sha256 `fbfe3ababb9f53dfb1c373774ce99bdfed813d7b64ad743164fa6adfbc0c56f6`
+  (the verifier's copy matched the source exactly)
+- Projection mutations: 260; scoped TASK projections:
+  39 (37 with run history, 2 without)
 
 ## Scenarios (name -> recorded status)
 
@@ -42,6 +50,8 @@ with the script, then freeze the directory.
 - `context-missing.json`: 401
 - `observation-unauthorized.json`: 401
 - `version-rejected.json`: 422
+- `deltas-changed-evaluation` is deferred: no evaluation mutation was
+  captured, so the nine scenarios above are the frozen set.
 
 `deltas-changed` was captured against a **second** server running on a second
 copy of the database: after the observation grant, one `creative_tasks.status`
@@ -66,12 +76,12 @@ checkout's newline translation. Verify from the repository root with
 
     git cat-file blob HEAD:orchestrator/fixtures/desktop-observation-v1/<name>.json | sha256sum
 
-- `hello.json` — sha256 `b6c9fad7aa136ae24d9cf901f29d89fb9056665dfa93c6043d20756409ec1cc0`
-- `observation-grant.json` — sha256 `01deb64d5e551e37c23e87d610db569001a1eb8cbe404445d93ce3be63a6a91b`
-- `snapshot.json` — sha256 `616eba0dd8913877d68dba742c6b79f1d88358f406c8dffc3d7a66e86385b734`
-- `deltas-none.json` — sha256 `946ae7fdf95ce2c79d8580c82f6678451a1eae70ce4821a134b4004e0f0f34a7`
-- `deltas-changed.json` — sha256 `324f9f7d61a34cd2769ebcb3a4615cd5816b94a6ed639240c3a1a3ac4802976b`
-- `deltas-resync.json` — sha256 `ff00e0a4edb19754f88b1d7c10b80e57c92c17bdd460f737c6cb0db6a5c3c298`
-- `context-missing.json` — sha256 `5b42c018d039cc0cdc7e77a90e5fba5766d3daec3b02c64c1d3e313851d6b8fa`
+- `hello.json` — sha256 `730dcbc340d839d1d929fb4edf4fd40f2a115c5f4f0aad9463487bfaa8213107`
+- `observation-grant.json` — sha256 `bc5e1cf39a1b29719521801fe83e0282df453a548cdf90aec1078dda36ee46bd`
+- `snapshot.json` — sha256 `b5c85e17c75a2319ebd8ecb5504cc984c53405cf4eead7104cd10ce330c06c94`
+- `deltas-none.json` — sha256 `e4b4aaf567f128b4875b4df0476dc2932b839064f3928f4a2d1880b77d30943f`
+- `deltas-changed.json` — sha256 `7f277288beb263d2bc7faa70b42a464e6f9b1963548293476a5ab27c9f5da705`
+- `deltas-resync.json` — sha256 `15a033c1c885d60554ca5e636120704f23a2af0f0d2a85d6d97456e1090881f2`
+- `context-missing.json` — sha256 `c123048236353fb005f1e14cdcbe938a24e161a0597b945a67f4c7a6a5086470`
 - `observation-unauthorized.json` — sha256 `4ee1e255e4171afb7fb9c8f752908a1804e35de5a5f4b07348c733fe4161c88e`
 - `version-rejected.json` — sha256 `28c3eb650ee6f6b5587dc81a8c2989162eccb066431a64113db14b4730a953ba`

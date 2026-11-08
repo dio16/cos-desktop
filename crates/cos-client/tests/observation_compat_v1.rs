@@ -77,31 +77,31 @@ fn recorded_fixture_copies_are_byte_identical_to_the_runtime_recording() {
     let expected = [
         (
             "hello.json",
-            "b6c9fad7aa136ae24d9cf901f29d89fb9056665dfa93c6043d20756409ec1cc0",
+            "730dcbc340d839d1d929fb4edf4fd40f2a115c5f4f0aad9463487bfaa8213107",
         ),
         (
             "observation-grant.json",
-            "01deb64d5e551e37c23e87d610db569001a1eb8cbe404445d93ce3be63a6a91b",
+            "bc5e1cf39a1b29719521801fe83e0282df453a548cdf90aec1078dda36ee46bd",
         ),
         (
             "snapshot.json",
-            "616eba0dd8913877d68dba742c6b79f1d88358f406c8dffc3d7a66e86385b734",
+            "b5c85e17c75a2319ebd8ecb5504cc984c53405cf4eead7104cd10ce330c06c94",
         ),
         (
             "deltas-none.json",
-            "946ae7fdf95ce2c79d8580c82f6678451a1eae70ce4821a134b4004e0f0f34a7",
+            "e4b4aaf567f128b4875b4df0476dc2932b839064f3928f4a2d1880b77d30943f",
         ),
         (
             "deltas-changed.json",
-            "324f9f7d61a34cd2769ebcb3a4615cd5816b94a6ed639240c3a1a3ac4802976b",
+            "7f277288beb263d2bc7faa70b42a464e6f9b1963548293476a5ab27c9f5da705",
         ),
         (
             "deltas-resync.json",
-            "ff00e0a4edb19754f88b1d7c10b80e57c92c17bdd460f737c6cb0db6a5c3c298",
+            "15a033c1c885d60554ca5e636120704f23a2af0f0d2a85d6d97456e1090881f2",
         ),
         (
             "context-missing.json",
-            "5b42c018d039cc0cdc7e77a90e5fba5766d3daec3b02c64c1d3e313851d6b8fa",
+            "c123048236353fb005f1e14cdcbe938a24e161a0597b945a67f4c7a6a5086470",
         ),
         (
             "observation-unauthorized.json",
@@ -552,17 +552,56 @@ fn recorded_observation_grant_reaches_live_with_the_real_snapshot() {
         2,
         "run-less tasks are published without invented axes"
     );
-    // v1 projects TASK only and the recorded rows declare no reference, so the
-    // snapshot cannot carry a dangling one.
+    // The regenerated all-kind capture carries real projection content. The
+    // snapshot entry accepted it, so every declared reference resolves (the
+    // closure rules live in `projection.rs`); these assertions pin the shape the
+    // fixture actually recorded instead of assuming a TASK-only read model.
+    let snapshot = client.snapshot();
+    assert_eq!(snapshot.candidates.len(), 37, "candidate projections");
+    assert_eq!(snapshot.artifacts.len(), 36, "artifact projections");
+    assert_eq!(snapshot.evaluations.len(), 37, "evaluation projections");
+    assert_eq!(snapshot.iterations.len(), 37, "iteration projections");
+    assert_eq!(snapshot.outcomes.len(), 37, "outcome projections");
+    assert_eq!(snapshot.graphs.len(), 37, "graph projections");
+    assert_eq!(snapshot.capabilities.len(), 0, "capability projections");
+    let with_refs = snapshot
+        .tasks
+        .values()
+        .filter(|task| task.iteration_ref.is_some())
+        .count();
+    assert_eq!(with_refs, 37, "run-history tasks declare their iteration");
     assert!(
-        client.snapshot().tasks.values().all(|task| {
-            task.iteration_ref.is_none()
-                && task.best_candidate_ref.is_none()
-                && task.formal_outcome_ref.is_none()
+        snapshot
+            .tasks
+            .values()
+            .filter(|task| task.iteration_ref.is_some())
+            .all(|task| task.formal_outcome_ref.is_some()),
+        "the run-history tasks declare the formal outcome"
+    );
+    assert_eq!(
+        snapshot
+            .tasks
+            .values()
+            .filter(|task| task.iteration_ref.is_none())
+            .count(),
+        2,
+        "run-less tasks declare no invented references"
+    );
+    assert!(
+        snapshot.tasks.values().all(|task| {
+            task.best_candidate_ref.is_none()
                 && task.accepted_brief_ref.is_none()
                 && task.capabilities_ref.is_none()
         }),
-        "no recorded task declares an optional reference"
+        "these axes are absent from the recorded capture"
+    );
+    // The two run-less tasks declare neither an iteration nor an outcome.
+    assert!(
+        snapshot
+            .tasks
+            .values()
+            .filter(|task| task.iteration_ref.is_none())
+            .all(|task| task.formal_outcome_ref.is_none())
     );
 
     // RC-03: reads are principal-bound, so the replayed client presents the
@@ -786,7 +825,7 @@ fn recorded_delta_resync_reobserves_without_fabrication() {
                 rebind: false,
             },
         ],
-        Duration::from_millis(10),
+        Duration::from_millis(300),
     );
     client.connect(scope(), 0).expect("observation opens");
     let mut now = 0;
@@ -795,7 +834,15 @@ fn recorded_delta_resync_reobserves_without_fabrication() {
     // The 409 reaches the client as the protocol RESYNC_REQUIRED frame with a
     // closed reason (the legacy body carries only the code, so the adapter's
     // closed fallback is HISTORY_UNAVAILABLE); it is not a transport failure.
-    let mut saw_resync = false;
+    // The frame may already have been drained by the Live wait above.
+    let mut saw_resync = events.iter().any(|event| {
+        matches!(
+            event,
+            ClientEvent::ResyncRequested {
+                reason: ResyncReason::HistoryUnavailable
+            }
+        )
+    });
     let mut resync_events = Vec::new();
     let deadline = Instant::now() + Duration::from_secs(30);
     while Instant::now() < deadline && !saw_resync {
@@ -846,7 +893,7 @@ fn recorded_delta_resync_reobserves_without_fabrication() {
         });
     assert_eq!(
         relationship,
-        Some(("3".to_owned(), desktop_protocol::TaskStatus::Completed)),
+        Some(("15".to_owned(), desktop_protocol::TaskStatus::Completed)),
         "the projection still holds the snapshot content"
     );
 
@@ -892,8 +939,9 @@ fn recorded_context_missing_withholds_the_publication() {
                 rebind: false,
             },
         ],
-        // Give the test a moment of Live before the 401 poll.
-        Duration::from_millis(80),
+        // The all-kind snapshot needs longer to stage than the TASK-only one, so
+        // give the client a visible Live window before the 401 poll.
+        Duration::from_millis(500),
     );
     client.connect(scope(), 0).expect("observation opens");
     let mut now = 0;

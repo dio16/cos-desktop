@@ -903,13 +903,60 @@ mod recorded_observation_v1 {
             projection_bundle_digest(&mutations).expect("canonical digest"),
             document.snapshot.end.integrity_digest
         );
+        let expected = &document.snapshot.end.expected;
+        assert_eq!(state.tasks.len(), expected.tasks as usize);
+        assert_eq!(state.candidates.len(), expected.candidates as usize);
+        assert_eq!(state.artifacts.len(), expected.artifacts as usize);
+        assert_eq!(state.evaluations.len(), expected.evaluations as usize);
+        assert_eq!(state.iterations.len(), expected.iterations as usize);
+        assert_eq!(state.outcomes.len(), expected.outcomes as usize);
+        assert_eq!(state.graphs.len(), expected.graphs as usize);
+        assert_eq!(state.capabilities.len(), expected.capabilities as usize);
+        // The all-kind bundle carries run history: 37 tasks declare an iteration
+        // and outcome that resolve, while the two run-less tasks declare neither.
+        let with_run: Vec<_> = state
+            .tasks
+            .values()
+            .filter(|task| task.iteration_ref.is_some())
+            .collect();
+        assert_eq!(with_run.len(), 37);
         assert!(
-            state.tasks.values().all(|task| task.iteration_ref.is_none()
-                && task.best_candidate_ref.is_none()
-                && task.formal_outcome_ref.is_none()
+            with_run
+                .iter()
+                .all(|task| task.formal_outcome_ref.is_some())
+        );
+        assert_eq!(
+            state
+                .tasks
+                .values()
+                .filter(|task| task.iteration_ref.is_none())
+                .count(),
+            2
+        );
+        assert!(state.tasks.values().all(|task| {
+            task.best_candidate_ref.is_none()
                 && task.accepted_brief_ref.is_none()
-                && task.capabilities_ref.is_none()),
-            "v1 projects TASK only, so no recorded task declares a reference"
+                && task.capabilities_ref.is_none()
+        }));
+        // Every kind the Runtime captured is present; zero is only accepted when
+        // the capture itself records zero for that kind.
+        assert!(!state.candidates.is_empty() || expected.candidates == 0);
+        assert!(!state.artifacts.is_empty() || expected.artifacts == 0);
+        assert!(!state.evaluations.is_empty() || expected.evaluations == 0);
+        assert!(!state.iterations.is_empty() || expected.iterations == 0);
+        assert!(!state.outcomes.is_empty() || expected.outcomes == 0);
+        assert!(!state.graphs.is_empty() || expected.graphs == 0);
+        // A declared task reference resolves through the entry API.
+        let exemplar = with_run[0];
+        assert!(
+            state
+                .iterations
+                .contains_key(exemplar.iteration_ref.as_ref().expect("iteration ref"))
+        );
+        assert!(
+            state
+                .outcomes
+                .contains_key(exemplar.formal_outcome_ref.as_ref().expect("outcome ref"))
         );
     }
 }
@@ -1369,15 +1416,15 @@ mod integrity_tests {
     #[test]
     fn a_removal_alone_hides_an_existing_entry() {
         // Without an upsert the removal must take effect, which is the other half of the same rule.
-        let (state, mutations) = populated();
-        let (_base, upsert) = first_upsert(&mutations);
-        let ProjectionMutation::Upsert { projection, .. } = &upsert else {
-            panic!("the recorded upsert is an upsert");
-        };
-        let Projection::Task(snapshot) = projection else {
-            panic!("the fixture projection is a task snapshot");
-        };
-        let task_id = snapshot.task_ref.clone();
+        let (state, _mutations) = populated();
+        // A task without run history declares no outcome, so removing it leaves no
+        // dangling reference and exercises the removal-only overlay.
+        let task_id = state
+            .tasks
+            .values()
+            .find(|task| state.outcome_for_task(&task.task_ref).is_none())
+            .map(|task| task.task_ref.clone())
+            .expect("the recorded fixture observes a task without run history");
         let target = desktop_protocol::RemoveTarget::Task {
             task_id: task_id.clone(),
         };
@@ -1681,8 +1728,21 @@ mod integrity_tests {
         let (_state, mutations) = populated();
         assert_eq!(
             mutations.len(),
-            39,
-            "the recorded snapshot carries thirty-nine mutations"
+            260,
+            "the all-kind recorded snapshot carries 260 mutations"
         );
+        let tasks = mutations
+            .iter()
+            .filter(|mutation| {
+                matches!(
+                    mutation,
+                    ProjectionMutation::Upsert {
+                        projection: Projection::Task(_),
+                        ..
+                    }
+                )
+            })
+            .count();
+        assert_eq!(tasks, 39, "thirty-nine of them are TASK creations");
     }
 }

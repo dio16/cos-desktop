@@ -2,9 +2,10 @@
   "name": "deltas-changed",
   "request": {
     "method": "GET",
-    "path": "/api/cos/desktop/deltas?cursor=cursor-1be73ebf2c244ef98518d30d0e0a8cfd",
+    "path": "/api/cos/desktop/deltas?cursor=cursor-5b6e65c299ce47bba03cd8959b8091f3",
     "headers": {
-      "X-Cos-Context": "context-d8f38539ccd648378e2cc085e6f49668"
+      "X-Cos-Context": "context-15cc364ab4724230a97808d706334622",
+      "Authorization": "Bearer <redacted>"
     }
   },
   "response": {
@@ -13,16 +14,16 @@
   "body": {
     "schema_version": 1,
     "transaction": {
-      "transaction_id": "transaction-5db8efa5028449a09d68dc67b208608e",
-      "epoch": "d68f66cd76cf4d5eb744f63f5d988502",
-      "cursor": "cursor-a11ea65f9d67437ba256bb19fbd015b2",
-      "predecessor": "cursor-1be73ebf2c244ef98518d30d0e0a8cfd",
+      "transaction_id": "transaction-bf7a60404b4e422498e69c7ba5930ba5",
+      "epoch": "feee3133ae85451ca0244b24aa600c10",
+      "cursor": "cursor-63cf2d4ad6c046779b7b35cb53e253f1",
+      "predecessor": "cursor-5b6e65c299ce47bba03cd8959b8091f3",
       "mutation_count": 1,
-      "integrity_digest": "sha256:c578b186129c9e5d3664b2e41ffd12dfa3734a77336f45c499c2a80ff7011f31",
+      "integrity_digest": "sha256:a9746816fb22a13d4344a0fa916482ef0fab4396b1cadd2a4706f7a15e9a9c5a",
       "mutations": [
         {
           "op": "UPSERT",
-          "base_revision": "3",
+          "base_revision": "15",
           "projection": {
             "projection": "TASK",
             "task_ref": "task-0b23811426af4a86a3fed9dc67b21947",
@@ -30,7 +31,9 @@
             "task_status": "CANCELLED",
             "inner_phase": "RUNNING",
             "iteration_index": 0,
-            "projection_revision": "40"
+            "iteration_ref": "run-cutover-0b23811426af:0",
+            "formal_outcome_ref": "sha256:ac7429cdb1470edee3138d9fb2819d9c011033287ce4269cfce0abc7cff9540d",
+            "projection_revision": "261"
           }
         }
       ]
