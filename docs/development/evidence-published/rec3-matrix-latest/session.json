@@ -41,6 +41,32 @@
       "source_commit": "abf2310105527461f0d0a16a963ceff962205bc0"
     }
   },
+  "launch_count": {
+    "fixed_binary_matrix_runs": 17,
+    "pre_fix_binary_runs_recorded": 2,
+    "total_recorded_launches": 19,
+    "note": "Additional pre-fix exploratory launches (for example m03-missing-viewed, the scratch launch, and geometry probes) were executed during development but are not part of this record; the 19 counted launches are exactly the run records embedded below."
+  },
+  "native_lock_and_cleanup": {
+    "lock_path": "C:/tmp/cos-desktop-native.lock",
+    "acquisition_observed": true,
+    "acquisition_utc": "2026-11-07T23:32:29Z",
+    "acquisition_owner_marker": "owner=impl-rec3 pid=12356 at=2026-11-08T08:32:29.9308846+09:00",
+    "acquisition_source": "the tool result of the mkdir/owner-file acquisition call; the marker text is quoted verbatim",
+    "release_observed": false,
+    "release_note": "This lane did not delete the lock. No release event was observed; the environment was re-snapshotted between turns. Whether a later lane removed it cannot be distinguished.",
+    "state_at_post_run_check": "ABSENT",
+    "post_run_check_utc": "2026-11-08T00:53:17Z",
+    "post_run_check_local": "2026-11-08T09:53:17+09:00",
+    "process_enumeration": "Get-CimInstance Win32_Process -Filter \"Name='cos-desktop.exe'\"",
+    "process_enumeration_result": "No process from this lane's evidence binary path (C:/dev/cos-rec3-build/release/cos-desktop.exe) was present. One unrelated cos-desktop.exe (PID 40280, C:\\c\\tmp\\rel3-native-target\\release\\cos-desktop.exe) from another lane's path was present and was not touched.",
+    "record": {
+      "path": "native-cleanup.txt",
+      "bytes": 637,
+      "sha256": "sha256:a04258363add56616bb860980cdd002a67a6223a482d6243b24cc10cb83db915"
+    },
+    "limit": "The lock and process facts are a post-run observation, not a per-launch trace. The run records show every recorded PID exit (or an explicit Stop-Process for the kill row), and the post-run enumeration shows no process from this lane's binary path."
+  },
   "host": {
     "os": "Microsoft Windows 11 Pro 10.0.26300 build 26300",
     "displays": [
@@ -69,6 +95,7 @@
     "normal_close": "post WM_CLOSE to the fixture window; wait for exit and read stderr",
     "crash_row": "Stop-Process -Force on the fixture PID started by this lane (no WM_CLOSE)",
     "isolation": "one fresh profile per row; only this lane's fixture PIDs were terminated",
+    "lock_and_cleanup": "see native_lock_and_cleanup; acquisition was observed, release was not, and the post-run enumeration found no process for this lane's binary path",
     "driver_script_sha256": "sha256:ba3fc847189c456af74eb5a4bed9c64f19df9236958bd5c75dc8a998ec6e458d",
     "probe_script_sha256": "sha256:73ab4f8643f057453bf692ab1fec851e0dd39cd49f070e13fc5a5ec9ab09d748",
     "uia_helper_sha256": "sha256:cc52241ff1ca28fb485ff0d7f72847a37a8905cd2b5b116cade28c5520e8571b",
@@ -137,7 +164,8 @@
         },
         "missing_task_observed_notice": null,
         "both_missing_observed_notice": "復元した表示中の候補は、現在の認可済み観測情報では利用できません。 only",
-        "why": "apply_restored_presentation overwrote the single restore_notice set by restore_pending_task"
+        "why": "apply_restored_presentation overwrote the single restore_notice set by restore_pending_task",
+        "source_delta_caveat": "The pre-fix binary is built from 2652f20 while the fixed binary is built from abf2310, so the measured before/after delta spans the interleaved commits 32eeb17 (R0A), 206f8d3 (REL1), d6f398f (FLOW2), the TYP1 devtools changes and other intervening commits, not only the notice fix. Only the notice-combination hunk is claimed to explain the M03 delta, and the three unit tests exercise the combined helper directly; a minimal 2652f20+fix-only binary was not rebuilt."
       },
       "observed_after_repair": {
         "missing-task": "前回のタスクは、現在閲覧できる情報に含まれていません。",
@@ -227,7 +255,7 @@
     },
     {
       "row": "REC3-OCCLUDED-CAPTURES",
-      "reason": "Every published capture is probe-OBSERVED. The remaining snapshot probes refused as WINDOW_OCCLUDED/WINDOW_CAPTURE_EMPTY (and one extra observed pair-a frame is not published to keep the bundle bounded). UIA trees, window bounds, stderr and preference hashes remain the primary observations for those rows."
+      "reason": "Every published capture is probe-OBSERVED. Snapshot probes refused for the other rows as WINDOW_OCCLUDED/WINDOW_CAPTURE_EMPTY, and each refusal is retained per run in the UIA/probe records. UIA trees, window bounds, stderr and preference hashes remain the primary observations for those rows."
     },
     {
       "row": "REC3-RUNTIME-TASK-SURVIVAL",
@@ -295,6 +323,7 @@
   "capture_note": "Only probe-OBSERVED captures are published; every refusal is listed in not_measured with its probe reason.",
   "runs": {
     "m01-restore": {
+      "pid": 13980,
       "exit_code": 0,
       "failure": null,
       "stderr_lines": [
@@ -346,6 +375,7 @@
       "run_record_sha256": "sha256:0d0370022d9ea1613b180a5286885fdbbac70fe90a32ef5562e6ebf501e8ccb2"
     },
     "m01-save": {
+      "pid": 13032,
       "exit_code": 0,
       "failure": null,
       "stderr_lines": [
@@ -395,6 +425,7 @@
       "run_record_sha256": "sha256:40bb03081994de67b9addeb00df56664d9809a4377f917a0b733307dc5213f88"
     },
     "m02-corrupt": {
+      "pid": 44620,
       "exit_code": 0,
       "failure": null,
       "stderr_lines": [
@@ -441,6 +472,7 @@
       "run_record_sha256": "sha256:66570631a27bfefee655f6e9a38662769b9aa8fbd3eb168662c9ea5f4bf938d6"
     },
     "m02-oversized": {
+      "pid": 28956,
       "exit_code": 0,
       "failure": null,
       "stderr_lines": [
@@ -487,6 +519,7 @@
       "run_record_sha256": "sha256:38f8a5784945b8cc2456169fadee2875360577dc0d3f912eff64a71895dc3db9"
     },
     "m02-truncated": {
+      "pid": 12248,
       "exit_code": 0,
       "failure": null,
       "stderr_lines": [
@@ -533,6 +566,7 @@
       "run_record_sha256": "sha256:0060c66b7d27234ce9b2227dae3e7371bd1eace7539153de9a6a1cc6d2428eca"
     },
     "m02-unknown-version": {
+      "pid": 31060,
       "exit_code": 0,
       "failure": null,
       "stderr_lines": [
@@ -579,6 +613,7 @@
       "run_record_sha256": "sha256:9de4eb3db28f5e4bd1a0a76df9431f8d97470e8fb09cf45f0743a84ea36cba69"
     },
     "m03-both-missing": {
+      "pid": 49756,
       "exit_code": 0,
       "failure": null,
       "stderr_lines": [
@@ -626,6 +661,7 @@
       "run_record_sha256": "sha256:5b4b72a55a2ee231c6652d93620fbd7461698de5da9996e372718cd4dd380a9a"
     },
     "m03-missing-task": {
+      "pid": 37492,
       "exit_code": 0,
       "failure": null,
       "stderr_lines": [
@@ -673,6 +709,7 @@
       "run_record_sha256": "sha256:d441661f1be75cafa64d0a89c3cf4280f9ff0d2021c459cd9488136f4fdad3ce"
     },
     "m03-missing-viewed": {
+      "pid": 44152,
       "exit_code": 0,
       "failure": null,
       "stderr_lines": [
@@ -722,6 +759,7 @@
       "run_record_sha256": "sha256:7b18650e9e8dc5b1d74a218e7f0dda52c65ac18dd570f9e5aede43ae56541d91"
     },
     "m04-offscreen": {
+      "pid": 7060,
       "exit_code": 0,
       "failure": null,
       "stderr_lines": [
@@ -769,6 +807,7 @@
       "run_record_sha256": "sha256:7bb20dae7fea5de2f4511325d7c680703174de822468f33450eb79ab47ec5d04"
     },
     "m05-change-kill": {
+      "pid": 1176,
       "exit_code": -1,
       "failure": null,
       "stderr_lines": [],
@@ -817,6 +856,7 @@
       "run_record_sha256": "sha256:438cff2c4f21cffc14f52b569fbe56dafb3294213dee431c62ab7ae6da7b77f4"
     },
     "m05-restart": {
+      "pid": 23136,
       "exit_code": 0,
       "failure": null,
       "stderr_lines": [
@@ -868,6 +908,7 @@
       "run_record_sha256": "sha256:bbb40eee12cd3d6a98cc1ca993567912f907177daadca4ac6f0fe2b1bf7d6b24"
     },
     "m05-save": {
+      "pid": 12688,
       "exit_code": 0,
       "failure": null,
       "stderr_lines": [
@@ -917,6 +958,7 @@
       "run_record_sha256": "sha256:50b2b91cd420dbadb19c0bc69260a2015cd12e2ad833f664924d2a861b79dd45"
     },
     "m06-restore": {
+      "pid": 38592,
       "exit_code": 0,
       "failure": null,
       "stderr_lines": [
@@ -971,6 +1013,7 @@
       "run_record_sha256": "sha256:e206b59b209c9a02ca71bd02ec0c21ad1aaf88332167cf059bbf066379f9337d"
     },
     "m06-save": {
+      "pid": 41648,
       "exit_code": 0,
       "failure": null,
       "stderr_lines": [
@@ -1049,6 +1092,7 @@
       "run_record_sha256": "sha256:e922dbc0e1b90b4da9ca80b0f27495d321f4829c7a032c19371d505f5cf3d6d2"
     },
     "m07-restore": {
+      "pid": 488,
       "exit_code": 0,
       "failure": null,
       "stderr_lines": [
@@ -1096,6 +1140,7 @@
       "run_record_sha256": "sha256:7fbeabdc97a2fa9f4ccffb544e48c8bdd79883178765f61e8c5fabe0c799344d"
     },
     "m07-save": {
+      "pid": 20176,
       "exit_code": 0,
       "failure": null,
       "stderr_lines": [
@@ -1163,5 +1208,5 @@
     "The preferences store is written at quit; a kill before the save attempt leaves the previous file.",
     "No canonical data, credential, media locator or command is stored; the closed schema and atomic bounded writer are unchanged by the repair."
   ],
-  "generated_utc": "2026-11-08T00:27:24.600574+00:00"
+  "generated_utc": "2026-11-08T00:55:49.978750+00:00"
 }

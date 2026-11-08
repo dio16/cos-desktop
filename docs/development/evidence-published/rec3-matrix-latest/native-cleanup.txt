@@ -1,0 +1,13 @@
+captured_utc=2026-11-08T00:53:17Z
+captured_local=2026-11-08T09:53:17+09:00
+lock_path=C:/tmp/cos-desktop-native.lock
+lock_state=ABSENT
+lock_owner_marker=NOT_APPLICABLE
+acquisition_observed_utc=2026-11-07T23:32:29Z
+acquisition_owner_marker=owner=impl-rec3 pid=12356 at=2026-11-08T08:32:29.9308846+09:00
+release_observed=NO
+recorded_launches=19 (17 fixed-binary matrix runs + 2 pre-fix binary runs)
+process_enumeration=Get-CimInstance Win32_Process -Filter "Name='cos-desktop.exe'"
+process=40280 C:\c\tmp\rel3-native-target\release\cos-desktop.exe
+process_path_matches=1
+path_match=40280 C:\c\tmp\rel3-native-target\release\cos-desktop.exe
