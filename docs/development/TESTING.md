@@ -126,6 +126,8 @@ The fixture provider exercises the same `DesktopClient` boundary through scripte
 
 The independent consumer validates closed UTF-8 versioned data with duplicate/non-finite rejection, exact field sets, checked same-domain run-relative timestamps, bounded records/windows/durations, window-lifetime reuse and post-close fences, source-associated draw associations without a second counted draw, missing input window identity, explicit source/queue/retention loss scopes, and unsupported physical endpoints. A no-observation or failed-process disposition cannot become `OBSERVED`. `s2b_validate.py capture` reports wire validity only (`native_proven: false`); `bundle` replays a committed source-bound bundle.
 
+**2026-11-08 S2B full-source replay (§19.298):** run `python -B -m unittest discover -s apps/desktop/devtools/r0/tests -p test_s2b_replay.py` (24 hermetic cases) and the bounded CLI: `python -B apps/desktop/devtools/r0/s2b_replay.py bundle --bundle-zip <retained native-bundles.zip> --bundle-tag <n02d|n04b> --timeout-ms 120000`, and `... audit --set-dir <published set> --prefix <name> [--manifest <manifest>]`. `bundle` recomputes the retained digest index, binds the manifest/build/source-identity records, recomputes the recorded source identity from the declared commit's Git blobs and then runs the unchanged `verify_bundle`; `audit` reports `VERIFIED`/`NOT_VERIFIED`/`REFUSED` and never upgrades a partial set. The retained bundle verifies `n02d`/`n04b`; `a1-b9f` is refused as `SOURCE_TREE_MISMATCH` (not source-bound to its declared commit). The pre-existing `test_s2b_contracts.py` live-manifest failure (§19.139) is reported separately and is not a replay failure.
+
 ## 5. Build, dependency, and CI posture
 
 The repository quality workflow is the single place for metadata/dependency checking, clippy, workspace tests and build. `scripts/check_plan_ledger.py` is a documentation check rather than a code gate: it reads the implementation master plan and reports a task card that has no Status line, a card whose relative link points at a missing file, a diagram node with no card, and a card that claims to be complete while its own status records an unrun or unmeasured check. It also checks that every `Hard prereqs` reference resolves and that no prerequisite chain loops, that a `#anchor` in a card link exists as a heading in the target file, and that the design-contract anchor a card names exists. It compares the dependency edges the diagrams draw with the edges the cards declare and reports a drawn edge that no card declares (the diagrams are partial, so an undeclared-but-drawn edge is a contradiction while a declared-but-undrawn one is not), and it requires the design-contract anchor a card names to be **that card's own** contract. Commit ids cited by the plan cannot be resolved without a repository lookup, so they are reported as **unverified** in every mode - the run says how many remain an open condition rather than letting the count stand as a pass. It has a `--self-test` that pins each rule - including an injected cycle, a missing prerequisite, and the negative cases that must not fire - and that same command also runs the live check, so a passing self-test cannot stand in for an unchecked ledger. It is a gate in `scripts/quality.ps1` (`plan ledger`), so it runs with the other declared gates rather than when someone remembers, and `--self-test` is what the gate invokes so the rules and the live plan are both checked in one step. `scripts/check_dependency_rules.py` and its regression suite enforce [DEPENDENCY_RULES.md](../architecture/DEPENDENCY_RULES.md); `scripts/quality.ps1` is the existing gate entry point. Preserve the existing workflow rather than proliferating automatically triggered category-specific jobs or platform matrices.
@@ -271,6 +273,21 @@ DD-22 retention/export/log-split contents remain unapproved and unimplemented. W
 [Remote review R1](evidence/README.md#historical-records) returned 2 BLOCKING (actual-I/O bound and oversized-window dimensions); both were closed by Gate R2. [Remote review R2](evidence/README.md#historical-records) then found clone-before-bounds in save and missing build identity; save now validates the borrowed schema before cloning, [build identity](evidence/README.md#historical-records) binds source `6ccef79` to executable `2f4420…`, and fresh r4 save/restore/oversized-file/oversized-window runs were recorded. [Independent Gate R3](evidence/README.md#historical-records) `c5223e39-116d-444e-819a-bee6a6b5ea36` SUCCEEDED on exact `638aa5d…`; [Remote review R3](evidence/README.md#historical-records) then required the complete borrowed document (including fixture IDs) to be bounded before cloning and the quit path to save the locked value. Both are implemented; [Independent Gate R4](evidence/README.md#historical-records) `612a60c0-a35a-4452-a821-f800b4abd184` SUCCEEDED on exact `bc81b33…` with 9/9 checks, 39 outputs, zero absent output and cleanup complete; [Remote review R4](evidence/README.md#historical-records) returned 0 BLOCKING / 0 ACTIONABLE NON-BLOCKING / 0 EXCESSIVE on the Gate R4 candidate and closed the Desktop-local verified slice. Runtime Task survival (MP-RT8/RC-16), DD-23 topology/mixed-DPI, crash-before-quit, live revoke/regrant and native Compare restore remain `NOT_MEASURED`/`RUNTIME_BLOCKED`.
 
 Real monitor detach/reorder/removal, mixed-DPI/maximized behavior (DD-23), crash-before-quit saving the latest change, live revoke/regrant during restoration, Compare-pair restoration, and Runtime Task survival (MP-RT8/RC-16) remain `NOT_MEASURED` or `RUNTIME_BLOCKED`; no canonical, credential, media-locator or command data is stored.
+
+**2026-11-08 notice-combination repair (§19.301):** `apply_restored_presentation` used to overwrite the single `restore_notice` slot after `restore_pending_task` had set a missing-task notice, silently hiding one unavailable reason. The three-way pure merge (`restore_notice_combines_task_and_presentation_reasons` and its neighbours in `crates/desktop-gpui/src/lib.rs`) now covers task-only, viewed/compare-only and both, and runs `cargo test --locked -p desktop-gpui --lib` for its unit evidence. The 2026-11-08 native matrix re-runs the missing-identity rows; this unit path is not a substitute for that native observation.
+
+**2026-11-08 native matrix (§19.301):** the captured Desktop-local matrix ran 17
+fixture launches on the release executable (`sha256 2fc5c270…`) with an isolated
+per-row `LOCALAPPDATA` under `C:/tmp`, UIA `InvokePattern`, `WM_CLOSE` and
+`Stop-Process`; the native lock was acquired and released and no orphan process was
+left. Rows M01 (reopen Flow/Task-184/Viewed B), M02 (corrupt/truncated/oversized/
+unknown-version), M04 (off-screen 9000,9000 5000×4000 clamp), M05 (kill without
+clean save restores the last confirmed save), M06 (Compare pair restore) and M07
+(maximized restore) passed; M03 failed before the fix and passed after it with both
+missing-identity notices. Detach/reorder/removed-monitor, mixed-DPI, live
+revoke/regrant and Runtime Task survival remain `NOT_MEASURED`/`RUNTIME_BLOCKED`;
+the latest unsaved change is not durable and is not claimed. Evidence:
+`docs/development/evidence-published/rec3-matrix-latest/session.json` + captures.
 
 ## 18. MP-R0A-S2A process lifecycle driver
 
@@ -507,6 +524,20 @@ closure, installer/upgrade/uninstall and release evidence. The commands are in
 [REL1 evidence](evidence-published/rel1-packaging-latest/session.json) records only
 the exercised scope. No new CI lane or test framework is introduced.
 
+**2026-11-08 third-party notice bundle (§19.299):** run
+`python -B scripts/tests/test_notice_bundle.py` (21 cases, one Windows-only skip)
+and `python -B scripts/tests/test_stage_portable.py` (34 cases, one
+symlink-privilege skip). The notice suite pins the locked offline
+`x86_64-pc-windows-msvc` normal+build walk, verbatim local texts only, pointer
+files never counted as text, deduplicated blobs, canonical index and
+dependency-set digest recomputation, tamper/dependency-set-mismatch refusal and
+the absence of network access; the portable suite pins the v2 payload
+(`THIRD_PARTY_NOTICES.md` + manifest claim) and fails closed on a missing,
+modified, forged or dependency-set-mismatched bundle. Measure the real bundle with
+`python -B scripts/notice_bundle.py build --out <dir>` and record assessed /
+unassessed counts separately; legal compliance remains `NOT_ASSESSED` and signing,
+installer and DD-21 remain external.
+
 ## 26. MP-REL3 bounded redacted support report
 
 Run `cargo test --locked -p app-core --test support_report`. The six cases pin the
@@ -518,3 +549,38 @@ oversized field, a synthetic token / signed locator / private path never renders
 and an unavailable Desktop states no measurement. No exporter exists under DD-22,
 so there is no artifact to scan end to end and no Native surface changed; Native
 stays `NOT_RUN` for this task.
+
+## 27. MP-TYP1 fractional-DPI capture frame (2026-11-08)
+
+The identity-bound typography capture now maps the display cross-check in the
+same window's DPI frame. `n03_probe.ps1` derives `DpiScale` from the captured
+HWND's `GetDpiForWindow/96` when no explicit `-DpiScale` is passed (an explicit
+value still wins and `1.0` keeps the legacy path); `host_observe.py` resolves the
+same HWND's scale before validation and refuses a mixed DIP/physical frame as
+`DPI_SCALE_MISMATCH`, never as an image. Run
+`python -B -m unittest discover -s apps/desktop/devtools/typography/tests -p test_*.py`
+(78 cases, including the new 1.0/1.25 rect→bitmap, DIP-sized-bitmap,
+legacy-frame-refusal, physical-rect and refused-sample cases) and
+`python -B -m unittest discover -s apps/desktop/devtools/r0/tests -p test_n03_observe.py`
+(19 cases, one skip) to prove the shared probe's explicit-scale path is unchanged.
+The acceptance thresholds are fixed: at least 45 of 49 display samples within RGB
+tolerance 24, identity re-checks, and no raise/focus/z-order or OS display-setting
+change. A host at 96 DPI cannot produce the 120 DPI acceptance; that row stays
+`NOT_MEASURED` and no coordinate from the 96 DPI frame is extrapolated onto a
+fractional-scale image.
+
+## 28. MP-FLOW2 Stage C match-set reuse (2026-11-08)
+
+Run `cargo test --locked -p desktop-gpui --lib -- flow` (33 flow tests) and the
+release measurement `cargo test --release --locked -p desktop-gpui
+ten_thousand_incremental_match_set_series -- --ignored --nocapture`. The contract
+rule is fixed: a match set may be reused only when the admission content identity is
+unchanged — session generation, epoch, query, the full canonical `GraphRef`
+sequence **and the projection `Counter`s**. A projection-counter-only change must
+`Rebuilt` (test `a_projection_counter_change_rebuilds_the_match_set`), while a
+publication-version-only change may reuse because rows are pinned by the exact
+projection revision plus `GraphRef`. The measurement records the match-set obtain +
+diagram construction interval only; it never claims frame-wide compliance. The
+frame-phase checksum must remain equal to §19.121 (`0x1cfce993…`), and incremental
+reuse, projection rebuild and full rebuild must share the `0x981149dc…` checksum.
+Paint/GPU/Present and real Runtime graphs stay `NOT_MEASURED`.
