@@ -4,8 +4,9 @@
   "decision": "DD-22",
   "slice": "Native UIA reachability of the support preview, export entry point and bounded report/status text",
   "status": "NATIVE_REACHABILITY_OBSERVED_EXPORT_POLICY_OPEN",
+  "revision_note": "repair of the evidence at commit 1e204a5 after review (B-01, A-01, A-02 and three NITs); no product code and no plan text changed",
   "base_commit": "abf2310105527461f0d0a16a963ceff962205bc0",
-  "dev_head_advanced_to": "8af8d0f (HEAD moved while this slice ran; the measured binary was built from a clean `git archive` of abf2310 and its source match was checked by blob hash against abf2310)",
+  "dev_head_advanced_to": "ae82b9d (HEAD moved while this slice ran; the measured binary was built from a clean `git archive` of abf2310 and the archived lib.rs blob hash matched abf2310)",
   "binary": {
     "source_commit": "abf2310105527461f0d0a16a963ceff962205bc0",
     "path": "target/release/cos-desktop.exe",
@@ -19,118 +20,145 @@
     "os": "Microsoft Windows NT 10.0.26300.0",
     "dpi_at_window": 96,
     "profile": "isolated LOCALAPPDATA=C:\\tmp\\rel3-native-work\\localappdata",
-    "input_path": "UIA InvokePattern for the diagnostics toggle; UIA SetFocus plus System.Windows.Forms SendKeys for Tab/Shift+Tab/Enter/Escape after foreground ownership was re-established and verified",
+    "input_path": "UIA InvokePattern opened the diagnostics panel (no keyboard input needed). Keyboard rows used UIA SetFocus plus SendKeys only after the app's own window owned the foreground; the focused element was then read back and had to match the intended AutomationId before a loop started, and every key was preceded by a fresh GetForegroundWindow check against the measured PID's window (a mismatch aborts the loop instead of sending). The controlled session's log publishes FOCUS_READY_*|True and FOREGROUND_BEFORE_*|True; per-key aborts were 0. Earlier sessions were NOT verified this way and are not used for the keyboard rows; their log shows focus leaving the app for a foreign window after several steps.",
     "screenshots": "not used; every row is an accessibility-tree observation"
+  },
+  "foreground_verification": {
+    "session": "controlled",
+    "published_lines": [
+      "FOCUS_READY_PREVIEW|True",
+      "FOREGROUND_BEFORE_PREVIEW|True",
+      "FOCUS_READY_FORWARD|True",
+      "FOREGROUND_BEFORE_FORWARD|True",
+      "FOCUS_READY_BACKWARD|True",
+      "FOREGROUND_BEFORE_BACKWARD|True"
+    ],
+    "per_key_rule": "Send-Key re-checked GetForegroundWindow against the measured PID's window immediately before SendWait and after each key; 0 aborts in the published session.",
+    "initial_state": "FOREGROUND_IS_APP|False at the start of each session (before activation); the published verification lines are the ones taken after activation and before/within the keyboard rows."
   },
   "native_lock": {
     "path": "C:/tmp/cos-desktop-native.lock",
     "owner": "impl-rel1",
-    "held_in": [
-      "session-locked-focus.txt"
-    ],
-    "released": true,
-    "note": "the success and cancel sessions ran before the session wrapper wrote the lock owner file; no other COS Desktop process existed at those times. The locked session acquired owner=<app pid>, serialized the run and removed the lock afterwards (LOCK_RELEASED in the log)."
+    "acquisition_log": "session-controlled.txt",
+    "acquisition_line": "NATIVE_LOCK_ACQUIRED|owner=impl-rel1 pid=37712 at=2026-11-08T10:38:43+09:00",
+    "release_line": "LOCK_RELEASED",
+    "prelaunch_cos_processes": 0,
+    "postlaunch_cos_processes": 1,
+    "app_owned_the_lock_pid": true,
+    "earlier_sessions": "the success and cancel sessions predate the wrapper's owner logging; no lock-owner line exists for them and none is claimed. An earlier controlled attempt observed PRELAUNCH_COS_PROCESSES|1 (a pre-existing COS Desktop process) and was discarded rather than measured; window lookup was then scoped to the run's own PID and the published controlled session recorded PRELAUNCH_COS_PROCESSES|0."
   },
   "commands": [
     "git archive abf2310 | tar -x -C C:\\tmp\\rel3-native-src",
     "CARGO_TARGET_DIR=C:\\c\\tmp\\rel3-native-target cargo build --locked --release -p cos-desktop --bin cos-desktop",
-    "bash C:\\tmp\\rel3-native-work\\session.sh   (launch bash child with isolated LOCALAPPDATA + --fixture --fixture-file, then observe_a.ps1 and observe_b.ps1 over UIA)"
+    "bash C:\\tmp\\rel3-native-work\\session.sh   (lock acquire -> isolated LOCALAPPDATA launch with --fixture --fixture-file -> observe_a.ps1/observe_b.ps1 scoped to the launched PID -> lock release)"
   ],
   "runs": [
     {
-      "id": "success",
-      "log": "session-success.txt",
-      "lock_owner_file_present": false,
+      "id": "controlled",
+      "log": "session-controlled.txt",
+      "lock_owner_line_published": true,
       "app_exit_code": 0,
       "observed": [
+        "lock acquired (owner=impl-rel1, pid of the launched app) and released",
+        "0 COS Desktop processes before launch, 1 after launch (the measured PID)",
         "panel opened through UIA Invoke on diagnostics-toggle",
-        "preview generated by Enter on the focused preview button",
-        "Tab forward and Shift+Tab backward reachability",
+        "preview generated by Enter on the verified-focused preview button",
+        "bounded report read as a non-focusable ControlType.Text",
+        "Tab forward and Shift+Tab backward with foreground verified before every key and app-only trails",
+        "graceful close (AFTER_CLOSE_RUNNING|False) and observation shutdown confirmed on stderr"
+      ],
+      "note": "this session supplies the keyboard and report rows; it did not reach the save dialog."
+    },
+    {
+      "id": "success",
+      "log": "session-success.txt",
+      "lock_owner_line_published": false,
+      "app_exit_code": 0,
+      "observed": [
         "save dialog #32770 opened by Enter on the focused export button",
-        "successful save: status 保存しました, trace writer=Success;ui=StatusUpdated",
+        "successful save: status 保存しました, trace dialog=Selected;data=Ready;writer=Success;ui=StatusUpdated",
         "saved file 573 bytes, no BOM, byte-identical to the preview text"
       ],
-      "note": "the first cancel attempt in this session left the dialog open (the cancel-by-AutomationId lookup matched an unrelated list item) and is retained verbatim as an attempted observation, not a PASS."
+      "foreign_focus_exception": "after several Tab steps the focused element left COS Desktop for a foreign window (ControlType.Document|RootWebArea; the title is redacted in the published log). This session is not used for the Tab/Shift+Tab rows."
     },
     {
       "id": "cancel",
       "log": "session-cancel.txt",
-      "lock_owner_file_present": false,
+      "lock_owner_line_published": false,
       "app_exit_code": 143,
       "observed": [
-        "Tab forward and Shift+Tab backward reachability",
         "save dialog #32770 opened by Enter on the focused export button",
         "Escape closed the dialog with no file written",
         "trace dialog=Cancelled;data=Rejected;writer=NotStarted;ui=StatusPreserved"
       ],
-      "note": "the follow-up success attempt in this session hit UIA COM timeouts (recorded); the app was then killed by the session harness, hence exit 143, and no file was written."
-    },
-    {
-      "id": "locked-focus",
-      "log": "session-locked-focus.txt",
-      "lock_owner_file_present": true,
-      "app_exit_code": 0,
-      "observed": [
-        "lock acquired with owner=<app pid> and released",
-        "panel opened through UIA Invoke",
-        "bounded report text 573 bytes / 19 lines",
-        "Tab forward and Shift+Tab backward reachability (focus readiness verified before each loop)",
-        "graceful close: observation shutdown confirmed, preferences save confirmed"
-      ],
-      "note": "the save dialog was not reached a second time in this session; the dialog rows are evidenced by the success and cancel sessions."
+      "foreign_focus_exception": "after several Tab steps the focused element left COS Desktop for a foreign window (ControlType.Document|RootWebArea and a ControlType.Group; titles redacted). This session is only used for the cancel row.",
+      "note": "the follow-up save attempt hit UIA COM timeouts (recorded in the log); the session harness then killed the app, hence exit 143, and no file was written."
     }
   ],
   "rows": {
     "panel_open_control": {
       "status": "OBSERVED",
-      "detail": "diagnostics-toggle, ControlType.Button, Name 診断情報を閉じる, IsKeyboardFocusable=True; UIA InvokePattern opened the panel and exposed support-preview-button (session-success/cancel/locked)."
+      "session": "controlled",
+      "detail": "diagnostics-toggle, ControlType.Button, Name 診断情報を閉じる, IsKeyboardFocusable=True; UIA InvokePattern opened the panel and exposed support-preview-button."
     },
     "preview_control": {
       "status": "OBSERVED",
+      "session": "controlled",
       "detail": "support-preview-button, ControlType.Button, Name サポート情報を表示, IsKeyboardFocusable=True, enabled, on-screen; absent while the panel is closed, present after opening."
     },
     "export_control": {
       "status": "OBSERVED",
-      "detail": "support-export-button, ControlType.Button, Name サポート情報をエクスポート, IsKeyboardFocusable=True, enabled; rendered only after a preview exists (absent before preview, present after Enter on the preview button)."
+      "session": "controlled",
+      "detail": "support-export-button, ControlType.Button, Name サポート情報をエクスポート, IsKeyboardFocusable=True, enabled; rendered only after a preview exists (absent before preview, present after the preview Enter)."
     },
     "preview_text": {
       "status": "OBSERVED",
+      "session": "controlled",
       "detail": "support-preview-readonly, ControlType.Text, IsKeyboardFocusable=False (read-only, not a Tab stop); Name is the rendered report."
     },
     "status_text": {
       "status": "OBSERVED",
-      "detail": "support-export-status appears after an export outcome; on success the element Name read 保存しました (success session). No path or report text is part of the status."
+      "session": "success",
+      "detail": "support-export-status appears after an export outcome; on success the element Name read 保存しました. No path or report text is part of the status."
     },
     "export_trace": {
       "status": "OBSERVED",
+      "session": "controlled+success+cancel",
       "detail": "support-export-trace, ControlType.Text; cancel: dialog=Cancelled;data=Rejected;writer=NotStarted;ui=StatusPreserved; success: dialog=Selected;data=Ready;writer=Success;ui=StatusUpdated; preview: action=reached;build=finished;install=accepted;render=assumed."
     },
     "tab_forward": {
       "status": "OBSERVED",
-      "detail": "from a verified-focused diagnostics-toggle, Tab step 0 = support-preview-button, step 1 = support-export-button (tab-forward.txt, identical in all three logged sessions)."
+      "session": "controlled only",
+      "detail": "from a verified-focused diagnostics-toggle, Tab step 0 = support-preview-button, step 1 = support-export-button; all 24 recorded steps are COS Desktop controls and the log shows FOREGROUND_BEFORE_FORWARD|True with 0 aborts (tab-forward.txt). The success and cancel sessions are NOT used for this row: their logs show focus leaving the app for a foreign window."
     },
     "tab_backward": {
       "status": "OBSERVED",
-      "detail": "Shift+Tab from a verified-focused support-export-button: step 0 = support-preview-button, step 1 = diagnostics-toggle (tab-backward.txt)."
+      "session": "controlled only",
+      "detail": "Shift+Tab from a verified-focused support-export-button: step 0 = support-preview-button, step 1 = diagnostics-toggle; all 24 recorded steps are COS Desktop controls (tab-backward.txt), FOREGROUND_BEFORE_BACKWARD|True, 0 aborts."
     },
     "status_is_not_a_tab_stop": {
       "status": "OBSERVED",
-      "detail": "24 forward Tab steps and 24 backward steps contained no support-export-status element (TAB_FWD_HAS_STATUS=False); it is a Role::Label with IsKeyboardFocusable=False."
+      "session": "controlled only",
+      "detail": "in the controlled session's 24 forward Tab steps and 24 backward steps no support-export-status element appeared (TAB_FWD_HAS_STATUS=False); it is a Role::Label with IsKeyboardFocusable=False. This absence is scoped to that session."
     },
     "save_dialog_entry_point": {
       "status": "OBSERVED",
-      "detail": "Enter on the focused support-export-button opened the native dialog #32770 named 名前を付けて保存 (success and cancel sessions)."
+      "session": "success+cancel",
+      "detail": "Enter on the focused support-export-button opened the native dialog #32770 named 名前を付けて保存."
     },
     "cancel_path": {
       "status": "OBSERVED",
-      "detail": "Escape closed the #32770 dialog; the target file did not exist afterwards; the trace recorded dialog=Cancelled;data=Rejected;writer=NotStarted;ui=StatusPreserved (cancel session)."
+      "session": "cancel",
+      "detail": "Escape closed the #32770 dialog; the target file did not exist afterwards; the trace recorded dialog=Cancelled;data=Rejected;writer=NotStarted;ui=StatusPreserved."
     },
     "success_save": {
       "status": "OBSERVED",
-      "detail": "saved 573 bytes with no BOM, SHA-256 equal to the preview text, status 保存しました, trace dialog=Selected;data=Ready;writer=Success;ui=StatusUpdated (success session)."
+      "session": "success",
+      "detail": "saved 573 bytes with no BOM, SHA-256 equal to the preview text, status 保存しました, trace dialog=Selected;data=Ready;writer=Success;ui=StatusUpdated."
     },
     "report_bounds": {
       "status": "OBSERVED",
+      "session": "controlled",
       "detail": "573 UTF-8 bytes, 19 lines, no BOM; within the recorded 12,288-byte / 24-line ceiling. The report states Source: fixture and Runtime version unknown."
     },
     "already_exists_native_wording": {
@@ -154,7 +182,29 @@
       "detail": "format, destination, retention and consent are not decided or changed by this slice."
     }
   },
+  "foreign_focus_exception": {
+    "sessions": [
+      "success",
+      "cancel"
+    ],
+    "detail": "in both sessions the Tab traversal left COS Desktop after a few steps and the focused element was reported outside the app (ControlType.Document|RootWebArea, plus a ControlType.Group). The fact is preserved; the foreign application titles are replaced by <foreign-window-title-redacted>.",
+    "rows_not_used": [
+      "tab_forward",
+      "tab_backward",
+      "status_is_not_a_tab_stop"
+    ]
+  },
+  "redaction": {
+    "marker": "<foreign-window-title-redacted>",
+    "files": [
+      "session-success.txt",
+      "session-cancel.txt"
+    ],
+    "rule": "only the name field after the last control-type field is replaced; control types and the fact of foreign focus are preserved. No COS Desktop name, report text or identifier was redacted.",
+    "verified": "a grep for the removed titles returns no match in the published artifacts."
+  },
   "uia_inventory": {
+    "session": "controlled",
     "initial_descendants": 62,
     "panel_descendants": 70,
     "panel_and_preview_descendants": 72,
@@ -202,6 +252,7 @@
     }
   },
   "focus_trail": {
+    "session": "controlled",
     "forward_first": [
       "0|ControlType.Button|support-preview-button|サポート情報を表示",
       "1|ControlType.Button|support-export-button|サポート情報をエクスポート",
@@ -212,7 +263,7 @@
       "1|ControlType.Button|diagnostics-toggle|診断情報を閉じる",
       "2|ControlType.Group||画像表示。0: 全体、1: 物理等倍、+/-: 拡大縮小、矢印: 移動、F11: 全画面、Escape: 復帰"
     ],
-    "note": "the first files are the complete recorded trails; the lists here are only the first three steps for readability."
+    "note": "tab-forward.txt and tab-backward.txt are the complete 24-step trails from the controlled session."
   },
   "report": {
     "utf8_bytes": 573,
@@ -231,15 +282,28 @@
     "overwrite/AlreadyExists native wording",
     "publication-change stale rejection during the dialog",
     "screen-reader reading quality",
-    "a second full success+cancel cycle inside the locked session (the locked session observed focus/report rows only)",
+    "save dialog and success/cancel inside the controlled session (the controlled session observed focus/report rows only; dialog rows come from the two earlier sessions)",
     "render/pixel or DPI-matrix behavior"
   ],
   "limits": [
     "UIA reachability is not product acceptance and does not decide DD-22 export policy.",
     "The fixture report is Desktop-local; it contains no Runtime/Provider logs and is not evidence that such logs exist.",
-    "Foreground ownership on this desktop is not stable: two further sessions (not logged as evidence rows) could not establish keyboard focus, so the recorded rows are the sessions that did.",
+    "Foreground ownership on this desktop is not stable: the two earlier sessions lost focus to a foreign window, so the keyboard rows are scoped to the controlled session that verified foreground before every key.",
+    "Lock-owner evidence is published only for the controlled session; the earlier sessions predate the wrapper's owner logging and no lock claim is made for them.",
     "The private PowerShell probe scripts and the isolated build tree are not committed; the evidence records their observations and the binary/source hashes instead."
   ],
+  "artifact_sessions": {
+    "app-stderr.txt": "controlled",
+    "report-preview.txt": "controlled",
+    "session-cancel.txt": "cancel",
+    "session-controlled.txt": "controlled",
+    "session-success.txt": "success",
+    "tab-backward.txt": "controlled",
+    "tab-forward.txt": "controlled",
+    "uia-tree-initial.txt": "controlled",
+    "uia-tree-panel-preview.txt": "controlled",
+    "uia-tree-panel.txt": "controlled"
+  },
   "files": {
     "app-stderr.txt": {
       "sha256": "668f5657b56dc28bfe7c63c69b0e103f0f3df694c6daefaef784b7a0fa32595c",
@@ -250,16 +314,16 @@
       "bytes": 573
     },
     "session-cancel.txt": {
-      "sha256": "c3dba9c0e3211698b0982115697416a8837c10ebfc7e6fe7ff42a2160437ca4b",
-      "bytes": 11532
+      "sha256": "a7eee89329ea25513423c09bbd88cfaa14fcf511dd7ef051dbc0f94dfaf089b3",
+      "bytes": 11401
     },
-    "session-locked-focus.txt": {
-      "sha256": "be98427daaa6e10febc94ac99fea5d904402261172f594a605a101cfde9f0fd0",
-      "bytes": 7387
+    "session-controlled.txt": {
+      "sha256": "f9f8a8ececc8a34c9f2496cf784cda31050408d3b134210781876bab9b5b7997",
+      "bytes": 7741
     },
     "session-success.txt": {
-      "sha256": "74e87988cc2a35785a69dda22e068a713911ebb3df1a815d421e8abbfc660d74",
-      "bytes": 7644
+      "sha256": "842989e73e247afca35e867519585fae43b7e4854eb5e5e620664447a98e6663",
+      "bytes": 7731
     },
     "tab-backward.txt": {
       "sha256": "7e66681d6a49aeb5829ab2c99b3489ed9c3714e03cf8e5398acb02d6be864531",

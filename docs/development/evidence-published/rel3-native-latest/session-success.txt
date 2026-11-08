@@ -1,10 +1,11 @@
+# redaction: foreign application titles were replaced by <foreign-window-title-redacted>; control types and the fact of foreign focus are preserved.
 APP_PID=37596
 A_EXIT=0
 B_EXIT=0
 APP_EXIT=0
 -----A-----
 WINDOW|COS Desktop|Zed::Window|HWND|14225214
-FOCUSED|ControlType.Document|RootWebArea|しんじさん - Twitch
+FOCUSED|ControlType.Document|RootWebArea|<foreign-window-title-redacted>
 FOREGROUND_EQ_WINDOW|False
 TREE|C:\tmp\rel3-native-work\out\tree-initial.txt|COUNT|62
 TOGGLE_PRESENT|True
@@ -34,7 +35,7 @@ TAB_FWD|1|ControlType.Button|support-export-button|サポート情報をエク�
 TAB_FWD|2|ControlType.Button||成果物  Ctrl+1
 TAB_FWD|3|ControlType.Button||候補を比較  Ctrl+2
 TAB_FWD|4|ControlType.Button||処理の流れ  Ctrl+3
-TAB_FWD|5|ControlType.Document|RootWebArea|しんじさん - Twitch
+TAB_FWD|5|ControlType.Document|RootWebArea|<foreign-window-title-redacted>
 TAB_FWD|6|ControlType.Button||評価 — 利用不可: 候補は選択されていません。
 TAB_FWD|7|ControlType.Button||判断の根拠 — 利用不可: 候補は選択されていません。
 TAB_FWD|8|ControlType.Button||改善 — 利用不可: 候補は選択されていません。
@@ -48,17 +49,17 @@ TAB_FWD|15|ControlType.Group||画像表示。0: 全体、1: 物理等倍、+/-: 
 TAB_FWD|16|ControlType.Button|diagnostics-toggle|診断情報を閉じる
 TAB_FWD|17|ControlType.Button|support-preview-button|サポート情報を表示
 TAB_FWD|18|ControlType.Button|support-export-button|サポート情報をエクスポート
-TAB_FWD|19|ControlType.Document|RootWebArea|しんじさん - Twitch
+TAB_FWD|19|ControlType.Document|RootWebArea|<foreign-window-title-redacted>
 TAB_FWD|20|ControlType.Button||候補を比較  Ctrl+2
 TAB_FWD|21|ControlType.Button||処理の流れ  Ctrl+3
 TAB_FWD|22|ControlType.Button||目的 — 利用可能: Task-184 — 新製品キービジュアル
-TAB_FWD|23|ControlType.Document|RootWebArea|しんじさん - Twitch
+TAB_FWD|23|ControlType.Document|RootWebArea|<foreign-window-title-redacted>
 TAB_FWD_HAS_PREVIEW|True
 TAB_FWD_HAS_EXPORT|True
 TAB_FWD_HAS_STATUS|False
 FOCUSED|ControlType.Button|support-export-button|サポート情報をエクスポート
 TAB_BACK|0|ControlType.Button|support-preview-button|サポート情報を表示
-TAB_BACK|1|ControlType.Document|RootWebArea|しんじさん - Twitch
+TAB_BACK|1|ControlType.Document|RootWebArea|<foreign-window-title-redacted>
 TAB_BACK|2|ControlType.Group||画像表示。0: 全体、1: 物理等倍、+/-: 拡大縮小、矢印: 移動、F11: 全画面、Escape: 復帰
 TAB_BACK|3|ControlType.ListItem|task-row-fixture:task/Task-184|Task-184 — 新製品キービジュアル
 TAB_BACK|4|ControlType.Edit|task-search|タスクを検索

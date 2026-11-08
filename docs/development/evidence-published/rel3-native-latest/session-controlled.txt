@@ -1,14 +1,19 @@
-APP_PID=2976
+SESSION_START|2026-11-08T10:38:42+09:00
+PRELAUNCH_COS_PROCESSES|0
+NATIVE_LOCK_ACQUIRED|owner=impl-rel1 pid=37712 at=2026-11-08T10:38:43+09:00
+APP_PID=37712
+COS_PROCESS_AFTER_LAUNCH|1
 A_EXIT=0
 B_EXIT=0
 APP_EXIT=0
 LOCK_RELEASED
+SESSION_END|2026-11-08T10:39:29+09:00
 -----A-----
 ENV|os=Microsoft Windows NT 10.0.26300.0|64bit=True
 DPI|96
-WINDOW|COS Desktop|Zed::Window|HWND|3083066|pid=2976
-FOCUSED|ControlType.Group||
-FOREGROUND_IS_APP|False
+WINDOW|COS Desktop|Zed::Window|HWND|3609988|pid=37712
+FOCUSED|ControlType.Pane||COS Desktop 作業画面
+FOREGROUND_IS_APP|True
 TREE_INITIAL|COUNT|62
 TOGGLE_PRESENT|True
 PANEL_OPENED_BY|invoke
@@ -21,6 +26,8 @@ ID|support-export-button|present=False
 ID|support-export-status|present=False
 ID|support-export-trace|present=False
 ID|support-preview-trace|present=True|type=ControlType.Text|name=action=none;build=none;install=none;render=absent|focusable=False|enabled=True|offscreen=False
+FOCUS_READY_PREVIEW|True
+FOREGROUND_BEFORE_PREVIEW|True
 PREVIEW_ENTER_SENT|True
 REPORT|present=True|chars=573|utf8_bytes=573|lines=19|sha256=67f69633cd6fe90c4ff20dfc02cbbdfce6be5e2e4b16c5b56eeb394b837b90e3|focusable=False|type=ControlType.Text|within_12288=True|within_24_lines=True
 PREVIEW_TRACE|action=reached;build=finished;install=accepted;render=assumed
@@ -32,6 +39,7 @@ ID|support-export-status|present=False
 ID|support-export-trace|present=False
 ID|support-preview-trace|present=True|type=ControlType.Text|name=action=reached;build=finished;install=accepted;render=assumed|focusable=False|enabled=True|offscreen=False
 FOCUS_READY_FORWARD|True
+FOREGROUND_BEFORE_FORWARD|True
 FOCUSED|ControlType.Button|diagnostics-toggle|診断情報を閉じる
 TAB_FWD|0|ControlType.Button|support-preview-button|サポート情報を表示
 TAB_FWD|1|ControlType.Button|support-export-button|サポート情報をエクスポート
@@ -61,6 +69,7 @@ TAB_FWD_HAS_PREVIEW|True
 TAB_FWD_HAS_EXPORT|True
 TAB_FWD_HAS_STATUS|False
 FOCUS_READY_BACKWARD|True
+FOREGROUND_BEFORE_BACKWARD|True
 FOCUSED|ControlType.Button|support-export-button|サポート情報をエクスポート
 TAB_BACK|0|ControlType.Button|support-preview-button|サポート情報を表示
 TAB_BACK|1|ControlType.Button|diagnostics-toggle|診断情報を閉じる

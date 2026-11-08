@@ -1,3 +1,4 @@
+# redaction: foreign application titles were replaced by <foreign-window-title-redacted>; control types and the fact of foreign focus are preserved.
 APP_PID=40280
 A_EXIT=0
 B_EXIT=0
@@ -6,7 +7,7 @@ APP_EXIT=143
 ENV|os=Microsoft Windows NT 10.0.26300.0|64bit=True
 DPI|96
 WINDOW|COS Desktop|Zed::Window|HWND|16389468|pid=40280
-FOCUSED|ControlType.Group||しゃるる · リーグ オブ レジェンド 聖戦、GENG信じてる JP] GEN vs IG | Worlds 2026 Semifinals Day 1 ライブ配信 | 1,580人が視聴中
+FOCUSED|ControlType.Group||<foreign-window-title-redacted>
 FOREGROUND_IS_APP|False
 TREE_INITIAL|COUNT|62
 TOGGLE_PRESENT|True
@@ -34,7 +35,7 @@ FOCUSED|ControlType.Window||COS Desktop
 TAB_FWD|0|ControlType.Window||COS Desktop
 TAB_FWD|1|ControlType.Window||COS Desktop
 TAB_FWD|2|ControlType.Window||COS Desktop
-TAB_FWD|3|ControlType.Document|RootWebArea|しんじさん - Twitch
+TAB_FWD|3|ControlType.Document|RootWebArea|<foreign-window-title-redacted>
 TAB_FWD|4|ControlType.Button||処理の流れ  Ctrl+3
 TAB_FWD|5|ControlType.Button||目的 — 利用可能: Task-184 — 新製品キービジュアル
 TAB_FWD|6|ControlType.Button||評価 — 利用不可: 候補は選択されていません。
@@ -80,7 +81,7 @@ TAB_BACK|17|ControlType.Button|support-preview-button|サポート情報を表�
 TAB_BACK|18|ControlType.Button|diagnostics-toggle|診断情報を閉じる
 TAB_BACK|19|ControlType.Group||画像表示。0: 全体、1: 物理等倍、+/-: 拡大縮小、矢印: 移動、F11: 全画面、Escape: 復帰
 TAB_BACK|20|ControlType.ListItem|task-row-fixture:task/Task-184|Task-184 — 新製品キービジュアル
-TAB_BACK|21|ControlType.Document|RootWebArea|しんじさん - Twitch
+TAB_BACK|21|ControlType.Document|RootWebArea|<foreign-window-title-redacted>
 TAB_BACK|22|ControlType.Button||停止要求の受付状況を確認（現在は操作できません）
 TAB_BACK|23|ControlType.Button||タスクを停止
 TAB_BACK_HAS_PREVIEW|True
