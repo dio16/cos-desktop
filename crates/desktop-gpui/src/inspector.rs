@@ -144,6 +144,30 @@ impl Shell {
                 .child(candidate_state),
         );
 
+        // NAV3 entry point from the task context: the history surface opens for
+        // the selected task and restores local view only. Ctrl+H is the keyboard
+        // equivalent bound by the shell.
+        if scope.task.is_some() {
+            panel = panel.child(
+                div()
+                    .id("inspector-history-open")
+                    .role(Role::Button)
+                    .aria_label("このタスクの実行履歴を開く")
+                    .aria_description(
+                        "履歴パネルを開きます。過去の時点はローカル表示のみを復元し、正式な選択は変更しません。",
+                    )
+                    .px_3()
+                    .py_2()
+                    .border_1()
+                    .border_color(rgb(colors.border))
+                    .cursor_pointer()
+                    .on_click(cx.listener(|this, _, window, cx| {
+                        this.history_open_surface(window, cx);
+                    }))
+                    .child("履歴を開く（Ctrl+H）"),
+            );
+        }
+
         for (index, section) in view.sections.iter().enumerate() {
             let Some(handle) = self.inspector_focus.get(index) else {
                 continue;

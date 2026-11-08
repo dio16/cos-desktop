@@ -28,6 +28,7 @@ pub mod contrast;
 mod dock;
 mod flow;
 mod help;
+mod history_surface;
 pub mod image_upload;
 pub mod image_viewer;
 mod inspector;
@@ -109,7 +110,15 @@ actions!(
         BriefClose,
         BriefSubmit,
         BriefRecheck,
-        BriefReload
+        BriefReload,
+        HistoryOpen,
+        HistoryClose,
+        HistoryOlder,
+        HistoryRowUp,
+        HistoryRowDown,
+        HistoryRowHome,
+        HistoryRowEnd,
+        HistoryReopen
     ]
 );
 
@@ -162,8 +171,8 @@ pub fn bind_keys(cx: &mut App) {
         KeyBinding::new("ctrl-tab", NextSurface, None),
         KeyBinding::new("tab", FocusNext, None),
         KeyBinding::new("shift-tab", FocusPrevious, None),
-        KeyBinding::new("enter", Activate, Some("!TaskRailInput && !TaskRailList && !FlowSearchInput && !FlowNodeList && !FlowEdgeList")),
-        KeyBinding::new("space", Activate, Some("!TaskRailInput && !TaskRailList && !FlowSearchInput && !FlowNodeList && !FlowEdgeList")),
+        KeyBinding::new("enter", Activate, Some("!TaskRailInput && !TaskRailList && !FlowSearchInput && !FlowNodeList && !FlowEdgeList && !HistoryList && !HistoryOlder")),
+        KeyBinding::new("space", Activate, Some("!TaskRailInput && !TaskRailList && !FlowSearchInput && !FlowNodeList && !FlowEdgeList && !HistoryList && !HistoryOlder")),
         KeyBinding::new("ctrl-d", Diagnostics, None),
         KeyBinding::new("enter", InspectorToggle, Some("InspectorSection")),
         KeyBinding::new("space", InspectorToggle, Some("InspectorSection")),
@@ -218,6 +227,16 @@ pub fn bind_keys(cx: &mut App) {
         KeyBinding::new("ctrl-enter", BriefSubmit, Some("Brief")),
         KeyBinding::new("ctrl-shift-enter", BriefRecheck, Some("Brief")),
         KeyBinding::new("ctrl-r", BriefReload, Some("Brief")),
+        KeyBinding::new("ctrl-h", HistoryOpen, None),
+        KeyBinding::new("escape", HistoryClose, Some("History")),
+        KeyBinding::new("up", HistoryRowUp, Some("HistoryList")),
+        KeyBinding::new("down", HistoryRowDown, Some("HistoryList")),
+        KeyBinding::new("home", HistoryRowHome, Some("HistoryList")),
+        KeyBinding::new("end", HistoryRowEnd, Some("HistoryList")),
+        KeyBinding::new("enter", HistoryReopen, Some("HistoryList")),
+        KeyBinding::new("space", HistoryReopen, Some("HistoryList")),
+        KeyBinding::new("enter", HistoryOlder, Some("HistoryOlder")),
+        KeyBinding::new("space", HistoryOlder, Some("HistoryOlder")),
     ]);
 }
 
@@ -737,6 +756,17 @@ pub struct Shell {
     brief_focus: FocusHandle,
     brief_input_selection: Range<usize>,
     brief_marked_range: Option<Range<usize>>,
+    /// NAV3 History surface: bounded publication view, keyboard cursor and the
+    /// local-view reopen notice (never a canonical selection or command).
+    history_open: bool,
+    history_focus: FocusHandle,
+    history_list_focus: FocusHandle,
+    history_older_focus: FocusHandle,
+    history_restore_focus: Option<FocusHandle>,
+    history_active: Option<usize>,
+    history_task: Option<desktop_protocol::TaskId>,
+    history_notice: Option<String>,
+    history_load_task: Task<()>,
     stop_intent: StopTracker,
     /// One dock-level focus handle with an active-descendant row: focus identity
     /// stays stable while the mounted window moves, and no per-candidate handle
@@ -1027,6 +1057,15 @@ impl Shell {
             brief_focus: cx.focus_handle().tab_index(39).tab_stop(true),
             brief_input_selection: 0..0,
             brief_marked_range: None,
+            history_open: false,
+            history_focus: cx.focus_handle().tab_stop(true),
+            history_list_focus: cx.focus_handle().tab_index(40).tab_stop(true),
+            history_older_focus: cx.focus_handle().tab_index(41).tab_stop(true),
+            history_restore_focus: None,
+            history_active: None,
+            history_task: None,
+            history_notice: None,
+            history_load_task: cx.spawn(async move |_this, _cx| {}),
             stop_intent: StopTracker::default(),
             dock_focus: cx.focus_handle().tab_index(30).tab_stop(true),
             dock_active: None,
@@ -5109,6 +5148,7 @@ impl Render for Shell {
 
         let palette_overlay = self.palette_overlay(&palette_facts, palette, cx);
         let brief_overlay = self.brief_overlay(palette, cx);
+        let history_overlay = self.history_overlay(palette, window, cx);
 
         div()
             .id("cos-shell")
@@ -5133,6 +5173,12 @@ impl Render for Shell {
             }))
             .on_action(cx.listener(|this, _: &BriefReload, _, cx| {
                 this.brief_reload_catalog(cx);
+            }))
+            .on_action(cx.listener(|this, _: &HistoryOpen, window, cx| {
+                this.history_open_surface(window, cx);
+            }))
+            .on_action(cx.listener(|this, _: &HistoryClose, window, cx| {
+                this.history_close_surface(window, cx);
             }))
             .on_action(
                 cx.listener(|this, _: &Artifact, _, cx| this.navigate(Surface::Artifact, cx)),
@@ -5945,6 +5991,7 @@ impl Render for Shell {
             )
             .child(palette_overlay)
             .child(brief_overlay)
+            .child(history_overlay)
     }
 }
 
