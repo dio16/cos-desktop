@@ -82,6 +82,16 @@ impl BriefParameterValue {
     }
 }
 
+impl std::fmt::Display for BriefParameterValue {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Text(value) | Self::Decimal(value) | Self::Choice(value) => f.write_str(value),
+            Self::Integer(value) => write!(f, "{value}"),
+            Self::Boolean(value) => write!(f, "{value}"),
+        }
+    }
+}
+
 /// One Advanced control projected from the authenticated catalog.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct BriefParameter {
@@ -149,6 +159,10 @@ pub enum BriefCatalogError {
     InvalidParameter,
     /// The catalog carried no usable observation epoch.
     MissingEpoch,
+    /// A recipe carried no explicit image limit; the Brief never invents one.
+    MissingInputLimit,
+    /// A parameter bound was malformed for its control kind.
+    InvalidBounds,
 }
 
 /// Brief validation failure (field-addressed, bounded text).
@@ -317,9 +331,15 @@ impl BriefForm {
         &self.overrides
     }
 
-    /// Whether the fields accept edits (false while submitting).
+    /// Whether the fields accept edits (false while submitting or accepted).
     pub fn is_editable(&self) -> bool {
-        !matches!(self.state, BriefState::Submitting { .. })
+        matches!(
+            self.state,
+            BriefState::Editing
+                | BriefState::Rejected { .. }
+                | BriefState::Unknown { .. }
+                | BriefState::StaleRecipe
+        )
     }
 
     /// Install a freshly authenticated catalog and keep the draft.
@@ -524,8 +544,11 @@ impl BriefForm {
 
     /// Validate and start one submission.
     ///
-    /// The command id is minted here unless this is an identical retry after an
-    /// unknown response; any edit changes the fingerprint and mints a new id.
+    /// The command id is always minted here. An unknown outcome is never
+    /// retried with the same id: the client rejects an already-prepared
+    /// identity, and resending the same id is only allowed when the server
+    /// advertises a valid dedupe window (not part of this slice). The unknown
+    /// receipt stays recheckable; a later submit is a new intent.
     pub fn request_submit(&mut self) -> Result<BriefSubmission, BriefValidationError> {
         if matches!(self.state, BriefState::Submitting { .. }) {
             return Err(BriefValidationError::Submitting);
@@ -536,14 +559,7 @@ impl BriefForm {
             .and_then(|catalog| catalog.server_epoch.clone())
             .ok_or(BriefValidationError::EpochUnavailable)?;
         let (recipe_ref, payload, fingerprint) = self.validate()?;
-        let command_id = match (&self.state, &self.pending) {
-            (BriefState::Unknown { command_id }, Some((pending_id, pending)))
-                if pending_id == command_id && pending == &fingerprint =>
-            {
-                command_id.clone()
-            }
-            _ => CommandId::generate(),
-        };
+        let command_id = CommandId::generate();
         self.pending = Some((command_id.clone(), fingerprint));
         self.state = BriefState::Submitting {
             command_id: command_id.clone(),
@@ -618,7 +634,9 @@ impl BriefForm {
             BriefState::Submitting { .. } => "送信中",
             BriefState::Accepted { .. } => "受付済み — 観測待ち",
             BriefState::Rejected { .. } => "拒否されました",
-            BriefState::Unknown { .. } => "結果不明 — 同じ内容で再試行できます",
+            BriefState::Unknown { .. } => {
+                "結果不明 — 受付票を確認するか、新しい提出として送り直してください"
+            }
             BriefState::StaleRecipe => "レシピが更新されました — 再読み込みしてください",
         }
     }
@@ -820,9 +838,8 @@ impl BriefRecipe {
         let max_images = recipe
             .input_limits
             .max_images
-            .map(|value| value as usize)
-            .unwrap_or(REFERENCES_MAX)
-            .min(REFERENCES_MAX);
+            .ok_or(BriefCatalogError::MissingInputLimit)? as usize;
+        let max_images = max_images.min(REFERENCES_MAX);
         let mut parameters = Vec::with_capacity(recipe.parameters.len());
         for parameter in &recipe.parameters {
             parameters.push(BriefParameter::from_catalog(parameter)?);
@@ -850,32 +867,103 @@ impl BriefParameter {
             _ => return Err(BriefCatalogError::InvalidParameter),
         };
         let default_value = parse_value(kind, &parameter.value)?;
-        Ok(Self {
+        let min = parameter
+            .bounds
+            .as_ref()
+            .and_then(|bounds| bounds.min.clone());
+        let max = parameter
+            .bounds
+            .as_ref()
+            .and_then(|bounds| bounds.max.clone());
+        let max_length = match parameter
+            .bounds
+            .as_ref()
+            .and_then(|bounds| bounds.max_length)
+        {
+            Some(value) if value >= 0 => Some(value as usize),
+            Some(_) => return Err(BriefCatalogError::InvalidBounds),
+            None => None,
+        };
+        validate_catalog_bounds(kind, min.as_deref(), max.as_deref(), max_length)?;
+        let choices: Vec<String> = parameter
+            .choices
+            .iter()
+            .map(|choice| choice.value.clone())
+            .collect();
+        if kind == BriefParameterKind::Choice && choices.is_empty() {
+            return Err(BriefCatalogError::InvalidParameter);
+        }
+        let control = Self {
             id: parameter.id.clone(),
             label: parameter.label.clone(),
             kind,
             default_value,
-            min: parameter
-                .bounds
-                .as_ref()
-                .and_then(|bounds| bounds.min.clone()),
-            max: parameter
-                .bounds
-                .as_ref()
-                .and_then(|bounds| bounds.max.clone()),
-            max_length: parameter
-                .bounds
-                .as_ref()
-                .and_then(|bounds| bounds.max_length)
-                .map(|value| value.max(0) as usize),
-            choices: parameter
-                .choices
-                .iter()
-                .map(|choice| choice.value.clone())
-                .collect(),
+            min,
+            max,
+            max_length,
+            choices,
             editable: parameter.editable,
-        })
+        };
+        // The catalog default itself must satisfy the control's own bounds.
+        validate_parameter(&control, &control.default_value)
+            .map_err(|_| BriefCatalogError::InvalidBounds)?;
+        Ok(control)
     }
+}
+
+/// Refuse malformed bounds at catalog-map time instead of silently skipping them.
+fn validate_catalog_bounds(
+    kind: BriefParameterKind,
+    min: Option<&str>,
+    max: Option<&str>,
+    max_length: Option<usize>,
+) -> Result<(), BriefCatalogError> {
+    match kind {
+        BriefParameterKind::Text => {
+            if min.is_some() || max.is_some() {
+                return Err(BriefCatalogError::InvalidBounds);
+            }
+        }
+        BriefParameterKind::Integer => {
+            if max_length.is_some() {
+                return Err(BriefCatalogError::InvalidBounds);
+            }
+            let min = min
+                .map(str::parse::<i64>)
+                .transpose()
+                .map_err(|_| BriefCatalogError::InvalidBounds)?;
+            let max = max
+                .map(str::parse::<i64>)
+                .transpose()
+                .map_err(|_| BriefCatalogError::InvalidBounds)?;
+            if let (Some(min), Some(max)) = (min, max)
+                && min > max
+            {
+                return Err(BriefCatalogError::InvalidBounds);
+            }
+        }
+        BriefParameterKind::Decimal => {
+            if max_length.is_some() {
+                return Err(BriefCatalogError::InvalidBounds);
+            }
+            if min.is_some_and(|value| !canonical_decimal(value))
+                || max.is_some_and(|value| !canonical_decimal(value))
+            {
+                return Err(BriefCatalogError::InvalidBounds);
+            }
+            if let (Some(min), Some(max)) = (min, max)
+                && decimal_cmp(min, max) == Ordering::Greater
+            {
+                return Err(BriefCatalogError::InvalidBounds);
+            }
+        }
+        BriefParameterKind::Boolean | BriefParameterKind::Choice => {
+            if min.is_some() || max.is_some() || max_length.is_some() {
+                return Err(BriefCatalogError::InvalidBounds);
+            }
+        }
+    }
+    Ok(())
 }
 
 fn parse_value(
@@ -1193,7 +1281,7 @@ mod tests {
     }
 
     #[test]
-    fn command_id_is_reused_only_for_an_identical_retry() {
+    fn an_unknown_outcome_is_never_retried_with_the_same_command_id() {
         let mut form = form_with_recipe();
         assert!(form.set_goal("goal"));
         let first = form.request_submit().expect("submit");
@@ -1210,15 +1298,21 @@ mod tests {
         );
 
         assert!(form.on_unknown(&first.command_id));
-        assert_eq!(form.state_label(), "結果不明 — 同じ内容で再試行できます");
-        let retry = form.request_submit().expect("identical retry");
-        assert_eq!(retry.command_id, first.command_id);
+        assert_eq!(
+            form.state_label(),
+            "結果不明 — 受付票を確認するか、新しい提出として送り直してください"
+        );
+        let resubmitted = form.request_submit().expect("new intent");
+        assert_ne!(
+            resubmitted.command_id, first.command_id,
+            "the client rejects an already-prepared id; never resend it blindly"
+        );
 
-        assert!(form.on_unknown(&retry.command_id));
+        assert!(form.on_unknown(&resubmitted.command_id));
         assert!(form.set_goal("another goal"));
         assert!(matches!(form.state(), BriefState::Editing));
         let changed = form.request_submit().expect("changed submit");
-        assert_ne!(changed.command_id, first.command_id);
+        assert_ne!(changed.command_id, resubmitted.command_id);
     }
 
     #[test]
@@ -1229,6 +1323,9 @@ mod tests {
         let task = TaskId::new("task-1").expect("task");
         assert!(form.on_accepted(&submission.command_id, Some(task)));
         assert_eq!(form.state_label(), "受付済み — 観測待ち");
+        assert!(!form.is_editable(), "an accepted Brief is read-only");
+        assert!(!form.set_goal("accepted edits are refused"));
+        assert!(!form.set_direction("accepted direction"));
 
         let mut rejected = form_with_recipe();
         assert!(rejected.set_goal("goal"));
@@ -1362,5 +1459,178 @@ mod epoch_tests {
             form.request_submit().err(),
             Some(BriefValidationError::EpochUnavailable)
         );
+    }
+}
+
+#[cfg(test)]
+mod fail_closed_tests {
+    use super::*;
+    use app_core::{
+        CatalogExecutionLimits, CatalogGraphRef, CatalogInputLimits, CatalogParameterBounds,
+        CatalogParameterChoice, CatalogParameterValue as WireValue,
+    };
+
+    fn recipe_with(max_images: Option<u32>, parameter: CatalogParameter) -> CatalogRecipe {
+        CatalogRecipe {
+            recipe_ref: CatalogRecipeRef {
+                recipe_id: "recipe-1".to_owned(),
+                source_harness_version_id: None,
+                source_harness_digest: None,
+                graph_ref: CatalogGraphRef {
+                    graph_id: "graph-1".to_owned(),
+                    graph_version: 1,
+                    graph_digest: format!("sha256:{}", "a".repeat(64)),
+                },
+                profile_ref: None,
+                projection_digest: None,
+            },
+            label: "Still".to_owned(),
+            description: "One still".to_owned(),
+            input_limits: CatalogInputLimits { max_images },
+            accepts_image_references: false,
+            execution_limits: CatalogExecutionLimits::default(),
+            constraint_summary: "none".to_owned(),
+            parameters: vec![parameter],
+        }
+    }
+
+    fn parameter(
+        kind: &str,
+        value: WireValue,
+        bounds: Option<CatalogParameterBounds>,
+        choices: Vec<CatalogParameterChoice>,
+    ) -> CatalogParameter {
+        CatalogParameter {
+            id: "p".to_owned(),
+            label: "P".to_owned(),
+            kind: kind.to_owned(),
+            value,
+            bounds,
+            choices,
+            editable: true,
+        }
+    }
+
+    fn map(recipe: CatalogRecipe) -> Result<BriefCatalog, BriefCatalogError> {
+        BriefCatalog::from_catalog(&Catalog {
+            schema_version: 1,
+            can_submit: true,
+            reason_codes: Vec::new(),
+            recipes: vec![recipe],
+        })
+    }
+
+    #[test]
+    fn a_missing_image_limit_refuses_the_catalog() {
+        let recipe = recipe_with(
+            None,
+            parameter("text", WireValue::Text("x".to_owned()), None, Vec::new()),
+        );
+        assert_eq!(map(recipe), Err(BriefCatalogError::MissingInputLimit));
+    }
+
+    #[test]
+    fn malformed_numeric_bounds_refuse_the_catalog() {
+        let integer = recipe_with(
+            Some(2),
+            parameter(
+                "integer",
+                WireValue::Integer(1),
+                Some(CatalogParameterBounds {
+                    min: Some("not-an-integer".to_owned()),
+                    max: None,
+                    max_length: None,
+                }),
+                Vec::new(),
+            ),
+        );
+        assert_eq!(map(integer), Err(BriefCatalogError::InvalidBounds));
+
+        let decimal = recipe_with(
+            Some(2),
+            parameter(
+                "decimal",
+                WireValue::Text("0.5".to_owned()),
+                Some(CatalogParameterBounds {
+                    min: Some("1e3".to_owned()),
+                    max: None,
+                    max_length: None,
+                }),
+                Vec::new(),
+            ),
+        );
+        assert_eq!(map(decimal), Err(BriefCatalogError::InvalidBounds));
+
+        let inverted = recipe_with(
+            Some(2),
+            parameter(
+                "decimal",
+                WireValue::Text("0.5".to_owned()),
+                Some(CatalogParameterBounds {
+                    min: Some("2".to_owned()),
+                    max: Some("1".to_owned()),
+                    max_length: None,
+                }),
+                Vec::new(),
+            ),
+        );
+        assert_eq!(map(inverted), Err(BriefCatalogError::InvalidBounds));
+    }
+
+    #[test]
+    fn malformed_text_and_choice_bounds_refuse_the_catalog() {
+        let negative_length = recipe_with(
+            Some(2),
+            parameter(
+                "text",
+                WireValue::Text("x".to_owned()),
+                Some(CatalogParameterBounds {
+                    min: None,
+                    max: None,
+                    max_length: Some(-1),
+                }),
+                Vec::new(),
+            ),
+        );
+        assert_eq!(map(negative_length), Err(BriefCatalogError::InvalidBounds));
+
+        let empty_choices = recipe_with(
+            Some(2),
+            parameter("choice", WireValue::Text("a".to_owned()), None, Vec::new()),
+        );
+        assert_eq!(map(empty_choices), Err(BriefCatalogError::InvalidParameter));
+
+        let boolean_with_min = recipe_with(
+            Some(2),
+            parameter(
+                "boolean",
+                WireValue::Boolean(true),
+                Some(CatalogParameterBounds {
+                    min: Some("0".to_owned()),
+                    max: None,
+                    max_length: None,
+                }),
+                Vec::new(),
+            ),
+        );
+        assert_eq!(map(boolean_with_min), Err(BriefCatalogError::InvalidBounds));
+    }
+
+    #[test]
+    fn a_default_outside_its_bounds_refuses_the_catalog() {
+        let recipe = recipe_with(
+            Some(2),
+            parameter(
+                "integer",
+                WireValue::Integer(9),
+                Some(CatalogParameterBounds {
+                    min: Some("1".to_owned()),
+                    max: Some("5".to_owned()),
+                    max_length: None,
+                }),
+                Vec::new(),
+            ),
+        );
+        assert_eq!(map(recipe), Err(BriefCatalogError::InvalidBounds));
     }
 }
