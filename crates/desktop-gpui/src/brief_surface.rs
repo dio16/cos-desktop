@@ -278,6 +278,23 @@ impl Shell {
         cx.notify();
     }
 
+    /// Server-scope capability denial for the create action, when one applies.
+    ///
+    /// The Runtime normally projects capabilities per run. A projected
+    /// server-scope projection is authoritative for `CREATE_TASK`; a dangling
+    /// reference, a scope mismatch or an ambiguous set fails closed. Absence is
+    /// not an offer either, but the authenticated catalog remains the create
+    /// authority for that pre-existing path, so it is not overridden here.
+    fn brief_create_capability_denial(&self) -> Option<app_core::capability::CapabilityGate> {
+        match self.authorized_text().map(|text| &text.create_capability) {
+            None | Some(app_core::capability::CapabilityProjection::NotProjected) => None,
+            Some(projection) => {
+                let gate = projection.gate_command(&desktop_protocol::CommandOperation::CreateTask);
+                (!gate.enabled).then_some(gate)
+            }
+        }
+    }
+
     /// Validate and submit the Brief through the owner command path.
     pub(super) fn brief_submit(&mut self, cx: &mut Context<Self>) {
         let Some(handle) = self.handle.clone() else {
@@ -780,6 +797,7 @@ impl Shell {
             BriefState::Editing | BriefState::Unknown { .. } | BriefState::Rejected { .. }
         );
         if !matches!(state, BriefState::Sent { .. }) {
+            let create_denial = self.brief_create_capability_denial();
             let enabled = can_attempt
                 && !busy
                 && self.handle.is_some()
@@ -789,11 +807,14 @@ impl Shell {
                     .brief_form
                     .catalog()
                     .is_some_and(|catalog| catalog.can_submit)
+                && create_denial.is_none()
                 && validation.is_none();
             let disabled_reason = if self.handle.is_none() {
                 "観測が構成されていません"
             } else if self.brief_catalog_epoch.is_none() {
                 "カタログのエポックが不明です"
+            } else if let Some(gate) = &create_denial {
+                gate.reason.as_ref()
             } else if validation.is_some() {
                 "入力内容を確認してください"
             } else if matches!(state, BriefState::StaleRecipe) {

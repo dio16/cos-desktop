@@ -1413,6 +1413,13 @@ pub struct WorkbenchText {
     pub axes: StateAxes,
     pub stop_enabled: bool,
     pub stop_reason: Arc<str>,
+    /// Server-scope capability projection for the create action.
+    ///
+    /// The Runtime read model normally projects capabilities per run, so this
+    /// is `NotProjected` unless a server-scope projection exists. A projected
+    /// value gates the Brief's `CREATE_TASK`; absence keeps the authenticated
+    /// catalog (itself server-authoritative) as the create authority.
+    pub create_capability: app_core::capability::CapabilityProjection,
     pub command_views: BTreeMap<desktop_protocol::CommandId, StopDisplay>,
     pub connection: String,
     pub source: String,
@@ -1466,6 +1473,7 @@ impl WorkbenchText {
             } else {
                 "停止状態を確認できません — 現在のタスク観測がありません".into()
             },
+            create_capability: app_core::capability::for_server(publication),
             interventions: if unavailable {
                 intervention::Index::blocked()
             } else {
@@ -1615,44 +1623,14 @@ fn stop_availability(
             "停止状態を確認できません — 許可されたセッションが観測中ではありません".into(),
         );
     }
-    let Some(snapshot) = publication.snapshot.as_ref() else {
-        return (
-            false,
-            "停止状態を確認できません — 操作可否の情報がありません".into(),
-        );
-    };
-    // An absent capabilities_ref means the Runtime projected no command
-    // availability for this task; that fails closed exactly like a declared
-    // reference whose projection is missing.
-    let Some(capabilities) = task
-        .capabilities_ref
-        .as_ref()
-        .and_then(|identity| snapshot.capabilities.get(identity))
-    else {
-        return (
-            false,
-            "停止状態を確認できません — 操作可否の情報がありません".into(),
-        );
-    };
-    if !capabilities.availability.is_supported() {
-        return (
-            false,
-            "停止状態を確認できません — コマンドの利用可否がありません".into(),
-        );
-    }
-    match capabilities.command_support(&desktop_protocol::CommandOperation::StopTask) {
-        Some(desktop_protocol::SupportState::Supported) => {}
-        Some(desktop_protocol::SupportState::Unsupported) => {
-            return (false, "停止操作は未対応です".into());
-        }
-        Some(desktop_protocol::SupportState::Unavailable)
-        | Some(desktop_protocol::SupportState::Unknown(_))
-        | None => {
-            return (
-                false,
-                "停止状態を確認できません — コマンドの対応状況が不明です".into(),
-            );
-        }
+    // An absent capabilities_ref (or a dangling one) means the Runtime projected
+    // no command availability for this task. The capability view model fails
+    // closed for every non-projected state and never infers support from a
+    // provider name or the catalog.
+    let capability = app_core::capability::for_task(publication, &task.task_ref);
+    let gate = capability.gate_command(&desktop_protocol::CommandOperation::StopTask);
+    if !gate.enabled {
+        return (false, gate.reason);
     }
     match task.task_status {
         desktop_protocol::TaskStatus::Active | desktop_protocol::TaskStatus::Assigned => {
@@ -2650,10 +2628,183 @@ mod tests {
         // Absent capability availability fails closed through the existing path.
         assert!(!text.stop_enabled);
         assert!(
-            text.stop_reason.contains("操作可否の情報がありません"),
+            text.stop_reason.contains("capability not projected"),
             "{}",
             text.stop_reason
         );
+    }
+
+    #[test]
+    fn stop_gating_follows_the_authoritative_capability_revision() {
+        // A newer revision revoking the same command must disable the action;
+        // the previous revision is never rendered as current.
+        let mut snapshot = fixture_snapshot(
+            "Capability task",
+            TaskStatus::Active,
+            1,
+            vec![candidate("e", "Candidate E", 1)],
+            "epoch/1",
+        );
+        let state = Arc::get_mut(&mut snapshot).expect("snapshot has one owner");
+        let capabilities = state
+            .capabilities
+            .get_mut(&CapabilitiesId::fixture("capabilities/task"))
+            .expect("fixture capability projection");
+        capabilities.projection_revision = Counter::from_u128(2);
+        capabilities.commands[0].support = desktop_protocol::SupportState::Unavailable;
+        capabilities.commands[0].reason = Some("grant revoked".to_owned());
+        let text = derive(
+            &mut DerivationCache::default(),
+            &publication(snapshot, 1, 1, 1),
+        );
+        assert!(!text.stop_enabled);
+        assert_eq!(text.stop_reason.as_ref(), "grant revoked");
+    }
+
+    #[test]
+    fn an_unknown_capability_value_keeps_stop_disabled() {
+        let mut snapshot = fixture_snapshot(
+            "Capability task",
+            TaskStatus::Active,
+            1,
+            vec![candidate("e", "Candidate E", 1)],
+            "epoch/1",
+        );
+        let state = Arc::get_mut(&mut snapshot).expect("snapshot has one owner");
+        let capabilities = state
+            .capabilities
+            .get_mut(&CapabilitiesId::fixture("capabilities/task"))
+            .expect("fixture capability projection");
+        capabilities.commands[0].support =
+            desktop_protocol::SupportState::Unknown("FUTURE".to_owned());
+        let text = derive(
+            &mut DerivationCache::default(),
+            &publication(snapshot, 1, 1, 1),
+        );
+        assert!(!text.stop_enabled);
+        assert!(text.stop_reason.contains("FUTURE"), "{}", text.stop_reason);
+    }
+
+    #[test]
+    fn a_disappeared_capability_projection_keeps_stop_disabled() {
+        // The task keeps its reference while the projection is removed: a
+        // dangling reference is a missing projection, not "not projected", and
+        // still fails closed.
+        let mut snapshot = fixture_snapshot(
+            "Capability task",
+            TaskStatus::Active,
+            1,
+            vec![candidate("e", "Candidate E", 1)],
+            "epoch/1",
+        );
+        let state = Arc::get_mut(&mut snapshot).expect("snapshot has one owner");
+        state
+            .capabilities
+            .remove(&CapabilitiesId::fixture("capabilities/task"));
+        let text = derive(
+            &mut DerivationCache::default(),
+            &publication(snapshot, 1, 1, 1),
+        );
+        assert!(!text.stop_enabled);
+        assert!(
+            text.stop_reason.contains("投影が見つかりません"),
+            "{}",
+            text.stop_reason
+        );
+    }
+
+    #[test]
+    fn create_capability_uses_only_a_server_scope_projection() {
+        // The fixture projects a task-scope capability; creation is not gated
+        // by it because the task scope cannot speak for a new task.
+        let snapshot = fixture_snapshot(
+            "Capability task",
+            TaskStatus::Active,
+            1,
+            vec![candidate("e", "Candidate E", 1)],
+            "epoch/1",
+        );
+        let text = derive(
+            &mut DerivationCache::default(),
+            &publication(snapshot, 1, 1, 1),
+        );
+        assert_eq!(
+            text.create_capability,
+            app_core::capability::CapabilityProjection::NotProjected
+        );
+
+        let mut snapshot = fixture_snapshot(
+            "Capability task",
+            TaskStatus::Active,
+            1,
+            vec![candidate("e", "Candidate E", 1)],
+            "epoch/1",
+        );
+        let state = Arc::get_mut(&mut snapshot).expect("snapshot has one owner");
+        state.capabilities.insert(
+            CapabilitiesId::fixture("capabilities/server"),
+            desktop_protocol::CreativeCapabilities {
+                capabilities_ref: CapabilitiesId::fixture("capabilities/server"),
+                scope: desktop_protocol::CapabilityScope::Server,
+                commands: vec![desktop_protocol::CommandCapability {
+                    operation: desktop_protocol::CommandOperation::CreateTask,
+                    support: desktop_protocol::SupportState::Supported,
+                    reason: None,
+                }],
+                media: Vec::new(),
+                features: Vec::new(),
+                constraints: Vec::new(),
+                availability: desktop_protocol::SupportState::Supported,
+                reason: None,
+                projection_revision: Counter::from_u128(1),
+            },
+        );
+        let text = derive(
+            &mut DerivationCache::default(),
+            &publication(snapshot, 1, 1, 1),
+        );
+        let gate = text
+            .create_capability
+            .gate_command(&desktop_protocol::CommandOperation::CreateTask);
+        assert!(gate.enabled);
+
+        // A newer revision may revoke the offer; the same identity must be
+        // re-evaluated, not remembered.
+        let mut snapshot = fixture_snapshot(
+            "Capability task",
+            TaskStatus::Active,
+            1,
+            vec![candidate("e", "Candidate E", 1)],
+            "epoch/1",
+        );
+        let state = Arc::get_mut(&mut snapshot).expect("snapshot has one owner");
+        state.capabilities.insert(
+            CapabilitiesId::fixture("capabilities/server"),
+            desktop_protocol::CreativeCapabilities {
+                capabilities_ref: CapabilitiesId::fixture("capabilities/server"),
+                scope: desktop_protocol::CapabilityScope::Server,
+                commands: vec![desktop_protocol::CommandCapability {
+                    operation: desktop_protocol::CommandOperation::CreateTask,
+                    support: desktop_protocol::SupportState::Unavailable,
+                    reason: Some("create revoked".to_owned()),
+                }],
+                media: Vec::new(),
+                features: Vec::new(),
+                constraints: Vec::new(),
+                availability: desktop_protocol::SupportState::Supported,
+                reason: None,
+                projection_revision: Counter::from_u128(2),
+            },
+        );
+        let text = derive(
+            &mut DerivationCache::default(),
+            &publication(snapshot, 1, 2, 2),
+        );
+        let gate = text
+            .create_capability
+            .gate_command(&desktop_protocol::CommandOperation::CreateTask);
+        assert!(!gate.enabled);
+        assert_eq!(gate.reason.as_ref(), "create revoked");
     }
 
     #[test]

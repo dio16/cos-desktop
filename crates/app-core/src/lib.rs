@@ -1,5 +1,6 @@
 //! GPUI-free application coordination. All client work runs on a background executor.
 
+pub mod capability;
 pub mod crash_report;
 pub mod diagnostics;
 pub mod fence;

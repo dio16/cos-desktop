@@ -6,7 +6,8 @@ use app_core::{
     preferences::{Preferences, WindowGeometry},
 };
 use desktop_protocol::{
-    ArtifactDigest, ArtifactId, EpochId, ReadContextId, RepresentationKind, ServerId, TaskId,
+    ArtifactDigest, ArtifactId, CapabilitiesId, Counter, EpochId, ReadContextId,
+    RepresentationKind, ServerId, TaskId,
 };
 use gpui::{
     AccessibleAction, AnyElement, App, Bounds, Context, Element, ElementId, ElementInputHandler,
@@ -720,6 +721,22 @@ struct MediaLoadKey {
     artifact_ref: ArtifactId,
     artifact_digest: ArtifactDigest,
     representation: RepresentationKind,
+    /// Capability projection the request was gated on; a new revision forces a
+    /// new gate decision instead of reusing the previous offer.
+    capability: Option<(CapabilitiesId, Counter)>,
+}
+
+/// Identity of the capability decision that authorized a media request.
+///
+/// A non-projected state carries no identity, so a later projection (or a new
+/// revision of the same identity) always produces a different key and the gate
+/// is re-evaluated instead of reusing an older offer.
+fn media_capability_key(
+    projection: &app_core::capability::CapabilityProjection,
+) -> Option<(CapabilitiesId, Counter)> {
+    projection
+        .view()
+        .map(|view| (view.capabilities_ref.clone(), view.revision.clone()))
 }
 
 pub struct Shell {
@@ -2419,10 +2436,22 @@ impl Shell {
             return;
         };
         let mut artifact = None;
-        let read = lease.read(|publication| publication.artifact_of_candidate(&viewed).cloned());
+        let mut capability = app_core::capability::CapabilityProjection::NotProjected;
+        let read = lease.read(|publication| {
+            (
+                publication.artifact_of_candidate(&viewed).cloned(),
+                app_core::capability::for_task(publication, &viewed.task_id),
+            )
+        });
         match read {
             Ok(tagged) => {
-                if tagged.consume(|value| artifact = value.clone()).is_err() {
+                if tagged
+                    .consume(|value| {
+                        artifact = value.0.clone();
+                        capability = value.1.clone();
+                    })
+                    .is_err()
+                {
                     return;
                 }
             }
@@ -2446,6 +2475,7 @@ impl Shell {
             }
             _ => return,
         };
+        let capability_key = media_capability_key(&capability);
         let key = MediaLoadKey {
             server_identity: context.server_identity().clone(),
             epoch: context.epoch().clone(),
@@ -2454,8 +2484,23 @@ impl Shell {
             artifact_ref: artifact.artifact_ref.clone(),
             artifact_digest: artifact.artifact_digest.clone(),
             representation: RepresentationKind::Original,
+            capability: capability_key,
         };
         if self.media_loaded.as_ref() == Some(&key) {
+            return;
+        }
+        // The authoritative capability projection gates the representation
+        // before any descriptor or byte is requested. A non-projected state is
+        // an explicit unavailable reason, never an implicit offer.
+        let gate = capability.gate_media(&RepresentationKind::Original, &artifact.artifact_ref);
+        if !gate.enabled {
+            self.media_loaded = Some(key);
+            self.media_cancel.cancel();
+            self.media_cancel = MediaFetchCancellation::default();
+            let reason: SharedString = SharedString::from(gate.reason.to_string());
+            self.artifact_viewer.update(cx, |viewer, cx| {
+                viewer.unavailable(reason, cx);
+            });
             return;
         }
         let source = match &self.media {
@@ -7634,5 +7679,64 @@ mod brief_ime_tests {
         assert_eq!(brief_composition_field(false, false, false), None);
         assert_eq!(brief_composition_field(false, true, false), None);
         assert_eq!(brief_composition_field(false, false, true), None);
+    }
+}
+
+#[cfg(test)]
+mod capability_media_tests {
+    use app_core::capability::{
+        CapabilityProjection, CapabilityScopeView, CapabilityView, MediaSupportView,
+    };
+    use desktop_protocol::{ArtifactId, CapabilitiesId, Counter, RepresentationKind, SupportState};
+
+    use super::media_capability_key;
+
+    fn view(revision: u128, media: Vec<MediaSupportView>) -> CapabilityView {
+        CapabilityView {
+            capabilities_ref: CapabilitiesId::fixture("capabilities/task"),
+            scope: CapabilityScopeView::Task(desktop_protocol::TaskId::fixture("task/Task-184")),
+            availability: SupportState::Supported,
+            commands: Vec::new().into(),
+            media: media.into(),
+            features: Vec::new().into(),
+            constraints: Vec::new().into(),
+            reason: None,
+            revision: Counter::from_u128(revision),
+        }
+    }
+
+    #[test]
+    fn a_capability_revision_changes_the_media_gate_key() {
+        let artifact = ArtifactId::fixture("artifact/a");
+        let first = CapabilityProjection::Projected(view(
+            1,
+            vec![MediaSupportView {
+                representation: RepresentationKind::Original,
+                support: SupportState::Supported,
+                reason: None,
+            }],
+        ));
+        let second = CapabilityProjection::Projected(view(
+            2,
+            vec![MediaSupportView {
+                representation: RepresentationKind::Original,
+                support: SupportState::Unavailable,
+                reason: Some("revoked".into()),
+            }],
+        ));
+        assert!(media_capability_key(&first).is_some());
+        assert_ne!(media_capability_key(&first), media_capability_key(&second));
+        assert_eq!(
+            media_capability_key(&CapabilityProjection::NotProjected),
+            None
+        );
+        assert!(
+            first
+                .gate_media(&RepresentationKind::Original, &artifact)
+                .enabled
+        );
+        let denied = second.gate_media(&RepresentationKind::Original, &artifact);
+        assert!(!denied.enabled);
+        assert_eq!(denied.reason.as_ref(), "revoked");
     }
 }
