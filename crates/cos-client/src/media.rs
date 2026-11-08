@@ -57,6 +57,7 @@ impl Cancellation {
 }
 
 /// One bounded response from the media executor.
+#[derive(Clone, PartialEq, Eq)]
 pub struct MediaResponse {
     /// HTTP status.
     pub status: u16,
@@ -64,6 +65,17 @@ pub struct MediaResponse {
     pub content_length: Option<u64>,
     /// Response body, already bounded by the executor.
     pub body: Vec<u8>,
+}
+
+impl std::fmt::Debug for MediaResponse {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter
+            .debug_struct("MediaResponse")
+            .field("status", &self.status)
+            .field("content_length", &self.content_length)
+            .field("body", &format!("<{} bytes>", self.body.len()))
+            .finish()
+    }
 }
 
 /// Executor-level failure classes (value-free).
@@ -436,8 +448,11 @@ fn availability_error(availability: &Availability) -> MediaFetchError {
 /// A handle must be an opaque relative same-authority path.
 ///
 /// Absolute URLs, scheme-relative paths, backslashes, query/fragment, dot
-/// segments, whitespace and control characters are refused: the client joins
-/// the value onto the already-validated loopback origin itself.
+/// segments, percent-encoding, whitespace and control characters are refused:
+/// the client joins the value onto the already-validated loopback origin
+/// itself. Percent-encoding is refused outright rather than decoded, so a
+/// `%2e`/`%2E` dot segment cannot bypass the literal dot-segment rule when a
+/// server decodes the path before routing it.
 pub fn relative_handle(handle: &str) -> Result<&str, MediaFetchError> {
     if handle.is_empty()
         || handle.len() > 2048
@@ -450,6 +465,7 @@ pub fn relative_handle(handle: &str) -> Result<&str, MediaFetchError> {
         || handle.contains('\\')
         || handle.contains('?')
         || handle.contains('#')
+        || handle.contains('%')
         || handle.bytes().any(|byte| !(0x21..=0x7e).contains(&byte))
     {
         return Err(MediaFetchError::HandleRejected);
@@ -725,6 +741,11 @@ mod tests {
             "/api/blob?token=1",
             "/api/blob#fragment",
             "/api/blo b",
+            "/api/%2e%2e/escape",
+            "/api/%2E/blob",
+            "/api/.%2e/escape",
+            "/api/%2e./escape",
+            "/api/blob%00",
             "",
         ] {
             assert_eq!(
