@@ -1,6 +1,6 @@
 //! Protocol transport tests over a stub REST executor.
 //!
-//! The stub reproduces the three Runtime endpoints byte-for-byte
+//! The stub reproduces the Runtime endpoints byte-for-byte
 //! (`GET /api/cos/desktop/server`, `POST /api/cos/desktop/observation`,
 //! `GET /api/cos/desktop/deltas`), so the transport is exercised exactly as it
 //! would run against the real adapter, and a real `CosClient` is driven from
@@ -11,10 +11,11 @@ use std::thread::ThreadId;
 use std::time::{Duration, Instant};
 
 use cos_client::{
-    COMMANDS_LOOKUP_PATH, COMMANDS_PATH, ClientConfig, ClientEvent, ClientSource, CommandLookup,
-    CommandState, ConnectionState, CosClient, DELTAS_PATH, HttpMethod, HttpRequest, HttpResponse,
-    OBSERVATION_PATH, ProtocolHttp, ProtocolTransport, ProtocolTransportConfig, PublicationAccess,
-    SERVER_PATH, SNAPSHOT_PATH, Transport, TransportError,
+    CATALOG_PATH, COMMANDS_LOOKUP_PATH, COMMANDS_PATH, ClientConfig, ClientError, ClientEvent,
+    ClientSource, CommandLookup, CommandState, ConnectionState, CosClient, DELTAS_PATH, HttpMethod,
+    HttpRequest, HttpResponse, OBSERVATION_PATH, ProtocolHttp, ProtocolTransport,
+    ProtocolTransportConfig, PublicationAccess, SERVER_PATH, SNAPSHOT_PATH, Transport,
+    TransportError,
 };
 use desktop_protocol::{
     ArtifactDigest, AuthorizedReceiptLookup, ClientFrame, ClientMessage, ClientWire,
@@ -67,6 +68,10 @@ struct ServerState {
     next_session: u64,
     next_snapshot: u64,
     cursor: String,
+    /// Status served by the catalog route (401/403 exercise auth taxonomy).
+    catalog_status: u16,
+    /// Server identity stamped into the catalog document (identity mismatch test).
+    catalog_identity: String,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -100,6 +105,8 @@ impl ServerState {
             next_session: 0,
             next_snapshot: 0,
             cursor: String::new(),
+            catalog_status: 200,
+            catalog_identity: SERVER_IDENTITY.to_owned(),
         }
     }
 
@@ -145,6 +152,15 @@ impl ProtocolHttp for StubHttp {
         let mut state = self.state.lock().expect("stub state");
         match (request.method, request.path.as_str()) {
             (HttpMethod::Get, SERVER_PATH) => Ok(json_response(server_document(&state))),
+            (HttpMethod::Get, CATALOG_PATH) => {
+                if state.catalog_status != 200 {
+                    return Ok(HttpResponse {
+                        status: state.catalog_status,
+                        body: b"{}".to_vec(),
+                    });
+                }
+                Ok(json_response(catalog_document(&state)))
+            }
             (HttpMethod::Post, OBSERVATION_PATH) => {
                 let body: serde_json::Value = serde_json::from_slice(&request.body)
                     .map_err(|error| format!("request body: {error}"))?;
@@ -308,6 +324,52 @@ fn server_document(_state: &ServerState) -> serde_json::Value {
     serde_json::json!({
         "schema_version": 1,
         "server": serde_json::to_value(hello()).expect("hello encodes"),
+    })
+}
+
+/// Authenticated catalog document for `GET /api/cos/desktop/catalog`.
+fn catalog_document(state: &ServerState) -> serde_json::Value {
+    let digest = format!("sha256:{}", "a".repeat(64));
+    serde_json::json!({
+        "schema_version": 1,
+        "server": {
+            "server_identity": state.catalog_identity.clone(),
+            "epoch": EPOCH,
+        },
+        "catalog": {
+            "schema_version": 1,
+            "can_submit": true,
+            "reason_codes": [],
+            "recipes": [{
+                "recipe_ref": {
+                    "recipe_id": "recipe-1",
+                    "source_harness_version_id": null,
+                    "source_harness_digest": null,
+                    "graph_ref": {
+                        "graph_id": "graph-1",
+                        "graph_version": 3,
+                        "graph_digest": digest,
+                    },
+                    "profile_ref": null,
+                    "projection_digest": null,
+                },
+                "label": "Still",
+                "description": "One still image.",
+                "input_limits": {"max_images": 2},
+                "accepts_image_references": true,
+                "execution_limits": {},
+                "constraint_summary": "none",
+                "parameters": [{
+                    "id": "seed",
+                    "label": "Seed",
+                    "type": "integer",
+                    "value": 7,
+                    "bounds": {"min": "1", "max": "99", "max_length": null},
+                    "choices": [],
+                    "editable": true,
+                }],
+            }],
+        },
     })
 }
 
@@ -1927,4 +1989,117 @@ fn unauthorized_context_is_classified_as_session_unauthorized() {
     drive_until(&mut client, |client| {
         matches!(client.connection(), ConnectionState::Unauthorized { .. })
     });
+}
+
+// --- NAV2 authenticated catalog and create-task route ----------------------
+
+#[test]
+fn catalog_read_uses_the_authenticated_route_without_a_read_context() {
+    let (mut client, state) = live_authorized_client();
+    let document = client.fetch_catalog().expect("catalog");
+    assert_eq!(document.server.server_identity, SERVER_IDENTITY);
+    assert_eq!(document.catalog.recipes[0].recipe_ref.recipe_id, "recipe-1");
+    assert_eq!(document.catalog.recipes[0].parameters[0].kind, "integer");
+
+    let state = state.lock().expect("stub state");
+    let calls: Vec<&HttpRequest> = state
+        .calls
+        .iter()
+        .filter(|call| call.method == HttpMethod::Get && call.path == CATALOG_PATH)
+        .collect();
+    assert_eq!(calls.len(), 1, "one catalog exchange");
+    assert!(
+        calls[0]
+            .headers
+            .iter()
+            .any(|(name, value)| name == "authorization" && value == "Bearer local-test-token"),
+        "the catalog carries the credential"
+    );
+    assert!(
+        !calls[0]
+            .headers
+            .iter()
+            .any(|(name, _)| name == "x-cos-context"),
+        "the catalog is not bound to a read context"
+    );
+}
+
+#[test]
+fn catalog_refusals_keep_the_authorization_taxonomy() {
+    let (mut client, state) = live_authorized_client();
+    state.lock().expect("stub state").catalog_status = 401;
+    assert!(matches!(
+        client.fetch_catalog(),
+        Err(ClientError::Unauthorized)
+    ));
+
+    let (mut client, state) = live_authorized_client();
+    state.lock().expect("stub state").catalog_status = 403;
+    assert!(matches!(
+        client.fetch_catalog(),
+        Err(ClientError::Forbidden)
+    ));
+}
+
+#[test]
+fn catalog_identity_must_match_the_verified_handshake() {
+    let (mut client, state) = live_authorized_client();
+    state.lock().expect("stub state").catalog_identity = "another-server".to_owned();
+    assert!(matches!(
+        client.fetch_catalog(),
+        Err(ClientError::Protocol(message)) if message.contains("identity")
+    ));
+}
+
+#[test]
+fn create_task_posts_a_create_envelope_on_the_command_route() {
+    let (mut client, state) = live_authorized_client();
+    let command_id = CommandId::generate();
+    let digest = format!("sha256:{}", "b".repeat(64));
+    let envelope = CommandEnvelope {
+        command_id: command_id.clone(),
+        target: CommandTarget::Creation {
+            recipe_ref: RecipeRef {
+                recipe_id: RecipeId::new("recipe-1").expect("recipe"),
+                graph_ref: GraphRef {
+                    graph_id: GraphId::new("graph-1").expect("graph"),
+                    version: 3,
+                    digest: ArtifactDigest::new(digest).expect("digest"),
+                },
+                source_harness_version_id: None,
+                source_harness_digest: None,
+                profile_ref: None,
+                projection_digest: None,
+            },
+        },
+        expected_revision: None,
+        epoch: Some(EpochId::new(EPOCH).expect("epoch")),
+        payload: CommandPayload::CreateTask(CreateTaskCommand {
+            objective_text: "goal".to_owned(),
+            text_prompt: None,
+            reference_artifact_refs: Vec::new(),
+            parameter_values: vec![],
+        }),
+    };
+    let returned = client.create_task(envelope).expect("command queued");
+    assert_eq!(returned, command_id);
+
+    let events = drive_until(&mut client, |client| {
+        matches!(
+            command_state(client, &command_id),
+            Some(CommandState::Accepted(_))
+        )
+    });
+    assert!(!events.is_empty());
+
+    let state = state.lock().expect("stub state");
+    let calls: Vec<&HttpRequest> = state
+        .calls
+        .iter()
+        .filter(|call| call.method == HttpMethod::Post && call.path == COMMANDS_PATH)
+        .collect();
+    assert_eq!(calls.len(), 1, "one create exchange");
+    let body: serde_json::Value = serde_json::from_slice(&calls[0].body).expect("command body");
+    assert_eq!(body["command_id"], command_id.as_str());
+    assert_eq!(body["payload"]["kind"], "CREATE_TASK");
 }

@@ -114,6 +114,14 @@ pub const COMMANDS_LOOKUP_PATH: &str = "/api/cos/desktop/commands/lookup";
 /// `GET` route returning the authenticated Desktop catalog document.
 pub const CATALOG_PATH: &str = "/api/cos/desktop/catalog";
 
+/// Maximum time the catalog read may block its calling (owner) thread.
+///
+/// The REST exchange runs on the transport worker; this bound limits only the
+/// caller's wait for the reply. It is deliberately short because the
+/// observation owner is single-threaded and must not stall for the 30 s
+/// handshake-class budget.
+const CATALOG_FETCH_TIMEOUT: Duration = Duration::from_secs(3);
+
 /// Authenticated Desktop catalog document.
 ///
 /// Mirrors the Runtime `{schema_version, server, catalog}` wrapper and the
@@ -413,8 +421,9 @@ pub trait ProtocolHttp: Send {
 /// Transport configuration.
 #[derive(Clone)]
 pub struct ProtocolTransportConfig {
-    /// Desktop credential presented on the three protocol routes (observation
-    /// open, snapshot read, delta read); never on the handshake or another path.
+    /// Desktop credential presented on the protocol routes (observation open,
+    /// snapshot read, delta read, catalog read, command submit, receipt
+    /// lookup); never on the handshake or another path.
     pub bearer_token: Option<String>,
     /// Interval between delta polls after the initial snapshot.
     pub delta_poll_interval: Duration,
@@ -885,7 +894,7 @@ fn fetch_catalog_with(
     shared: &SharedState,
     config: &ProtocolTransportConfig,
 ) -> Result<CatalogDocument, TransportError> {
-    let deadline = Instant::now() + Duration::from_secs(30);
+    let deadline = Instant::now() + CATALOG_FETCH_TIMEOUT;
     {
         let mut state = lock(shared);
         if state.closed {
@@ -1654,6 +1663,13 @@ fn get_catalog<E: ProtocolHttp>(
         .map_err(|message| TransportError::Io(format!("catalog request failed: {message}")))?;
     // The byte bound applies to every response, error documents included.
     bound_response(config, &response, "catalog")?;
+    // Authentication/authorization refusals keep their taxonomy: they are not
+    // generic transport I/O failures and must reach the caller as such.
+    match response.status {
+        401 => return Err(TransportError::Unauthorized),
+        403 => return Err(TransportError::Forbidden),
+        _ => {}
+    }
     if !is_success(response.status) {
         return Err(http_error("catalog", &response));
     }

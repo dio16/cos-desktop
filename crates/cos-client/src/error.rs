@@ -29,6 +29,12 @@ pub enum ClientError {
     /// No mutually supported protocol/schema pair.
     #[error("version incompatible: {0}")]
     VersionIncompatible(String),
+    /// The Runtime rejected the presented Desktop credential.
+    #[error("unauthorized")]
+    Unauthorized,
+    /// The principal is authenticated but the operation is not permitted.
+    #[error("forbidden")]
+    Forbidden,
     /// The session is not in a state that allows this operation.
     #[error("not connected: {0}")]
     NotConnected(String),
@@ -129,6 +135,8 @@ mod tests {
                 ClientError::Fixture("scenario invalid".to_string()),
                 false,
             ),
+            ("unauthorized", ClientError::Unauthorized, false),
+            ("forbidden", ClientError::Forbidden, false),
         ];
         // A wildcard-free match is the actual exhaustiveness guarantee: a tenth variant makes this
         // function fail to compile, which the count alone could never do.
@@ -139,6 +147,8 @@ mod tests {
                 ClientError::QueueOverflow => panic!("constructed by the table above"),
                 ClientError::Protocol(_) => panic!("constructed by the table above"),
                 ClientError::VersionIncompatible(_) => panic!("constructed by the table above"),
+                ClientError::Unauthorized => panic!("constructed by the table above"),
+                ClientError::Forbidden => panic!("constructed by the table above"),
                 ClientError::NotConnected(_) => panic!("constructed by the table above"),
                 ClientError::InvalidCommand(_) => panic!("constructed by the table above"),
                 ClientError::Server(_) => panic!("constructed by the table above"),
@@ -158,7 +168,7 @@ mod tests {
             cases.len(),
             "the table repeats a row instead of listing distinct cases"
         );
-        assert_eq!(cases.len(), 9, "the table lists nine rows");
+        assert_eq!(cases.len(), 11, "the table lists eleven rows");
         for (label, error, expected) in cases {
             assert_eq!(
                 error.requires_resync(),

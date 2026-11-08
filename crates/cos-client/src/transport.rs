@@ -10,6 +10,12 @@ pub enum TransportError {
     /// The peer is gone or the transport was closed.
     #[error("transport disconnected")]
     Disconnected,
+    /// The Runtime rejected the presented credential (HTTP 401).
+    #[error("transport unauthorized")]
+    Unauthorized,
+    /// The principal is authenticated but not permitted (HTTP 403).
+    #[error("transport forbidden")]
+    Forbidden,
     /// The bounded receive queue overflowed; the stream must be cancelled.
     #[error("receive queue overflow")]
     QueueOverflow,

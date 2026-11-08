@@ -837,14 +837,34 @@ impl<T: TransportTrait> CosClient<T> {
     ///
     /// The catalog is a credential-bound read served without an observation
     /// context; the transport must support the authenticated catalog route.
-    /// A transport without it refuses explicitly (never a synthesized catalog).
+    /// The document's server identity is verified against the handshake identity
+    /// before it is returned, and an unverified channel refuses the read. Auth
+    /// refusals stay `Unauthorized`/`Forbidden` (never a generic transport I/O
+    /// failure).
     pub fn fetch_catalog(&mut self) -> Result<CatalogDocument, ClientError> {
-        self.transport.fetch_catalog().map_err(|error| match error {
-            TransportError::Disconnected => {
-                ClientError::NotConnected("transport disconnected".to_owned())
-            }
-            other => ClientError::Transport(other.to_string()),
-        })
+        let document = self
+            .transport
+            .fetch_catalog()
+            .map_err(|error| match error {
+                TransportError::Disconnected => {
+                    ClientError::NotConnected("transport disconnected".to_owned())
+                }
+                TransportError::Unauthorized => ClientError::Unauthorized,
+                TransportError::Forbidden => ClientError::Forbidden,
+                other => ClientError::Transport(other.to_string()),
+            })?;
+        let Some(server) = self.transport.authenticated_server() else {
+            return Err(ClientError::Protocol(
+                "catalog arrived before the channel was verified against a server identity"
+                    .to_owned(),
+            ));
+        };
+        if server.as_str() != document.server.server_identity {
+            return Err(ClientError::Protocol(
+                "catalog server identity does not match the verified handshake".to_owned(),
+            ));
+        }
+        Ok(document)
     }
 
     /// Fetch one bounded authenticated task history page.
@@ -1376,6 +1396,8 @@ impl<T: TransportTrait> CosClient<T> {
             TransportError::Disconnected => {
                 ClientError::Transport("transport disconnected".to_owned())
             }
+            TransportError::Unauthorized => ClientError::Unauthorized,
+            TransportError::Forbidden => ClientError::Forbidden,
             TransportError::Io(message) => ClientError::Transport(message),
         })
     }
@@ -2517,6 +2539,8 @@ impl<T: TransportTrait> CosClient<T> {
             TransportError::Disconnected => {
                 ClientError::Transport("transport disconnected".to_owned())
             }
+            TransportError::Unauthorized => ClientError::Unauthorized,
+            TransportError::Forbidden => ClientError::Forbidden,
             TransportError::Io(message) => ClientError::Transport(message),
             TransportError::QueueOverflow => ClientError::QueueOverflow,
         };

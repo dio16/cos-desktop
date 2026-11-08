@@ -101,6 +101,8 @@ impl PublicationError {
             ClientError::Transport(_) => Self::Transport,
             ClientError::Protocol(_) => Self::Protocol,
             ClientError::VersionIncompatible(_) => Self::VersionIncompatible,
+            ClientError::Unauthorized => Self::Unauthorized,
+            ClientError::Forbidden => Self::Server(ErrorCode::Forbidden),
             ClientError::QueueOverflow => Self::QueueOverflow,
             ClientError::MessageTooLarge { .. } => Self::MessageTooLarge,
             ClientError::NotConnected(_) => Self::NotConnected,
@@ -1343,8 +1345,13 @@ impl ObservationSessionOwner {
                 reply.resolve(result);
             }
             ObservationCommand::FetchCatalog { reply } => {
-                let result = self.client.fetch_catalog().map_err(|error| {
-                    CommandReadError::Client(PublicationError::from_client(&error))
+                let result = self.client.fetch_catalog().map_err(|error| match error {
+                    // The catalog read keeps the auth taxonomy instead of a
+                    // generic I/O category: 401 is not a transport failure and
+                    // 403 is a principal/permission denial.
+                    ClientError::Unauthorized => CommandReadError::AuthorizationUnavailable,
+                    ClientError::Forbidden => CommandReadError::AuthorizationDenied,
+                    other => CommandReadError::Client(PublicationError::from_client(&other)),
                 });
                 reply.resolve(result);
             }

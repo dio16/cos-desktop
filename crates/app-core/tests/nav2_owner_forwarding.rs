@@ -353,3 +353,27 @@ fn owner_rejects_a_second_create_reply_for_a_stale_intent() {
         CommandReadError::Client(app_core::PublicationError::NotConnected)
     ));
 }
+
+#[test]
+fn catalog_401_maps_to_authorization_unavailable() {
+    let (handle, _owner) = start_owner(RecordingClient {
+        inner: ClosedClient,
+        catalog: Err(ClientError::Unauthorized),
+        create_error: None,
+        created: Arc::new(Mutex::new(Vec::new())),
+    });
+    let error = block_on(handle.fetch_catalog()).expect_err("refused");
+    assert!(matches!(error, CommandReadError::AuthorizationUnavailable));
+}
+
+#[test]
+fn catalog_403_maps_to_authorization_denied() {
+    let (handle, _owner) = start_owner(RecordingClient {
+        inner: ClosedClient,
+        catalog: Err(ClientError::Forbidden),
+        create_error: None,
+        created: Arc::new(Mutex::new(Vec::new())),
+    });
+    let error = block_on(handle.fetch_catalog()).expect_err("refused");
+    assert!(matches!(error, CommandReadError::AuthorizationDenied));
+}
