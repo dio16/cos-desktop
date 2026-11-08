@@ -2026,6 +2026,21 @@ impl DesktopClient for MockCosClient {
         MockCosClient::stop_task(self, task_id)
     }
 
+    fn fetch_catalog(&mut self) -> Result<crate::CatalogDocument, ClientError> {
+        // Fixture mode is explicit: there is no Runtime catalog to read, so the
+        // request is refused instead of synthesizing one.
+        Err(ClientError::Protocol(
+            "catalog reads are unavailable in fixture mode".to_owned(),
+        ))
+    }
+
+    fn create_task(
+        &mut self,
+        envelope: desktop_protocol::CommandEnvelope,
+    ) -> Result<CommandId, ClientError> {
+        MockCosClient::send_command(self, envelope)
+    }
+
     fn pump_step(&mut self, now_ms: u64, budget: usize) -> PumpReport {
         MockCosClient::pump_step(self, now_ms, budget)
     }

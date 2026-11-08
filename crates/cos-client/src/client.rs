@@ -25,6 +25,7 @@ use desktop_protocol::{
 
 use crate::error::ClientError;
 use crate::projection::{ProjectionKey, ProjectionState};
+use crate::protocol_transport::CatalogDocument;
 use crate::read::{
     CommandLookup, CommandStatus, MAX_DISTINCT_RETAINED, MAX_PENDING_READS, MAX_RECENT,
     MAX_REFERENCES, MAX_TOMBSTONES, MAX_UNRESOLVED, ObservationControl, PendingReceiptRead,
@@ -303,6 +304,10 @@ pub trait DesktopClient: Send {
     fn request_resync(&mut self, reason: ResyncReason) -> Vec<ClientEvent>;
     /// Send a Stop request for a task.
     fn stop_task(&mut self, task_id: &TaskId) -> Result<CommandId, ClientError>;
+    /// Fetch the authenticated Desktop catalog document.
+    fn fetch_catalog(&mut self) -> Result<CatalogDocument, ClientError>;
+    /// Submit one create-task command through the command path.
+    fn create_task(&mut self, envelope: CommandEnvelope) -> Result<CommandId, ClientError>;
     /// Bounded background progress and exact next deadline.
     fn pump_step(&mut self, now_ms: u64, budget: usize) -> PumpReport;
     /// The single authoritative retained registry, not an authorized UI view.
@@ -814,6 +819,25 @@ impl<T: TransportTrait> CosClient<T> {
                 reason: None,
             }),
         };
+        self.send_command(envelope)
+    }
+
+    /// Fetch the authenticated Desktop catalog document.
+    ///
+    /// The catalog is a credential-bound read served without an observation
+    /// context; the transport must support the authenticated catalog route.
+    /// A transport without it refuses explicitly (never a synthesized catalog).
+    pub fn fetch_catalog(&mut self) -> Result<CatalogDocument, ClientError> {
+        self.transport.fetch_catalog().map_err(|error| match error {
+            TransportError::Disconnected => {
+                ClientError::NotConnected("transport disconnected".to_owned())
+            }
+            other => ClientError::Transport(other.to_string()),
+        })
+    }
+
+    /// Submit one create-task command through the existing command path.
+    pub fn create_task(&mut self, envelope: CommandEnvelope) -> Result<CommandId, ClientError> {
         self.send_command(envelope)
     }
 
@@ -2685,6 +2709,14 @@ impl<T: TransportTrait + Send> DesktopClient for CosClient<T> {
 
     fn stop_task(&mut self, task_id: &TaskId) -> Result<CommandId, ClientError> {
         CosClient::stop_task(self, task_id)
+    }
+
+    fn fetch_catalog(&mut self) -> Result<CatalogDocument, ClientError> {
+        CosClient::fetch_catalog(self)
+    }
+
+    fn create_task(&mut self, envelope: CommandEnvelope) -> Result<CommandId, ClientError> {
+        CosClient::create_task(self, envelope)
     }
 
     fn pump_step(&mut self, now_ms: u64, budget: usize) -> PumpReport {

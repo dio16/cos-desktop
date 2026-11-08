@@ -78,7 +78,7 @@ use std::fmt;
 use std::marker::PhantomData;
 use std::sync::{Arc, Condvar, Mutex, MutexGuard, PoisonError};
 use std::thread::{self, JoinHandle};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use desktop_protocol::{
     AuthorizedCommandReceipt, AuthorizedReceiptLookup, ClientMessage, ClientWire, CommandEnvelope,
@@ -107,6 +107,153 @@ pub const DELTAS_PATH: &str = "/api/cos/desktop/deltas";
 pub const COMMANDS_PATH: &str = "/api/cos/desktop/commands";
 /// `POST` route that reads one authorized command receipt.
 pub const COMMANDS_LOOKUP_PATH: &str = "/api/cos/desktop/commands/lookup";
+/// `GET` route returning the authenticated Desktop catalog document.
+pub const CATALOG_PATH: &str = "/api/cos/desktop/catalog";
+
+/// Authenticated Desktop catalog document.
+///
+/// Mirrors the Runtime `{schema_version, server, catalog}` wrapper and the
+/// catalog recipe/parameter fields the Brief needs. The document is bounded by
+/// [`ProtocolTransportConfig::max_response_bytes`]; unknown members are refused
+/// so a schema change cannot be silently ignored.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct CatalogDocument {
+    /// Document schema version (must be 1).
+    pub schema_version: u32,
+    /// Server identity and observation epoch that served the catalog.
+    pub server: CatalogServer,
+    /// Submittable recipe catalog.
+    pub catalog: Catalog,
+}
+
+/// Server identity/epoch carried beside the authenticated catalog.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct CatalogServer {
+    /// Stable server identity.
+    pub server_identity: String,
+    /// Runtime epoch that served this catalog.
+    pub epoch: String,
+}
+
+/// The catalog document body (same document the legacy builder serves).
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Catalog {
+    /// Catalog schema version.
+    pub schema_version: u32,
+    /// Whether at least one recipe can be submitted.
+    pub can_submit: bool,
+    /// Stable reasons when recipes are unavailable.
+    pub reason_codes: Vec<String>,
+    /// Submittable recipe options.
+    pub recipes: Vec<CatalogRecipe>,
+}
+
+/// One catalog recipe option.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct CatalogRecipe {
+    /// Exact recipe reference; copied verbatim into the creation target.
+    pub recipe_ref: CatalogRecipeRef,
+    /// Human label.
+    pub label: String,
+    /// Human description.
+    pub description: String,
+    /// Runtime-defined input limits.
+    pub input_limits: serde_json::Value,
+    /// Whether reference images are accepted.
+    pub accepts_image_references: bool,
+    /// Runtime-defined execution limits.
+    pub execution_limits: serde_json::Value,
+    /// Read-only constraint summary.
+    pub constraint_summary: String,
+    /// Advanced controls (editable flag per control).
+    pub parameters: Vec<CatalogParameter>,
+}
+
+/// Recipe reference in the Runtime catalog projection.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct CatalogRecipeRef {
+    /// Recipe identity.
+    pub recipe_id: String,
+    /// Pinned harness version identity.
+    #[serde(default)]
+    pub source_harness_version_id: Option<String>,
+    /// Pinned harness digest.
+    #[serde(default)]
+    pub source_harness_digest: Option<String>,
+    /// Exact graph revision pointer.
+    pub graph_ref: CatalogGraphRef,
+    /// Selected profile, when any.
+    #[serde(default)]
+    pub profile_ref: Option<String>,
+    /// Projection digest of the recipe option.
+    #[serde(default)]
+    pub projection_digest: Option<String>,
+}
+
+/// Graph pointer in the Runtime catalog projection.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct CatalogGraphRef {
+    /// Graph identity.
+    pub graph_id: String,
+    /// Canonical graph revision version.
+    pub graph_version: i64,
+    /// Canonical graph revision digest.
+    pub graph_digest: String,
+}
+
+/// One advanced catalog control.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct CatalogParameter {
+    /// Control identity.
+    pub id: String,
+    /// Human label.
+    pub label: String,
+    /// Closed control kind (`text`, `integer`, `decimal`, `boolean`, `choice`).
+    #[serde(rename = "type")]
+    pub kind: String,
+    /// Default value (string, integer or boolean).
+    pub value: serde_json::Value,
+    /// Numeric/length bounds, when any.
+    #[serde(default)]
+    pub bounds: Option<CatalogParameterBounds>,
+    /// Closed choice values, when a choice control.
+    #[serde(default)]
+    pub choices: Vec<CatalogParameterChoice>,
+    /// Whether the control may be changed by the user.
+    pub editable: bool,
+}
+
+/// Advanced control bounds.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct CatalogParameterBounds {
+    /// Minimum value text.
+    #[serde(default)]
+    pub min: Option<String>,
+    /// Maximum value text.
+    #[serde(default)]
+    pub max: Option<String>,
+    /// Maximum text length.
+    #[serde(default)]
+    pub max_length: Option<i64>,
+}
+
+/// One choice entry.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct CatalogParameterChoice {
+    /// Wire value.
+    pub value: String,
+    /// Human label.
+    pub label: String,
+}
 
 /// Frozen contract maximum of distinct retained command identities per open.
 ///
@@ -135,7 +282,12 @@ pub fn is_protocol_route(path: &str) -> bool {
     let route = path.split('?').next().unwrap_or(path);
     matches!(
         route,
-        OBSERVATION_PATH | SNAPSHOT_PATH | DELTAS_PATH | COMMANDS_PATH | COMMANDS_LOOKUP_PATH
+        OBSERVATION_PATH
+            | SNAPSHOT_PATH
+            | DELTAS_PATH
+            | COMMANDS_PATH
+            | COMMANDS_LOOKUP_PATH
+            | CATALOG_PATH
     )
 }
 
@@ -312,6 +464,15 @@ impl<E: ProtocolHttp + 'static> ProtocolTransport<E> {
         }
     }
 
+    /// Fetch the authenticated Desktop catalog document.
+    ///
+    /// The REST transport runs the exchange on its worker thread and this call
+    /// blocks the (background) caller until the bounded reply or timeout. It
+    /// carries the Desktop credential but needs no observation context.
+    pub fn fetch_catalog(&mut self) -> Result<CatalogDocument, TransportError> {
+        fetch_catalog_with(&self.shared, &self.config)
+    }
+
     /// Current stream generation (diagnostics/tests only).
     pub fn generation(&self) -> u64 {
         lock(&self.shared).generation
@@ -335,6 +496,10 @@ impl<E: ProtocolHttp> Drop for ProtocolTransport<E> {
 impl<E: ProtocolHttp> Transport for ProtocolTransport<E> {
     fn bind_observation_control(&mut self, control: ObservationControl) {
         lock(&self.shared).control = Some(control);
+    }
+
+    fn fetch_catalog(&mut self) -> Result<CatalogDocument, TransportError> {
+        fetch_catalog_with(&self.shared, &self.config)
     }
 
     fn authenticated_server(&self) -> Option<ServerId> {
@@ -418,6 +583,7 @@ impl<E: ProtocolHttp> Transport for ProtocolTransport<E> {
             state.hello = None;
             state.server = None;
             state.refresh = None;
+            state.catalog_reply = None;
         }
         self.shared.1.notify_all();
     }
@@ -441,6 +607,8 @@ struct Shared {
     control: Option<ObservationControl>,
     /// Granted scope held for one explicit snapshot refresh after a delta gap.
     refresh: Option<RefreshSnapshot>,
+    /// Reply slot for one catalog fetch; the worker fills it directly.
+    catalog_reply: Option<Result<CatalogDocument, TransportError>>,
     limits: Limits,
 }
 
@@ -459,6 +627,7 @@ impl Shared {
             server: None,
             control: None,
             refresh: None,
+            catalog_reply: None,
             limits,
         }
     }
@@ -480,6 +649,9 @@ enum Job {
         generation: u64,
         request: Box<AuthorizedReceiptLookup>,
     },
+    Catalog {
+        generation: u64,
+    },
 }
 
 impl Job {
@@ -488,7 +660,8 @@ impl Job {
             Self::Hello { generation }
             | Self::Open { generation, .. }
             | Self::Command { generation, .. }
-            | Self::Lookup { generation, .. } => *generation,
+            | Self::Lookup { generation, .. }
+            | Self::Catalog { generation } => *generation,
         }
     }
 }
@@ -522,6 +695,7 @@ enum WorkerAction {
         generation: u64,
         request: Box<AuthorizedReceiptLookup>,
     },
+    Catalog,
     Poll(PollSession),
 }
 
@@ -634,6 +808,45 @@ fn enqueue_job(state: &mut Shared, job: Job, capacity: usize) -> Result<(), Tran
     Ok(())
 }
 
+/// Blocking catalog fetch over the worker thread (no observation context needed).
+fn fetch_catalog_with(
+    shared: &SharedState,
+    config: &ProtocolTransportConfig,
+) -> Result<CatalogDocument, TransportError> {
+    let deadline = Instant::now() + Duration::from_secs(30);
+    {
+        let mut state = lock(shared);
+        if state.closed {
+            return Err(TransportError::Disconnected);
+        }
+        state.catalog_reply = None;
+        let generation = state.generation;
+        enqueue_job(
+            &mut state,
+            Job::Catalog { generation },
+            config.max_pending_requests,
+        )?;
+    }
+    shared.1.notify_all();
+    loop {
+        let mut state = lock(shared);
+        if let Some(outcome) = state.catalog_reply.take() {
+            return outcome;
+        }
+        if state.closed {
+            return Err(TransportError::Disconnected);
+        }
+        let remaining = deadline.saturating_duration_since(Instant::now());
+        if remaining.is_zero() {
+            return Err(TransportError::Io("catalog request timed out".to_owned()));
+        }
+        let (_state, _timeout) = shared
+            .1
+            .wait_timeout(state, remaining.min(Duration::from_millis(50)))
+            .unwrap_or_else(PoisonError::into_inner);
+    }
+}
+
 fn run_worker<E: ProtocolHttp>(
     mut executor: E,
     config: ProtocolTransportConfig,
@@ -671,6 +884,7 @@ fn run_worker<E: ProtocolHttp>(
                             generation,
                             request,
                         },
+                        Job::Catalog { .. } => WorkerAction::Catalog,
                     };
                 }
                 if let Some(poll) = state.poll.clone() {
@@ -684,6 +898,18 @@ fn run_worker<E: ProtocolHttp>(
             }
         };
         match action {
+            WorkerAction::Catalog => {
+                // A catalog read is credential-bound, not session-bound: it is
+                // served even while no observation grant is open, but never
+                // after the transport is closed.
+                let outcome = get_catalog(&mut executor, &config);
+                let mut state = lock(&shared);
+                if state.closed {
+                    continue;
+                }
+                state.catalog_reply = Some(outcome);
+                shared.1.notify_all();
+            }
             WorkerAction::Hello { generation } => {
                 let outcome = get_server(&mut executor, &config);
                 let mut state = lock(&shared);
@@ -1265,6 +1491,38 @@ enum DeltaOutcome {
     Resync(ResyncRequired),
 }
 
+fn get_catalog<E: ProtocolHttp>(
+    executor: &mut E,
+    config: &ProtocolTransportConfig,
+) -> Result<CatalogDocument, TransportError> {
+    let mut headers = vec![("accept".to_owned(), "application/json".to_owned())];
+    authorize(config, &mut headers, CATALOG_PATH);
+    let response = executor
+        .execute(HttpRequest {
+            method: HttpMethod::Get,
+            path: CATALOG_PATH.to_owned(),
+            headers,
+            body: Vec::new(),
+        })
+        .map_err(|message| TransportError::Io(format!("catalog request failed: {message}")))?;
+    // The byte bound applies to every response, error documents included.
+    bound_response(config, &response, "catalog")?;
+    if !is_success(response.status) {
+        return Err(http_error("catalog", &response));
+    }
+    let document: CatalogDocument = serde_json::from_slice(&response.body)
+        .map_err(|error| TransportError::Io(format!("malformed catalog document: {error}")))?;
+    if document.schema_version != OBSERVATION_DOCUMENT_SCHEMA_VERSION
+        || document.catalog.schema_version != OBSERVATION_DOCUMENT_SCHEMA_VERSION
+    {
+        return Err(TransportError::Io(format!(
+            "unsupported catalog document schema version {}",
+            document.schema_version
+        )));
+    }
+    Ok(document)
+}
+
 fn get_server<E: ProtocolHttp>(
     executor: &mut E,
     config: &ProtocolTransportConfig,
@@ -1717,7 +1975,7 @@ mod credential_route_tests {
     //! presented on the protocol routes and nowhere else.
 
     use super::{
-        COMMANDS_LOOKUP_PATH, COMMANDS_PATH, DELTAS_PATH, OBSERVATION_PATH,
+        CATALOG_PATH, COMMANDS_LOOKUP_PATH, COMMANDS_PATH, DELTAS_PATH, OBSERVATION_PATH,
         ProtocolTransportConfig, SERVER_PATH, SNAPSHOT_PATH, authorize, is_protocol_route,
     };
 
@@ -1729,6 +1987,7 @@ mod credential_route_tests {
             DELTAS_PATH,
             COMMANDS_PATH,
             COMMANDS_LOOKUP_PATH,
+            CATALOG_PATH,
         ] {
             assert!(is_protocol_route(route), "{route} is a protocol route");
         }
@@ -1775,5 +2034,54 @@ mod credential_route_tests {
             OBSERVATION_PATH,
         );
         assert!(headers.is_empty(), "no configured token means no header");
+    }
+
+    #[test]
+    fn the_authenticated_catalog_document_parses_the_owner_shape() {
+        use super::CatalogDocument;
+
+        let raw = r#"{
+            "schema_version": 1,
+            "server": {"server_identity": "cos-runtime-orchestrator", "epoch": "epoch"},
+            "catalog": {
+                "schema_version": 1,
+                "can_submit": true,
+                "reason_codes": [],
+                "recipes": [{
+                    "recipe_ref": {
+                        "recipe_id": "recipe-1",
+                        "source_harness_version_id": "hvid_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                        "source_harness_digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                        "graph_ref": {"graph_id": "graph-1", "graph_version": 7, "graph_digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"},
+                        "profile_ref": null,
+                        "projection_digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+                    },
+                    "label": "Still",
+                    "description": "One still image.",
+                    "input_limits": {"max_images": 2},
+                    "accepts_image_references": true,
+                    "execution_limits": {},
+                    "constraint_summary": "tasteful",
+                    "parameters": [{
+                        "id": "seed",
+                        "label": "Seed",
+                        "type": "integer",
+                        "value": 7,
+                        "bounds": {"min": "1", "max": "99", "max_length": null},
+                        "choices": [],
+                        "editable": true
+                    }]
+                }]
+            }
+        }"#;
+        let document: CatalogDocument =
+            serde_json::from_str(raw).expect("authenticated catalog document");
+        assert_eq!(document.schema_version, 1);
+        assert_eq!(document.server.server_identity, "cos-runtime-orchestrator");
+        assert!(document.catalog.can_submit);
+        let recipe = &document.catalog.recipes[0];
+        assert_eq!(recipe.recipe_ref.graph_ref.graph_version, 7);
+        assert_eq!(recipe.parameters[0].kind, "integer");
+        assert_eq!(recipe.parameters[0].value, serde_json::json!(7));
     }
 }

@@ -13,6 +13,7 @@
 pub mod client;
 pub mod error;
 pub mod fixture;
+pub mod media;
 pub mod mock;
 pub mod projection;
 pub mod protocol_transport;
@@ -39,7 +40,9 @@ pub use fixture::{
 pub use mock::{MockControl, MockCosClient, MockTransport};
 pub use projection::{ProjectionIntegrityError, ProjectionKey, ProjectionState};
 pub use protocol_transport::{
-    COMMANDS_LOOKUP_PATH, COMMANDS_PATH, DELTAS_PATH, HttpMethod, HttpRequest, HttpResponse,
+    CATALOG_PATH, COMMANDS_LOOKUP_PATH, COMMANDS_PATH, Catalog, CatalogDocument, CatalogGraphRef,
+    CatalogParameter, CatalogParameterBounds, CatalogParameterChoice, CatalogRecipe,
+    CatalogRecipeRef, CatalogServer, DELTAS_PATH, HttpMethod, HttpRequest, HttpResponse,
     MAX_RETAINED_COMMANDS, OBSERVATION_DOCUMENT_SCHEMA_VERSION, OBSERVATION_PATH, ProtocolHttp,
     ProtocolTransport, ProtocolTransportConfig, SERVER_PATH, SNAPSHOT_PATH, is_protocol_route,
 };

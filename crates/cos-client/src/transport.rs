@@ -29,6 +29,18 @@ pub trait Transport: Send {
         None
     }
 
+    /// Fetch the authenticated Desktop catalog document.
+    ///
+    /// A transport without an authenticated catalog read refuses explicitly;
+    /// fixture/scripted transports never synthesize a catalog.
+    fn fetch_catalog(
+        &mut self,
+    ) -> Result<crate::protocol_transport::CatalogDocument, TransportError> {
+        Err(TransportError::Io(
+            "catalog fetch is unsupported by this transport".to_owned(),
+        ))
+    }
+
     /// Send one encoded frame.
     ///
     /// The call must enqueue bounded output and return without waiting on network
