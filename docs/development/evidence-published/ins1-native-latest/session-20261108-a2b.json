@@ -1,0 +1,125 @@
+{
+  "schema_version": 1,
+  "task": "MP-INS1",
+  "contract": "DC-MP-INS1",
+  "slice": "native A-to-B candidate switch, identity-change clearing, keyboard section disclosure, and viewed-vs-formal labelling on fixture projections",
+  "status": "NATIVE_A2B_SWITCH_AND_IDENTITY_CLEARING_OBSERVED",
+  "authority": "Lead-assigned task-7 (parallel wave 2) under the MP-INS1 card and DC-MP-INS1. Fixture/Desktop-local observation only; no Runtime projection is claimed and no product behaviour was reinterpreted.",
+  "recorded_local": "2026-11-08T10:00:00+09:00",
+
+  "baseline": {
+    "commit": "abf2310105527461f0d0a16a963ceff962205bc0",
+    "branch": "dev",
+    "worktree": "the observation binary was built from a clean detached worktree at abf2310; the main worktree carried only other lanes' uncommitted files (palette.rs, IMPLEMENTATION_MASTER_PLAN.md) plus this new evidence directory",
+    "build": {
+      "source_worktree": "C:/dev/cos-desktop-verification/ins1-20261108/src",
+      "command": "cargo build --locked --release -p cos-desktop (CARGO_TARGET_DIR and TEMP/TMP under C:/dev/cos-desktop-verification/ins1-20261108, outside the repository)",
+      "duration": "5m 45s",
+      "binary": "C:/dev/cos-desktop-verification/ins1-20261108/target/release/cos-desktop.exe",
+      "binary_sha256": "ff55b72b8595d7ecc74a995d5d37631c654662949cc35345465622e708ef804c",
+      "why_release": "the assignment asked for the release binary; the earlier debug startup stack-overflow was not re-tested against this target"
+    },
+    "fixture": {
+      "path": "crates/cos-client/fixtures/task-184.json",
+      "sha256": "db1cfc8014ad44d3a512415af22ab90523b639de36d606e83247ac109daec2c0"
+    },
+    "product_change": "NONE: every enumerated row behaved as the contract requires, so no product or test source was changed and no speculative surface edit was made"
+  },
+
+  "environment": {
+    "os": "Windows 10.0.26300",
+    "host_dpi": 96,
+    "app_window": "COS Desktop 1296x839 at DPI 96",
+    "profile_isolation": {
+      "requested": "isolated LOCALAPPDATA under C:/tmp",
+      "result": "NOT_PROVIDED_BY_THIS_ENVIRONMENT",
+      "evidence": "the application exits before creating a window with 'COS Desktop instance ownership unavailable; startup refused (create-directory)' for profiles under C:/tmp (also under a C:/dev sibling directory and a LOCALAPPDATA subdirectory), for both the debug and the release binaries; a profile inside the workspace target tree starts and renders exactly as observed here",
+      "fallback_used": "C:/dev/cos-desktop/target/ins1-20261108/profile (isolated from the user's real profile, inside the workspace target tree which is not tracked)",
+      "interpretation": "INFERENCE / NOT_DIAGNOSED: writes by the launched application appear to be confined to the workspace in this environment; no OS setting was changed and the product was not modified to work around it"
+    },
+    "input_route": {
+      "launch": "Start-Process <release exe> --fixture with LOCALAPPDATA set; no display, DPI or accessibility setting changed",
+      "candidate_switch": "UIA InvokePattern on the real dock button (AutomationId contains fixture:candidate/a or fixture:candidate/b); this is the accessibility activation path on the running window, not a synthetic mouse click",
+      "section_disclosure": "UIA SetFocus on the section header, then a real ENTER key through SendKeys after confirming the application window was foreground; UIA ExpandCollapsePattern was exposed but Expand() did not change the rendered state (recorded, not used)",
+      "capture": "CopyFromScreen over the application window rectangle while it was foreground; PNG 1296x839",
+      "cleanup": "only the application PID this driver started was stopped, then the native lock was removed; the lock owner file named impl-typ1 before release"
+    }
+  },
+
+  "rows": {
+    "native_a_to_b_candidate_switch": {
+      "result": "OBSERVED",
+      "initial": "no candidate is viewed: inspector caption '候補は表示されていません'; candidate-dependent sections state '候補は選択されていません。'",
+      "select_a": "inspector caption '閲覧中の候補（この画面での選択）: A — 正式採用ではありません。正式採用は実行基盤から通知されます。'; dock row A '… — A 閲覧中・キーボード操作対象'",
+      "select_b": "inspector caption '閲覧中の候補（この画面での選択）: B — 正式採用ではありません。正式採用は実行基盤から通知されます。'; dock row A '… — A 比較対象', dock row B '… — B 閲覧中・比較対象・キーボード操作対象'",
+      "side_effect": "the second selection also opened the Compare surface ('作業領域：候補を比較', sides 'A: A' and 'B: B', buttons 'A側を変更'/'B側を変更'/'比較を閉じる'). This is the documented dock D-3 behaviour (first selection fills side A, second fills side B and switches to Compare), recorded as observed, not as a defect.",
+      "evidence": ["ax-00-initial.txt", "ax-01-a-selected.txt", "ax-03-b-selected.txt", "shot-b-selected.png"]
+    },
+    "identity_change_clearing": {
+      "result": "OBSERVED",
+      "before_switch": "Evaluation (評価) expanded for candidate A: UIA '評価 — …' expand=Expanded, a '評価の詳細' group present, and the captured image shows 判断 不合格（FAIL）, 評価主体 HARNESS, 確信度 0.55, visual_quality 58 score_0_100",
+      "after_switch": "after selecting B the Evaluation header is expand=Collapsed, the '評価の詳細' group is absent, and the captured image shows no evaluation field lines (no 0.55 and no 58 anywhere in the inspector)",
+      "reopen_b": "re-opening Evaluation shows 確信度 0.62 and visual_quality 66 for B, i.e. the values now belong to the newly viewed identity",
+      "fixture_cross_check": "the two observed payloads match the fixture exactly (a: FAIL / HARNESS / 0.55 / visual_quality 58; b: FAIL / HARNESS / 0.62 / visual_quality 66), so the values are not inferred locally",
+      "evidence": ["ax-02-a-eval-open.txt", "ax-03-b-selected.txt", "ax-04-b-eval-open.txt", "shot-a-eval.png", "shot-b-selected.png", "shot-b-eval.png"]
+    },
+    "keyboard_section_disclosure": {
+      "result": "OBSERVED",
+      "observed": "with the application window foreground, UIA SetFocus on a section header followed by a real ENTER key toggled it from Collapsed to Expanded: Evaluation for A (Collapsed→Expanded), Evaluation for B (Collapsed→Expanded), Goal (Collapsed→Expanded); the corresponding '…の詳細' group appeared and the final header states were goal=Expanded, eval=Expanded, evidence/refinement/outcome=Collapsed",
+      "limit": "UIA FocusedElement reported the window ('COS Desktop') rather than the header after SetFocus, so header-level focus reporting is NOT_MEASURED; the key event itself is what changed the rendered state",
+      "evidence": ["ax-05-keyboard-goal.txt", "driver.log"]
+    },
+    "viewed_vs_formal_labelling": {
+      "result": "OBSERVED",
+      "observed": [
+        "inspector: '閲覧中の候補（この画面での選択）: A/B — 正式採用ではありません。正式採用は実行基盤から通知されます。'",
+        "dock caption: '反復ごとの候補 — 閲覧中・比較対象はこの画面での選択です。正式採用とは異なります。'",
+        "compare caption: 'この画面での比較対象。正式な採用結果ではありません'",
+        "context bar: '正式な結果: 不明 — 正式な結果の情報を受け取れていません'",
+        "no candidate carries the formal marker '正式採用（実行基盤から通知）' in any captured state (occurrences across all dumps: 0), and the fixture's Runtime best_candidate_ref (fixture:candidate/d) is never presented as formally selected"
+      ],
+      "evidence": ["ax-00-initial.txt", "ax-01-a-selected.txt", "ax-03-b-selected.txt", "shot-a-eval.png", "shot-b-selected.png"]
+    }
+  },
+
+  "measurements": {
+    "uia_control_view_nodes": {"initial": 57, "a_selected": 57, "a_eval_open": 58, "b_selected": 64, "b_eval_open": 65, "keyboard_goal_open": 66},
+    "uia_raw_view": "RawViewWalker returned the identical node set and text as the control view (axr-02 byte-identical to ax-02, axr-04 to ax-04); the section detail field values are therefore not exposed through UIA and were read from the captured images only",
+    "window": {"title": "COS Desktop", "width": 1296, "height": 839, "dpi": 96},
+    "screenshots": [
+      {"file": "shot-a-eval.png", "sha256": "354165b367098f5c50a422d480a36c2bb441b7e90584feb73d372a765df67650", "bytes": 182681},
+      {"file": "shot-b-selected.png", "sha256": "b14495113403d97e9d2f747b891c352532fd1ffddfb3e77ca93da59ca0484875", "bytes": 185335},
+      {"file": "shot-b-eval.png", "sha256": "71025ae3065488dee52e5ca53f126421c4b9ab878fbadf1afded9e80a845c962", "bytes": 182165}
+    ],
+    "dumps": [
+      {"file": "ax-00-initial.txt", "sha256": "8c41bd521eec55e6a9f6eabc5634cdde13130c64f73203ffbf6d2e5a06c40415"},
+      {"file": "ax-01-a-selected.txt", "sha256": "55742b1e821c907e97305080204dc5043c370f1cf6f7edba7c4b513ef779368e"},
+      {"file": "ax-02-a-eval-open.txt", "sha256": "903927f0eec4fb2923515a845fa7a6422a3fef6589ac3e1b2aabaf1faf81c9d3"},
+      {"file": "ax-03-b-selected.txt", "sha256": "4181d43de5471a6f2871c2a99d06d10c2cd2d101e03c18de98e68e32de5e6451"},
+      {"file": "ax-04-b-eval-open.txt", "sha256": "7e7369982ff604329ad978d884aae5b51b80775e08b4d859faeed5787ee126a8"},
+      {"file": "ax-05-keyboard-goal.txt", "sha256": "d4abdcbe9e937a38494bc5c1be494a336536cb550b49a6c95774eb675dfbd8cf"},
+      {"file": "axr-02-a-eval.txt", "sha256": "903927f0eec4fb2923515a845fa7a6422a3fef6589ac3e1b2aabaf1faf81c9d3"},
+      {"file": "axr-04-b-eval.txt", "sha256": "7e7369982ff604329ad978d884aae5b51b80775e08b4d859faeed5787ee126a8"},
+      {"file": "driver.log", "sha256": "b53e621d26823fe1646f1d37c67105355920c9def1d115045ab47fc17c87b865"}
+    ]
+  },
+
+  "commands": {
+    "build": "git worktree add --detach C:/dev/cos-desktop-verification/ins1-20261108/src abf2310; cargo build --locked --release -p cos-desktop (external CARGO_TARGET_DIR/TEMP)",
+    "observe": "powershell -NoProfile -ExecutionPolicy Bypass -File C:/tmp/ins1-drive.ps1 -WaitForLockSeconds 240 -RunRoot C:\\dev\\cos-desktop\\target\\ins1-20261108\\run4",
+    "lock": "C:/tmp/cos-desktop-native.lock held with owner=impl-typ1 pid=<driver pid> at=<ISO8601> in owner.txt, removed by the driver after the app was stopped",
+    "note": "the driver script is scratch tooling in C:/tmp and is not part of the repository; its path, parameters and action sequence are recorded here so the run is reproducible"
+  },
+
+  "not_measured": [
+    "exact projected values through UIA / screen-reader quality (detail groups expose no child nodes; values were read from the captured images, and no AT quality is claimed)",
+    "header-level keyboard focus reporting in UIA (FocusedElement reported the window)",
+    "pixel/DPI matrix other than the current 96 DPI host",
+    "real Runtime projections, evidence bodies and authorization (MP-INS2) and any Runtime/Task-truth claim",
+    "a physical mouse-click route for the same switch (the observed route is UIA Invoke; physical-click equivalence is not claimed)",
+    "product/UX acceptance"
+  ],
+
+  "declares_mpins1_complete": false,
+  "statement": "Native fixture observation of the four enumerated Desktop-local rows only. MP-INS1, DD-04b/R1, Runtime projections and product acceptance are unchanged; no product code was modified because no row failed."
+}

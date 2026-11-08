@@ -1,0 +1,65 @@
+﻿- Window "COS Desktop"
+- Pane "COS Desktop 作業画面"
+- Group "現在のタスクと状態"
+- Text "Task-184  新製品キービジュアル"
+- Text "テストデータ / 模擬表示"
+- Text "タスクの状態: 実行中（ACTIVE）"
+- Text "処理段階: REFINE"
+- Text "反復回数: 第3回"
+- Text "成果物の利用状態: 取得可能（AVAILABLE）（5件）"
+- Text "接続・情報の鮮度: 情報を受信中"
+- Text "正式な結果: 不明 — 正式な結果の情報を受け取れていません"
+- Group "停止の操作と現在の受付状況"
+- Button "タスクを停止" [Invoke]
+- Button "停止要求の受付状況を確認（現在は操作できません）"
+- Text "この画面から停止要求は送っていません"
+- Text "停止要求を1回送ります。受付状況とタスクの終了結果は別に確認します。"
+- Group "タスク一覧"
+- Edit "タスクを検索" #task-search
+- List ""
+- ListItem "Task-184 — 新製品キービジュアル" #task-row-fixture:task/Task-184 [SelectItem]
+- Text "実行中（ACTIVE）"
+- Text "REFINE"
+- Text "3"
+- Text "キーボード操作対象"
+- Group "作業領域：候補を比較"
+- Text "候補を比較"
+- Text "表示中"
+- Group "この画面での比較対象。正式な採用結果ではありません"
+- Group "A: A"
+- Text "比較対象が変更されました。この候補の認可済み画像はまだ表示されていません。"
+- Text "画像は未表示です"
+- Group "比較するA側の画像。0: 全体、1: 物理等倍、+/-: 拡大縮小、矢印: 移動、F11: 全画面、Escape: 復帰"
+- Group "B: B"
+- Text "この候補は再び利用できます。認可済み画像はまだ表示されていません。"
+- Text "画像は未表示です"
+- Group "比較するB側の画像。0: 全体、1: 物理等倍、+/-: 拡大縮小、矢印: 移動、F11: 全画面、Escape: 復帰"
+- Button "全体表示 (0)" [Invoke]
+- Button "物理ピクセル1:1 (1)" [Invoke]
+- Button "連動を解除" [Invoke]
+- Button "A/Bを交換" [Invoke]
+- Button "A側を変更" [Invoke]
+- Button "B側を変更" [Invoke]
+- Button "比較を閉じる" [Invoke]
+- Group "候補の詳細"
+- Group "詳細と説明"
+- Text "閲覧中の候補（この画面での選択）: B — 正式採用ではありません。正式採用は実行基盤から通知されます。"
+- Button "目的 — 利用可能: Task-184 — 新製品キービジュアル" = "Task-184 — 新製品キービジュアル" expand=Collapsed
+- Button "評価 — 利用可能: 1件の評価 · 判断: 不合格（FAIL）" = "1件の評価 · 判断: 不合格（FAIL）" expand=Expanded
+- Group "評価の詳細"
+- Button "判断の根拠 — 利用可能: 判断の根拠 1件を表示" = "判断の根拠 1件を表示" expand=Collapsed
+- Button "改善 — 利用不可: この反復には改善記録がありません。" = "この反復には改善記録がありません。" expand=Collapsed
+- Button "結果 — 利用不可: このタスクの正式な結果は、受信した情報に含まれていません。" = "このタスクの正式な結果は、受信した情報に含まれていません。" expand=Collapsed
+- Button "診断情報を開く" #diagnostics-toggle [Invoke]
+- Group "反復ごとの候補一覧"
+- Text "反復ごとの候補一覧。閲覧中と比較対象はこの画面の選択です。正式採用は実行基盤から通知されます。"
+- Group "候補一覧"
+- Button "fixture:task/Task-184 — 第1回 — A 比較対象" #candidate:21:fixture:task/Task-18422:fixture:run/Task-184/11:119:fixture:candidate/a18:fixture:artifact/a [Invoke]
+- Button "fixture:task/Task-184 — 第1回 — B 閲覧中・比較対象・キーボード操作対象" #candidate:21:fixture:task/Task-18422:fixture:run/Task-184/11:119:fixture:candidate/b18:fixture:artifact/b [Invoke]
+- Button "fixture:task/Task-184 — 第2回 — C " #candidate:21:fixture:task/Task-18422:fixture:run/Task-184/11:219:fixture:candidate/c18:fixture:artifact/c [Invoke]
+- Button "fixture:task/Task-184 — 第2回 — D " #candidate:21:fixture:task/Task-18422:fixture:run/Task-184/11:219:fixture:candidate/d18:fixture:artifact/d [Invoke]
+- Button "fixture:task/Task-184 — 第3回 — E " #candidate:21:fixture:task/Task-18422:fixture:run/Task-184/11:319:fixture:candidate/e18:fixture:artifact/e [Invoke]
+- Group "作業画面の切り替え"
+- Button "成果物  Ctrl+1" [Invoke]
+- Button "候補を比較  Ctrl+2" [Invoke]
+- Button "処理の流れ  Ctrl+3" [Invoke]
