@@ -4,10 +4,11 @@
   "contract": "DC-MP-INS1",
   "slice": "native A-to-B candidate switch, identity-change clearing, keyboard section disclosure, and viewed-vs-formal labelling on fixture projections",
   "status": "NATIVE_A2B_SWITCH_AND_IDENTITY_CLEARING_OBSERVED",
-  "repair_revision": 2,
+  "repair_revision": 3,
   "authority": "Lead-assigned task-7 (parallel wave 2) under the MP-INS1 card and DC-MP-INS1. Fixture/Desktop-local observation only; no Runtime projection is claimed and no product behaviour was reinterpreted.",
-  "recorded_local": "2026-11-08T10:36:00+09:00",
+  "recorded_local": "2026-11-08T10:48:00+09:00",
   "repair_of": "fa19737cd8c5e2d6168d7cfd5f619976c072e3e6",
+  "focused_recheck_repair_of": "ae82b9d9c63a5f20699be0d24e87b1ce094331ca",
 
   "review_repair": {
     "reviewed_commit": "fa19737cd8c5e2d6168d7cfd5f619976c072e3e6",
@@ -32,6 +33,19 @@
     }
   },
 
+  "focused_recheck_repair": {
+    "reviewed_commit": "ae82b9d9c63a5f20699be0d24e87b1ce094331ca",
+    "verdict": "PASS_WITH_NOTES_0_BLOCKING_1_ACTIONABLE_1_NIT",
+    "findings": {
+      "A-01-residual": "the REC3 cross-reference over-attributed: the removed marker is impl-rel1 pid 36688 at 09:28:46, not REC3's impl-rec3 pid 12356 at 08:32:29, so the disappearance of REC3's lock cannot be attributed to this lane from these records",
+      "NIT": "baseline.fixture.git_blob_lf.full_value was null although the full hash is available"
+    },
+    "resolutions": {
+      "A-01-residual": "lock_protocol_disclosure now states only the established fact (this lane removed the impl-rel1 acquisition at about 09:28:52, outside the 5-minute rule) and records that whether that acquisition had itself replaced the impl-rec3 lock cannot be established; REC3's release note remains not directly attributed and its evidence stays unedited",
+      "NIT": "full_value is now 09eb2bbe3d2b0eb8f0eb0319dbe6aba8b1c4560053fe7d159628e8d43858ff14, recomputed from git show abf2310:crates/cos-client/fixtures/task-184.json and identical at the reviewing HEAD"
+    }
+  },
+
   "baseline": {
     "commit": "abf2310105527461f0d0a16a963ceff962205bc0",
     "branch": "dev",
@@ -53,8 +67,8 @@
       },
       "git_blob_lf": {
         "reviewer_reported_prefix": "09eb2bbe",
-        "full_value": null,
-        "form": "git blob at abf2310 and at the reviewing HEAD with LF line endings; only the 8-hex prefix was supplied by the reviewer and the full value was not independently recomputed during this evidence-only repair"
+        "full_value": "09eb2bbe3d2b0eb8f0eb0319dbe6aba8b1c4560053fe7d159628e8d43858ff14",
+        "form": "git blob at abf2310 and at the reviewing HEAD with LF line endings; recomputed with `git show abf2310:crates/cos-client/fixtures/task-184.json | sha256sum` and identical at the reviewing HEAD"
       }
     },
     "product_change": "NONE: every enumerated row behaved as the contract requires, so no product or test source was changed and no speculative surface edit was made"
@@ -117,7 +131,7 @@
       "no_os_change": "no display, DPI, accessibility or registry setting was changed"
     },
     "lock_protocol_disclosure": {
-      "incident_local": "2026-11-08 approximately 09:28-09:29",
+      "incident_local": "2026-11-08 approximately 09:28:46-09:28:52 (owner marker written 09:28:46; removal within the same minute)",
       "removed_lock": "C:/tmp/cos-desktop-native.lock",
       "removed_owner_marker": "owner=impl-rel1 pid=36688 at=2026-11-08T09:28:46+09:00",
       "owner_pid_running": false,
@@ -132,7 +146,7 @@
         "rec3_release_observed": false,
         "rec3_release_note": "This lane did not delete the lock. No release event was observed; the environment was re-snapshotted between turns. Whether a later lane removed it cannot be distinguished.",
         "rec3_state_at_post_run_check": "ABSENT at 2026-11-08T09:53:17+09:00",
-        "effect": "this disclosure supplies the missing attribution: the 08:32 impl-rec3 lock disappeared because this lane removed it at about 09:28-09:29 while following its defective launcher rule. REC3's statement that its own lane did not delete the lock remains accurate; its evidence was not edited."
+        "effect": "established fact only: this lane removed the impl-rel1 acquisition (owner=impl-rel1 pid=36688 at=2026-11-08T09:28:46+09:00) at about 09:28:52, outside the 5-minute rule. Whether that acquisition had itself replaced the impl-rec3 lock cannot be established from these records (the removed owner marker names impl-rel1, not impl-rec3, and no per-lock history exists). REC3's statement that its own lane did not delete the lock remains accurate, and its 'whether a later lane removed it cannot be distinguished' remains not directly attributed to this lane; REC3's evidence stays unedited."
       }
     },
     "input_route": {
