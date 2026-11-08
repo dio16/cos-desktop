@@ -1,0 +1,80 @@
+=== runtime.log ===
+
+--- start 2026-11-09T06:56:55+0900 ---
+INFO:     Started server process [5856]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8131 (Press CTRL+C to quit)
+INFO:     127.0.0.1:65117 - "GET /api/ready HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65118 - "GET /api/cos/desktop/server HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65119 - "GET /api/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49718 - "GET /api/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64292 - "GET /api/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64293 - "POST /api/cos/desktop/credentials HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64294 - "GET /api/cos/desktop/catalog HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64295 - "POST /api/cos/desktop/observation HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64296 - "POST /api/cos/desktop/commands HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64297 - "GET /api/cos/desktop/deltas?cursor=<redacted> HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64298 - "GET /api/cos/desktop/deltas?cursor=<redacted> HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64300 - "GET /api/cos/desktop/deltas?cursor=<redacted> HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64302 - "GET /api/cos/desktop/deltas?cursor=<redacted> HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50302 - "GET /api/cos/desktop/deltas?cursor=<redacted> HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50306 - "GET /api/cos/desktop/deltas?cursor=<redacted> HTTP/1.1" 200 OK
+desktop observation rejected: RESYNC_REQUIRED: unknown-owner journal row cannot be replayed
+INFO:     127.0.0.1:50308 - "GET /api/cos/desktop/deltas?cursor=<redacted> HTTP/1.1" 409 Conflict
+cos desktop task journal pruning skipped: observation epoch changed
+INFO:     127.0.0.1:51666 - "POST /api/cos/desktop/observation HTTP/1.1" 200 OK
+cos desktop task journal pruning skipped: observation epoch changed
+desktop observation rejected: RESYNC_REQUIRED: observation epoch changed in the database ledger
+INFO:     127.0.0.1:51668 - "GET /api/cos/desktop/deltas?cursor=<redacted> HTTP/1.1" 409 Conflict
+desktop observation rejected: RESYNC_REQUIRED: observation epoch changed in the database ledger
+INFO:     127.0.0.1:51672 - "POST /api/cos/desktop/observation HTTP/1.1" 409 Conflict
+INFO:     127.0.0.1:51673 - "GET /api/cos/desktop/tasks/task-c5a707161b4b4f818d8ea52194ea9fa1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56024 - "GET /api/cos/desktop/tasks/task-c5a707161b4b4f818d8ea52194ea9fa1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49478 - "GET /api/cos/desktop/tasks/task-c5a707161b4b4f818d8ea52194ea9fa1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58832 - "GET /api/cos/desktop/tasks/task-c5a707161b4b4f818d8ea52194ea9fa1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52579 - "GET /api/cos/desktop/tasks/task-c5a707161b4b4f818d8ea52194ea9fa1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52584 - "GET /api/cos/desktop/tasks/task-c5a707161b4b4f818d8ea52194ea9fa1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52772 - "GET /api/cos/desktop/tasks/task-c5a707161b4b4f818d8ea52194ea9fa1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65171 - "GET /api/cos/desktop/tasks/task-c5a707161b4b4f818d8ea52194ea9fa1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55071 - "GET /api/cos/desktop/tasks/task-c5a707161b4b4f818d8ea52194ea9fa1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51930 - "GET /api/cos/desktop/tasks/task-c5a707161b4b4f818d8ea52194ea9fa1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50303 - "GET /api/cos/desktop/tasks/task-c5a707161b4b4f818d8ea52194ea9fa1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61202 - "GET /api/cos/desktop/tasks/task-c5a707161b4b4f818d8ea52194ea9fa1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61836 - "GET /api/cos/desktop/tasks/task-c5a707161b4b4f818d8ea52194ea9fa1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63155 - "GET /api/cos/desktop/tasks/task-c5a707161b4b4f818d8ea52194ea9fa1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60424 - "GET /api/cos/desktop/tasks/task-c5a707161b4b4f818d8ea52194ea9fa1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60431 - "GET /api/cos/desktop/tasks/task-c5a707161b4b4f818d8ea52194ea9fa1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58596 - "GET /api/cos/desktop/tasks/task-c5a707161b4b4f818d8ea52194ea9fa1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63219 - "GET /api/cos/desktop/tasks/task-c5a707161b4b4f818d8ea52194ea9fa1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63228 - "GET /api/cos/desktop/tasks/task-c5a707161b4b4f818d8ea52194ea9fa1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50310 - "GET /api/cos/desktop/tasks/task-c5a707161b4b4f818d8ea52194ea9fa1 HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [5856]
+
+
+=== runtime-recovery.log ===
+
+--- start 2026-11-09T06:58:10+0900 ---
+INFO:     Started server process [18808]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8131 (Press CTRL+C to quit)
+INFO:     127.0.0.1:50317 - "GET /api/ready HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64181 - "GET /api/cos/desktop/server HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64182 - "POST /api/cos/desktop/credentials HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64183 - "POST /api/cos/desktop/observation HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64184 - "GET /api/cos/desktop/deltas?cursor=<redacted> HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64185 - "GET /api/cos/desktop/tasks/task-c5a707161b4b4f818d8ea52194ea9fa1 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64186 - "GET /api/cos/desktop/tasks/task-c5a707161b4b4f818d8ea52194ea9fa1/history?limit=20 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64187 - "GET /api/cos/tasks/task-c5a707161b4b4f818d8ea52194ea9fa1/candidates HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64188 - "GET /api/cos/tasks/task-c5a707161b4b4f818d8ea52194ea9fa1/evaluations/cand-cos-task-c5a707161b4b4f818d8ea52194ea9fa1-i0?run_id=run-cos-task-c5a707161b4b4f818d8ea52194ea9fa1-i0&iteration=0&artifact_ref=sha256%3Ae315a2a3682af269570849ade2375e44d524bd291c3b3df6010ff2b9f82f5994 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64189 - "GET /api/cos/tasks/task-c5a707161b4b4f818d8ea52194ea9fa1/details HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64190 - "GET /api/cos/media/sha256%3Ae315a2a3682af269570849ade2375e44d524bd291c3b3df6010ff2b9f82f5994 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64191 - "GET <redacted> HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [18808]

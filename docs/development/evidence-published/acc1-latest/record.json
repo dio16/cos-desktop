@@ -1,0 +1,1090 @@
+{
+  "measurement": "MP-ACC1 Golden Creative Workflow acceptance attempt",
+  "contract": "DC-MP-ACC1",
+  "started_at": "2026-11-09T06:56:53+0900",
+  "verdict": "LIMITED",
+  "harness": {
+    "command": "python apps/desktop/devtools/runtime_integration/run_acc1.py",
+    "port": 8131,
+    "endpoint": "http://127.0.0.1:8131",
+    "work_dir": "C:\\dev\\cos-desktop\\target\\acc1\\20261109T065653",
+    "generation_timeout_s": 900.0,
+    "desktop_binary_launched": false,
+    "observation": "protocol-level Desktop observation client (not the GUI)"
+  },
+  "desktop": {
+    "root": "C:\\dev\\cos-desktop",
+    "head": "9cd95b584e07ea65cd9a885c2666cdba0859c17b",
+    "binary": "C:\\dev\\cos-desktop\\target\\release\\cos-desktop.exe",
+    "binary_sha256": "sha256:5acb4af8b331192b2856692fd04cc527f67107a915d270bedd7f5320c5a2faf7"
+  },
+  "runtime_source": {
+    "root": "C:\\AI\\orchestrator",
+    "head": "32b6cefc058fa84f11121415ff0c783599c7e742",
+    "python": "C:\\AI\\orchestrator\\.venv\\Scripts\\python.exe",
+    "dirty_tracked": [
+      "M orchestrator/docs/guides/development-loop.md",
+      " M orchestrator/orchestrator_app/dev_caller.py",
+      " M orchestrator/tests/test_dev_caller.py",
+      " M orchestrator/tests/test_dev_caller_e2e.py",
+      "?? orchestrator/devplan/plan-draft.json",
+      "?? orchestrator/devplan/plan-prepare.json",
+      "?? orchestrator/devplan/prepare-out.json"
+    ]
+  },
+  "environment_preflight": {
+    "probe": "direct preflight (not the Runtime report)",
+    "at": "2026-11-09T06:56:54+0900",
+    "comfyui": {
+      "url": "http://127.0.0.1:8188/system_stats",
+      "http_status": 200,
+      "comfyui_version": "0.35.1",
+      "argv": [
+        "ComfyUI\\main.py",
+        "--windows-standalone-build",
+        "--lowvram",
+        "--reserve-vram",
+        "1.5",
+        "--cache-lru",
+        "10",
+        "--preview-method",
+        "taesd",
+        "--use-pytorch-cross-attention"
+      ]
+    },
+    "ollama": {
+      "url": "http://127.0.0.1:11434/api/tags",
+      "http_status": 200,
+      "model_count": 6
+    }
+  },
+  "health": {
+    "ready": {
+      "status": 200,
+      "document": {
+        "status": "ready"
+      },
+      "bytes": 18,
+      "headers": {
+        "date": "Sun, 08 Nov 2026 21:56:57 GMT",
+        "server": "uvicorn",
+        "content-length": "18",
+        "content-type": "application/json",
+        "connection": "close"
+      }
+    },
+    "hello": {
+      "schema_version": 1,
+      "server": {
+        "protocol": {
+          "major": 2,
+          "minor": 0
+        },
+        "schema": {
+          "major": 2,
+          "minor": 0
+        },
+        "server_identity": "cos-runtime-orchestrator",
+        "server_build": "orchestrator-runtime/0.1.0",
+        "epoch": "ef5f97bed3bb4651b4638e138bd16d2c",
+        "dedupe_retention_ms": null,
+        "limits": null
+      }
+    },
+    "status_response_count": 3,
+    "status_responses": [
+      {
+        "at": "2026-11-09T06:56:57+0900",
+        "http_status": 200,
+        "health": {
+          "llm": null,
+          "comfy": null
+        },
+        "loop": {
+          "running": false,
+          "theme": "",
+          "loop_id": "",
+          "run_id": "",
+          "status": "idle",
+          "reason": "",
+          "round": 0,
+          "paused": false
+        },
+        "config": {
+          "model": "hf.co/empero-ai/Qwythos-9B-v2-GGUF:Q4_K_M",
+          "checkpoint": "redcraft23INT8INT4FP8_30Krea2.safetensors",
+          "stop_score": 0.6,
+          "min_score_for_video": 0.45,
+          "max_rounds": 1,
+          "enable_evaluation": false,
+          "enable_video": false,
+          "enable_postprocess": false,
+          "enable_prompt_planning": true,
+          "enable_image_generation": true,
+          "enable_refinement": false
+        }
+      },
+      {
+        "at": "2026-11-09T06:57:00+0900",
+        "http_status": 200,
+        "health": {
+          "llm": null,
+          "comfy": null
+        },
+        "loop": {
+          "running": false,
+          "theme": "",
+          "loop_id": "",
+          "run_id": "",
+          "status": "idle",
+          "reason": "",
+          "round": 0,
+          "paused": false
+        },
+        "config": {
+          "model": "hf.co/empero-ai/Qwythos-9B-v2-GGUF:Q4_K_M",
+          "checkpoint": "redcraft23INT8INT4FP8_30Krea2.safetensors",
+          "stop_score": 0.6,
+          "min_score_for_video": 0.45,
+          "max_rounds": 1,
+          "enable_evaluation": false,
+          "enable_video": false,
+          "enable_postprocess": false,
+          "enable_prompt_planning": true,
+          "enable_image_generation": true,
+          "enable_refinement": false
+        }
+      },
+      {
+        "at": "2026-11-09T06:57:03+0900",
+        "http_status": 200,
+        "health": {
+          "llm": true,
+          "comfy": true
+        },
+        "loop": {
+          "running": false,
+          "theme": "",
+          "loop_id": "",
+          "run_id": "",
+          "status": "idle",
+          "reason": "",
+          "round": 0,
+          "paused": false
+        },
+        "config": {
+          "model": "hf.co/empero-ai/Qwythos-9B-v2-GGUF:Q4_K_M",
+          "checkpoint": "redcraft23INT8INT4FP8_30Krea2.safetensors",
+          "stop_score": 0.6,
+          "min_score_for_video": 0.45,
+          "max_rounds": 1,
+          "enable_evaluation": false,
+          "enable_video": false,
+          "enable_postprocess": false,
+          "enable_prompt_planning": true,
+          "enable_image_generation": true,
+          "enable_refinement": false
+        }
+      }
+    ],
+    "runtime_reported": {
+      "llm": true,
+      "comfy": true
+    },
+    "generation_plane_ready": true,
+    "runtime_loop": {
+      "running": false,
+      "theme": "",
+      "loop_id": "",
+      "run_id": "",
+      "status": "idle",
+      "reason": "",
+      "round": 0,
+      "paused": false
+    },
+    "runtime_config": {
+      "model": "hf.co/empero-ai/Qwythos-9B-v2-GGUF:Q4_K_M",
+      "checkpoint": "redcraft23INT8INT4FP8_30Krea2.safetensors",
+      "stop_score": 0.6,
+      "min_score_for_video": 0.45,
+      "max_rounds": 1,
+      "enable_evaluation": false,
+      "enable_video": false,
+      "enable_postprocess": false,
+      "enable_prompt_planning": true,
+      "enable_image_generation": true,
+      "enable_refinement": false
+    }
+  },
+  "recipe": {
+    "recipe_id": "recipe-cos-production-still",
+    "label": "Production still (Krea2)",
+    "objective_text": "sunlit botanical still life, soft studio light",
+    "execution_limits": {
+      "max_iterations": 2,
+      "summary": "up to 2 iterations"
+    },
+    "recipe_ref": {
+      "recipe_id": "recipe-cos-production-still",
+      "graph_ref": {
+        "graph_id": "graph-cos-production-001",
+        "version": 2,
+        "digest": "sha256:4f9bfd7ca021557afe5f8e505218ccfd8c7f7d5b8a4bf636693cb456af683ecf"
+      },
+      "source_harness_version_id": "hvid_7231516f3fe04cb9e3e26f71354eaa4f16868e233e2b5d0ff41a0c2623fd6870",
+      "source_harness_digest": "sha256:3b9b1e205b2610ebae814233743a06a7e1774785c3a59b00452b5474b4745604",
+      "projection_digest": "sha256:992c5753d8aeb088338ab19a1486880681caed8817db7aea1f5cd5fad2dd317c"
+    },
+    "source": "authenticated Desktop catalog (GET /api/cos/desktop/catalog)"
+  },
+  "task": {
+    "create": {
+      "path": "POST /api/cos/desktop/commands (Desktop CommandEnvelope, target CREATION)",
+      "command_id": "cmd-06589108e66d3bcb8b5ba4f7",
+      "http_status": 200,
+      "receipt": {
+        "command_id": "cmd-06589108e66d3bcb8b5ba4f7",
+        "operation": "CREATE_TASK",
+        "state": "ACCEPTED",
+        "task_id": "task-c5a707161b4b4f818d8ea52194ea9fa1",
+        "accepted_at": "2026-11-08T21:57:03.885237+00:00",
+        "reject_reason": null,
+        "effect_refs": [],
+        "dedupe_expires_at": null,
+        "message": null
+      },
+      "stamp_read_revision": "1",
+      "reject_reason": null
+    },
+    "task_ref": "task-c5a707161b4b4f818d8ea52194ea9fa1",
+    "terminal_state": {
+      "task_ref": "task-c5a707161b4b4f818d8ea52194ea9fa1",
+      "task_status": "COMPLETED",
+      "inner_phase": "RUNNING",
+      "iteration_index": 0,
+      "formal_outcome_ref": "sha256:fda0f0bfe4e3944830cc9d3ca2948a5d27e5f60f99a4af1c1606c95ed55447bc",
+      "revision": 20
+    },
+    "timed_out": false
+  },
+  "projection_trace": [
+    {
+      "at": "2026-11-09T06:57:03+0900",
+      "source": "delta",
+      "transaction_id": "transaction-dd03c0d229e6488e829d459bfc38e29d",
+      "mutation_count": 1,
+      "integrity_digest": "sha256:a77ba9f79c8cdde64c286e94284e952beee54a9d21f4942145e9fc3098c06af1",
+      "kind_counts": {
+        "TASK": 1
+      },
+      "changes": [
+        {
+          "op": "UPSERT",
+          "kind": "TASK",
+          "identity": "task-c5a707161b4b4f818d8ea52194ea9fa1",
+          "revision": "261",
+          "state": {
+            "task_ref": "task-c5a707161b4b4f818d8ea52194ea9fa1",
+            "task_status": "ASSIGNED",
+            "revision": "261"
+          }
+        }
+      ]
+    }
+  ],
+  "task_state_timeline": [
+    {
+      "at": "2026-11-09T06:57:03+0900",
+      "task_ref": "task-c5a707161b4b4f818d8ea52194ea9fa1",
+      "task_status": "ASSIGNED",
+      "revision": "261"
+    },
+    {
+      "at": "2026-11-09T06:57:08+0900",
+      "task_ref": "task-c5a707161b4b4f818d8ea52194ea9fa1",
+      "task_status": "ACTIVE",
+      "inner_phase": "RUNNING",
+      "iteration_index": 0,
+      "revision": "262"
+    }
+  ],
+  "resyncs": [
+    {
+      "at": "2026-11-09T06:57:08+0900",
+      "reason": "RESYNC_REQUIRED",
+      "delta_error": {
+        "code": "RESYNC_REQUIRED"
+      },
+      "reopen_http_status": 200,
+      "read_revision": "2",
+      "snapshot_mutations": 263,
+      "snapshot_kind_counts": {
+        "TASK": 40,
+        "ITERATION": 38,
+        "CANDIDATE": 37,
+        "ARTIFACT": 36,
+        "EVALUATION": 37,
+        "OUTCOME": 37,
+        "GRAPH": 38
+      },
+      "state_after": {
+        "task_ref": "task-c5a707161b4b4f818d8ea52194ea9fa1",
+        "task_status": "ACTIVE",
+        "inner_phase": "RUNNING",
+        "iteration_index": 0,
+        "revision": "262"
+      }
+    },
+    {
+      "at": "2026-11-09T06:57:08+0900",
+      "reason": "RESYNC_REQUIRED",
+      "delta_error": {
+        "code": "RESYNC_REQUIRED"
+      },
+      "reopen_http_status": 409,
+      "read_revision": null,
+      "snapshot_mutations": 0,
+      "snapshot_kind_counts": {},
+      "state_after": null,
+      "action": "reopen_refused",
+      "reopen_error": {
+        "code": "RESYNC_REQUIRED"
+      }
+    }
+  ],
+  "failure_injection": {
+    "attempted": false,
+    "completed": false
+  },
+  "canonical_reads": {
+    "desktop_task_view": {
+      "http_status": 200,
+      "task": {
+        "task_ref": "task-c5a707161b4b4f818d8ea52194ea9fa1",
+        "title": "sunlit botanical still life, soft studio light",
+        "task_status": "COMPLETED",
+        "inner_phase": "RUNNING",
+        "iteration_index": 0,
+        "stop_pending": false,
+        "formal_outcome_ref": "sha256:fda0f0bfe4e3944830cc9d3ca2948a5d27e5f60f99a4af1c1606c95ed55447bc",
+        "accepted_brief": {
+          "objective_text": "sunlit botanical still life, soft studio light",
+          "text_prompt": "sunlit botanical still life, soft studio light",
+          "recipe_ref": {
+            "recipe_id": "recipe-cos-production-still",
+            "source_harness_version_id": "hvid_7231516f3fe04cb9e3e26f71354eaa4f16868e233e2b5d0ff41a0c2623fd6870",
+            "source_harness_digest": "sha256:3b9b1e205b2610ebae814233743a06a7e1774785c3a59b00452b5474b4745604",
+            "graph_ref": {
+              "graph_id": "graph-cos-production-001",
+              "version": 2,
+              "digest": "sha256:4f9bfd7ca021557afe5f8e505218ccfd8c7f7d5b8a4bf636693cb456af683ecf"
+            },
+            "projection_digest": "sha256:992c5753d8aeb088338ab19a1486880681caed8817db7aea1f5cd5fad2dd317c"
+          },
+          "reference_artifact_refs": [],
+          "parameter_values": [
+            {
+              "id": "prompt",
+              "value": ""
+            },
+            {
+              "id": "steps",
+              "value": 8
+            }
+          ]
+        },
+        "projection_revision": 1,
+        "epoch": "7b5b50341a0b46f681e0fce19ace47d1"
+      },
+      "stamp_read_revision": "1"
+    },
+    "desktop_history": {
+      "http_status": 200,
+      "items": [
+        {
+          "task_ref": "task-c5a707161b4b4f818d8ea52194ea9fa1",
+          "record_ref": "run-cos-task-c5a707161b4b4f818d8ea52194ea9fa1-i0:0",
+          "run_id": "run-cos-task-c5a707161b4b4f818d8ea52194ea9fa1-i0",
+          "iteration": 0,
+          "phase": "RUNNING",
+          "plan_id": "plan-cos-task-c5a707161b4b4f818d8ea52194ea9fa1-i0",
+          "created_at": "2026-11-08T21:57:07.446750+00:00"
+        }
+      ],
+      "has_more": false
+    },
+    "candidates": {
+      "http_status": 200,
+      "document": {
+        "schema_version": 1,
+        "items": [
+          {
+            "ref": {
+              "task_id": "task-c5a707161b4b4f818d8ea52194ea9fa1",
+              "run_id": "run-cos-task-c5a707161b4b4f818d8ea52194ea9fa1-i0",
+              "iteration": 0,
+              "candidate_id": "cand-cos-task-c5a707161b4b4f818d8ea52194ea9fa1-i0",
+              "artifact_ref": "sha256:e315a2a3682af269570849ade2375e44d524bd291c3b3df6010ff2b9f82f5994"
+            },
+            "created_at": "2026-11-08T21:58:08.901623+00:00",
+            "thumbnail_url": "/api/cos/media/sha256%3Ae315a2a3682af269570849ade2375e44d524bd291c3b3df6010ff2b9f82f5994/thumbnail",
+            "media_type": "image/png",
+            "availability": "available",
+            "decision_status": "PASS",
+            "is_outcome_selected": true
+          }
+        ],
+        "next_cursor": null
+      }
+    },
+    "evaluation": {
+      "candidate_id": "cand-cos-task-c5a707161b4b4f818d8ea52194ea9fa1-i0",
+      "http_status": 200,
+      "document": {
+        "schema_version": 1,
+        "ref": {
+          "task_id": "task-c5a707161b4b4f818d8ea52194ea9fa1",
+          "run_id": "run-cos-task-c5a707161b4b4f818d8ea52194ea9fa1-i0",
+          "iteration": 0,
+          "candidate_id": "cand-cos-task-c5a707161b4b4f818d8ea52194ea9fa1-i0",
+          "artifact_ref": "sha256:e315a2a3682af269570849ade2375e44d524bd291c3b3df6010ff2b9f82f5994"
+        },
+        "decision": {
+          "decision_id": "dec-daadff97ff3da5c571c534b8ac5898eb",
+          "status": "PASS",
+          "payload": "{\"candidate_id\":\"cand-cos-task-c5a707161b4b4f818d8ea52194ea9fa1-i0\",\"decision_id\":\"dec-daadff97ff3da5c571c534b8ac5898eb\",\"fusion_policy_digest\":\"sha256:45fc46aa849d935fe6dfd4b4b1a83643f3f067e1eee6ed58b2536f4c24e52f3f\",\"payload\":\"{\\\"candidate_id\\\": \\\"cand-cos-task-c5a707161b4b4f818d8ea52194ea9fa1-i0\\\", \\\"conflict_set_ids\\\": [], \\\"deciding_authority_level\\\": null, \\\"deciding_evidence_ids\\\": [], \\\"decision_id\\\": \\\"\\\", \\\"fusion_policy_digest\\\": \\\"sha256:45fc46aa849d935fe6dfd4b4b1a83643f3f067e1eee6ed58b2536f4c24e52f3f\\\", \\\"fusion_policy_version\\\": \\\"cos-production-v1\\\", \\\"per_kpi_status\\\": {\\\"kpi-cos-production-001\\\": \\\"PASS\\\"}, \\\"status\\\": \\\"PASS\\\", \\\"task_id\\\": \\\"task-c5a707161b4b4f818d8ea52194ea9fa1\\\"}\",\"status\":\"PASS\",\"task_id\":\"task-c5a707161b4b4f818d8ea52194ea9fa1\"}",
+          "fusion_policy_digest": "sha256:45fc46aa849d935fe6dfd4b4b1a83643f3f067e1eee6ed58b2536f4c24e52f3f",
+          "created_at": "2026-11-08T21:58:08.902643+00:00"
+        },
+        "outputs": [
+          {
+            "evaluation_id": "eval-cos-task-c5a707161b4b4f818d8ea52194ea9fa1-i0",
+            "evaluator_id": "cos-production-native",
+            "authority_level": "DIRECT_MEASUREMENT",
+            "artifact_digest": "sha256:e315a2a3682af269570849ade2375e44d524bd291c3b3df6010ff2b9f82f5994",
+            "evaluator_bundle_digest": "sha256:9b6c0243f1bf75cca1244a4e4b5c9df00b473c945572f139b6e4a69acd3c3ed4",
+            "payload": "{\"artifact_digest\":\"sha256:e315a2a3682af269570849ade2375e44d524bd291c3b3df6010ff2b9f82f5994\",\"authority_level\":\"DIRECT_MEASUREMENT\",\"candidate_id\":\"cand-cos-task-c5a707161b4b4f818d8ea52194ea9fa1-i0\",\"canonical_digest\":\"sha256:57b37c0d8fb58575241efe2b88c1e4c48bdcd57f300da2d7c88535d8caf041fa\",\"confidence\":\"1.0\",\"created_at\":\"2026-11-08T21:58:08.847799+00:00\",\"evaluation_id\":\"eval-cos-task-c5a707161b4b4f818d8ea52194ea9fa1-i0\",\"evaluator_bundle_digest\":\"sha256:9b6c0243f1bf75cca1244a4e4b5c9df00b473c945572f139b6e4a69acd3c3ed4\",\"evaluator_id\":\"cos-production-native\",\"iteration\":0,\"kpi_measurements\":[{\"authority_level\":\"DIRECT_MEASUREMENT\",\"axis\":\"artifact_penalty\",\"direction\":\"lower_is_better\",\"kpi_id\":\"kpi-cos-production-001\",\"source_refs\":[\"run-cos-task-c5a707161b4b4f818d8ea52194ea9fa1-i0\"],\"unit\":\"penalty\",\"value\":\"0\"}],\"objective_ref\":{\"record_digest\":\"sha256:3db3c1c41873ae421d081cca29b0e71d5be0d7d1024185d7af7e4dd6f0141fb3\",\"record_id\":\"objective-86bb8d0c13dd4c498cd9139595c9ea76\"},\"rubric_measurements\":{\"artifact_penalty\":\"0\"},\"rubric_ref\":{\"record_digest\":\"sha256:8de53de040eafa7ecbee99c0f4d8e3cf1b58e0bc90a08b454e8c40e278cc3d4d\",\"record_id\":\"rubric-7450d17c13bd46bda93c1457443ca537\"},\"run_id\":\"run-cos-task-c5a707161b4b4f818d8ea52194ea9fa1-i0\",\"schema_version\":1,\"score\":\"1.0\",\"source_refs\":[\"run-cos-task-c5a707161b4b4f818d8ea52194ea9fa1-i0\"],\"task_id\":\"task-c5a707161b4b4f818d8ea52194ea9fa1\"}",
+            "canonical_digest": "sha256:57b37c0d8fb58575241efe2b88c1e4c48bdcd57f300da2d7c88535d8caf041fa",
+            "created_at": "2026-11-08T21:58:08.901623+00:00"
+          }
+        ],
+        "rubric": {
+          "rubric_id": "rubric-7450d17c13bd46bda93c1457443ca537",
+          "axes": [
+            "artifact_penalty"
+          ],
+          "weights": {
+            "artifact_penalty": "1"
+          },
+          "thresholds": {
+            "artifact_penalty": "0.5"
+          },
+          "rubric_content_digest": "sha256:8de53de040eafa7ecbee99c0f4d8e3cf1b58e0bc90a08b454e8c40e278cc3d4d"
+        },
+        "kpis": [
+          {
+            "kpi_id": "kpi-0dceb6b9886642f6874655468f1817f9-0",
+            "axis": "artifact_penalty",
+            "unit": "penalty",
+            "direction": "lower_is_better",
+            "kpi_digest": "sha256:b9e01e0e0d4035da0da70cbfd87911eaae624e288f3c5f6fdf582a31cef59502"
+          }
+        ],
+        "evidence": [],
+        "next_cursor": null
+      }
+    },
+    "task_details": {
+      "http_status": 200,
+      "document": {
+        "schema_version": 1,
+        "items": [
+          {
+            "record_ref": "run-cos-task-c5a707161b4b4f818d8ea52194ea9fa1-i0:0",
+            "iteration": 0,
+            "phase": "RUNNING",
+            "summary": "phase RUNNING plan plan-cos-task-c5a707161b4b4f818d8ea52194ea9fa1-i0",
+            "refinement_summary": null,
+            "evidence_refs": [],
+            "evidence_candidate_ref": null
+          }
+        ],
+        "next_cursor": null,
+        "lineage": {
+          "status": "NOT_RECORDED",
+          "reasons": [],
+          "refs": []
+        }
+      }
+    }
+  },
+  "media": {
+    "available": true,
+    "descriptor_http_status": 200,
+    "descriptor": {
+      "descriptor_id": "descriptor-9c990734de7f1e4cc1cd30f90a4250b3",
+      "artifact_ref": "art-v1-319e9704-db55-4d11-bfbd-63c8a7145d75",
+      "artifact_digest": "sha256:e315a2a3682af269570849ade2375e44d524bd291c3b3df6010ff2b9f82f5994",
+      "representation": "ORIGINAL",
+      "representation_version": 1,
+      "media_type": "image/png",
+      "byte_length": 1579219,
+      "width": 1024,
+      "height": 1024,
+      "availability": "AVAILABLE",
+      "verification": {
+        "state": "VERIFIED",
+        "algorithm": "sha256",
+        "expected_digest": "e315a2a3682af269570849ade2375e44d524bd291c3b3df6010ff2b9f82f5994"
+      },
+      "server_identity": "cos-runtime-orchestrator",
+      "audience": "desktop:9fa92959af6736144cd4942b9e32d810",
+      "expires_at_unix_ms": 1794175393996
+    },
+    "handle_present": true,
+    "handle_recorded": false,
+    "blob_http_status": 200,
+    "bytes": 1579219,
+    "sha256": "sha256:e315a2a3682af269570849ade2375e44d524bd291c3b3df6010ff2b9f82f5994",
+    "digest_matches_descriptor": true,
+    "content_type": "image/png",
+    "png_dimensions": {
+      "width": 1024,
+      "height": 1024
+    },
+    "image_file": "docs\\development\\evidence-published\\acc1-latest\\artifact.png",
+    "image_file_sha256": "sha256:e315a2a3682af269570849ade2375e44d524bd291c3b3df6010ff2b9f82f5994",
+    "display_state": "bytes_fetched_verified_and_decoded",
+    "desktop_native_render": "NOT_MEASURED (Desktop GUI not launched)"
+  },
+  "outcome": {
+    "source": "OUTCOME projection (server-projected formal outcome)",
+    "projection": {
+      "projection": "OUTCOME",
+      "outcome_ref": "sha256:fda0f0bfe4e3944830cc9d3ca2948a5d27e5f60f99a4af1c1606c95ed55447bc",
+      "task_ref": "task-c5a707161b4b4f818d8ea52194ea9fa1",
+      "formal_status": "COMPLETED",
+      "selected_refs": [
+        {
+          "artifact_digest": "sha256:e315a2a3682af269570849ade2375e44d524bd291c3b3df6010ff2b9f82f5994",
+          "run_id": "run-cos-task-c5a707161b4b4f818d8ea52194ea9fa1-i0",
+          "evaluation_id": "eval-cos-task-c5a707161b4b4f818d8ea52194ea9fa1-i0",
+          "iteration": 0
+        }
+      ],
+      "provenance_refs": [],
+      "evidence_refs": [],
+      "stop_reason": "SUCCESS_ACCEPT",
+      "projection_revision": "222"
+    },
+    "formal_status": "COMPLETED",
+    "stop_reason": "SUCCESS_ACCEPT",
+    "selected_refs": [
+      {
+        "artifact_digest": "sha256:e315a2a3682af269570849ade2375e44d524bd291c3b3df6010ff2b9f82f5994",
+        "run_id": "run-cos-task-c5a707161b4b4f818d8ea52194ea9fa1-i0",
+        "evaluation_id": "eval-cos-task-c5a707161b4b4f818d8ea52194ea9fa1-i0",
+        "iteration": 0
+      }
+    ],
+    "derived_locally": false
+  },
+  "not_measured": [
+    "DD-25 Start command and Next Iteration advance: DD-25 is still RUNTIME_CONTRACT_REQUIRED + DESIGN_DECISION_REQUIRED, so those steps are blocked and NOT_MEASURED (the Runtime drain auto-dispatches create).",
+    "Desktop GUI rendering / native artifact display: the release binary was not launched in this attempt.",
+    "Five of the six DC-MP-ACC1 failure injections (generation failure, evaluation failure, missing media, stop request, Desktop restart): not attempted; the observation invalidation was the one failure exercised, and it was produced by the Runtime rather than injected.",
+    "Compare interaction (selecting two candidates in the GUI): only the Runtime candidate/evaluation reads were exercised.",
+    "Live projection continuity across the whole generation: the Runtime observation epoch was invalidated by the generation worker, so the mid-generation transitions are measured only through the canonical task read, not through the observation delta stream."
+  ],
+  "residuals": [
+    "This is a bounded acceptance attempt, not product acceptance.",
+    "Generation used the single existing catalog recipe (recipe-cos-production-still) and one objective; no breadth claim.",
+    "ComfyUI was started for this run with the documented script and stopped afterwards; the prior state (not running) was restored.",
+    "The Runtime checkout was not modified by this attempt; its head and pre-existing dirty files are recorded in runtime_source."
+  ],
+  "leak_check": {
+    "secrets_checked": 11,
+    "findings": [],
+    "clean": true
+  },
+  "source_state": {
+    "source_db": "C:\\AI\\orchestrator\\db\\generation.sqlite",
+    "source_db_sha256": "sha256:fbfe3ababb9f53dfb1c373774ce99bdfed813d7b64ad743164fa6adfbc0c56f6",
+    "db_copy": "C:\\dev\\cos-desktop\\target\\acc1\\20261109T065653\\generation.sqlite",
+    "db_copy_sha256": "sha256:f87711008a546c31caf75ed6d24c3a5c95b1d824c8b43868f13e1e852bfb3e3d",
+    "db_copy_bytes": 11493376,
+    "presets_copy": "C:\\dev\\cos-desktop\\target\\acc1\\20261109T065653\\cos_presets.json",
+    "presets_sha256": "sha256:e1c2b553a121638bb551df1f48d21e5c996614e4821008570c066f6563baae3c"
+  },
+  "runtime": {
+    "pid": 34612,
+    "server_identity": "cos-runtime-orchestrator",
+    "server_build": "orchestrator-runtime/0.1.0",
+    "epoch": "ef5f97bed3bb4651b4638e138bd16d2c",
+    "protocol": {
+      "major": 2,
+      "minor": 0
+    },
+    "schema": {
+      "major": 2,
+      "minor": 0
+    },
+    "config_path": "C:\\dev\\cos-desktop\\target\\acc1\\20261109T065653\\runtime-config.yaml",
+    "config_sha256": "sha256:015a2aa3bc92bd06d0c6f6cf22a5eff5915e7cf4157fd9e8a54dd7a7b7d68308",
+    "discovery_path": "C:\\dev\\cos-desktop\\target\\acc1\\20261109T065653\\runtime-discovery.json",
+    "cas_root": "C:\\dev\\cos-desktop\\target\\acc1\\20261109T065653\\cas",
+    "log_dir": "C:\\dev\\cos-desktop\\target\\acc1\\20261109T065653\\runtime-logs"
+  },
+  "credential": {
+    "http_status": 200,
+    "principal": "desktop:c6e983f3ff5a7fb67090004eddc94ae2",
+    "scopes": [
+      "read:observe",
+      "desktop:command"
+    ],
+    "expires_in": 43200,
+    "token_recorded": false
+  },
+  "catalog": {
+    "http_status": 200,
+    "schema_version": 1,
+    "can_submit": true,
+    "reason_codes": [],
+    "recipe_count": 1,
+    "recipes": [
+      {
+        "recipe_ref": {
+          "recipe_id": "recipe-cos-production-still",
+          "source_harness_version_id": "hvid_7231516f3fe04cb9e3e26f71354eaa4f16868e233e2b5d0ff41a0c2623fd6870",
+          "source_harness_digest": "sha256:3b9b1e205b2610ebae814233743a06a7e1774785c3a59b00452b5474b4745604",
+          "graph_ref": {
+            "graph_id": "graph-cos-production-001",
+            "graph_version": 2,
+            "graph_digest": "sha256:4f9bfd7ca021557afe5f8e505218ccfd8c7f7d5b8a4bf636693cb456af683ecf"
+          },
+          "profile_ref": null,
+          "projection_digest": "sha256:992c5753d8aeb088338ab19a1486880681caed8817db7aea1f5cd5fad2dd317c"
+        },
+        "label": "Production still (Krea2)",
+        "execution_limits": {
+          "max_iterations": 2,
+          "summary": "up to 2 iterations"
+        },
+        "accepts_image_references": false,
+        "parameter_ids": [
+          "prompt",
+          "steps"
+        ]
+      }
+    ]
+  },
+  "observation_open": {
+    "http_status": 200,
+    "read_revision": "1",
+    "epoch": "ef5f97bed3bb4651b4638e138bd16d2c",
+    "server_id": "cos-runtime-orchestrator",
+    "context_sha256_16": "sha256:b228beafc9be4a7a",
+    "scope_sha256_16": "sha256:ec6eaa800ef62e36",
+    "cursor_sha256_16": "sha256:e6c1f67977f46568",
+    "snapshot_id": "snapshot-2235600df138476c81165af0f885e328",
+    "snapshot_mutations": 260,
+    "snapshot_kind_counts": {
+      "TASK": 39,
+      "ITERATION": 37,
+      "CANDIDATE": 37,
+      "ARTIFACT": 36,
+      "EVALUATION": 37,
+      "OUTCOME": 37,
+      "GRAPH": 37
+    },
+    "snapshot_expected": {
+      "artifacts": 36,
+      "candidates": 37,
+      "capabilities": 0,
+      "evaluations": 37,
+      "graphs": 37,
+      "iterations": 37,
+      "outcomes": 37,
+      "tasks": 39
+    },
+    "snapshot_integrity_digest": "sha256:fb3cedecc6a95b92d2c4cf0745e78e39f8c25380ea42ae9cec2ee89950e011d4"
+  },
+  "observation_invalidated": {
+    "at": "2026-11-09T06:57:08+0900",
+    "reason": "observation_reopen_refused",
+    "last_delta_error": {
+      "code": "RESYNC_REQUIRED"
+    },
+    "reopen_http_status": 409,
+    "reopen_error": {
+      "code": "RESYNC_REQUIRED"
+    }
+  },
+  "canonical_timeline": [
+    {
+      "at": "2026-11-09T06:57:08+0900",
+      "http_status": 200,
+      "state": {
+        "task_ref": "task-c5a707161b4b4f818d8ea52194ea9fa1",
+        "task_status": "ACTIVE",
+        "inner_phase": "RUNNING",
+        "iteration_index": 0,
+        "projection_revision": 1,
+        "epoch": "ef5f97bed3bb4651b4638e138bd16d2c"
+      }
+    },
+    {
+      "at": "2026-11-09T06:57:11+0900",
+      "http_status": 200,
+      "state": {
+        "task_ref": "task-c5a707161b4b4f818d8ea52194ea9fa1",
+        "task_status": "ACTIVE",
+        "inner_phase": "RUNNING",
+        "iteration_index": 0,
+        "projection_revision": 2,
+        "epoch": "ef5f97bed3bb4651b4638e138bd16d2c"
+      }
+    },
+    {
+      "at": "2026-11-09T06:57:14+0900",
+      "http_status": 200,
+      "state": {
+        "task_ref": "task-c5a707161b4b4f818d8ea52194ea9fa1",
+        "task_status": "ACTIVE",
+        "inner_phase": "RUNNING",
+        "iteration_index": 0,
+        "projection_revision": 3,
+        "epoch": "ef5f97bed3bb4651b4638e138bd16d2c"
+      }
+    },
+    {
+      "at": "2026-11-09T06:57:18+0900",
+      "http_status": 200,
+      "state": {
+        "task_ref": "task-c5a707161b4b4f818d8ea52194ea9fa1",
+        "task_status": "ACTIVE",
+        "inner_phase": "RUNNING",
+        "iteration_index": 0,
+        "projection_revision": 4,
+        "epoch": "ef5f97bed3bb4651b4638e138bd16d2c"
+      }
+    },
+    {
+      "at": "2026-11-09T06:57:21+0900",
+      "http_status": 200,
+      "state": {
+        "task_ref": "task-c5a707161b4b4f818d8ea52194ea9fa1",
+        "task_status": "ACTIVE",
+        "inner_phase": "RUNNING",
+        "iteration_index": 0,
+        "projection_revision": 5,
+        "epoch": "ef5f97bed3bb4651b4638e138bd16d2c"
+      }
+    },
+    {
+      "at": "2026-11-09T06:57:24+0900",
+      "http_status": 200,
+      "state": {
+        "task_ref": "task-c5a707161b4b4f818d8ea52194ea9fa1",
+        "task_status": "ACTIVE",
+        "inner_phase": "RUNNING",
+        "iteration_index": 0,
+        "projection_revision": 6,
+        "epoch": "ef5f97bed3bb4651b4638e138bd16d2c"
+      }
+    },
+    {
+      "at": "2026-11-09T06:57:27+0900",
+      "http_status": 200,
+      "state": {
+        "task_ref": "task-c5a707161b4b4f818d8ea52194ea9fa1",
+        "task_status": "ACTIVE",
+        "inner_phase": "RUNNING",
+        "iteration_index": 0,
+        "projection_revision": 7,
+        "epoch": "ef5f97bed3bb4651b4638e138bd16d2c"
+      }
+    },
+    {
+      "at": "2026-11-09T06:57:31+0900",
+      "http_status": 200,
+      "state": {
+        "task_ref": "task-c5a707161b4b4f818d8ea52194ea9fa1",
+        "task_status": "ACTIVE",
+        "inner_phase": "RUNNING",
+        "iteration_index": 0,
+        "projection_revision": 8,
+        "epoch": "ef5f97bed3bb4651b4638e138bd16d2c"
+      }
+    },
+    {
+      "at": "2026-11-09T06:57:34+0900",
+      "http_status": 200,
+      "state": {
+        "task_ref": "task-c5a707161b4b4f818d8ea52194ea9fa1",
+        "task_status": "ACTIVE",
+        "inner_phase": "RUNNING",
+        "iteration_index": 0,
+        "projection_revision": 9,
+        "epoch": "ef5f97bed3bb4651b4638e138bd16d2c"
+      }
+    },
+    {
+      "at": "2026-11-09T06:57:37+0900",
+      "http_status": 200,
+      "state": {
+        "task_ref": "task-c5a707161b4b4f818d8ea52194ea9fa1",
+        "task_status": "ACTIVE",
+        "inner_phase": "RUNNING",
+        "iteration_index": 0,
+        "projection_revision": 10,
+        "epoch": "ef5f97bed3bb4651b4638e138bd16d2c"
+      }
+    },
+    {
+      "at": "2026-11-09T06:57:41+0900",
+      "http_status": 200,
+      "state": {
+        "task_ref": "task-c5a707161b4b4f818d8ea52194ea9fa1",
+        "task_status": "ACTIVE",
+        "inner_phase": "RUNNING",
+        "iteration_index": 0,
+        "projection_revision": 11,
+        "epoch": "ef5f97bed3bb4651b4638e138bd16d2c"
+      }
+    },
+    {
+      "at": "2026-11-09T06:57:44+0900",
+      "http_status": 200,
+      "state": {
+        "task_ref": "task-c5a707161b4b4f818d8ea52194ea9fa1",
+        "task_status": "ACTIVE",
+        "inner_phase": "RUNNING",
+        "iteration_index": 0,
+        "projection_revision": 12,
+        "epoch": "ef5f97bed3bb4651b4638e138bd16d2c"
+      }
+    },
+    {
+      "at": "2026-11-09T06:57:47+0900",
+      "http_status": 200,
+      "state": {
+        "task_ref": "task-c5a707161b4b4f818d8ea52194ea9fa1",
+        "task_status": "ACTIVE",
+        "inner_phase": "RUNNING",
+        "iteration_index": 0,
+        "projection_revision": 13,
+        "epoch": "ef5f97bed3bb4651b4638e138bd16d2c"
+      }
+    },
+    {
+      "at": "2026-11-09T06:57:50+0900",
+      "http_status": 200,
+      "state": {
+        "task_ref": "task-c5a707161b4b4f818d8ea52194ea9fa1",
+        "task_status": "ACTIVE",
+        "inner_phase": "RUNNING",
+        "iteration_index": 0,
+        "projection_revision": 14,
+        "epoch": "ef5f97bed3bb4651b4638e138bd16d2c"
+      }
+    },
+    {
+      "at": "2026-11-09T06:57:54+0900",
+      "http_status": 200,
+      "state": {
+        "task_ref": "task-c5a707161b4b4f818d8ea52194ea9fa1",
+        "task_status": "ACTIVE",
+        "inner_phase": "RUNNING",
+        "iteration_index": 0,
+        "projection_revision": 15,
+        "epoch": "ef5f97bed3bb4651b4638e138bd16d2c"
+      }
+    },
+    {
+      "at": "2026-11-09T06:57:57+0900",
+      "http_status": 200,
+      "state": {
+        "task_ref": "task-c5a707161b4b4f818d8ea52194ea9fa1",
+        "task_status": "ACTIVE",
+        "inner_phase": "RUNNING",
+        "iteration_index": 0,
+        "projection_revision": 16,
+        "epoch": "ef5f97bed3bb4651b4638e138bd16d2c"
+      }
+    },
+    {
+      "at": "2026-11-09T06:58:00+0900",
+      "http_status": 200,
+      "state": {
+        "task_ref": "task-c5a707161b4b4f818d8ea52194ea9fa1",
+        "task_status": "ACTIVE",
+        "inner_phase": "RUNNING",
+        "iteration_index": 0,
+        "projection_revision": 17,
+        "epoch": "ef5f97bed3bb4651b4638e138bd16d2c"
+      }
+    },
+    {
+      "at": "2026-11-09T06:58:03+0900",
+      "http_status": 200,
+      "state": {
+        "task_ref": "task-c5a707161b4b4f818d8ea52194ea9fa1",
+        "task_status": "ACTIVE",
+        "inner_phase": "RUNNING",
+        "iteration_index": 0,
+        "projection_revision": 18,
+        "epoch": "ef5f97bed3bb4651b4638e138bd16d2c"
+      }
+    },
+    {
+      "at": "2026-11-09T06:58:06+0900",
+      "http_status": 200,
+      "state": {
+        "task_ref": "task-c5a707161b4b4f818d8ea52194ea9fa1",
+        "task_status": "ACTIVE",
+        "inner_phase": "RUNNING",
+        "iteration_index": 0,
+        "projection_revision": 19,
+        "epoch": "ef5f97bed3bb4651b4638e138bd16d2c"
+      }
+    },
+    {
+      "at": "2026-11-09T06:58:09+0900",
+      "http_status": 200,
+      "state": {
+        "task_ref": "task-c5a707161b4b4f818d8ea52194ea9fa1",
+        "task_status": "COMPLETED",
+        "inner_phase": "RUNNING",
+        "iteration_index": 0,
+        "formal_outcome_ref": "sha256:fda0f0bfe4e3944830cc9d3ca2948a5d27e5f60f99a4af1c1606c95ed55447bc",
+        "projection_revision": 20,
+        "epoch": "ef5f97bed3bb4651b4638e138bd16d2c"
+      }
+    }
+  ],
+  "runtime_stop_epoch1": {
+    "pid": 34612,
+    "clean": true,
+    "exit": 0
+  },
+  "runtime2": {
+    "pid": 51612,
+    "server_identity": "cos-runtime-orchestrator",
+    "epoch": "7b5b50341a0b46f681e0fce19ace47d1",
+    "protocol": {
+      "major": 2,
+      "minor": 0
+    },
+    "schema": {
+      "major": 2,
+      "minor": 0
+    },
+    "epoch_changed": true
+  },
+  "post_terminal": {
+    "performed": true,
+    "reason": "post_terminal_runtime_restart_new_observation_epoch",
+    "observation_http_status": 200,
+    "read_revision": "1",
+    "epoch": "7b5b50341a0b46f681e0fce19ace47d1",
+    "context_sha256_16": "sha256:deb0dc02158439de",
+    "cursor_sha256_16": "sha256:3dca6cc8ca9593c6",
+    "snapshot_mutations": 267,
+    "snapshot_kind_counts": {
+      "TASK": 40,
+      "ITERATION": 38,
+      "CANDIDATE": 38,
+      "ARTIFACT": 37,
+      "EVALUATION": 38,
+      "OUTCOME": 38,
+      "GRAPH": 38
+    },
+    "terminal_task_projection": {
+      "task_ref": "task-c5a707161b4b4f818d8ea52194ea9fa1",
+      "task_status": "COMPLETED",
+      "inner_phase": "RUNNING",
+      "iteration_index": 0,
+      "formal_outcome_ref": "sha256:fda0f0bfe4e3944830cc9d3ca2948a5d27e5f60f99a4af1c1606c95ed55447bc",
+      "revision": "217"
+    },
+    "outcome_projection": {
+      "projection": "OUTCOME",
+      "outcome_ref": "sha256:fda0f0bfe4e3944830cc9d3ca2948a5d27e5f60f99a4af1c1606c95ed55447bc",
+      "task_ref": "task-c5a707161b4b4f818d8ea52194ea9fa1",
+      "formal_status": "COMPLETED",
+      "selected_refs": [
+        {
+          "artifact_digest": "sha256:e315a2a3682af269570849ade2375e44d524bd291c3b3df6010ff2b9f82f5994",
+          "run_id": "run-cos-task-c5a707161b4b4f818d8ea52194ea9fa1-i0",
+          "evaluation_id": "eval-cos-task-c5a707161b4b4f818d8ea52194ea9fa1-i0",
+          "iteration": 0
+        }
+      ],
+      "provenance_refs": [],
+      "evidence_refs": [],
+      "stop_reason": "SUCCESS_ACCEPT",
+      "projection_revision": "222"
+    },
+    "artifact_projection": {
+      "projection": "ARTIFACT",
+      "artifact_ref": "art-v1-319e9704-db55-4d11-bfbd-63c8a7145d75",
+      "artifact_digest": "sha256:e315a2a3682af269570849ade2375e44d524bd291c3b3df6010ff2b9f82f5994",
+      "availability": "AVAILABLE",
+      "descriptor_refs": [],
+      "media_type": "image/png",
+      "projection_revision": "220"
+    },
+    "delta_probe": {
+      "performed": true,
+      "http_status": 200,
+      "transaction_present": false
+    },
+    "credential_http_status": 200
+  },
+  "observation_epoch_conflict": {
+    "finding": "the generation worker process claims the single cos_desktop_observation_epoch row, so the serving Runtime's observation cursors/contexts and fresh observation opens fail closed with RESYNC_REQUIRED ('observation epoch changed in the database ledger') for the rest of that process lifetime",
+    "detected_at": "2026-11-09T06:57:08+0900",
+    "recovery": "post-terminal Runtime restart (new process epoch) reopened observation",
+    "desktop_impact": "a live Desktop observation would be invalidated mid-generation; the native withdrawal/recovery was NOT_MEASURED",
+    "runtime_owner": "C:/AI/orchestrator (observation epoch ledger)"
+  },
+  "stop_reason": "bounded_workflow_reached_formal_outcome",
+  "measured_scope": [
+    "catalog fetch (authenticated Desktop read)",
+    "Desktop CommandEnvelope create submission accepted (receipt)",
+    "automatic Runtime dispatch (drain claim; no Desktop Start command)",
+    "ASSIGNED -> ACTIVE task projection transition (live observation)",
+    "canonical Desktop task read while the live observation was invalid",
+    "post-terminal Runtime restart: new epoch, terminal TASK projection, OUTCOME/CANDIDATE/EVALUATION/ARTIFACT projections",
+    "RC-13 media descriptor -> handle -> blob byte fetch",
+    "formal outcome read from the OUTCOME projection",
+    "reopen-from-history read (Desktop history page)"
+  ],
+  "finished_at": "2026-11-09T06:58:14+0900",
+  "runtime_stop_after_terminal": true,
+  "runtime_stop": {
+    "pid": 34612,
+    "clean": true,
+    "exit": 0
+  },
+  "runtime_stopped": true,
+  "extra_runtime_stops": [
+    {
+      "pid": 51612,
+      "clean": true,
+      "exit": 0
+    }
+  ],
+  "extra_runtimes_stopped": true,
+  "port_free_after_stop": true,
+  "discovery_removed": true,
+  "logs": {
+    "runtime_log_sanitized": "docs/development/evidence-published/acc1-latest/logs/runtime.log.sanitized.txt",
+    "runtime_log_sha256": "sha256:826934eb6705523720fe2c4f2f10addcf0de82e11729a09b39bad3a9442dcdce",
+    "raw_logs_retained_in_work_dir": [
+      "C:\\dev\\cos-desktop\\target\\acc1\\20261109T065653\\runtime.log",
+      "C:\\dev\\cos-desktop\\target\\acc1\\20261109T065653\\runtime-recovery.log"
+    ]
+  }
+}
