@@ -1,10 +1,13 @@
 //! Native presentation only. No fixture files, transport calls, or Domain transitions.
 use app_core::{
-    CommandRead, ObservationHandle, PublicationNotice, ReadUnavailable,
+    CommandRead, MediaAvailability, MediaFetchCancellation, MediaSelection, MediaSessionContext,
+    ObservationHandle, PublicationNotice, ReadUnavailable,
     navigation::Surface,
     preferences::{Preferences, WindowGeometry},
 };
-use desktop_protocol::{EpochId, TaskId};
+use desktop_protocol::{
+    ArtifactDigest, ArtifactId, EpochId, ReadContextId, RepresentationKind, ServerId, TaskId,
+};
 use gpui::{
     AccessibleAction, AnyElement, App, Bounds, Context, Element, ElementId, ElementInputHandler,
     Entity, EntityInputHandler, FocusHandle, GlobalElementId, InspectorElementId, IntoElement,
@@ -699,6 +702,24 @@ fn about_lines(desktop_version: &str) -> [String; 4] {
     ]
 }
 
+/// Canonical identity one artifact-surface media resolution addresses.
+///
+/// Every component is part of the authorization or content identity, so bytes
+/// admitted for one principal/artifact can never be reused for another. The
+/// publication version, descriptor identity and access handle are absent: an
+/// ordinary delta cannot invalidate the picture, and a re-issued descriptor for
+/// the same canonical bytes is not fetched again.
+#[derive(Clone, PartialEq, Eq)]
+struct MediaLoadKey {
+    server_identity: ServerId,
+    epoch: EpochId,
+    context_id: ReadContextId,
+    audience: String,
+    artifact_ref: ArtifactId,
+    artifact_digest: ArtifactDigest,
+    representation: RepresentationKind,
+}
+
 pub struct Shell {
     #[cfg(feature = "r0-s2b-instrumentation")]
     probe_window: u64,
@@ -721,6 +742,16 @@ pub struct Shell {
     workbench: Option<Workbench>,
     artifact_viewer: Entity<image_viewer::ImageViewer>,
     compare_view: Entity<compare_view::CompareView>,
+    /// Binary-provided Runtime media acquisition for the artifact surface.
+    media: media_presentation::MediaBinding,
+    /// Canonical identity currently addressed by the artifact surface.
+    ///
+    /// It deliberately excludes the publication version and descriptor id: an
+    /// ordinary delta must not re-fetch the same admitted representation, while
+    /// a different server/epoch/context/principal/artifact/digest must.
+    media_loaded: Option<MediaLoadKey>,
+    /// Cancellation of the in-flight media resolution.
+    media_cancel: MediaFetchCancellation,
     /// Derived display text with its publication identity, revalidated on render.
     cache: DisplayCache,
     error: Option<String>,
@@ -879,6 +910,11 @@ impl Drop for Shell {
 }
 
 impl Shell {
+    /// Open the shell for one resolved launch.
+    ///
+    /// The binary owns token/credential resolution and injects the media binding;
+    /// this crate never reads a credential itself.
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         mut core: app_core::AppCore,
         handle: Option<ObservationHandle>,
@@ -887,6 +923,7 @@ impl Shell {
         preferences: Arc<Mutex<Preferences>>,
         tokens: DesignTokens,
         desktop_version: &str,
+        media: media_presentation::MediaBinding,
     ) -> Self {
         let restored = preferences
             .lock()
@@ -1009,6 +1046,9 @@ impl Shell {
             desktop_version: Arc::clone(&desktop_version),
             artifact_viewer,
             compare_view,
+            media,
+            media_loaded: None,
+            media_cancel: MediaFetchCancellation::default(),
             support_state: SupportPreviewState::default(),
             support_focus: cx.focus_handle().tab_stop(true),
             diagnostics_focus: cx.focus_handle().tab_stop(true),
@@ -1370,6 +1410,7 @@ impl Shell {
                         let candidates = Arc::clone(&this.cache.text().artifacts);
                         let task = this.cache.text().task.clone();
                         this.apply_restored_presentation(&candidates, task.as_ref(), cx);
+                        this.sync_artifact_media(cx);
                         this.synchronize_stop_context();
                         let count = this
                             .rail_state
@@ -2020,6 +2061,9 @@ impl Shell {
                         r0_probe::EventKind::SurfaceChanged(surface),
                     );
                 }
+                if surface == Surface::Artifact {
+                    self.sync_artifact_media(cx);
+                }
                 cx.notify();
                 #[cfg(feature = "r0-s2b-instrumentation")]
                 r0_probe::record(self.probe_window, r0_probe::EventKind::Notify);
@@ -2259,6 +2303,8 @@ impl Shell {
             self.dock_active = None;
             self.set_rail_active(task.clone(), index);
             self.rail_selection_pending = true;
+            // The previous task's viewed candidate (and picture) must not survive the switch.
+            self.sync_artifact_media(cx);
             self.rail_focus.focus(window, cx);
             self.request_rail_work(cx);
         }
@@ -2312,6 +2358,127 @@ impl Shell {
         self.rail_list.scroll_to_reveal_item(next);
         self.rail_focus.focus(window, cx);
         cx.notify();
+    }
+
+    /// Resolve the viewed candidate's artifact through the Runtime media boundary.
+    ///
+    /// The trigger is the artifact surface plus an open, validated publication and
+    /// a changed canonical identity: a plain publication delta never re-fetches
+    /// the same admitted representation, while a new server/epoch/read-context/
+    /// principal/artifact/digest does. Descriptor/byte I/O, cache lookup and
+    /// admission all run on GPUI's background executor inside `resolve_media`;
+    /// this method only reads the publication, orders the request and hands the
+    /// outcome to the viewer. Nothing here invents bytes or an availability
+    /// state: a projected absence becomes an explicit `Missing`, and no binding or
+    /// no authorization leaves the explicit surface sentence in place.
+    fn sync_artifact_media(&mut self, cx: &mut Context<Self>) {
+        if !matches!(&self.media, media_presentation::MediaBinding::Runtime(_)) {
+            return;
+        }
+        let artifact_surface = self
+            .workbench
+            .as_ref()
+            .is_some_and(|workbench| workbench.core.navigation.surface() == Surface::Artifact);
+        if !artifact_surface {
+            return;
+        }
+        let Some(handle) = self.handle.clone() else {
+            return;
+        };
+        let Ok(lease) = handle.current() else {
+            self.withdraw_artifact_media();
+            return;
+        };
+        let Some(context) = lease.read_context() else {
+            self.withdraw_artifact_media();
+            return;
+        };
+        let Some(viewed) = self.workbench.as_ref().and_then(|workbench| {
+            workbench
+                .presentation
+                .viewed()
+                .map(|viewed| viewed.0.clone())
+        }) else {
+            if self.media_loaded.take().is_some() {
+                self.media_cancel.cancel();
+                self.media_cancel = MediaFetchCancellation::default();
+                self.artifact_viewer.update(cx, |viewer, cx| {
+                    viewer.unavailable("画像を表示する候補が選択されていません。".into(), cx);
+                });
+            }
+            return;
+        };
+        let mut artifact = None;
+        let read = lease.read(|publication| publication.artifact_of_candidate(&viewed).cloned());
+        match read {
+            Ok(tagged) => {
+                if tagged.consume(|value| artifact = value.clone()).is_err() {
+                    return;
+                }
+            }
+            Err(_) => return,
+        }
+        let Some(artifact) = artifact else {
+            // The complete projection does not carry the viewed candidate's
+            // artifact: an explicit missing state, never a stale picture.
+            self.withdraw_artifact_media();
+            self.artifact_viewer.update(cx, |viewer, cx| {
+                viewer.unavailable(
+                    media_presentation::media_state_text(MediaAvailability::Missing).into(),
+                    cx,
+                );
+            });
+            return;
+        };
+        let (repository, audience) = match &self.media {
+            media_presentation::MediaBinding::Runtime(runtime) => {
+                (runtime.repository(), runtime.audience().to_owned())
+            }
+            _ => return,
+        };
+        let key = MediaLoadKey {
+            server_identity: context.server_identity().clone(),
+            epoch: context.epoch().clone(),
+            context_id: context.context_id().clone(),
+            audience: audience.clone(),
+            artifact_ref: artifact.artifact_ref.clone(),
+            artifact_digest: artifact.artifact_digest.clone(),
+            representation: RepresentationKind::Original,
+        };
+        if self.media_loaded.as_ref() == Some(&key) {
+            return;
+        }
+        let source = match &self.media {
+            media_presentation::MediaBinding::Runtime(runtime) => {
+                runtime.source(context.server_identity(), &audience)
+            }
+            _ => return,
+        };
+        self.media_loaded = Some(key);
+        // A superseded resolution is cancelled before the next one starts; the
+        // viewer additionally orders results by request sequence.
+        self.media_cancel.cancel();
+        self.media_cancel = MediaFetchCancellation::default();
+        let cancel = self.media_cancel.clone();
+        let session = MediaSessionContext::new(
+            context.server_identity().clone(),
+            audience,
+            context.epoch().clone(),
+            context.context_id().as_str().to_owned(),
+        );
+        let selection =
+            MediaSelection::for_artifact(&artifact, session, RepresentationKind::Original);
+        self.artifact_viewer.update(cx, |viewer, cx| {
+            viewer.resolve_media(repository, source, selection, cancel, cx);
+        });
+    }
+
+    /// Stop addressing the previous artifact picture without inventing a state.
+    fn withdraw_artifact_media(&mut self) {
+        if self.media_loaded.take().is_some() {
+            self.media_cancel.cancel();
+            self.media_cancel = MediaFetchCancellation::default();
+        }
     }
 
     /// View one candidate by scoped identity and move the dock cursor there.
@@ -2402,6 +2569,7 @@ impl Shell {
             self.navigate(target, cx);
         }
         self.surface_notice = event.notice;
+        self.sync_artifact_media(cx);
         cx.notify();
     }
 
@@ -3737,9 +3905,7 @@ impl Render for Shell {
                 &text.axes.formal_outcome,
             ));
         let surface_content = match surface {
-            Surface::Artifact => {
-                "現在の版では、成果物の画像を表示できません。候補の説明情報のみを表示しています。"
-            }
+            Surface::Artifact => media_presentation::media_binding_statement(&self.media),
             Surface::Compare => "",
             Surface::Flow => {
                 "テスト用データの処理構造を図と一覧で表示します。実際の実行基盤への接続は行っていません。"

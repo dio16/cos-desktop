@@ -9,10 +9,10 @@
 //! `image_upload`/`image_viewer`; nothing here fabricates an available state,
 //! reads a fixture or performs I/O.
 
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
-use app_core::{AdmittedMedia, MediaAvailability, MediaUnavailable};
-use desktop_protocol::RepresentationKind;
+use app_core::{AdmittedMedia, MediaAvailability, MediaRepository, MediaSource, MediaUnavailable};
+use desktop_protocol::{RepresentationKind, ServerId};
 use gpui::SharedString;
 use media::{
     DecodeBudget, DecodePolicy, LocalId, Orientation, PixelSize, RepresentationKey,
@@ -20,6 +20,95 @@ use media::{
 };
 
 use crate::image_upload::{FRAME_EDGE, ImageUploadError, UploadRequest};
+
+/// Build one media source for the authenticated read context.
+///
+/// The binary boundary supplies it; the closure captures the validated loopback
+/// origin and the session credential, so no token, origin or handle ever enters
+/// this crate, `app-core`, a status sentence or a diagnostic.
+pub type MediaSourceFactory =
+    Box<dyn Fn(&ServerId, &str) -> Box<dyn MediaSource + Send> + Send + Sync>;
+
+/// One binary-provided media acquisition boundary for the artifact surface.
+///
+/// The repository is process-wide (one bounded cache per session) and every
+/// resolution gets its own source, because a source owns one transport session
+/// binding. Nothing here fetches on the main thread: the caller resolves on
+/// GPUI's background executor through [`crate::image_viewer::ImageViewer::resolve_media`].
+pub struct MediaRuntime {
+    repository: Arc<Mutex<MediaRepository>>,
+    audience: String,
+    source: MediaSourceFactory,
+}
+
+impl MediaRuntime {
+    /// Bind the process-wide repository, the authenticated Desktop principal and
+    /// the per-load source factory.
+    pub fn new(
+        repository: MediaRepository,
+        audience: impl Into<String>,
+        source: MediaSourceFactory,
+    ) -> Self {
+        Self {
+            repository: Arc::new(Mutex::new(repository)),
+            audience: audience.into(),
+            source,
+        }
+    }
+
+    /// Shared bounded media repository.
+    pub fn repository(&self) -> Arc<Mutex<MediaRepository>> {
+        Arc::clone(&self.repository)
+    }
+
+    /// Authenticated Desktop principal the descriptor audience must match.
+    pub fn audience(&self) -> &str {
+        &self.audience
+    }
+
+    /// One source bound to this publication's server identity and audience.
+    pub fn source(
+        &self,
+        server_identity: &ServerId,
+        audience: &str,
+    ) -> Box<dyn MediaSource + Send> {
+        (self.source)(server_identity, audience)
+    }
+}
+
+/// What the artifact surface can do in this session.
+///
+/// The distinction is part of the honest availability vocabulary: an explicit
+/// fixture session has no Runtime media boundary, while a Runtime session whose
+/// authenticated principal could not be established must say so instead of
+/// looking like a build that cannot display pictures at all.
+pub enum MediaBinding {
+    /// No Runtime media boundary exists (explicit fixture/local session).
+    Absent,
+    /// A Runtime session exists, but its authenticated media principal is unknown.
+    Unavailable,
+    /// Runtime media acquisition is available for this session.
+    Runtime(MediaRuntime),
+}
+
+/// Surface statement for one media binding.
+///
+/// `Absent` keeps the pre-existing local-only sentence; `Unavailable` is an
+/// explicit refusal; `Runtime` names the real acquisition path without
+/// promising that a particular artifact is available.
+pub fn media_binding_statement(binding: &MediaBinding) -> &'static str {
+    match binding {
+        MediaBinding::Absent => {
+            "現在の版では、成果物の画像を表示できません。候補の説明情報のみを表示しています。"
+        }
+        MediaBinding::Unavailable => {
+            "画像を利用できません: このセッションの認証済みメディア主体を確認できないため、成果物の画像を取得できません。"
+        }
+        MediaBinding::Runtime(_) => {
+            "Runtime が認可した成果物メディアを取得して表示します。取得できない場合は、理由を画像領域に明示します。"
+        }
+    }
+}
 
 /// The only representation kind this build can decode and present.
 ///
@@ -417,5 +506,101 @@ mod tests {
         let admitted_presentation = MediaPresentation::Admitted(Box::new(admitted()));
         assert!(admitted_presentation.admitted().is_some());
         assert_eq!(admitted_bytes(&admitted()), Arc::from([1_u8, 2, 3]));
+    }
+
+    /// A source that never fetches: this module passes it through untouched.
+    struct StubSource;
+
+    impl app_core::MediaSource for StubSource {
+        fn fetch_descriptor(
+            &mut self,
+            _artifact_digest: &str,
+            _context: &str,
+            _cancellation: &app_core::MediaFetchCancellation,
+        ) -> Result<desktop_protocol::MediaDescriptor, app_core::MediaFetchError> {
+            Err(app_core::MediaFetchError::Transport)
+        }
+
+        fn fetch_bytes(
+            &mut self,
+            _descriptor: &desktop_protocol::MediaDescriptor,
+            _cancellation: &app_core::MediaFetchCancellation,
+        ) -> Result<app_core::FetchedMedia, app_core::MediaFetchError> {
+            Err(app_core::MediaFetchError::Transport)
+        }
+    }
+
+    fn runtime() -> MediaRuntime {
+        let repository = app_core::MediaRepository::new(media::LocalLimits {
+            max_input_bytes: 1024,
+            max_live_bytes: 4096,
+            max_live_entries: 2,
+            max_pixels: 1024,
+        })
+        .expect("repository limits");
+        MediaRuntime::new(
+            repository,
+            "desktop:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            Box::new(|_, _| Box::new(StubSource)),
+        )
+    }
+
+    #[test]
+    fn every_media_binding_has_its_own_explicit_surface_statement() {
+        let absent = media_binding_statement(&MediaBinding::Absent);
+        let unavailable = media_binding_statement(&MediaBinding::Unavailable);
+        let runtime = media_binding_statement(&MediaBinding::Runtime(runtime()));
+        assert_eq!(
+            absent,
+            "現在の版では、成果物の画像を表示できません。候補の説明情報のみを表示しています。"
+        );
+        assert!(unavailable.contains("画像を利用できません"));
+        assert!(unavailable.contains("メディア主体"));
+        assert_ne!(absent, unavailable);
+        assert_ne!(absent, runtime);
+        assert_ne!(unavailable, runtime);
+        assert!(runtime.contains("Runtime"));
+        assert!(!runtime.contains("画像を利用できません"));
+    }
+
+    #[test]
+    fn the_binding_joins_the_authenticated_audience_and_shares_one_repository() {
+        let (server, audience) = (
+            ServerId::new("server-1").expect("server"),
+            "desktop:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        );
+        let seen = Arc::new(std::sync::Mutex::new(Vec::new()));
+        let record = Arc::clone(&seen);
+        let repository = app_core::MediaRepository::new(media::LocalLimits {
+            max_input_bytes: 1024,
+            max_live_bytes: 4096,
+            max_live_entries: 2,
+            max_pixels: 1024,
+        })
+        .expect("repository limits");
+        let runtime = MediaRuntime::new(
+            repository,
+            audience,
+            Box::new(move |server, audience| {
+                record
+                    .lock()
+                    .expect("capture")
+                    .push((server.as_str().to_owned(), audience.to_owned()));
+                Box::new(StubSource)
+            }),
+        );
+        assert_eq!(runtime.audience(), audience);
+        let first = runtime.repository();
+        let second = runtime.repository();
+        assert!(
+            Arc::ptr_eq(&first, &second),
+            "one bounded repository per session"
+        );
+        let _ = runtime.source(&server, runtime.audience());
+        let captured = seen.lock().expect("capture");
+        assert_eq!(
+            captured.as_slice(),
+            [("server-1".to_owned(), audience.to_owned())]
+        );
     }
 }
