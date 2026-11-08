@@ -33,6 +33,7 @@ pub mod image_viewer;
 mod inspector;
 mod intervention;
 mod list_cursor;
+pub mod media_presentation;
 mod palette;
 #[cfg(feature = "r0-s2b-instrumentation")]
 pub mod r0_probe;

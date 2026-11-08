@@ -3,6 +3,7 @@
 pub mod crash_report;
 pub mod diagnostics;
 pub mod fence;
+pub mod media_presentation;
 pub mod navigation;
 pub mod observation;
 pub mod panic_report;
@@ -11,6 +12,11 @@ pub mod redaction;
 pub mod support_report;
 
 pub use cos_client::SnapshotHandle;
+/// Value-free cooperative cancellation token for one media fetch.
+///
+/// Re-exported so the GPUI boundary can cancel a background media resolution without
+/// depending on `cos-client` directly.
+pub use cos_client::media::Cancellation as MediaFetchCancellation;
 pub use cos_client::{
     Catalog, CatalogDocument, CatalogExecutionLimits, CatalogGraphRef, CatalogInputLimits,
     CatalogParameter, CatalogParameterBounds, CatalogParameterChoice, CatalogParameterValue,
@@ -26,6 +32,10 @@ pub use diagnostics::{
 pub use fence::{
     AuthorizedCommandRead, ObservationLease, PublicationChange, PublicationSubscription,
     TaggedRead, VisibilityFence,
+};
+pub use media_presentation::{
+    AdmittedMedia, MediaAvailability, MediaIdentity, MediaPresentation, MediaRepository,
+    MediaSelection, MediaSessionContext, MediaSource, MediaUnavailable, MediaUnavailableCause,
 };
 pub use observation::{
     CommandPresentation, CommandRead, CommandReadError, CommandReadView, DeadlineScheduler,

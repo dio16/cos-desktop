@@ -7,7 +7,15 @@ use crate::{
         ConsumerId, FRAME_EDGE, ImageUploadError, ImageUploadService, PaintStatus, PreparedImage,
         TileDemand, UploadRequest, ViewPaint,
     },
+    media_presentation::{
+        admitted_bytes, media_decode_failure_text, media_preparing_text, media_success_text,
+        media_unavailable_text, media_upload_request,
+    },
     view_transform::{Point, Rect, Size, ViewCamera, ViewTransform},
+};
+use app_core::{
+    MediaAvailability, MediaFetchCancellation, MediaPresentation, MediaRepository, MediaSelection,
+    MediaSource, MediaUnavailable, MediaUnavailableCause,
 };
 use gpui::{
     App, Bounds, Context, EventEmitter, FocusHandle, GpuDeviceState, IntoElement, KeyBinding,
@@ -88,6 +96,11 @@ fn device_status(state: GpuDeviceState) -> SharedString {
 
 fn initial_status(state: GpuDeviceState) -> SharedString {
     device_status(state)
+}
+
+/// Local-input failure sentence; the media route uses its own explicit state wording.
+fn local_failure_text(error: &ImageUploadError) -> SharedString {
+    format!("画像を利用できません: {}", error.limitation()).into()
 }
 
 /// A retired frame may be released only after two composed scenes postdate its detach.
@@ -673,6 +686,138 @@ impl ImageViewer {
             );
             return;
         }
+        let preview_only = self.mode == ViewerMode::PreviewOnly;
+        let preparing: SharedString =
+            "ローカル画像を準備中（実行基盤の成果物ではありません）".into();
+        let success: SharedString = match self.mode {
+            ViewerMode::PreviewOnly => {
+                "ローカル画像: 低解像度プレビュー。原寸の詳細表示・1:1ではありません。"
+            }
+            ViewerMode::ExperimentalTiles => {
+                "ローカル画像・実験用タイル表示。GPU完了・常駐量・本番の画質受入は未計測。"
+            }
+        }
+        .into();
+        self.begin_view_preparation(
+            request,
+            generation,
+            window,
+            cx,
+            preparing,
+            success,
+            local_failure_text,
+            move |service, background, request, cancel| {
+                service.prepare_view_generated(&background, request, cancel, preview_only, source)
+            },
+        );
+    }
+
+    /// Present one media resolution result.
+    ///
+    /// An unavailable state is rendered as its own explicit sentence; admitted bytes go through
+    /// the canonical media upload identity and the existing background preparation path. The
+    /// fetch, admission and cache decisions stay in `app-core`/`media`; this viewer owns only
+    /// the GPUI attachment, texture lifetime and status wording.
+    pub fn load_media(
+        &mut self,
+        presentation: MediaPresentation,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        let state = window.gpu_device_state();
+        if state != self.device_state {
+            self.device_state_changed(state, window, cx);
+        }
+        let GpuDeviceState::Ready { generation } = state else {
+            self.unavailable(device_status(state), cx);
+            return;
+        };
+        match presentation {
+            // Cancellation is not an availability state: this pane keeps its current status.
+            MediaPresentation::Cancelled => {}
+            MediaPresentation::Unavailable(unavailable) => {
+                self.unavailable(media_unavailable_text(&unavailable), cx);
+            }
+            MediaPresentation::Admitted(admitted) => {
+                let request = match media_upload_request(&admitted, generation) {
+                    Ok(request) => request,
+                    Err(refusal) => {
+                        self.unavailable(refusal.text().into(), cx);
+                        return;
+                    }
+                };
+                let verified = admitted.identity.verified();
+                let preview_only = self.mode == ViewerMode::PreviewOnly;
+                let bytes = admitted_bytes(&admitted);
+                self.begin_view_preparation(
+                    request,
+                    generation,
+                    window,
+                    cx,
+                    media_preparing_text(verified),
+                    media_success_text(verified, preview_only),
+                    media_decode_failure_text,
+                    move |service, background, request, cancel| {
+                        service.prepare_media(&background, request, cancel, preview_only, bytes)
+                    },
+                );
+            }
+        }
+    }
+
+    /// Resolve one media selection on GPUI's background executor, then apply the outcome here.
+    ///
+    /// The descriptor/byte exchange, cache lookup and remote admission are blocking work and
+    /// never run on the UI thread; only [`Self::load_media`]'s status/attachment work is applied
+    /// on it. A poisoned repository is reported as an explicit failure, never as a picture.
+    pub fn resolve_media(
+        &mut self,
+        repository: std::sync::Arc<std::sync::Mutex<MediaRepository>>,
+        mut source: Box<dyn MediaSource + Send>,
+        selection: MediaSelection,
+        cancellation: MediaFetchCancellation,
+        cx: &mut Context<Self>,
+    ) {
+        let background = cx.background_executor().clone();
+        let task = background.spawn(async move {
+            match repository.lock() {
+                Ok(mut repository) => repository.load(source.as_mut(), &selection, &cancellation),
+                Err(_) => MediaPresentation::Unavailable(MediaUnavailable {
+                    availability: MediaAvailability::Failed,
+                    cause: MediaUnavailableCause::Identity,
+                }),
+            }
+        });
+        cx.spawn(async move |this, cx| {
+            let presentation = task.await;
+            let _ = this.update_in(cx, |viewer, window, cx| {
+                viewer.load_media(presentation, window, cx);
+            });
+        })
+        .detach();
+    }
+
+    /// Reset this pane for one explicit host request, prepare it off-thread and attach the
+    /// resulting frame. `start` creates the preparation task only; attachment, retention and
+    /// publication ownership stay in this viewer.
+    #[allow(clippy::too_many_arguments)]
+    fn begin_view_preparation(
+        &mut self,
+        request: UploadRequest,
+        generation: u64,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+        preparing: SharedString,
+        success: SharedString,
+        failure: fn(&ImageUploadError) -> SharedString,
+        start: impl FnOnce(
+            &ImageUploadService,
+            gpui::BackgroundExecutor,
+            UploadRequest,
+            Cancellation,
+        ) -> gpui::Task<Result<Arc<PreparedImage>, ImageUploadError>>
+        + 'static,
+    ) {
         if let Some(frame) = self.retained.clone().filter(|frame| {
             frame.identity().key == request.key
                 && frame.identity().source_revision == request.source_revision
@@ -711,16 +856,15 @@ impl ImageViewer {
         // Only this explicit host request owns publication; a later generation change may
         // re-admit this identity and nothing else.
         self.requested = Some((request.key.clone(), request.source_revision));
-        self.status = "ローカル画像を準備中（実行基盤の成果物ではありません）".into();
+        self.status = preparing;
         let serial = self.serial;
         let service = self.service.clone();
         let cleanup = service.clone();
-        let task = service.prepare_view_generated(
-            cx.background_executor(),
+        let task = start(
+            &service,
+            cx.background_executor().clone(),
             request,
             self.cancel.clone(),
-            self.mode == ViewerMode::PreviewOnly,
-            source,
         );
         cx.spawn(async move |this, cx| {
             let result = task.await;
@@ -743,16 +887,12 @@ impl ImageViewer {
                         this.adopt_backup(Arc::clone(&frame));
                         this.current = Some(frame);
                         unclaimed = None;
-                        this.status = match this.mode {
-                            ViewerMode::PreviewOnly => "ローカル画像: 低解像度プレビュー。原寸の詳細表示・1:1ではありません。",
-                            ViewerMode::ExperimentalTiles => "ローカル画像・実験用タイル表示。GPU完了・常駐量・本番の画質受入は未計測。",
-                        }
-                        .into();
+                        this.status = success;
                     }
-                    Ok(_) => this.status = "画像を利用できません: 保持されていない画像です。".into(),
-                    Err(error) => {
-                        this.status = format!("画像を利用できません: {}", error.limitation()).into();
+                    Ok(_) => {
+                        this.status = "画像を利用できません: 保持されていない画像です。".into()
                     }
+                    Err(error) => this.status = failure(&error),
                 }
                 cx.notify();
             });

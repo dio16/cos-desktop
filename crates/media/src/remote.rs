@@ -55,6 +55,11 @@ impl AdmittedRemote {
         &self.bytes
     }
 
+    /// Encoded byte length, for a caller that must bound a copy or reservation.
+    pub fn byte_len(&self) -> usize {
+        self.bytes.len()
+    }
+
     /// Computed SHA-256 of the admitted bytes.
     pub fn digest(&self) -> Sha256Digest {
         self.digest
@@ -143,6 +148,27 @@ pub struct CacheScope<'a> {
     pub representation_version: u32,
     /// Expected digest, or `None` for an unverified payload.
     pub expected_digest: Option<Sha256Digest>,
+}
+
+/// One bounded cache identity for an authorized representation.
+///
+/// Derived only from [`CacheScope`]: it carries no access handle, token,
+/// descriptor identity or expiry. A descriptor that later expires therefore
+/// cannot invalidate an entry retained under the same authorized principal,
+/// canonical identity, representation and expected digest.
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct RemoteCacheKey(String);
+
+impl RemoteCacheKey {
+    /// Derive the bounded key for one authorized scope.
+    pub fn for_scope(scope: &CacheScope<'_>) -> Result<Self, MediaError> {
+        cache_key(scope).map(Self)
+    }
+
+    /// Borrow the bounded key text. It contains no credential material.
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
 }
 
 /// Build the bounded cache key for one authorized representation.
@@ -337,6 +363,55 @@ mod tests {
             cache_key(&base).expect("key"),
             cache_key(&base).expect("key")
         );
+    }
+
+    #[test]
+    fn the_cache_key_is_scoped_to_every_authorized_component() {
+        let digest = digest_of(&png());
+        let base = CacheScope {
+            server_identity: "server-1",
+            audience: "desktop:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            artifact_digest: "sha256:artifact",
+            representation: RepresentationKind::Original,
+            representation_version: 1,
+            expected_digest: Some(digest),
+        };
+        let reference = cache_key(&base).expect("key");
+        for variant in [
+            CacheScope {
+                server_identity: "server-2",
+                ..base.clone()
+            },
+            CacheScope {
+                artifact_digest: "sha256:other-artifact",
+                ..base.clone()
+            },
+            CacheScope {
+                representation: RepresentationKind::Preview,
+                ..base.clone()
+            },
+            CacheScope {
+                representation_version: 2,
+                ..base.clone()
+            },
+            CacheScope {
+                expected_digest: Some(Sha256Digest([9; 32])),
+                ..base.clone()
+            },
+            CacheScope {
+                expected_digest: None,
+                ..base.clone()
+            },
+        ] {
+            assert_ne!(
+                reference,
+                cache_key(&variant).expect("key"),
+                "every authorized component must scope the cache key"
+            );
+        }
+        // Descriptor identity/handle/expiry are not inputs at all: the scope has no such fields,
+        // so an expired descriptor cannot rewrite an entry's key.
+        assert_eq!(reference, cache_key(&base.clone()).expect("key"));
     }
 
     #[test]

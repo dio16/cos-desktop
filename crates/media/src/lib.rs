@@ -14,8 +14,8 @@ mod raster;
 mod remote;
 
 pub use cache::{
-    Acquisition, Cancellation, EncodedMedia, ExpectedDigest, LocalLimits, MediaCache, Sha256Digest,
-    Usage, Verification,
+    Acquisition, CachedRemote, Cancellation, EncodedMedia, ExpectedDigest, LocalLimits, MediaCache,
+    Sha256Digest, Usage, Verification,
 };
 pub use decode::{
     DECODER_BOOKKEEPING_BYTES, DecodeAdmission, DecodeBudget, DecodeLimits, DecodeLimitsOverride,
@@ -26,7 +26,9 @@ pub use key::{
     DecodePolicy, LocalId, LocalProvenance, Orientation, PixelSize, RepresentationKey,
     RepresentationSource,
 };
-pub use remote::{AdmittedRemote, CacheScope, RemoteExpectation, admit_remote, cache_key};
+pub use remote::{
+    AdmittedRemote, CacheScope, RemoteCacheKey, RemoteExpectation, admit_remote, cache_key,
+};
 mod upload;
 
 pub use upload::{

@@ -128,6 +128,9 @@ pub enum ImageUploadError {
         requested: u64,
     },
     UnverifiableSourceRevision,
+    /// The media presentation path received a local-provenance key, or the local path received
+    /// a canonical artifact key; the two identities are never mixed.
+    NotCanonicalMediaIdentity,
     EncodedInputTooLarge {
         actual: usize,
         maximum: usize,
@@ -161,6 +164,9 @@ impl ImageUploadError {
             }
             Self::SourceRevisionMismatch { .. } => "要求した画像版と一致しません。",
             Self::UnverifiableSourceRevision => "画像版を確認できません。",
+            Self::NotCanonicalMediaIdentity => {
+                "メディア経路の画像識別子が正規の成果物識別子ではありません。"
+            }
             Self::EncodedInputTooLarge { .. } => "画像データが許容上限を超えています。",
             Self::Decode(_) => "画像を復号できません。",
             Self::Admission(_) => "この画像は現在の保持状態と両立しないため表示できません。",
@@ -520,7 +526,17 @@ impl ImageUploadService {
         cancel: Cancellation,
         source: impl FnOnce(&Cancellation) -> Result<Arc<[u8]>, MediaError> + Send + 'static,
     ) -> Task<Result<Arc<PreparedImage>, ImageUploadError>> {
-        self.prepare_with_mips(background, request, cancel, source, None, false)
+        self.prepare_with_mips(
+            background,
+            request,
+            cancel,
+            source,
+            PreparationPolicy {
+                minimum_mip: None,
+                independent: false,
+                identity: RequestSource::LocalOnly,
+            },
+        )
     }
 
     /// Decode the admitted source off-thread. Viewer tiles are prepared only for later viewport
@@ -539,8 +555,11 @@ impl ImageUploadService {
             request,
             cancel,
             source,
-            Some(if preview_only { 2 } else { 0 }),
-            false,
+            PreparationPolicy {
+                minimum_mip: Some(if preview_only { 2 } else { 0 }),
+                independent: false,
+                identity: RequestSource::LocalOnly,
+            },
         )
     }
 
@@ -558,8 +577,11 @@ impl ImageUploadService {
             request,
             cancel,
             source,
-            Some(if preview_only { 2 } else { 0 }),
-            true,
+            PreparationPolicy {
+                minimum_mip: Some(if preview_only { 2 } else { 0 }),
+                independent: true,
+                identity: RequestSource::LocalOnly,
+            },
         )
     }
 
@@ -569,12 +591,11 @@ impl ImageUploadService {
         request: UploadRequest,
         cancel: Cancellation,
         source: impl FnOnce(&Cancellation) -> Result<Arc<[u8]>, MediaError> + Send + 'static,
-        minimum_mip: Option<u8>,
-        independent: bool,
+        policy: PreparationPolicy,
     ) -> Task<Result<Arc<PreparedImage>, ImageUploadError>> {
         let service = self.clone();
         background.spawn(async move {
-            validate_request(&request)?;
+            validate_request(&request, policy.identity)?;
             service.check_device_generation(request.device_generation)?;
             if cancel.is_cancelled() {
                 return Err(ImageUploadError::Cancelled);
@@ -622,8 +643,8 @@ impl ImageUploadService {
                 verified,
                 identity,
                 &cancel,
-                minimum_mip,
-                independent,
+                policy.minimum_mip,
+                policy.independent,
                 None,
             )?;
             frame.decode_calls.fetch_add(1, Ordering::Relaxed);
@@ -643,6 +664,37 @@ impl ImageUploadService {
         cancel: Cancellation,
     ) -> Task<Result<Arc<PreparedImage>, ImageUploadError>> {
         self.prepare_generated(background, request, cancel, move |_| Ok(encoded))
+    }
+
+    /// Media route: the documented equivalent of [`Self::prepare_encoded`] for a canonical
+    /// artifact source.
+    ///
+    /// The encoded bytes were already admitted by `crates/media` under an authorized descriptor,
+    /// and `request.key` carries the canonical artifact identity (`RepresentationSource::Artifact`)
+    /// whose revision must equal `request.source_revision`. The same process preparation guard,
+    /// decode admission, retention limits and background-only decode as the local route apply;
+    /// only the identity check differs, because a canonical revision is not a local file revision.
+    /// GPUI image payloads are still built by this service, never by `app-core`; the returned
+    /// frame stays owned by this service.
+    pub fn prepare_media(
+        &self,
+        background: &BackgroundExecutor,
+        request: UploadRequest,
+        cancel: Cancellation,
+        preview_only: bool,
+        encoded: Arc<[u8]>,
+    ) -> Task<Result<Arc<PreparedImage>, ImageUploadError>> {
+        self.prepare_with_mips(
+            background,
+            request,
+            cancel,
+            move |_| Ok(encoded),
+            PreparationPolicy {
+                minimum_mip: Some(if preview_only { 2 } else { 0 }),
+                independent: false,
+                identity: RequestSource::MediaArtifact,
+            },
+        )
     }
 
     /// Invalidate old GPU admissions without interpreting backend readiness as transfer completion.
@@ -1614,24 +1666,72 @@ fn budget_breach(
     }
 }
 
-fn validate_request(request: &UploadRequest) -> Result<(), ImageUploadError> {
+/// Which representation sources one preparation request may name.
+///
+/// The two identities are never mixed: a local generated/fixture key carries no canonical
+/// revision, and a canonical artifact key is not a local file revision.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum RequestSource {
+    /// Local generated/fixture input; the key must carry local provenance.
+    LocalOnly,
+    /// Canonical media artifact admitted by `crates/media`; the key must carry the artifact
+    /// revision that equals the request's `source_revision`.
+    MediaArtifact,
+}
+
+/// Off-thread preparation policy for one explicit request.
+///
+/// Bundled so the shared preparation entry point keeps a small argument list.
+#[derive(Clone, Copy, Debug)]
+struct PreparationPolicy {
+    /// Lowest viewer mip to keep; `Some(2)` is the bounded preview-only mode.
+    minimum_mip: Option<u8>,
+    /// Prepare a distinct entry even when an identical identity is retained.
+    independent: bool,
+    /// Which representation sources this request's key may name.
+    identity: RequestSource,
+}
+
+fn validate_request(
+    request: &UploadRequest,
+    source: RequestSource,
+) -> Result<(), ImageUploadError> {
     if request.device_generation != request.current_device_generation {
         return Err(ImageUploadError::StaleDeviceGeneration {
             requested: request.device_generation,
             current: request.current_device_generation,
         });
     }
-    let key_revision = match &request.key.source {
-        RepresentationSource::Local { revision, .. } => *revision,
-        RepresentationSource::Artifact { .. } => {
+    match (&request.key.source, source) {
+        (RepresentationSource::Local { revision, .. }, RequestSource::LocalOnly) => {
+            if *revision != request.source_revision {
+                return Err(ImageUploadError::SourceRevisionMismatch {
+                    key_revision: *revision,
+                    requested: request.source_revision,
+                });
+            }
+        }
+        (RepresentationSource::Artifact { revision, .. }, RequestSource::MediaArtifact) => {
+            // A canonical revision larger than the request's u64 identity is unverifiable here.
+            let Some(revision) = revision
+                .to_u128()
+                .and_then(|value| u64::try_from(value).ok())
+            else {
+                return Err(ImageUploadError::UnverifiableSourceRevision);
+            };
+            if revision != request.source_revision {
+                return Err(ImageUploadError::SourceRevisionMismatch {
+                    key_revision: revision,
+                    requested: request.source_revision,
+                });
+            }
+        }
+        (RepresentationSource::Artifact { .. }, RequestSource::LocalOnly) => {
             return Err(ImageUploadError::UnverifiableSourceRevision);
         }
-    };
-    if key_revision != request.source_revision {
-        return Err(ImageUploadError::SourceRevisionMismatch {
-            key_revision,
-            requested: request.source_revision,
-        });
+        (RepresentationSource::Local { .. }, RequestSource::MediaArtifact) => {
+            return Err(ImageUploadError::NotCanonicalMediaIdentity);
+        }
     }
     if request.max_encoded_bytes == 0 {
         return Err(ImageUploadError::InvalidEncodedInputLimit);
@@ -2239,7 +2339,7 @@ mod tests {
             max_encoded_bytes: 16 * 1024 * 1024,
         };
         assert!(matches!(
-            validate_request(&request),
+            validate_request(&request, RequestSource::LocalOnly),
             Err(ImageUploadError::StaleDeviceGeneration {
                 requested: 1,
                 current: 2
@@ -2248,11 +2348,93 @@ mod tests {
         let mut current = request;
         current.current_device_generation = 1;
         assert!(matches!(
-            validate_request(&current),
+            validate_request(&current, RequestSource::LocalOnly),
             Err(ImageUploadError::SourceRevisionMismatch {
                 key_revision: 4,
                 requested: 3
             })
+        ));
+    }
+
+    #[test]
+    fn the_media_path_requires_canonical_artifact_identity_and_its_canonical_revision() {
+        fn canonical_key(revision: desktop_protocol::Counter) -> RepresentationKey {
+            RepresentationKey {
+                source: RepresentationSource::Artifact {
+                    server: desktop_protocol::ServerId::new("server-1").expect("server id"),
+                    epoch: desktop_protocol::EpochId::new("epoch-1").expect("epoch id"),
+                    artifact: desktop_protocol::ArtifactId::new("artifact-a").expect("artifact id"),
+                    digest: desktop_protocol::ArtifactDigest::new("sha256:artifact")
+                        .expect("artifact digest"),
+                    revision,
+                },
+                kind: desktop_protocol::RepresentationKind::Original,
+                size: media::PixelSize::new(FRAME_EDGE, FRAME_EDGE).expect("frame size"),
+                orientation: media::Orientation::Normal,
+                policy: media::DecodePolicy {
+                    decoder: media::LocalId::new("png-rgb8").expect("decoder id"),
+                    colour: media::LocalId::new("identity-rgb").expect("colour id"),
+                    generation: 1,
+                },
+            }
+        }
+        let local = RepresentationKey {
+            source: RepresentationSource::Local {
+                provenance: media::LocalProvenance::Generated {
+                    generator: media::LocalId::new("gen").expect("generator id"),
+                    manifest: media::LocalId::new("manifest").expect("manifest id"),
+                    source: media::LocalId::new("source").expect("source id"),
+                },
+                revision: 1,
+            },
+            kind: desktop_protocol::RepresentationKind::Original,
+            size: media::PixelSize::new(FRAME_EDGE, FRAME_EDGE).expect("frame size"),
+            orientation: media::Orientation::Normal,
+            policy: media::DecodePolicy {
+                decoder: media::LocalId::new("png-rgb8").expect("decoder id"),
+                colour: media::LocalId::new("identity-rgb").expect("colour id"),
+                generation: 1,
+            },
+        };
+        let mut request = UploadRequest {
+            key: local,
+            source_revision: 1,
+            device_generation: 1,
+            current_device_generation: 1,
+            decode_limits: media::DecodeBudget::ratified_default()
+                .limits()
+                .expect("declared decode limits"),
+            max_encoded_bytes: 16 * 1024 * 1024,
+        };
+        // The media route never accepts local provenance, and the local route never accepts a
+        // canonical artifact key: the two identities cannot be substituted for each other.
+        assert!(matches!(
+            validate_request(&request, RequestSource::MediaArtifact),
+            Err(ImageUploadError::NotCanonicalMediaIdentity)
+        ));
+        request.key = canonical_key(desktop_protocol::Counter::from_u128(5));
+        request.source_revision = 5;
+        assert!(matches!(
+            validate_request(&request, RequestSource::LocalOnly),
+            Err(ImageUploadError::UnverifiableSourceRevision)
+        ));
+        assert!(validate_request(&request, RequestSource::MediaArtifact).is_ok());
+        request.source_revision = 4;
+        assert!(matches!(
+            validate_request(&request, RequestSource::MediaArtifact),
+            Err(ImageUploadError::SourceRevisionMismatch {
+                key_revision: 5,
+                requested: 4
+            })
+        ));
+        // A canonical revision beyond the u64 request identity stays unverifiable.
+        request.key = canonical_key(desktop_protocol::Counter::from_u128(
+            u128::from(u64::MAX) + 1,
+        ));
+        request.source_revision = u64::MAX;
+        assert!(matches!(
+            validate_request(&request, RequestSource::MediaArtifact),
+            Err(ImageUploadError::UnverifiableSourceRevision)
         ));
     }
 
