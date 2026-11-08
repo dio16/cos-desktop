@@ -852,6 +852,12 @@ fn scratch_cap_kills_a_flooding_candidate() {
     // Sampling spawns a tool per interval and would slow the parent enough to change
     // how much the child writes before the cap is noticed; the cap still applies.
     config.sample_interval_ms = 0;
+    // The cap kill is confirmed by the exit watcher. On a loaded machine the
+    // default 2 s confirmation grace can be starved, which would surface as an
+    // unconfirmed stop instead of the cap; bound that wait generously so the test
+    // asserts the cap logic rather than the scheduler. The operator default is
+    // unchanged (`None` keeps SAMPLE_EXIT_GRACE).
+    config.stop_confirm_bound = Some(std::time::Duration::from_secs(15));
     config.invocation = helper_invocation(HELPER);
     let report = harness::run(&config).unwrap();
 
@@ -3116,7 +3122,7 @@ fn truncated_sample_capture_is_refused() {
 }
 
 /// The post-exit harvest is bookkeeping: `wall_ms` stops when the candidate ends, even
-/// when the sample is only reaped 1.5 s later.
+/// when the sample is only reaped after that end.
 #[test]
 fn post_exit_harvest_does_not_inflate_wall_ms() {
     let _guard = sampling_guard();
@@ -3391,9 +3397,15 @@ fn a_normal_exit_is_not_overwritten_by_a_late_deadline_check() {
     inject_sampler(&mut config, "fake_sampler_slow_exit_helper");
     config.sample_interval_ms = 10;
     config.max_samples = 1;
-    config.timeout_ms = 300;
+    // The candidate's own start and exit can take longer than 300 ms on a loaded
+    // machine, which legitimately trips a 300 ms hard deadline and records a
+    // deadline kill. Give the deadline a wide margin over any plausible process
+    // start while keeping the injected spawn block longer than the deadline, so
+    // the ordering under test - a normal exit observed before the late check - is
+    // deterministic instead of a scheduler assertion.
+    config.timeout_ms = 2_000;
     config.cancel_after_ms = None;
-    config.sample_spawn_delay = Some(std::time::Duration::from_millis(2_500));
+    config.sample_spawn_delay = Some(std::time::Duration::from_millis(3_000));
     let report = harness::run(&config).unwrap();
 
     let observation = &report.observations[0];
@@ -4829,7 +4841,10 @@ fn fake_sampler_slow_exit_helper() {
         return;
     }
     println!("\"fake.exe\",\"{pid}\",\"Console\",\"1\",\"12,000 K\"");
-    std::thread::sleep(std::time::Duration::from_millis(1_200));
+    // Exit well after the ~50 ms candidate but far inside the 2 s per-sample
+    // bound: the harvest must happen after the candidate ends without the test
+    // depending on a loaded machine scheduling a 1.2 s sleep precisely.
+    std::thread::sleep(std::time::Duration::from_millis(300));
 }
 
 /// A sampler whose row is complete but which exits only after its own per-sample bound.

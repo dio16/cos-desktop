@@ -716,6 +716,11 @@ pub struct Config {
     pub sample_spawn_delay: Option<Duration>,
     /// Test-only: delay the exit watcher's first poll (scheduling-delay reproduction).
     pub watch_delay: Option<Duration>,
+    /// Test-only: bound for confirming a requested stop, overriding the default
+    /// [`SAMPLE_EXIT_GRACE`]. A loaded machine can starve the watcher beyond the
+    /// default and turn a cap kill into an unconfirmed stop; the operator path
+    /// keeps the default (`None`).
+    pub stop_confirm_bound: Option<Duration>,
     /// Test-only: set when the watcher's delay has actually elapsed.
     ///
     /// This is the signal the "aborted cancel does not wait for the watcher" test uses: the flag
@@ -1218,6 +1223,7 @@ where
         sample_compare_signal: None,
         sample_spawn_delay: None,
         watch_delay: None,
+        stop_confirm_bound: None,
         watch_woke: None,
         force_kill_failure: false,
         force_wait_failure: false,
@@ -2282,6 +2288,7 @@ fn measure(
                 sampling_disabled_reason,
                 WatchTuning {
                     delay: config.watch_delay,
+                    confirm_bound: config.stop_confirm_bound,
                     woke: config.watch_woke.clone(),
                     force_kill_failure: config.force_kill_failure,
                     force_wait_failure: config.force_wait_failure,
@@ -3053,6 +3060,8 @@ pub fn settle_exited_sample_for_tests(
 struct ExitWatch {
     state: std::sync::Arc<std::sync::Mutex<WatchData>>,
     handle: Option<std::thread::JoinHandle<()>>,
+    /// Bound used to confirm a stop (default [`SAMPLE_EXIT_GRACE`]).
+    confirm_bound: Duration,
 }
 
 /// Explicit exit-observation state. `Exited` is only entered when the exit was truly
@@ -3098,6 +3107,7 @@ impl ExitWatch {
         mut child: std::process::Child,
         deadline: Duration,
         watch_delay: Option<Duration>,
+        confirm_bound: Duration,
         watch_woke: Option<std::sync::Arc<std::sync::atomic::AtomicBool>>,
         force_kill_failure: bool,
         force_wait_failure: bool,
@@ -3113,7 +3123,7 @@ impl ExitWatch {
             request_at: None,
             confirm_at: None,
             kill_failed: false,
-            confirm_bound: SAMPLE_EXIT_GRACE,
+            confirm_bound,
             force_kill_failure,
             force_wait_failure,
             force_try_wait_error,
@@ -3372,7 +3382,13 @@ impl ExitWatch {
         Self {
             state,
             handle: Some(handle),
+            confirm_bound,
         }
+    }
+
+    /// The bound for confirming a requested stop.
+    fn confirm_bound(&self) -> Duration {
+        self.confirm_bound
     }
 
     fn state(&self) -> WatchState {
@@ -3467,6 +3483,8 @@ enum SettledSample {
 #[derive(Clone, Default)]
 struct WatchTuning {
     delay: Option<Duration>,
+    /// Bound for confirming a requested stop; `None` keeps [`SAMPLE_EXIT_GRACE`].
+    confirm_bound: Option<Duration>,
     /// Set once the delay has genuinely elapsed, so a test can assert the watcher never woke.
     woke: Option<std::sync::Arc<std::sync::atomic::AtomicBool>>,
     force_kill_failure: bool,
@@ -3493,6 +3511,7 @@ fn supervise(
         child,
         deadline,
         tuning.delay,
+        tuning.confirm_bound.unwrap_or(SAMPLE_EXIT_GRACE),
         tuning.woke,
         tuning.force_kill_failure,
         tuning.force_wait_failure,
@@ -3827,7 +3846,8 @@ fn cancel(watch: &ExitWatch, started: Instant) -> (Option<u64>, Option<u64>) {
     // One fixed wait start: a per-iteration reset would never accumulate and the loop
     // would not end when the watcher stays Running.
     let wait_started = Instant::now();
-    while matches!(watch.state(), WatchState::Running) && wait_started.elapsed() < SAMPLE_EXIT_GRACE
+    while matches!(watch.state(), WatchState::Running)
+        && wait_started.elapsed() < watch.confirm_bound()
     {
         std::thread::sleep(POLL_INTERVAL);
     }
