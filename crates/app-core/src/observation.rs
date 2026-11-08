@@ -296,7 +296,9 @@ enum ObservationCommand {
         reply: Reply<Result<cos_client::CatalogDocument, CommandReadError>>,
     },
     RequestCreateTask {
-        envelope: desktop_protocol::CommandEnvelope,
+        /// Boxed: the envelope is the only large variant payload and the rest of
+        /// the command enum is two/three machine words.
+        envelope: Box<desktop_protocol::CommandEnvelope>,
         tag: IntentTag,
         reply: Reply<Result<CommandId, CommandReadError>>,
     },
@@ -644,7 +646,7 @@ impl ObservationHandle {
         let (reply, resolver) = OwnerReply::new();
         let tag = self.intent_tag();
         self.enqueue(ObservationCommand::RequestCreateTask {
-            envelope,
+            envelope: Box::new(envelope),
             tag,
             reply: resolver,
         });
@@ -1261,9 +1263,12 @@ impl ObservationSessionOwner {
             ObservationCommand::RequestCreateTask {
                 envelope, reply, ..
             } => {
-                let result = self.client.create_task(envelope).map_err(|error| {
-                    CommandReadError::Client(PublicationError::from_client(&error))
-                });
+                let result = self
+                    .client
+                    .create_task(*envelope)
+                    .map_err(|error| {
+                        CommandReadError::Client(PublicationError::from_client(&error))
+                    });
                 self.publish(true);
                 reply.resolve(result);
             }
