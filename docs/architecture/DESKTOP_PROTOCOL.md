@@ -201,6 +201,20 @@ Fail-closed is not "keep the last picture silently": the last fully applied proj
 
 The Runtime states "cannot replay" explicitly instead of synthesising a substitute diff. The client's expectation is unchanged: on any 409 it publishes nothing from the response, keeps the last fully applied cursor, withholds the publication and re-observes with that cursor; it never fabricates a cursor, a transaction or a mutation.
 
+### Task history read (NAV3)
+
+**Observed Desktop-side implementation; real Runtime fetch NOT_MEASURED.** The accepted task-29 read contract serves one task's run history as an authenticated keyset page on the existing observation binding:
+
+```text
+GET /api/cos/desktop/tasks/{task_ref}/history?limit={1..=20}&cursor={opaque}
+Authorization: Bearer <desktop credential>
+X-Cos-Context: <live read context id>
+```
+
+The response is `{schema_version, server, stamp, task_ref, items:[{task_ref, record_ref, run_id, iteration, phase, plan_id, created_at}], next_cursor?, has_more}`; `next_cursor` is absent when no continuation remains. `has_more == next_cursor.is_some()` is all-or-nothing: a page that claims more without a cursor is refused as malformed rather than shown as an end, and a cursor without `has_more` is equally contradictory. An empty page with no continuation is the authoritative empty history; it is never conflated with "not loaded yet". Refusals are the closed classes `401` unauthorized, `403` forbidden, `404` not found/out of scope, `409` resync required and `422` invalid limit/cursor (plus the bounded-body `413` and parse/transport failures); no server detail text is copied into the failure.
+
+The Desktop client validates the document, the task reference and the read-context stamp before publication, bounds the body, and continues only with the server-issued cursor. app-core publishes a bounded, invalidated-on-scope/authorization-change view (loading / loaded / empty / end / error / unauthorized) and discards a result whose request sequence is no longer current; it keeps no canonical history store. `reopen` restores window-local references only (selected task, viewed iteration/candidate, compare pair while both sides are still observed) and cannot mutate canonical selection or outcome. Live fetch against the Runtime, authenticated history evidence and OS deep links remain `NOT_MEASURED`/deferred respectively.
+
 ## 3. Commands and receipts
 
 Draft command envelope: `command_id` (random globally unique client-generated id, retained across an allowed retry), command kind, typed target reference (or explicit creation scope), optional expected projection revision/epoch, payload, negotiated versions. Security principal is bound by authenticated transport, never trusted from payload. The server binds deduplication to `(principal, command_id)` and the canonical request digest including target/kind/payload/precondition.
