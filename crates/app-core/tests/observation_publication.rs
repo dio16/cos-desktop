@@ -1813,6 +1813,15 @@ impl DesktopClient for TransferredClient {
     fn stop_task(&mut self, task_id: &TaskId) -> Result<CommandId, cos_client::ClientError> {
         self.inner.as_mut().expect("client").stop_task(task_id)
     }
+    fn fetch_catalog(&mut self) -> Result<cos_client::CatalogDocument, cos_client::ClientError> {
+        self.inner.as_mut().expect("client").fetch_catalog()
+    }
+    fn create_task(
+        &mut self,
+        envelope: desktop_protocol::CommandEnvelope,
+    ) -> Result<CommandId, cos_client::ClientError> {
+        self.inner.as_mut().expect("client").create_task(envelope)
+    }
     fn bind_observation_control(&mut self, control: cos_client::ObservationControl) {
         self.inner
             .as_mut()

@@ -11,6 +11,10 @@ pub mod redaction;
 pub mod support_report;
 
 pub use cos_client::SnapshotHandle;
+pub use cos_client::{
+    Catalog, CatalogDocument, CatalogGraphRef, CatalogParameter, CatalogParameterBounds,
+    CatalogParameterChoice, CatalogRecipe, CatalogRecipeRef, CatalogServer,
+};
 pub use crash_report::{
     CRASH_REPORT_DIR, CrashCategory, CrashReportInput, CrashReportMeta, CrashReportStore,
     CrashStoreError, MAX_CRASH_REPORT_BYTES, MAX_CRASH_REPORTS, REPORT_EXTENSION, REPORT_PREFIX,

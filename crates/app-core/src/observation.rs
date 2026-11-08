@@ -292,6 +292,14 @@ enum ObservationCommand {
         tag: IntentTag,
         reply: Reply<Result<CommandId, CommandReadError>>,
     },
+    FetchCatalog {
+        reply: Reply<Result<cos_client::CatalogDocument, CommandReadError>>,
+    },
+    RequestCreateTask {
+        envelope: desktop_protocol::CommandEnvelope,
+        tag: IntentTag,
+        reply: Reply<Result<CommandId, CommandReadError>>,
+    },
     ReadCommand {
         id: CommandId,
         tag: IntentTag,
@@ -613,6 +621,36 @@ impl ObservationHandle {
         reply
     }
 
+    /// Fetch the authenticated Desktop catalog through the owner thread.
+    ///
+    /// The call is a credential-bound read, not a projection change: it never
+    /// mutates local canonical state and never substitutes a fixture catalog.
+    pub fn fetch_catalog(
+        &self,
+    ) -> OwnerReply<Result<cos_client::CatalogDocument, CommandReadError>> {
+        let (reply, resolver) = OwnerReply::new();
+        self.enqueue(ObservationCommand::FetchCatalog { reply: resolver });
+        reply
+    }
+
+    /// Submit one create-task command through the owner thread.
+    ///
+    /// The envelope carries the caller's command identity and creation target;
+    /// acceptance is a receipt, never a locally created task row.
+    pub fn request_create_task(
+        &self,
+        envelope: desktop_protocol::CommandEnvelope,
+    ) -> OwnerReply<Result<CommandId, CommandReadError>> {
+        let (reply, resolver) = OwnerReply::new();
+        let tag = self.intent_tag();
+        self.enqueue(ObservationCommand::RequestCreateTask {
+            envelope,
+            tag,
+            reply: resolver,
+        });
+        reply
+    }
+
     /// Creation tag for a new intent.
     fn intent_tag(&self) -> IntentTag {
         IntentTag {
@@ -764,6 +802,12 @@ fn reject_stale(command: ObservationCommand) {
         ObservationCommand::Retain { reply, .. } => {
             reply.resolve(Err(CommandReadError::Superseded));
         }
+        ObservationCommand::RequestCreateTask { reply, .. } => {
+            reply.resolve(Err(CommandReadError::Superseded));
+        }
+        ObservationCommand::FetchCatalog { reply } => {
+            reply.resolve(Err(CommandReadError::Superseded));
+        }
         ObservationCommand::ChangeScope { .. }
         | ObservationCommand::AuthenticationChanged { .. } => {}
     }
@@ -784,6 +828,12 @@ fn reject(command: ObservationCommand) {
             reply.resolve(Err(CommandReadError::CapacityExceeded));
         }
         ObservationCommand::Retain { reply, .. } => {
+            reply.resolve(Err(CommandReadError::CapacityExceeded));
+        }
+        ObservationCommand::RequestCreateTask { reply, .. } => {
+            reply.resolve(Err(CommandReadError::CapacityExceeded));
+        }
+        ObservationCommand::FetchCatalog { reply } => {
             reply.resolve(Err(CommandReadError::CapacityExceeded));
         }
     }
@@ -1174,6 +1224,8 @@ impl ObservationSessionOwner {
             ObservationCommand::RequestStop { tag, .. } => self.intent_tag_valid(*tag, false),
             ObservationCommand::ReadCommand { tag, .. } => self.intent_tag_valid(*tag, true),
             ObservationCommand::Retain { tag, .. } => self.intent_tag_valid(*tag, false),
+            ObservationCommand::RequestCreateTask { tag, .. } => self.intent_tag_valid(*tag, false),
+            ObservationCommand::FetchCatalog { .. } => true,
             ObservationCommand::ChangeScope { .. }
             | ObservationCommand::AuthenticationChanged { .. } => true,
         }
@@ -1195,6 +1247,21 @@ impl ObservationSessionOwner {
             }
             ObservationCommand::RequestStop { task, reply, .. } => {
                 let result = self.client.stop_task(&task).map_err(|error| {
+                    CommandReadError::Client(PublicationError::from_client(&error))
+                });
+                self.publish(true);
+                reply.resolve(result);
+            }
+            ObservationCommand::FetchCatalog { reply } => {
+                let result = self.client.fetch_catalog().map_err(|error| {
+                    CommandReadError::Client(PublicationError::from_client(&error))
+                });
+                reply.resolve(result);
+            }
+            ObservationCommand::RequestCreateTask {
+                envelope, reply, ..
+            } => {
+                let result = self.client.create_task(envelope).map_err(|error| {
                     CommandReadError::Client(PublicationError::from_client(&error))
                 });
                 self.publish(true);
@@ -1944,6 +2011,15 @@ impl DesktopClient for ClosedClient {
         Vec::new()
     }
     fn stop_task(&mut self, _task_id: &TaskId) -> Result<CommandId, ClientError> {
+        Err(ClientError::NotConnected("owner is unavailable".to_owned()))
+    }
+    fn fetch_catalog(&mut self) -> Result<cos_client::CatalogDocument, ClientError> {
+        Err(ClientError::NotConnected("owner is unavailable".to_owned()))
+    }
+    fn create_task(
+        &mut self,
+        _envelope: desktop_protocol::CommandEnvelope,
+    ) -> Result<CommandId, ClientError> {
         Err(ClientError::NotConnected("owner is unavailable".to_owned()))
     }
     fn bind_observation_control(&mut self, _control: ObservationControl) {}
