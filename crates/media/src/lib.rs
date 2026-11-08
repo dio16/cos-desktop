@@ -32,8 +32,9 @@ pub use remote::{
 mod upload;
 
 pub use upload::{
-    AdmittedUpload, SourceClass, UploadBudget, UploadIdentity, UploadPool, UploadRefusal,
-    UploadStage, UploadUsage, VerifiedRaster, admit_upload, decode_for_upload, refusal_reason,
+    APPROVED_EDGES, AdmittedUpload, MAX_APPROVED_EDGE, SourceClass, UploadBudget, UploadIdentity,
+    UploadPool, UploadRefusal, UploadStage, UploadUsage, VerifiedRaster, admit_upload,
+    approved_edge, decode_for_upload, refusal_reason,
 };
 
 pub use raster::{

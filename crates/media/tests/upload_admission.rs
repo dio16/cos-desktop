@@ -120,23 +120,118 @@ fn heavy() -> std::sync::MutexGuard<'static, ()> {
 fn only_the_approved_class_produces_a_verified_raster() {
     let _heavy = heavy();
     // The proof type has no public constructor, so the only way to get one is a decode that checks
-    // the container, the bit depth, the colour format and the size.
+    // the container, the bit depth, the colour format, the square shape and the edge.
     assert!(
         decode_for_upload(&rgba_png(2048, 2048), limits(), &Cancellation::default()).is_err(),
         "RGBA is not the approved colour format"
     );
-    assert!(
-        decode_for_upload(
-            &approved_png(1024, 1024),
-            limits(),
-            &Cancellation::default()
-        )
-        .is_err(),
-        "the approved class is 2048x2048"
-    );
     let verified = verified_approved();
     assert_eq!(verified.class(), media::SourceClass::StillPng8Rgb2048);
     assert_eq!(verified.size(), PixelSize::new(2048, 2048).expect("size"));
+    // The class is the explicit live-artifact set, not one pinned 2048 edge.
+    for (edge, class) in [
+        (320, media::SourceClass::StillPng8Rgb320),
+        (1024, media::SourceClass::StillPng8Rgb1024),
+    ] {
+        let verified = decode_for_upload(
+            &approved_png(edge, edge),
+            limits(),
+            &Cancellation::default(),
+        )
+        .expect("an admitted edge decodes for upload");
+        assert_eq!(verified.class(), class);
+        assert_eq!(verified.size(), PixelSize::new(edge, edge).expect("size"));
+        // A derivative keeps the source class proof but reports its own geometry.
+        let mip = verified
+            .mip(4, &Cancellation::default())
+            .expect("level four");
+        assert_eq!(
+            mip.size(),
+            PixelSize::new(edge >> 4, edge >> 4).expect("mip size")
+        );
+        assert_eq!(mip.class(), verified.class());
+    }
+}
+
+/// A PNG signature plus one IHDR chunk with the declared geometry and no pixel data.
+///
+/// `decode_for_upload` must refuse every out-of-class image from this header, before the decoder
+/// expands anything, so these fixtures are never valid PNG payloads on purpose.
+fn png_header(width: u32, height: u32, bit_depth: u8, colour_type: u8, interlace: u8) -> Vec<u8> {
+    let mut bytes = Vec::with_capacity(33);
+    bytes.extend_from_slice(&[0x89, b'P', b'N', b'G', 0x0d, 0x0a, 0x1a, 0x0a]);
+    bytes.extend_from_slice(&13u32.to_be_bytes());
+    bytes.extend_from_slice(b"IHDR");
+    bytes.extend_from_slice(&width.to_be_bytes());
+    bytes.extend_from_slice(&height.to_be_bytes());
+    bytes.push(bit_depth);
+    bytes.push(colour_type);
+    bytes.push(0); // compression method
+    bytes.push(0); // filter method
+    bytes.push(interlace);
+    bytes.extend_from_slice(&[0, 0, 0, 0]); // chunk CRC, not read by the header predicate
+    bytes
+}
+
+#[test]
+fn the_admitted_edge_class_is_closed_square_and_bounded() {
+    // The allowed set itself.
+    assert_eq!(
+        media::APPROVED_EDGES,
+        [320, 1024, 2048],
+        "the class is the explicit live-artifact set"
+    );
+    assert_eq!(media::MAX_APPROVED_EDGE, 2048);
+    for edge in media::APPROVED_EDGES {
+        assert!(media::approved_edge(edge));
+        assert_eq!(
+            media::SourceClass::from_edge(edge).map(media::SourceClass::edge),
+            Some(edge)
+        );
+    }
+    // Just outside each admitted edge, plus clearly over the 2048 ceiling. Every one must be
+    // refused from the header, so no decoder allocation is paid for an out-of-class image.
+    let refused = [
+        0u32, 1, 63, 64, 128, 256, 319, 321, 511, 1023, 1025, 1536, 2047, 2049, 4096, 16_384,
+    ];
+    for edge in refused {
+        assert!(
+            !media::approved_edge(edge),
+            "{edge} is not an admitted edge"
+        );
+        assert!(media::SourceClass::from_edge(edge).is_none());
+        match decode_for_upload(
+            &png_header(edge, edge, 8, 2, 0),
+            limits(),
+            &Cancellation::default(),
+        ) {
+            Err(MediaError::UnsupportedContainer) => {}
+            other => panic!("{edge}x{edge} must be refused from the header, got {other:?}"),
+        }
+    }
+    // A rectangle whose two sides are each admitted is not the admitted square class.
+    for (width, height) in [(320, 1024), (1024, 320), (2048, 1024)] {
+        match decode_for_upload(
+            &png_header(width, height, 8, 2, 0),
+            limits(),
+            &Cancellation::default(),
+        ) {
+            Err(MediaError::UnsupportedContainer) => {}
+            other => panic!("{width}x{height} must be refused as non-square, got {other:?}"),
+        }
+    }
+    // The head of the class keeps its original admission checks.
+    for (bit_depth, colour_type, interlace) in [(16, 2, 0), (8, 6, 0), (8, 2, 1)] {
+        assert!(
+            decode_for_upload(
+                &png_header(1024, 1024, bit_depth, colour_type, interlace),
+                limits(),
+                &Cancellation::default()
+            )
+            .is_err(),
+            "bit depth {bit_depth}, colour {colour_type}, interlace {interlace} are out of class"
+        );
+    }
 }
 
 #[test]
@@ -512,6 +607,82 @@ fn a_quarantined_identity_blocks_reuse_and_counts_against_the_resident_limit() {
     }
 }
 
+/// A canonical artifact representation key at `edge` with the given Runtime revision.
+fn artifact_key(edge: u32, revision: u128) -> RepresentationKey {
+    RepresentationKey {
+        source: RepresentationSource::Artifact {
+            server: desktop_protocol::ServerId::new("server-1").expect("server id"),
+            epoch: desktop_protocol::EpochId::new("epoch-1").expect("epoch id"),
+            artifact: desktop_protocol::ArtifactId::new("artifact-a").expect("artifact id"),
+            digest: desktop_protocol::ArtifactDigest::new("sha256:artifact")
+                .expect("artifact digest"),
+            revision: desktop_protocol::Counter::from_u128(revision),
+        },
+        kind: desktop_protocol::RepresentationKind::Original,
+        size: PixelSize::new(edge, edge).expect("size"),
+        orientation: Orientation::Normal,
+        policy: DecodePolicy {
+            decoder: LocalId::new("png-rgb8").expect("decoder id"),
+            colour: LocalId::new("identity-rgb").expect("colour id"),
+            generation: 1,
+        },
+    }
+}
+
+#[test]
+fn a_canonical_artifact_identity_is_admitted_only_under_its_own_revision() {
+    let _guard = heavy();
+    let verified = decode_for_upload(
+        &approved_png(1024, 1024),
+        limits(),
+        &Cancellation::default(),
+    )
+    .expect("an admitted live edge decodes for upload");
+    let pool = UploadPool::new(one_frame_budget());
+    let identity = |revision: u128, source_revision: u64| UploadIdentity {
+        key: artifact_key(1024, revision),
+        source_revision,
+        device_generation: 1,
+        content_digest: verified.content_digest(),
+    };
+    // The media presentation route names a canonical artifact; matching revision and pixels are
+    // enough for this upload boundary, which never re-derives Runtime authorization here.
+    let mut admitted = admit_upload(
+        &verified,
+        identity(3, 3),
+        1,
+        &pool,
+        &Cancellation::default(),
+    )
+    .expect("a canonical artifact identity with a matching revision is admitted");
+    assert_eq!(admitted.bytes(), 1024 * 1024 * 4);
+    assert_eq!(admitted.stride_bytes().expect("stride"), 1024 * 4);
+    admitted.release().expect("release");
+    // A label disagreement is refused before any reservation is taken.
+    match admit_upload(
+        &verified,
+        identity(3, 4),
+        1,
+        &pool,
+        &Cancellation::default(),
+    ) {
+        Err(UploadRefusal::WrongLayout) => {}
+        other => panic!("expected a revision mismatch to be refused, got {other:?}"),
+    }
+    // A canonical revision beyond the upload identity's u64 is not representable.
+    match admit_upload(
+        &verified,
+        identity(u128::from(u64::MAX) + 1, u64::MAX),
+        1,
+        &pool,
+        &Cancellation::default(),
+    ) {
+        Err(UploadRefusal::WrongLayout) => {}
+        other => panic!("expected an unrepresentable revision to be refused, got {other:?}"),
+    }
+    assert_eq!((pool.usage().staging, pool.usage().resident), (0, 0));
+}
+
 #[test]
 fn an_interlaced_png_cannot_obtain_the_class_proof() {
     let _heavy = heavy();
@@ -637,9 +808,9 @@ fn a_staged_admission_releases_normally_but_an_uploading_one_is_quarantined() {
 #[test]
 fn an_out_of_class_size_is_refused_from_the_header() {
     let _heavy = heavy();
-    // 2049×2049 differs from the approved edge by one pixel and must still be refused from the
-    // header, before the decoder expands it. A larger edge would only make the test slower.
-    let bytes = approved_png(2049, 2049);
+    // 2049×2049 differs from the largest approved edge by one pixel and must still be refused from
+    // the header, before the decoder expands it. The header fixture carries no pixel data.
+    let bytes = png_header(2049, 2049, 8, 2, 0);
     match decode_for_upload(&bytes, limits(), &Cancellation::default()) {
         Err(MediaError::UnsupportedContainer) => {}
         other => panic!("expected an early header refusal, got {other:?}"),

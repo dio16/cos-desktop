@@ -1,8 +1,10 @@
 //! MP-IMG3-S1: the upload admission boundary.
 //!
-//! The approved scope is the **2048×2048 static 8-bit RGB PNG class**. This module decides
-//! whether a decoded raster may be handed to a GPU uploader. It performs **no** upload and makes
-//! **no** claim that one works.
+//! The approved scope is the **static 8-bit RGB PNG class at one of the explicit square edges
+//! [`APPROVED_EDGES`]** (320, 1024 and 2048 pixels). The set is closed: no other edge, no
+//! rectangle and nothing above 2048 is admitted, so the class keeps the original 2048×2048
+//! pixel/byte ceiling. This module decides whether a decoded raster may be handed to a GPU
+//! uploader. It performs **no** upload and makes **no** claim that one works.
 //!
 //! Four contracts, each of which the first version got wrong and a review caught:
 //!
@@ -27,11 +29,58 @@ use crate::{
     RepresentationKey, RepresentationSource, decode_raster,
 };
 
-/// The one verified source class this boundary accepts.
+/// The explicit square edges of the admitted static 8-bit RGB PNG class.
+///
+/// 2048 is the largest admitted edge (and keeps the original pixel/byte ceiling); 1024 and 320
+/// are the real live Runtime artifact sizes. The list is closed on purpose: a caller cannot ask
+/// this boundary for "any square up to 2048".
+pub const APPROVED_EDGES: [u32; 3] = [320, 1024, 2048];
+
+/// The largest admitted edge, i.e. the original 2048×2048 pixel bound.
+pub const MAX_APPROVED_EDGE: u32 = 2048;
+
+/// Whether `edge` is one of the explicitly admitted square edges.
+pub const fn approved_edge(edge: u32) -> bool {
+    let mut index = 0;
+    while index < APPROVED_EDGES.len() {
+        if APPROVED_EDGES[index] == edge {
+            return true;
+        }
+        index += 1;
+    }
+    false
+}
+
+/// The verified source class this boundary accepts: a static 8-bit RGB PNG at one admitted edge.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum SourceClass {
+    /// Static 8-bit RGB PNG at 320×320.
+    StillPng8Rgb320,
+    /// Static 8-bit RGB PNG at 1024×1024.
+    StillPng8Rgb1024,
     /// Static 8-bit RGB PNG at 2048×2048.
     StillPng8Rgb2048,
+}
+
+impl SourceClass {
+    /// The square source edge this class proves.
+    pub const fn edge(self) -> u32 {
+        match self {
+            Self::StillPng8Rgb320 => 320,
+            Self::StillPng8Rgb1024 => 1024,
+            Self::StillPng8Rgb2048 => 2048,
+        }
+    }
+
+    /// The class for one admitted edge, or `None` when the edge is outside [`APPROVED_EDGES`].
+    pub const fn from_edge(edge: u32) -> Option<Self> {
+        match edge {
+            320 => Some(Self::StillPng8Rgb320),
+            1024 => Some(Self::StillPng8Rgb1024),
+            2048 => Some(Self::StillPng8Rgb2048),
+            _ => None,
+        }
+    }
 }
 
 /// A decoded raster whose source class was verified at decode time.
@@ -63,17 +112,20 @@ impl VerifiedRaster {
 
     /// Derive a power-of-two mip representation from the original verified RGBA8 pixels.
     ///
-    /// `class` remains proof about the decoded 2048×2048 source, not this derivative; `size`,
-    /// `raster().rgba`, and `content_digest()` describe the returned representation. Pixel values
-    /// are treated as raw RGBA8 samples: this operation makes no ICC or colour-fidelity claim.
-    /// Levels 0 through 4 produce 2048, 1024, 512, 256, and 128 square pixels respectively.
-    /// Every nonzero level uses exact integer area averaging over each source footprint, rounded
-    /// to nearest (ties upward), including alpha. Each level is computed directly from this raster.
+    /// `class` remains proof about the decoded source edge, not this derivative; `size`,
+    /// `raster().rgba`, and `content_digest()` describe the returned representation. Only a
+    /// source raster of the class's own edge may be reduced. Pixel values are treated as raw
+    /// RGBA8 samples: this operation makes no ICC or colour-fidelity claim. Level `n` produces
+    /// `edge >> n` square pixels (`edge` is the class edge: 320, 1024 or 2048); levels 0 through
+    /// 4 are supported and every edge divides exactly by 16. Every nonzero level uses exact
+    /// integer area averaging over each source footprint, rounded to nearest (ties upward),
+    /// including alpha. Each level is computed directly from this raster.
     pub fn mip(&self, level: u8, cancel: &Cancellation) -> Result<VerifiedRaster, MediaError> {
         let shift = u32::from(level);
+        let source_edge = self.class.edge();
         if level > 4
             || self.raster.size
-                != PixelSize::new(APPROVED_EDGE, APPROVED_EDGE)
+                != PixelSize::new(source_edge, source_edge)
                     .map_err(|_| MediaError::InvalidMetadata)?
         {
             return Err(MediaError::InvalidMetadata);
@@ -83,7 +135,7 @@ impl VerifiedRaster {
             return Ok(self.clone());
         }
 
-        let edge = APPROVED_EDGE >> shift;
+        let edge = source_edge >> shift;
         let size = PixelSize::new(edge, edge).map_err(|_| MediaError::InvalidMetadata)?;
         let pixel_count = (edge as usize)
             .checked_mul(edge as usize)
@@ -94,7 +146,7 @@ impl VerifiedRaster {
             .map_err(|_| MediaError::Allocation)?;
         rgba.resize(byte_count, 0);
 
-        let source_edge = APPROVED_EDGE as usize;
+        let source_edge = source_edge as usize;
         let scale = 1usize << shift;
         let area = (scale * scale) as u64;
         for y in 0..edge as usize {
@@ -139,11 +191,11 @@ const PNG_BIT_DEPTH_OFFSET: usize = 24;
 const PNG_COLOUR_TYPE_OFFSET: usize = 25;
 /// Byte offset of the interlace method, one past the colour type.
 const PNG_INTERLACE_OFFSET: usize = 28;
-/// The single approved edge length.
-const APPROVED_EDGE: u32 = 2048;
 
 /// Decode an encoded image **for upload**, producing the class proof only if the source really was
-/// the approved class.
+/// the approved class: a static non-interlaced 8-bit RGB PNG whose width and height are the same
+/// edge and that edge is one of [`APPROVED_EDGES`]. Anything else is refused before the decoder
+/// is allowed to expand it.
 pub fn decode_for_upload(
     bytes: &[u8],
     limits: DecodeLimits,
@@ -165,22 +217,27 @@ pub fn decode_for_upload(
         return Err(MediaError::UnsupportedContainer);
     }
     // Dimensions too: an out-of-class image must be refused before the decoder expands it, not
-    // after paying for a full raster.
+    // after paying for a full raster. The class is square and closed, so one predicate covers
+    // rectangles, just-outside edges and anything above the 2048 ceiling alike.
     let width = u32::from_be_bytes([bytes[16], bytes[17], bytes[18], bytes[19]]);
     let height = u32::from_be_bytes([bytes[20], bytes[21], bytes[22], bytes[23]]);
-    if width != APPROVED_EDGE || height != APPROVED_EDGE {
+    if width != height || !approved_edge(width) {
         return Err(MediaError::UnsupportedContainer);
     }
     let raster = decode_raster(bytes, limits, cancel)?;
-    let approved = raster.format == AcceptedFormat::Png
-        && raster.size == PixelSize::new(2048, 2048).map_err(|_| MediaError::InvalidMetadata)?;
-    if !approved {
+    // The decoder is checked again so a container that declares the admitted geometry but
+    // produces a different raster cannot acquire the class proof.
+    let Some(class) = SourceClass::from_edge(raster.size.width()).filter(|class| {
+        raster.format == AcceptedFormat::Png
+            && raster.size.width() == raster.size.height()
+            && class.edge() == width
+    }) else {
         return Err(MediaError::UnsupportedContainer);
-    }
+    };
     let content_digest = digest_of(&raster.rgba);
     Ok(VerifiedRaster {
         raster: Arc::new(raster),
-        class: SourceClass::StillPng8Rgb2048,
+        class,
         content_digest,
     })
 }
@@ -623,15 +680,20 @@ pub fn admit_upload(
     })
 }
 
-/// The revision carried by a representation key, when this boundary can verify it.
+/// The revision carried by a representation key that the upload identity must agree with.
 ///
-/// Only a local source carries a revision that a decoded raster can be checked against; an
-/// artifact source has no equivalent here, so admitting one would mean trusting a value nobody
-/// verified.
+/// A local source carries a plain `u64` revision. A canonical artifact key carries the Runtime
+/// revision as a [`desktop_protocol::Counter`]; it maps to the upload identity only when it is
+/// exactly representable as that `u64`. Whether the Runtime authorized that revision is decided
+/// before these bytes reach this boundary (descriptor authorization, remote admission verified by
+/// digest/length/type, and the app-core read context), not re-derived here; this check only keeps
+/// the identity self-consistent, so one revision's key cannot be admitted under another label.
 fn revision_of(key: &RepresentationKey) -> Option<u64> {
     match &key.source {
         RepresentationSource::Local { revision, .. } => Some(*revision),
-        RepresentationSource::Artifact { .. } => None,
+        RepresentationSource::Artifact { revision, .. } => revision
+            .to_u128()
+            .and_then(|value| u64::try_from(value).ok()),
     }
 }
 
