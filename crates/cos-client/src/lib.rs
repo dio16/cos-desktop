@@ -13,6 +13,7 @@
 pub mod client;
 pub mod error;
 pub mod fixture;
+pub mod history;
 pub mod media;
 pub mod mock;
 pub mod projection;
@@ -36,6 +37,12 @@ pub use fixture::{
     FixtureReadAuthorization, FixtureReceipt, FixtureReceiptOutcome, FixtureReceiptRead,
     FixtureRuntime, FixtureScenario, FixtureState, FixtureStep, ObservationMode, SnapshotBundle,
     Trigger, parse_trigger,
+};
+pub use history::{
+    HISTORY_LIMIT_DEFAULT, HISTORY_LIMIT_MAX, HISTORY_LIMIT_MIN, HISTORY_ROUTE_SUFFIX,
+    HistoryCursor, HistoryDocument, HistoryFetchError, HistoryItem, HistoryQuery, HistoryServer,
+    HistoryStamp, MAX_HISTORY_CURSOR_BYTES, MAX_HISTORY_ITEMS, TASK_READ_ROUTE_PREFIX,
+    history_path,
 };
 pub use mock::{MockControl, MockCosClient, MockTransport};
 pub use projection::{ProjectionIntegrityError, ProjectionKey, ProjectionState};

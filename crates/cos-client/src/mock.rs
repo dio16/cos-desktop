@@ -2034,6 +2034,15 @@ impl DesktopClient for MockCosClient {
         ))
     }
 
+    fn fetch_history(
+        &mut self,
+        _request: &crate::HistoryQuery,
+    ) -> Result<crate::HistoryDocument, crate::HistoryFetchError> {
+        // Fixture mode is explicit: there is no Runtime history to read, so the
+        // request is refused instead of synthesizing a page.
+        Err(crate::HistoryFetchError::Unsupported)
+    }
+
     fn create_task(
         &mut self,
         envelope: desktop_protocol::CommandEnvelope,

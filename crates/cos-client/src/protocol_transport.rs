@@ -28,10 +28,11 @@
 //!    current. `"transaction": null` publishes nothing, and a delta transaction
 //!    is forwarded as `DELTA_TRANSACTION`.
 //!
-//! The Desktop credential is presented on exactly the five protocol routes
-//! (observation open, fresh snapshot read, delta read, command submit and
-//! receipt lookup) because reads and commands are bound to the issuing
-//! principal; the handshake route and every other path never see it.
+//! The Desktop credential is presented on exactly the authenticated Desktop
+//! routes (observation open, fresh snapshot read, delta read, command submit,
+//! receipt lookup, catalog and the task-scoped history read) because reads and
+//! commands are bound to the issuing principal; the handshake route and every
+//! other path never see it.
 //!
 //! `409 RESYNC_REQUIRED` is not an I/O failure: the Runtime's closed reason is
 //! published as a `RESYNC_REQUIRED` frame and the client's own bounded recovery
@@ -90,6 +91,9 @@ use desktop_protocol::{
 };
 use serde::{Deserialize, Serialize};
 
+use crate::history::{
+    HistoryDocument, HistoryFetchError, HistoryQuery, history_path, is_task_read_route,
+};
 use crate::read::ObservationControl;
 use crate::transport::{Transport, TransportError};
 
@@ -322,7 +326,7 @@ pub fn is_protocol_route(path: &str) -> bool {
             | COMMANDS_PATH
             | COMMANDS_LOOKUP_PATH
             | CATALOG_PATH
-    )
+    ) || is_task_read_route(route)
 }
 
 /// Append the credential to a protocol request's headers, when one is configured.
@@ -507,6 +511,19 @@ impl<E: ProtocolHttp + 'static> ProtocolTransport<E> {
         fetch_catalog_with(&self.shared, &self.config)
     }
 
+    /// Fetch one bounded authenticated task history page.
+    ///
+    /// The route is bound to the current observation read context, so the
+    /// transport resolves that context when the request is enqueued. Without a
+    /// live context the read is refused as unauthorized instead of being
+    /// presented unauthenticated.
+    pub fn fetch_history(
+        &mut self,
+        request: &HistoryQuery,
+    ) -> Result<HistoryDocument, HistoryFetchError> {
+        fetch_history_with(&self.shared, &self.config, request)
+    }
+
     /// Current stream generation (diagnostics/tests only).
     pub fn generation(&self) -> u64 {
         lock(&self.shared).generation
@@ -534,6 +551,13 @@ impl<E: ProtocolHttp> Transport for ProtocolTransport<E> {
 
     fn fetch_catalog(&mut self) -> Result<CatalogDocument, TransportError> {
         fetch_catalog_with(&self.shared, &self.config)
+    }
+
+    fn fetch_history(
+        &mut self,
+        request: &HistoryQuery,
+    ) -> Result<HistoryDocument, HistoryFetchError> {
+        fetch_history_with(&self.shared, &self.config, request)
     }
 
     fn authenticated_server(&self) -> Option<ServerId> {
@@ -618,6 +642,7 @@ impl<E: ProtocolHttp> Transport for ProtocolTransport<E> {
             state.server = None;
             state.refresh = None;
             state.catalog_reply = None;
+            state.history_reply = None;
         }
         self.shared.1.notify_all();
     }
@@ -643,6 +668,8 @@ struct Shared {
     refresh: Option<RefreshSnapshot>,
     /// Reply slot for one catalog fetch; the worker fills it directly.
     catalog_reply: Option<Result<CatalogDocument, TransportError>>,
+    /// Reply slot for one history fetch; the worker fills it directly.
+    history_reply: Option<Result<HistoryDocument, HistoryFetchError>>,
     limits: Limits,
 }
 
@@ -662,6 +689,7 @@ impl Shared {
             control: None,
             refresh: None,
             catalog_reply: None,
+            history_reply: None,
             limits,
         }
     }
@@ -686,6 +714,11 @@ enum Job {
     Catalog {
         generation: u64,
     },
+    History {
+        generation: u64,
+        request: Box<HistoryQuery>,
+        context: ReadContextId,
+    },
 }
 
 impl Job {
@@ -695,7 +728,8 @@ impl Job {
             | Self::Open { generation, .. }
             | Self::Command { generation, .. }
             | Self::Lookup { generation, .. }
-            | Self::Catalog { generation } => *generation,
+            | Self::Catalog { generation }
+            | Self::History { generation, .. } => *generation,
         }
     }
 }
@@ -730,6 +764,10 @@ enum WorkerAction {
         request: Box<AuthorizedReceiptLookup>,
     },
     Catalog,
+    History {
+        request: Box<HistoryQuery>,
+        context: ReadContextId,
+    },
     Poll(PollSession),
 }
 
@@ -881,6 +919,57 @@ fn fetch_catalog_with(
     }
 }
 
+/// Blocking history fetch over the worker thread (bound to the live read
+/// context, which the caller never supplies and cannot fabricate).
+fn fetch_history_with(
+    shared: &SharedState,
+    config: &ProtocolTransportConfig,
+    request: &HistoryQuery,
+) -> Result<HistoryDocument, HistoryFetchError> {
+    let deadline = Instant::now() + Duration::from_secs(30);
+    {
+        let mut state = lock(shared);
+        if state.closed {
+            return Err(HistoryFetchError::Unavailable);
+        }
+        // The route is context-bound: without a live grant the Runtime would
+        // answer 401, so the read is refused locally with that same class.
+        let Some(context) = state.poll.as_ref().map(|poll| poll.context.clone()) else {
+            return Err(HistoryFetchError::Unauthorized);
+        };
+        state.history_reply = None;
+        let generation = state.generation;
+        enqueue_job(
+            &mut state,
+            Job::History {
+                generation,
+                request: Box::new(request.clone()),
+                context,
+            },
+            config.max_pending_requests,
+        )
+        .map_err(|_| HistoryFetchError::Unavailable)?;
+    }
+    shared.1.notify_all();
+    loop {
+        let mut state = lock(shared);
+        if let Some(outcome) = state.history_reply.take() {
+            return outcome;
+        }
+        if state.closed {
+            return Err(HistoryFetchError::Unavailable);
+        }
+        let remaining = deadline.saturating_duration_since(Instant::now());
+        if remaining.is_zero() {
+            return Err(HistoryFetchError::Unavailable);
+        }
+        let (_state, _timeout) = shared
+            .1
+            .wait_timeout(state, remaining.min(Duration::from_millis(50)))
+            .unwrap_or_else(PoisonError::into_inner);
+    }
+}
+
 fn run_worker<E: ProtocolHttp>(
     mut executor: E,
     config: ProtocolTransportConfig,
@@ -919,6 +1008,11 @@ fn run_worker<E: ProtocolHttp>(
                             request,
                         },
                         Job::Catalog { .. } => WorkerAction::Catalog,
+                        Job::History {
+                            generation: _,
+                            request,
+                            context,
+                        } => WorkerAction::History { request, context },
                     };
                 }
                 if let Some(poll) = state.poll.clone() {
@@ -942,6 +1036,25 @@ fn run_worker<E: ProtocolHttp>(
                     continue;
                 }
                 state.catalog_reply = Some(outcome);
+                shared.1.notify_all();
+            }
+            WorkerAction::History { request, context } => {
+                // A history read is bound to the observation read context that
+                // authorized it. A stream reset after the request was enqueued
+                // invalidates that binding: the read is answered as unauthorized
+                // instead of being presented under a context the Runtime no
+                // longer holds.
+                let generation = lock(&shared).generation;
+                let outcome = get_history(&mut executor, &config, &request, &context);
+                let mut state = lock(&shared);
+                if state.closed {
+                    continue;
+                }
+                if generation != state.generation {
+                    state.history_reply = Some(Err(HistoryFetchError::Unauthorized));
+                } else {
+                    state.history_reply = Some(outcome);
+                }
                 shared.1.notify_all();
             }
             WorkerAction::Hello { generation } => {
@@ -1553,6 +1666,54 @@ fn get_catalog<E: ProtocolHttp>(
             "unsupported catalog document schema version {}",
             document.schema_version
         )));
+    }
+    Ok(document)
+}
+
+/// One authenticated task history page over the plain-loopback transport.
+///
+/// The request carries the Desktop credential and the live `X-Cos-Context`
+/// header; the answer is bounded before parsing, matched to the requested task
+/// and read context, and validated against the closed keyset contract. Every
+/// failure maps to a value-free category and no response body is echoed.
+fn get_history<E: ProtocolHttp>(
+    executor: &mut E,
+    config: &ProtocolTransportConfig,
+    request: &HistoryQuery,
+    context: &ReadContextId,
+) -> Result<HistoryDocument, HistoryFetchError> {
+    let path = history_path(request);
+    let mut headers = vec![
+        ("accept".to_owned(), "application/json".to_owned()),
+        ("x-cos-context".to_owned(), context.as_str().to_owned()),
+    ];
+    authorize(config, &mut headers, &path);
+    let response = executor
+        .execute(HttpRequest {
+            method: HttpMethod::Get,
+            path,
+            headers,
+            body: Vec::new(),
+        })
+        .map_err(|_| HistoryFetchError::Unavailable)?;
+    if response.body.len() as u64 > config.max_response_bytes {
+        return Err(HistoryFetchError::Oversized);
+    }
+    if !is_success(response.status) {
+        return Err(HistoryFetchError::from_http(
+            response.status,
+            error_code(&response).as_deref(),
+        ));
+    }
+    let document: HistoryDocument =
+        serde_json::from_slice(&response.body).map_err(|_| HistoryFetchError::Malformed)?;
+    document.validate()?;
+    if document.task_ref != request.task_ref().as_str()
+        || document.stamp.context_id != context.as_str()
+    {
+        // A page for another task or read binding is never accepted as this
+        // request's answer.
+        return Err(HistoryFetchError::Malformed);
     }
     Ok(document)
 }

@@ -24,6 +24,7 @@ use desktop_protocol::{
 };
 
 use crate::error::ClientError;
+use crate::history::{HistoryDocument, HistoryFetchError, HistoryQuery};
 use crate::projection::{ProjectionKey, ProjectionState};
 use crate::protocol_transport::CatalogDocument;
 use crate::read::{
@@ -306,6 +307,16 @@ pub trait DesktopClient: Send {
     fn stop_task(&mut self, task_id: &TaskId) -> Result<CommandId, ClientError>;
     /// Fetch the authenticated Desktop catalog document.
     fn fetch_catalog(&mut self) -> Result<CatalogDocument, ClientError>;
+    /// Fetch one bounded authenticated task history page.
+    ///
+    /// The default refuses explicitly: a transport that has no authenticated
+    /// history read never returns a synthesized page.
+    fn fetch_history(
+        &mut self,
+        _request: &HistoryQuery,
+    ) -> Result<HistoryDocument, HistoryFetchError> {
+        Err(HistoryFetchError::Unsupported)
+    }
     /// Submit one create-task command through the command path.
     fn create_task(&mut self, envelope: CommandEnvelope) -> Result<CommandId, ClientError>;
     /// Bounded background progress and exact next deadline.
@@ -834,6 +845,19 @@ impl<T: TransportTrait> CosClient<T> {
             }
             other => ClientError::Transport(other.to_string()),
         })
+    }
+
+    /// Fetch one bounded authenticated task history page.
+    ///
+    /// The page is a keyset read on the current observation context; the
+    /// transport must support the authenticated task history route. A transport
+    /// without it refuses explicitly (never synthesized history), and the page
+    /// is validated by the transport before it reaches a caller.
+    pub fn fetch_history(
+        &mut self,
+        request: &HistoryQuery,
+    ) -> Result<HistoryDocument, HistoryFetchError> {
+        self.transport.fetch_history(request)
     }
 
     /// Submit one create-task command through the existing command path.
@@ -2713,6 +2737,13 @@ impl<T: TransportTrait + Send> DesktopClient for CosClient<T> {
 
     fn fetch_catalog(&mut self) -> Result<CatalogDocument, ClientError> {
         CosClient::fetch_catalog(self)
+    }
+
+    fn fetch_history(
+        &mut self,
+        request: &HistoryQuery,
+    ) -> Result<HistoryDocument, HistoryFetchError> {
+        CosClient::fetch_history(self, request)
     }
 
     fn create_task(&mut self, envelope: CommandEnvelope) -> Result<CommandId, ClientError> {

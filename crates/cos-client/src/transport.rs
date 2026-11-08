@@ -41,6 +41,17 @@ pub trait Transport: Send {
         ))
     }
 
+    /// Fetch one bounded authenticated task history page.
+    ///
+    /// A transport without an authenticated history read refuses explicitly;
+    /// fixture/scripted transports never synthesize a page.
+    fn fetch_history(
+        &mut self,
+        _request: &crate::history::HistoryQuery,
+    ) -> Result<crate::history::HistoryDocument, crate::history::HistoryFetchError> {
+        Err(crate::history::HistoryFetchError::Unsupported)
+    }
+
     /// Send one encoded frame.
     ///
     /// The call must enqueue bounded output and return without waiting on network
