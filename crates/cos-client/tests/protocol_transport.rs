@@ -1891,3 +1891,40 @@ fn create_task_command_reaches_the_runtime() {
     assert_eq!(body["payload"]["kind"], "CREATE_TASK");
     assert_eq!(body["payload"]["objective_text"], "observe the transport");
 }
+
+/// (c8) A FORBIDDEN command refusal withholds the session, not the command.
+#[test]
+fn forbidden_command_refusal_withholds_the_session() {
+    let (mut client, state) = live_authorized_client();
+    state.lock().expect("stub state").command_error =
+        Some((403, br#"{"code":"FORBIDDEN"}"#.to_vec()));
+    client
+        .stop_task(&TaskId::new("task/Task-184").expect("task id"))
+        .expect("command queued");
+    drive_until(&mut client, |client| {
+        matches!(
+            client.publication_access(),
+            PublicationAccess::Withheld { .. }
+        )
+    });
+    assert!(matches!(
+        client.connection(),
+        ConnectionState::Unauthorized { .. }
+    ));
+}
+
+/// (c9) UNAUTHORIZED_CONTEXT is classified as the session-wide Unauthorized class.
+#[test]
+fn unauthorized_context_is_classified_as_session_unauthorized() {
+    let (mut client, state) = live_authorized_client();
+    state.lock().expect("stub state").command_error = Some((
+        401,
+        br#"{"code":"UNAUTHORIZED_CONTEXT","detail":"context expired"}"#.to_vec(),
+    ));
+    client
+        .stop_task(&TaskId::new("task/Task-184").expect("task id"))
+        .expect("command queued");
+    drive_until(&mut client, |client| {
+        matches!(client.connection(), ConnectionState::Unauthorized { .. })
+    });
+}
