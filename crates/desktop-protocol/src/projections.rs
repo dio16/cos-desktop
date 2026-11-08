@@ -533,6 +533,11 @@ pub struct MediaDescriptor {
     pub descriptor_id: DescriptorId,
     /// Artifact the descriptor describes.
     pub artifact_ref: ArtifactId,
+    /// Canonical artifact digest the descriptor was issued for, when the server
+    /// states it. A client that needs content identity must not infer it from the
+    /// descriptor identity or from a representation digest.
+    #[serde(default)]
+    pub artifact_digest: Option<ArtifactDigest>,
     /// Representation kind.
     pub representation: RepresentationKind,
     /// Representation version.

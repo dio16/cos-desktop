@@ -11,6 +11,7 @@ mod cache;
 mod decode;
 mod key;
 mod raster;
+mod remote;
 
 pub use cache::{
     Acquisition, Cancellation, EncodedMedia, ExpectedDigest, LocalLimits, MediaCache, Sha256Digest,
@@ -25,6 +26,7 @@ pub use key::{
     DecodePolicy, LocalId, LocalProvenance, Orientation, PixelSize, RepresentationKey,
     RepresentationSource,
 };
+pub use remote::{AdmittedRemote, CacheScope, RemoteExpectation, admit_remote, cache_key};
 mod upload;
 
 pub use upload::{
