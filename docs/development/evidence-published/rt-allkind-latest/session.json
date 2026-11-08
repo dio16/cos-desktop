@@ -99,15 +99,31 @@
   "live_harness": {
     "source": "apps/desktop/devtools/runtime_integration/run_integration.py",
     "source_sha256": "84339de1247594ec7271f00692d4d3e0136f6a6d93fd0e02f2ca443098ff7918",
-    "patched_copy_sha256": "751606a6147695406c3762b120bcebe80d93db56dc9c7306d6caab873cfd9cdc",
-    "patch": "scratch copy only: DESKTOP_ROOT pinned to C:/dev/cos-desktop, PROBE pinned to the repo probe_window.ps1, EVIDENCE_DIR redirected to target/rt-allkind-tmp/harness-evidence; task-16 evidence untouched",
-    "command": "python target/rt-allkind-tmp/run_integration_scratch.py --runs 2 --no-build",
+    "patched_copy_sha256": "249abab2828dcf3f7ca9625cbce3d45b93a5c60f833c181ad4c029bbdebda1fd",
+    "patch": "scratch copy only: DESKTOP_ROOT pinned to a clean detached worktree at 5d3b464, PROBE pinned inside that worktree, EVIDENCE_DIR redirected to target/rt-allkind-tmp/harness-evidence-srcbuild; task-16 evidence untouched",
+    "command": "python target/rt-allkind-tmp/run_integration_head.py --runs 2",
+    "build": {
+      "performed": true,
+      "attempts": [
+        {
+          "attempt": 1,
+          "exit": 0,
+          "ok": true,
+          "source_stable": true,
+          "tail": "warning: linker stdout: LINK : warning LNK4044: オプション '/fuse-ld=lld' は無効です。無視されます。\n  |\n  = note: `#[warn(linker_messages)]` on by default\n\nwarning: `cos-desktop` (bin \"cos-desktop\") generated 1 warning\n    Finished `release` profile [optimized] target(s) in 1.68s\n"
+        }
+      ],
+      "source_stable": true,
+      "clean_worktree": "git worktree add --detach target/rt-allkind-head 5d3b464 (removed after the run)",
+      "shared_tree_error": "the first attempt in the shared worktree failed with: error: cannot update the lock file C:\\dev\\cos-desktop\\Cargo.lock because --locked was passed to prevent this (another lane's uncommitted crates/app-core/Cargo.toml). A clean detached worktree at 5d3b464 was used instead.",
+      "prebuild": "cargo build --locked --release -p cos-desktop --bin cos-desktop (5m32s; needed because the harness preflight requires an existing binary before its own build)",
+      "harness_build": "cargo build --locked --release -p cos-desktop --bin cos-desktop (1.68s cached; exit 0; source stable)"
+    },
     "binary": {
-      "path": "target/release/cos-desktop.exe",
-      "bytes": 19278336,
-      "sha256": "sha256:c4b75e65e4c7a2276fee8632887a5fb12045fe0c688eca399f1b98a0dcfbe6ab",
-      "built_at": "2026-11-08 13:49 local",
-      "built_from_note": "pre-existing release binary; the harness could not rebuild because another lane's untracked NAV2 brief_surface.rs has a non-exhaustive ReceiptState match (not this task's file), so --no-build was used"
+      "path": "target/rt-allkind-head/target/release/cos-desktop.exe",
+      "bytes": 19669504,
+      "sha256": "sha256:ee3c9cb60dc12ed0fc055ff389e891022755fda7bb6c16ee78e25a0a20a39488",
+      "built_from_head": "5d3b4642d85b3fed7d5f3233e64ac4447192a146"
     },
     "runs": 2,
     "scenarios": {
@@ -118,15 +134,27 @@
       "relaunch_recovery": "PASS"
     },
     "deterministic": true,
-    "findings": [],
+    "differences": [],
+    "findings": [
+      {
+        "id": "RT-INT-05",
+        "severity": "ACTIONABLE",
+        "status": "OBSERVED_ONCE_PRE_SETTLE",
+        "statement": "Before the 3 s close settle existed, one WM_CLOSE issued during the post-restart observation retry backoff exited 0 but printed 'observation shutdown NOT confirmed within the exit budget' and 'preferences save NOT confirmed within the exit budget'. The settle is harness pacing only; this bounded-close limitation is a product observation for the wave-2 lanes, not a passed scenario.",
+        "observed_in": "pre-settle harness run",
+        "runs": []
+      }
+    ],
     "printwindow_sha256": {
-      "connected.png": "68a8669485f7c6ce981fc29214cf369a8198da30f9ba5411719efe0186c0d80d",
-      "recovered.png": "32ed2292fa5995a7fa3d144408eec0382a6f0b355811ea42c88ab19b0bdddec8",
-      "restart-withheld.png": "8f988ebfac7b2a5171ce808a24aa6187a5325ecea8371ea56fb541da4fac971a",
-      "withheld.png": "8f988ebfac7b2a5171ce808a24aa6187a5325ecea8371ea56fb541da4fac971a"
+      "connected.png": "951897bab1bfec6df5ead81c13be02fd921d62251dc276b64fce4941e3071077",
+      "recovered.png": "951897bab1bfec6df5ead81c13be02fd921d62251dc276b64fce4941e3071077",
+      "restart-withheld.png": "754181c375ac4a3b62c3de41829f1f2ef1e053e5706deda5be3d763464a11367",
+      "withheld.png": "754181c375ac4a3b62c3de41829f1f2ef1e053e5706deda5be3d763464a11367"
     },
     "uia_excerpts": [
+      "反復回数: 第0回",
       "成果物の利用状態: 取得可能（AVAILABLE）（1件）",
+      "新しいタスクを作成",
       "作業領域：成果物",
       "成果物",
       "現在の版では、成果物の画像を表示できません。候補の説明情報のみを表示しています。",
@@ -142,14 +170,15 @@
   },
   "native_surfaces": {
     "artifacts": "PASS: UIA shows 成果物の利用状態: 取得可能（AVAILABLE）（1件）, 作業領域：成果物, 成果物 Ctrl+1 with real task data",
-    "candidates": "NOT_MEASURED: the candidate pane is present but reports 候補は表示されていません / 候補は選択されていません; the Runtime capture has no best_candidate_ref (0) and the harness performs no selection input",
+    "brief_entry": "PASS: the entry point label 新しいタスクを作成 is visible in the connected window; no submission was performed",
+    "candidates": "NOT_MEASURED: the candidate pane is present but reports 候補は表示されていません / 候補は選択されていません; the Runtime capture has no best_candidate_ref (0) and the harness performs no selection input (the iteration candidate list surface is visible)",
     "flow": "NOT_MEASURED: the flow surface is not reached by the harness scenario and no navigation input is performed"
   },
   "limits": [
     "UIA exposes automation names only; no focus/screen-reader/IME/High Contrast/DPI claim",
     "one host (Windows 11, 96 DPI), loopback Runtime, fixture-free Desktop",
-    "the release binary predates the current HEAD because NAV2's in-flight brief_surface.rs does not compile; the harness used --no-build and recorded its hashes",
+    "the source-built binary is from a clean detached worktree at 5d3b464 because the shared worktree's uncommitted crates/app-core/Cargo.toml breaks --locked; the worktree was removed after the run",
     "candidate selection/display and flow-surface display are NOT_MEASURED, not claimed; the all-kind projections are proven accepted and reference-closed by the cos-client tests",
-    "PrintWindow captures were not interpreted as visual approval (the harness reports printed=false as a bounded limitation)"
+    "PrintWindow captures were not interpreted as visual approval (the harness reports printed=false as a bounded limitation); finding RT-INT-05 is a pre-settle bounded-close observation, not a passed scenario"
   ]
 }
