@@ -12,8 +12,9 @@ pub mod support_report;
 
 pub use cos_client::SnapshotHandle;
 pub use cos_client::{
-    Catalog, CatalogDocument, CatalogGraphRef, CatalogParameter, CatalogParameterBounds,
-    CatalogParameterChoice, CatalogRecipe, CatalogRecipeRef, CatalogServer,
+    Catalog, CatalogDocument, CatalogExecutionLimits, CatalogGraphRef, CatalogInputLimits,
+    CatalogParameter, CatalogParameterBounds, CatalogParameterChoice, CatalogParameterValue,
+    CatalogRecipe, CatalogRecipeRef, CatalogServer,
 };
 pub use crash_report::{
     CRASH_REPORT_DIR, CrashCategory, CrashReportInput, CrashReportMeta, CrashReportStore,

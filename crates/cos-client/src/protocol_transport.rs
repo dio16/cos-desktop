@@ -151,6 +151,40 @@ pub struct Catalog {
     pub recipes: Vec<CatalogRecipe>,
 }
 
+/// One Advanced control value carried by the catalog.
+///
+/// The Runtime control values are string, integer or boolean; an unknown JSON
+/// value is a parse refusal rather than a silently coerced value.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum CatalogParameterValue {
+    /// Text (also the canonical decimal text for a decimal control).
+    Text(String),
+    /// Signed integer.
+    Integer(i64),
+    /// Boolean.
+    Boolean(bool),
+}
+
+/// Runtime input limits for one recipe.
+///
+/// The Runtime document may carry more keys; only the image bound is part of
+/// the Desktop contract and unknown keys are ignored.
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct CatalogInputLimits {
+    /// Maximum reference images accepted by the recipe.
+    pub max_images: Option<u32>,
+}
+
+/// Runtime execution limits for one recipe.
+///
+/// The Desktop does not consume these values yet; the closed empty projection
+/// keeps the wire parse bounded without inventing a second execution schema.
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct CatalogExecutionLimits {}
+
 /// One catalog recipe option.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -162,11 +196,11 @@ pub struct CatalogRecipe {
     /// Human description.
     pub description: String,
     /// Runtime-defined input limits.
-    pub input_limits: serde_json::Value,
+    pub input_limits: CatalogInputLimits,
     /// Whether reference images are accepted.
     pub accepts_image_references: bool,
     /// Runtime-defined execution limits.
-    pub execution_limits: serde_json::Value,
+    pub execution_limits: CatalogExecutionLimits,
     /// Read-only constraint summary.
     pub constraint_summary: String,
     /// Advanced controls (editable flag per control).
@@ -219,7 +253,7 @@ pub struct CatalogParameter {
     #[serde(rename = "type")]
     pub kind: String,
     /// Default value (string, integer or boolean).
-    pub value: serde_json::Value,
+    pub value: CatalogParameterValue,
     /// Numeric/length bounds, when any.
     #[serde(default)]
     pub bounds: Option<CatalogParameterBounds>,
@@ -2082,6 +2116,9 @@ mod credential_route_tests {
         let recipe = &document.catalog.recipes[0];
         assert_eq!(recipe.recipe_ref.graph_ref.graph_version, 7);
         assert_eq!(recipe.parameters[0].kind, "integer");
-        assert_eq!(recipe.parameters[0].value, serde_json::json!(7));
+        assert_eq!(
+            recipe.parameters[0].value,
+            super::CatalogParameterValue::Integer(7)
+        );
     }
 }

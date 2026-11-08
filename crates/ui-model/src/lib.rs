@@ -1,6 +1,7 @@
 //! Window-local interactions and display text. Read-only Runtime projections
 //! arrive as complete publications from app-core; this crate never calls the client.
 
+pub mod brief;
 pub mod inspector;
 pub mod intervention;
 pub mod palette;
