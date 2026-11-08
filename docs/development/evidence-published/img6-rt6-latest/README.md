@@ -56,3 +56,13 @@ the DB copy is read only and only existing artifacts are fetched.
 - PREVIEW/THUMBNAIL/METADATA byte routes, EXIF/orientation, a real handle-TTL
   expiry or Runtime-instance-change 410, GPU residency/Present, screen
   reader/IME/DPI and product/UX acceptance are outside this run.
+
+## Follow-up: the 1024×1024 artifact is displayed (2026-11-09)
+
+[`follow-up-1024/`](follow-up-1024/README.md) repeats this isolated run on the
+expanded admitted class (`media::APPROVED_EDGES = [320, 1024, 2048]`). It
+records the same artifact admitted, digest-verified and decoded, the
+presentation request built, and the native surface showing the picture with
+`メディア画像（記述子のダイジェスト検証済み）: 低解像度プレビュー。…` plus a
+screenshot whose media region contains the image. The stage-3 run above is
+unchanged history: at that code tip the 2048-only pin was the honest outcome.

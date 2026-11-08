@@ -1,0 +1,20 @@
+{
+  "descriptor_id": "descriptor-887a71d86171a806a0372446f332ef74",
+  "artifact_ref": "art-v1-0d346285-c0ec-47fd-872e-428cbc467bab",
+  "artifact_digest": "sha256:59856b19090e3bd1e7afde891438552d114f0915079955b03a41aa12b3117957",
+  "representation": "ORIGINAL",
+  "representation_version": 1,
+  "media_type": "image/png",
+  "byte_length": 1247461,
+  "width": 1024,
+  "height": 1024,
+  "availability": "AVAILABLE",
+  "verification": {
+    "state": "VERIFIED",
+    "algorithm": "sha256",
+    "expected_digest": "59856b19090e3bd1e7afde891438552d114f0915079955b03a41aa12b3117957"
+  },
+  "server_identity": "cos-runtime-orchestrator",
+  "audience": "desktop:b3a34a90b1a2518f6841bee4ddddbfaf",
+  "expires_at_unix_ms": 1794153300493
+}

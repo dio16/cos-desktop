@@ -1,0 +1,3 @@
+observation shutdown confirmed
+preferences save confirmed
+Runtime credential revoked on explicit teardown

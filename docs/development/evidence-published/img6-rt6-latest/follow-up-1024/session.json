@@ -1,0 +1,269 @@
+{
+  "label": "geom1024",
+  "started_at": "2026-11-09T00:49:56+0900",
+  "finished_at": "2026-11-09T00:50:08+0900",
+  "verdict": "PASS",
+  "failures": [],
+  "source": {
+    "db_sha256": "sha256:f87711008a546c31caf75ed6d24c3a5c95b1d824c8b43868f13e1e852bfb3e3d",
+    "db_bytes": 11493376,
+    "cas_copy_files": 73,
+    "cas_copy_bytes": 53340103,
+    "cas_source_sha256_marker": "per-blob sha256 verified by the live executor",
+    "desktop_binary_sha256": "sha256:29ee307fa509fec8bc05e156f21381b578b529c50f668d1e0368010f6fd14ff6",
+    "runtime_python": "C:\\AI\\orchestrator\\.venv\\Scripts\\python.exe",
+    "desktop_git": "4ef265b7a0c5ed9e45bced82dd04a0a7145f7a83",
+    "candidate_count": 72
+  },
+  "runtime": {
+    "pid": 36912,
+    "server_identity": "cos-runtime-orchestrator",
+    "server_build": "orchestrator-runtime/0.1.0",
+    "epoch": "756ea5fe3bc44706954006598ab84bf2",
+    "protocol": {
+      "major": 2,
+      "minor": 0
+    },
+    "schema": {
+      "major": 2,
+      "minor": 0
+    },
+    "stop": {
+      "pid": 36912,
+      "clean": true,
+      "exit": 1
+    }
+  },
+  "credentials": {
+    "desktop_principal": "desktop:b3a34a90b1a2518f6841bee4ddddbfaf",
+    "other_principal": "desktop:b130ee454d141b3e1229d1ef6b7ae7ab",
+    "scopes": [
+      "read:observe",
+      "desktop:command"
+    ],
+    "expires_in": 43200,
+    "token_recorded": false
+  },
+  "observation": {
+    "scope_id": "scope-c9c83fd293f1458699b7bcb301ed84bd",
+    "read_revision": "1",
+    "server_id": "cos-runtime-orchestrator",
+    "epoch": "756ea5fe3bc44706954006598ab84bf2",
+    "context_recorded": false,
+    "task_count": 39,
+    "expected_task_ref": "task-00eeff7805964e1f835534b81e57065b",
+    "expected_title": "北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。"
+  },
+  "artifact": {
+    "artifact_ref": "art-v1-0d346285-c0ec-47fd-872e-428cbc467bab",
+    "digest": "sha256:59856b19090e3bd1e7afde891438552d114f0915079955b03a41aa12b3117957",
+    "db_media_type": "image/png",
+    "db_length": 1247461,
+    "probed_candidates": 3,
+    "probe_rejections_sample": [
+      {
+        "artifact_ref": "art-v1-03f8a167-d86c-4bfe-814d-c80aec908d7a",
+        "status": 403
+      },
+      {
+        "artifact_ref": "art-v1-0a494ae6-f3fd-4b5f-a030-63cdd813fec8",
+        "status": 403
+      }
+    ],
+    "descriptor_http_status": 200,
+    "access_handle_recorded": false,
+    "presentation_outcome": "request"
+  },
+  "executor_live": {
+    "exit": 0,
+    "produced_evidence": true,
+    "command": "cargo test --locked -p cos-desktop --bin cos-desktop media_executor::tests::live_media_evidence -- --ignored --nocapture"
+  },
+  "native": {
+    "pid": 44660,
+    "window": {
+      "found": true,
+      "title": "COS Desktop",
+      "width": 1296,
+      "height": 839
+    },
+    "connected_uia_contains_title": true,
+    "connected_uia_contains_surface_statement": true,
+    "dock_candidate_names": 8,
+    "invoked_name_prefix": "task-00eeff7805964e1f835534b81e57065b — 第0回 — C1 キーボード操作対象 正式採用（実行基盤から通知）",
+    "invoke": {
+      "invoked": true,
+      "pattern": "invoke",
+      "patterns_tried": [
+        "invoke"
+      ],
+      "control_type": "ControlType.Button",
+      "error": null
+    },
+    "status_uia_elements": 65,
+    "media_status_present": true,
+    "media_status_excerpt": "メディア画像（記述子のダイジェスト検証済み）: 低解像度プレビュー。原寸の詳細表示・1:1ではありません。",
+    "screenshots": {
+      "artifact-surface-before.png": "sha256:5b81faa6db49e9b67e9b33fddf916a17746b7567ab5e3af74ef38be56098f123",
+      "artifact-surface-media.png": "sha256:873eb6bd2ecbcec7092cead2e8ab86b5cf8d3adfc697ab5c6ccf899716276691"
+    },
+    "screenshot_diff": {
+      "same_size": true,
+      "size": [
+        1296,
+        839
+      ],
+      "changed_pixels": 201345,
+      "total_pixels": 1087344,
+      "changed_bbox": [
+        0,
+        0,
+        1296,
+        751
+      ],
+      "distinct_diff_colours": 22586
+    },
+    "close": {
+      "exited": true,
+      "exit_code": 0,
+      "pid": 44660,
+      "wm_close_sent": true
+    },
+    "media_requests": {
+      "descriptor_requests": 1,
+      "descriptor_digests": [
+        "sha256:b0af194187a0d871d7df8c1a19a28c0bdcb4528a70c768286c8299e44bf80c3f"
+      ],
+      "descriptor_statuses": {
+        "200": 1
+      },
+      "blob_requests": 1,
+      "blob_statuses": {
+        "200": 1
+      },
+      "handle_values_recorded": false,
+      "requested_artifacts": [
+        {
+          "digest": "sha256:b0af194187a0d871d7df8c1a19a28c0bdcb4528a70c768286c8299e44bf80c3f",
+          "artifact_ref": "art-v1-560c8100-1ea7-4a5c-96a6-fe48cf52120f",
+          "byte_length": 1285309,
+          "media_type": "image/png",
+          "png_header": {
+            "width": 1024,
+            "height": 1024,
+            "bit_depth": 8,
+            "colour_type": 2,
+            "header_sha256_of_33_bytes": "sha256:78e7db13ac609b4e0a7099d615e79623162e23053c4704cac15ffa8280772d5e"
+          }
+        }
+      ]
+    },
+    "close_markers": [
+      "observation shutdown confirmed",
+      "preferences save confirmed"
+    ]
+  },
+  "scenarios": {
+    "descriptor_closed_v2": {
+      "verdict": "PASS",
+      "availability": "AVAILABLE",
+      "server_identity_ok": true,
+      "audience_ok": true
+    },
+    "bytes_verified_and_admitted": {
+      "verdict": "PASS",
+      "db_length": 1247461,
+      "descriptor_byte_length": 1247461,
+      "fetched_bytes": 1247461,
+      "declared_digest": "59856b19090e3bd1e7afde891438552d114f0915079955b03a41aa12b3117957",
+      "computed_digest": "59856b19090e3bd1e7afde891438552d114f0915079955b03a41aa12b3117957",
+      "digest_matches_declared": true,
+      "admitted_verified": true
+    },
+    "decoded_bounded": {
+      "verdict": "PASS",
+      "decoded": {
+        "width": 1024,
+        "height": 1024,
+        "rgba_bytes": 4194304
+      },
+      "decode_error": null
+    },
+    "presentation_request_built": {
+      "verdict": "PASS",
+      "presentation": "request",
+      "descriptor_geometry": {
+        "width": 1024,
+        "height": 1024
+      },
+      "decoded_geometry": {
+        "width": 1024,
+        "height": 1024
+      }
+    },
+    "negative_matrix": {
+      "verdict": "PASS",
+      "descriptor_bogus_context": "Err(Unauthorized)",
+      "descriptor_foreign_principal": "Err(Forbidden)",
+      "expired_handle": "Err(DescriptorExpired)",
+      "foreign_handle": "Err(Forbidden)"
+    },
+    "native_surface_runtime_binding": {
+      "verdict": "PASS",
+      "window_found": true,
+      "title_visible": true,
+      "runtime_statement_visible": true
+    },
+    "native_media_surface": {
+      "verdict": "PASS",
+      "observed_state": "メディア画像（記述子のダイジェスト検証済み）: 低解像度プレビュー。原寸の詳細表示・1:1ではありません。",
+      "invoked": true,
+      "close_markers": [
+        "observation shutdown confirmed",
+        "preferences save confirmed"
+      ]
+    },
+    "native_production_call_site": {
+      "verdict": "PASS",
+      "descriptor_requests": 1,
+      "descriptor_statuses": {
+        "200": 1
+      },
+      "blob_requests": 1,
+      "blob_statuses": {
+        "200": 1
+      },
+      "attribution": "Runtime access log after the app launch; handle values never recorded"
+    },
+    "native_image_rendered": {
+      "verdict": "PASS",
+      "observed_state": "メディア画像（記述子のダイジェスト検証済み）: 低解像度プレビュー。原寸の詳細表示・1:1ではありません。",
+      "requested_artifact": {
+        "digest": "sha256:b0af194187a0d871d7df8c1a19a28c0bdcb4528a70c768286c8299e44bf80c3f",
+        "artifact_ref": "art-v1-560c8100-1ea7-4a5c-96a6-fe48cf52120f",
+        "byte_length": 1285309,
+        "media_type": "image/png",
+        "png_header": {
+          "width": 1024,
+          "height": 1024,
+          "bit_depth": 8,
+          "colour_type": 2,
+          "header_sha256_of_33_bytes": "sha256:78e7db13ac609b4e0a7099d615e79623162e23053c4704cac15ffa8280772d5e"
+        }
+      },
+      "status_excerpt": "メディア画像（記述子のダイジェスト検証済み）: 低解像度プレビュー。原寸の詳細表示・1:1ではありません。"
+    }
+  },
+  "residuals": [
+    "PREVIEW stays UNSUPPORTED on this route (no transcode).",
+    "THUMBNAIL/METADATA byte routes are not exercised by this slice.",
+    "No EXIF/orientation interpretation; Orientation::Normal is the only admitted class.",
+    "A real handle-TTL expiry and a Runtime-instance-change 410 are not separately measured.",
+    "No product/UX, GPU residency or Present claim; PrintWindow evidence only.",
+    "The shown picture is the admitted preview mip (viewer PreviewOnly mode); product full-detail, GPU residency and Present acceptance remain open."
+  ],
+  "evidence_files": [
+    "artifact-surface-before.png",
+    "artifact-surface-media.png"
+  ]
+}
