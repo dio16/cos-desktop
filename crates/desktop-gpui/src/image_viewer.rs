@@ -103,6 +103,11 @@ fn local_failure_text(error: &ImageUploadError) -> SharedString {
     format!("画像を利用できません: {}", error.limitation()).into()
 }
 
+/// A media result may be applied only when it was requested after the last applied result.
+fn media_result_is_current(request_serial: u64, applied_serial: u64) -> bool {
+    request_serial > applied_serial
+}
+
 /// A retired frame may be released only after two composed scenes postdate its detach.
 fn scene_allows_release(scene_serial: u64, scene_at: u64) -> bool {
     scene_serial >= scene_at.saturating_add(2)
@@ -201,6 +206,10 @@ pub struct ImageViewer {
     status: SharedString,
     palette: Palette,
     consumer: ConsumerId,
+    /// Monotonic media request sequence; a newer requested selection outranks an older result.
+    media_request_serial: u64,
+    /// Highest media request sequence already applied to this pane.
+    media_applied_serial: u64,
 }
 
 impl ImageViewer {
@@ -263,6 +272,8 @@ impl ImageViewer {
                 colors: NORMAL_COLORS,
             },
             consumer: ConsumerId::allocate(),
+            media_request_serial: 0,
+            media_applied_serial: 0,
         }
     }
 
@@ -717,7 +728,9 @@ impl ImageViewer {
     /// An unavailable state is rendered as its own explicit sentence; admitted bytes go through
     /// the canonical media upload identity and the existing background preparation path. The
     /// fetch, admission and cache decisions stay in `app-core`/`media`; this viewer owns only
-    /// the GPUI attachment, texture lifetime and status wording.
+    /// the GPUI attachment, texture lifetime and status wording. A caller that already holds a
+    /// resolved outcome applies it unconditionally; off-thread resolution goes through
+    /// [`Self::resolve_media`], which orders concurrent results.
     pub fn load_media(
         &mut self,
         presentation: MediaPresentation,
@@ -769,7 +782,9 @@ impl ImageViewer {
     ///
     /// The descriptor/byte exchange, cache lookup and remote admission are blocking work and
     /// never run on the UI thread; only [`Self::load_media`]'s status/attachment work is applied
-    /// on it. A poisoned repository is reported as an explicit failure, never as a picture.
+    /// on it. Results are ordered by their request sequence: an older resolution that completes
+    /// after a newer one was applied is dropped instead of clearing the newer picture. A poisoned
+    /// repository is reported as an explicit failure, never as a picture.
     pub fn resolve_media(
         &mut self,
         repository: std::sync::Arc<std::sync::Mutex<MediaRepository>>,
@@ -778,6 +793,8 @@ impl ImageViewer {
         cancellation: MediaFetchCancellation,
         cx: &mut Context<Self>,
     ) {
+        self.media_request_serial = self.media_request_serial.saturating_add(1);
+        let request_serial = self.media_request_serial;
         let background = cx.background_executor().clone();
         let task = background.spawn(async move {
             match repository.lock() {
@@ -791,10 +808,25 @@ impl ImageViewer {
         cx.spawn(async move |this, cx| {
             let presentation = task.await;
             let _ = this.update_in(cx, |viewer, window, cx| {
-                viewer.load_media(presentation, window, cx);
+                viewer.apply_media_if_current(presentation, request_serial, window, cx);
             });
         })
         .detach();
+    }
+
+    /// Apply a media resolution only when no later requested resolution was already applied.
+    fn apply_media_if_current(
+        &mut self,
+        presentation: MediaPresentation,
+        request_serial: u64,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        if !media_result_is_current(request_serial, self.media_applied_serial) {
+            return;
+        }
+        self.media_applied_serial = request_serial;
+        self.load_media(presentation, window, cx);
     }
 
     /// Reset this pane for one explicit host request, prepare it off-thread and attach the
@@ -1691,5 +1723,15 @@ mod tests {
         assert!(scene_allows_release(9, 7));
         // A hidden window composes nothing, so it never releases on time alone.
         assert!(!scene_allows_release(4, 4));
+    }
+
+    #[test]
+    fn an_older_media_result_never_overwrites_a_newer_applied_selection() {
+        assert!(media_result_is_current(1, 0));
+        assert!(media_result_is_current(2, 1));
+        // A late completion of an older request keeps the newer picture and its state.
+        assert!(!media_result_is_current(1, 1));
+        assert!(!media_result_is_current(1, 2));
+        assert!(!media_result_is_current(2, 3));
     }
 }
