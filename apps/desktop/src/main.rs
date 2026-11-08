@@ -3,6 +3,7 @@ mod contrast_probe;
 mod credential_issuance;
 mod credentials;
 mod instance;
+mod media_executor;
 #[cfg(all(feature = "r0-s2b-instrumentation", windows))]
 mod r0_s2b;
 mod runtime;
@@ -96,6 +97,15 @@ fn main() {
         }
         drop(issuance_secret);
     }
+    // The authenticated Desktop principal of the stored credential record is the
+    // media audience. A bare operator override carries no principal: media
+    // acquisition is then explicitly unavailable instead of trusting a
+    // descriptor's own audience claim.
+    let media_audience = endpoint
+        .as_deref()
+        .and_then(runtime::validated_origin)
+        .and_then(|origin| credential_store.load(&origin).ok().flatten())
+        .and_then(|raw| credential_issuance::stored_principal(&raw));
     let launch = runtime::plan(
         &startup.mode,
         endpoint.as_deref(),
@@ -120,7 +130,7 @@ fn main() {
             return;
         }
         desktop_gpui::bind_keys(cx);
-        let (handle, core, host) = match launch {
+        let (handle, core, host, media) = match launch {
             runtime::LaunchPlan::Fixture { path } => match MockCosClient::from_fixture_file(path) {
                 Ok(client) => {
                     let scope = client.client().transport().scenario().observation_request();
@@ -131,8 +141,14 @@ fn main() {
                             Some(handle.clone()),
                             AppCore::with_observation(handle),
                             Some(host),
+                            desktop_gpui::media_presentation::MediaBinding::Absent,
                         ),
-                        None => (None, AppCore::disconnected(false), Some(host)),
+                        None => (
+                            None,
+                            AppCore::disconnected(false),
+                            Some(host),
+                            desktop_gpui::media_presentation::MediaBinding::Absent,
+                        ),
                     }
                 }
                 Err(_) => {
@@ -142,6 +158,10 @@ fn main() {
                 }
             },
             runtime::LaunchPlan::Runtime(settings) => {
+                // The production media boundary is built from the same validated
+                // origin/credential as the protocol transport; it never reaches
+                // the protocol routes and never renders its credential.
+                let media = runtime::media_binding(&settings, media_audience.as_deref());
                 match runtime::observation(settings, std::sync::Arc::clone(&observation_store)) {
                     Ok(observation) => {
                         let runtime::RuntimeObservation {
@@ -162,14 +182,20 @@ fn main() {
                                 Some(handle.clone()),
                                 AppCore::with_observation(handle),
                                 Some(host),
+                                media,
                             ),
-                            None => (None, AppCore::disconnected(true), Some(host)),
+                            None => (None, AppCore::disconnected(true), Some(host), media),
                         }
                     }
                     Err(reason) => {
                         // Explicitly unavailable, never a silent fixture fallback.
                         eprintln!("Runtime observation unavailable: {}", reason.label());
-                        (None, AppCore::disconnected(true), None)
+                        (
+                            None,
+                            AppCore::disconnected(true),
+                            None,
+                            desktop_gpui::media_presentation::MediaBinding::Absent,
+                        )
                     }
                 }
             }
@@ -179,7 +205,12 @@ fn main() {
             } => {
                 // Explicitly unavailable, never a silent fixture fallback.
                 eprintln!("Runtime observation unavailable: {}", reason.label());
-                (None, AppCore::disconnected(endpoint_configured), None)
+                (
+                    None,
+                    AppCore::disconnected(endpoint_configured),
+                    None,
+                    desktop_gpui::media_presentation::MediaBinding::Absent,
+                )
             }
         };
         // Register the read-only High Contrast probe before the shell opens. The probe
@@ -196,6 +227,7 @@ fn main() {
                     preferences,
                     tokens,
                     env!("CARGO_PKG_VERSION"),
+                    media,
                 )
             },
             host,

@@ -43,14 +43,17 @@ use std::net::{Ipv4Addr, Ipv6Addr};
 use std::sync::Arc;
 use std::time::Duration;
 
+use cos_client::media::MediaFetcher;
 use cos_client::{
     ClientConfig, ClientSource, CosClient, DesktopClient, HttpMethod, HttpRequest, HttpResponse,
     ProtocolHttp, ProtocolTransport, ProtocolTransportConfig,
 };
+use desktop_gpui::media_presentation::{MediaBinding, MediaRuntime};
 use desktop_protocol::{Limits, ObservationScopeRequest, ProtocolVersions, ScopeFilter, Version};
 
 use crate::app::Mode;
 use crate::credentials::CredentialStore;
+use crate::media_executor::MediaHttp;
 
 /// Environment variable naming the Runtime origin for runtime mode.
 pub(crate) const ENDPOINT_ENV: &str = "COS_DESKTOP_RUNTIME_ENDPOINT";
@@ -361,6 +364,53 @@ fn non_zero_port(raw: &str) -> Option<u16> {
         return None;
     }
     raw.parse::<u16>().ok().filter(|port| *port != 0)
+}
+
+/// Build the production media binding for one Runtime session.
+///
+/// `audience` is the authenticated Desktop principal of the session credential,
+/// read from the protected record by the composition root. The descriptor's own
+/// audience claim is never trusted, so an absent principal is an explicit
+/// `Unavailable` rather than a permission to skip audience validation. The
+/// binding owns one process-wide bounded repository and a source factory that
+/// builds a fresh same-authority executor per resolution; the credential lives
+/// only inside that factory and no rendering path can reach it.
+pub(crate) fn media_binding(settings: &RuntimeSettings, audience: Option<&str>) -> MediaBinding {
+    let Some(audience) = audience.map(str::trim).filter(|value| !value.is_empty()) else {
+        eprintln!(
+            "Runtime media acquisition unavailable: the authenticated Desktop principal is unavailable"
+        );
+        return MediaBinding::Unavailable;
+    };
+    // Validate the origin and non-empty credential before exposing a binding;
+    // the factory re-creates the executor for each resolution.
+    let Some(probe) = MediaHttp::new(&settings.endpoint, &settings.token) else {
+        eprintln!(
+            "Runtime media acquisition unavailable: the configured endpoint is not a supported loopback origin"
+        );
+        return MediaBinding::Unavailable;
+    };
+    drop(probe);
+    let Ok(repository) = app_core::MediaRepository::new(app_core::media_limits()) else {
+        eprintln!("Runtime media acquisition unavailable: bounded media cache limits were refused");
+        return MediaBinding::Unavailable;
+    };
+    let origin = settings.endpoint.clone();
+    let token = settings.token.clone();
+    let audience = audience.to_owned();
+    MediaBinding::Runtime(MediaRuntime::new(
+        repository,
+        audience,
+        Box::new(move |server_identity, audience| {
+            let executor = MediaHttp::new(&origin, &token)
+                .expect("the composition root validated this origin and credential");
+            Box::new(MediaFetcher::new(
+                executor,
+                server_identity.as_str().to_owned(),
+                audience.to_owned(),
+            ))
+        }),
+    ))
 }
 
 /// Build the observation client over the configured Runtime origin.

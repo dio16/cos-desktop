@@ -389,6 +389,21 @@ pub(crate) fn stored_is_versioned(raw: &str) -> bool {
     matches!(decode_stored(raw), Some(StoredValue::Record(_)))
 }
 
+/// Authenticated Desktop principal of a stored credential record.
+///
+/// Returns `None` for a legacy bare operator token or a malformed record: the
+/// principal is never synthesized from local state. The media boundary validates
+/// a descriptor's audience against this value, so an absent principal means
+/// media acquisition is explicitly unavailable instead of trusting the
+/// descriptor's own claim. Value-free failure surface: the caller may log the
+/// absence, never the value.
+pub(crate) fn stored_principal(raw: &str) -> Option<String> {
+    match decode_stored(raw) {
+        Some(StoredValue::Record(record)) => Some(record.principal),
+        Some(StoredValue::Legacy(_)) | None => None,
+    }
+}
+
 #[cfg(test)]
 pub(crate) fn encode_for_test(token: &str, principal: &str, expires_at: u64) -> String {
     StoredCredential {
@@ -787,7 +802,7 @@ mod tests {
         CredentialError, CredentialExchange, CredentialState, ExchangeFailure, HttpResponseBytes,
         ISSUANCE_SECRET_ENV, ISSUE_PATH, MAX_CREDENTIAL_RESPONSE_BYTES, REFRESH_MARGIN,
         REFRESH_PATH, REVOKE_PATH, UreqExchange, encode_for_test, parse_document, prepare, revoke,
-        stored_token,
+        stored_principal, stored_token,
     };
     use crate::credentials::{CredentialStore, CredentialStoreError};
     use std::collections::VecDeque;
@@ -1370,6 +1385,20 @@ mod tests {
         assert_eq!(
             stored_token(&encode_for_test(TOKEN, PRINCIPAL, NOW)).as_deref(),
             Some(TOKEN)
+        );
+    }
+
+    #[test]
+    fn the_stored_principal_is_exposed_only_for_a_versioned_record() {
+        let record = encode_for_test(TOKEN, PRINCIPAL, NOW);
+        assert_eq!(stored_principal(&record).as_deref(), Some(PRINCIPAL));
+        // A bare operator override has no authenticated principal to expose.
+        assert_eq!(stored_principal("bare-operator-token-value"), None);
+        assert_eq!(stored_principal(""), None);
+        // A malformed record never yields an invented principal.
+        assert_eq!(
+            stored_principal(&format!("cos-desktop-credential-v1\n{NOW}\nbad\n{TOKEN}")),
+            None
         );
     }
 

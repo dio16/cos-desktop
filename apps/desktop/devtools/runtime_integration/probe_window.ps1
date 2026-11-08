@@ -1,12 +1,15 @@
 # Live integration window probe (ASCII-only: Windows PowerShell 5.1 reads .ps1 as ANSI).
 # Actions: dump (window + bounded UIA name/id list), shot (PrintWindow PNG; never
-# CopyFromScreen and never foregrounds), close (post WM_CLOSE).
+# CopyFromScreen and never foregrounds), close (post WM_CLOSE), invoke (invoke one
+# descendant whose accessible name contains -NameMatch, through its UIA pattern; no
+# mouse input and no foregrounding).
 # The caller supplies -ProcessId and -Out; the JSON result is written to -Out.
 param(
     [Parameter(Mandatory = $true)][int]$ProcessId,
-    [Parameter(Mandatory = $true)][ValidateSet('dump', 'shot', 'close')][string]$Action,
+    [Parameter(Mandatory = $true)][ValidateSet('dump', 'shot', 'close', 'invoke')][string]$Action,
     [Parameter(Mandatory = $true)][string]$Out,
-    [string]$ImageOut = ''
+    [string]$ImageOut = '',
+    [string]$NameMatch = ''
 )
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName UIAutomationClient
@@ -112,6 +115,67 @@ if ($hwnd -eq [IntPtr]::Zero) {
             $result['ok'] = [bool]$printed
             $result['printwindow'] = [bool]$printed
             $result['image'] = $ImageOut
+        }
+    } elseif ($Action -eq 'invoke') {
+        $result['name_match'] = $NameMatch
+        $result['invoked'] = $false
+        if (-not $NameMatch) {
+            $result['error'] = 'missing_name_match'
+        } else {
+            try {
+                $element = [System.Windows.Automation.AutomationElement]::FromHandle($hwnd)
+                $condition = New-Object System.Windows.Automation.PropertyCondition(
+                    [System.Windows.Automation.AutomationElement]::ControlTypeProperty,
+                    [System.Windows.Automation.ControlType]::Button)
+                $buttons = $element.FindAll([System.Windows.Automation.TreeScope]::Descendants, $condition)
+                $matched = $null
+                $matchedName = ''
+                for ($i = 0; $i -lt $buttons.Count; $i++) {
+                    $item = $buttons.Item($i)
+                    try {
+                        $name = $item.Current.Name
+                    } catch { continue }
+                    if ($name -and $name.Contains($NameMatch)) { $matched = $item; $matchedName = $name; break }
+                }
+                if ($matched -eq $null) {
+                    $result['error'] = 'match_not_found'
+                    $result['button_count'] = $buttons.Count
+                } else {
+                    $result['matched_name'] = $matchedName
+                    $result['matched_id'] = $matched.Current.AutomationId
+                    $result['matched_control_type'] = $matched.Current.ControlType.ProgrammaticName
+                    $tried = New-Object System.Collections.Generic.List[string]
+                    $invoked = $false
+                    $pattern = $null
+                    $tried.Add('invoke')
+                    if ($matched.TryGetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern, [ref]$pattern)) {
+                        ([System.Windows.Automation.InvokePattern]$pattern).Invoke()
+                        $invoked = $true
+                        $result['pattern'] = 'invoke'
+                    } else {
+                        $tried.Add('selection_item')
+                        $selection = $null
+                        if ($matched.TryGetCurrentPattern([System.Windows.Automation.SelectionItemPattern]::Pattern, [ref]$selection)) {
+                            ([System.Windows.Automation.SelectionItemPattern]$selection).Select()
+                            $invoked = $true
+                            $result['pattern'] = 'selection_item'
+                        } else {
+                            $tried.Add('legacy_default_action')
+                            $legacy = $null
+                            if ($matched.TryGetCurrentPattern([System.Windows.Automation.LegacyIAccessiblePattern]::Pattern, [ref]$legacy)) {
+                                ([System.Windows.Automation.LegacyIAccessiblePattern]$legacy).DoDefaultAction()
+                                $invoked = $true
+                                $result['pattern'] = 'legacy_default_action'
+                            }
+                        }
+                    }
+                    $result['patterns_tried'] = $tried.ToArray()
+                    $result['invoked'] = $invoked
+                    if (-not $invoked) { $result['error'] = 'no_action_pattern' }
+                }
+            } catch {
+                $result['error'] = 'uia_failed: ' + $_.Exception.Message
+            }
         }
     } elseif ($Action -eq 'close') {
         $sent = [WProbe]::PostMessage($hwnd, 0x0010, [IntPtr]::Zero, [IntPtr]::Zero)
