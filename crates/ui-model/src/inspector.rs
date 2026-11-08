@@ -10,8 +10,10 @@ use std::sync::Arc;
 
 use app_core::SnapshotHandle;
 use desktop_protocol::{
-    CandidateRef, CandidateSnapshot, Counter, EvaluationSnapshot, EvidenceRef, TaskId, TaskSnapshot,
+    CandidateRef, CandidateSnapshot, Counter, EvaluationSnapshot, TaskId, TaskSnapshot,
 };
+
+use crate::evidence::{EvidenceGroupSource, EvidenceSource};
 
 /// The five inspector sections in display order.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -131,6 +133,12 @@ pub struct View {
     pub candidate: Option<CandidateRef>,
     /// All five sections in display order, each with an explicit state.
     pub sections: Arc<[SectionView]>,
+    /// Evidence references admitted for the viewed candidate.
+    ///
+    /// The source carries references only. Row views are materialized on
+    /// request through [`crate::evidence::EvidenceDetailCache`], so a collapsed
+    /// evidence section never derives or fetches record details.
+    pub evidence: Option<EvidenceSource>,
 }
 
 /// Read-only inspector projection, keyed by complete candidate identity.
@@ -145,6 +153,7 @@ pub struct Index {
 struct CandidateSections {
     evaluation: SectionView,
     evidence: SectionView,
+    evidence_source: Option<EvidenceSource>,
     refinement: SectionView,
 }
 
@@ -180,8 +189,10 @@ impl Index {
         sections.push(self.goal.clone().unwrap_or_else(|| {
             SectionView::absent(Section::Goal, "この情報にはタスクの情報がありません。")
         }));
+        let mut evidence = None;
         match viewed.and_then(|candidate| self.candidates.get(candidate)) {
             Some(candidate) => {
+                evidence = candidate.evidence_source.clone();
                 sections.push(candidate.evaluation.clone());
                 sections.push(candidate.evidence.clone());
                 sections.push(candidate.refinement.clone());
@@ -209,6 +220,7 @@ impl Index {
         View {
             candidate: viewed.cloned(),
             sections: sections.into(),
+            evidence,
         }
     }
 }
@@ -369,25 +381,12 @@ fn formal_status_label(status: &desktop_protocol::FormalStatus) -> String {
     .to_owned()
 }
 
-/// Japanese gloss plus the canonical token for a closed evidence vocabulary;
-/// unrecognized values stay verbatim.
-fn evidence_status_label(status: &desktop_protocol::EvidenceStatus) -> String {
-    use desktop_protocol::EvidenceStatus;
-    match status {
-        EvidenceStatus::Available => "取得可能（AVAILABLE）",
-        EvidenceStatus::Missing => "見つかりません（MISSING）",
-        EvidenceStatus::Forbidden => "許可されていません（FORBIDDEN）",
-        EvidenceStatus::Unknown(raw) => raw.as_str(),
-    }
-    .to_owned()
-}
-
 fn candidate_sections(
     snapshot: &SnapshotHandle,
     candidate: &CandidateSnapshot,
 ) -> CandidateSections {
     let mut evaluation_entries = Vec::new();
-    let mut evidence_entries = Vec::new();
+    let mut evidence_groups = Vec::new();
     let mut revisions = Vec::new();
     let mut decisions: Vec<String> = Vec::new();
     let mut missing_evaluations = 0usize;
@@ -419,9 +418,10 @@ fn candidate_sections(
             }
             desktop_protocol::EvaluationDecision::Unknown(raw) => raw.clone(),
         });
-        evaluation_entries.push(evaluation_entry(evaluation, evaluation_entries.len()));
-        for evidence in &evaluation.evidence_refs {
-            evidence_entries.push(evidence_entry(evidence));
+        let ordinal = evaluation_entries.len();
+        evaluation_entries.push(evaluation_entry(evaluation, ordinal));
+        if !evaluation.evidence_refs.is_empty() {
+            evidence_groups.push(EvidenceGroupSource::from_evaluation(evaluation, ordinal));
         }
     }
 
@@ -466,16 +466,18 @@ fn candidate_sections(
         )
     };
 
-    let evidence = if evidence_entries.is_empty() {
+    let evidence = if evidence_groups.is_empty() {
         SectionView::absent(Section::Evidence, "選択中の候補に判断の根拠はありません。")
     } else {
         SectionView::available(
             Section::Evidence,
-            format!("判断の根拠 {}件を表示", evidence_entries.len()),
+            evidence_summary(&evidence_groups),
             format!("evidence:{}", revisions.join(",")),
-            evidence_entries,
+            Vec::new(),
         )
     };
+    let evidence_source = (!evidence_groups.is_empty())
+        .then(|| EvidenceSource::new(candidate.candidate_ref.clone(), evidence_groups));
 
     let refinement = match snapshot.iterations.get(&candidate.iteration_ref) {
         Some(iteration) if !iteration.refinement_refs.is_empty() => {
@@ -513,8 +515,64 @@ fn candidate_sections(
     CandidateSections {
         evaluation,
         evidence,
+        evidence_source,
         refinement,
     }
+}
+
+/// One-line evidence summary with distinct per-status counts.
+///
+/// The line never substitutes a missing detail body for an absent record: it
+/// states how many record references the Runtime projected and whether any
+/// detail body was projected at all.
+fn evidence_summary(groups: &[EvidenceGroupSource]) -> String {
+    use crate::evidence::EvidenceDisplayState;
+    let mut total = 0usize;
+    let mut available = 0usize;
+    let mut pending = 0usize;
+    let mut missing = 0usize;
+    let mut forbidden = 0usize;
+    let mut unsupported = 0usize;
+    let mut unknown = 0usize;
+    let mut projected_details = 0usize;
+    for group in groups {
+        for record in group.records.iter() {
+            total += 1;
+            if record.detail.is_some() {
+                projected_details += 1;
+            }
+            match EvidenceDisplayState::from_wire(&record.status) {
+                EvidenceDisplayState::Available => available += 1,
+                EvidenceDisplayState::Pending => pending += 1,
+                EvidenceDisplayState::Missing => missing += 1,
+                EvidenceDisplayState::Forbidden => forbidden += 1,
+                EvidenceDisplayState::Unsupported => unsupported += 1,
+                EvidenceDisplayState::Unknown(_) => unknown += 1,
+            }
+        }
+    }
+    let mut parts = Vec::new();
+    for (label, count) in [
+        ("取得可能", available),
+        ("準備中", pending),
+        ("見つかりません", missing),
+        ("許可されていません", forbidden),
+        ("未対応", unsupported),
+        ("不明", unknown),
+    ] {
+        if count > 0 {
+            parts.push(format!("{label} {count}"));
+        }
+    }
+    let detail_state = if projected_details == 0 {
+        "詳細は未投影".to_owned()
+    } else {
+        format!("詳細あり {projected_details}件")
+    };
+    format!(
+        "判断の根拠 {total}件 · {} · {detail_state}",
+        parts.join(" / ")
+    )
 }
 
 fn evaluation_entry(evaluation: &EvaluationSnapshot, index: usize) -> Entry {
@@ -556,21 +614,6 @@ fn evaluation_entry(evaluation: &EvaluationSnapshot, index: usize) -> Entry {
     Entry {
         heading: (index > 0).then(|| Arc::<str>::from(format!("評価 {}", index + 1))),
         fields: fields.into(),
-    }
-}
-
-fn evidence_entry(evidence: &EvidenceRef) -> Entry {
-    let summary = evidence
-        .summary
-        .clone()
-        .unwrap_or_else(|| "概要の情報はありません".to_owned());
-    Entry {
-        heading: None,
-        fields: vec![
-            Field::new("概要", summary),
-            Field::new("利用可否", evidence_status_label(&evidence.status)),
-        ]
-        .into(),
     }
 }
 

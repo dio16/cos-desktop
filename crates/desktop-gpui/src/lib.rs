@@ -179,6 +179,8 @@ pub fn bind_keys(cx: &mut App) {
         KeyBinding::new("ctrl-d", Diagnostics, None),
         KeyBinding::new("enter", InspectorToggle, Some("InspectorSection")),
         KeyBinding::new("space", InspectorToggle, Some("InspectorSection")),
+        KeyBinding::new("enter", InspectorToggle, Some("EvidenceGroup")),
+        KeyBinding::new("space", InspectorToggle, Some("EvidenceGroup")),
         KeyBinding::new("enter", InterventionActivate, Some("InterventionStrip")),
         KeyBinding::new("space", InterventionActivate, Some("InterventionStrip")),
         KeyBinding::new("escape", InterventionDismiss, Some("InterventionStrip")),
@@ -863,6 +865,12 @@ pub struct Shell {
     inspector_disclosure: ui_model::inspector::Disclosure,
     /// One focus handle per inspector section, in `Section::ALL` order.
     inspector_focus: Vec<FocusHandle>,
+    /// Evidence details materialized only for the group a user opened; stale
+    /// revisions are dropped before they can be rendered.
+    inspector_evidence: ui_model::evidence::EvidenceDetailCache,
+    /// Focus handles for the evidence group headers, keyed by the exact
+    /// evaluation revision the group belongs to.
+    inspector_evidence_focus: BTreeMap<Arc<str>, FocusHandle>,
     /// Expansion, open details and the dismissal origin of the intervention strip; reconciled
     /// against the active rows so a resolved condition never leaves local state behind.
     strip_selection: intervention::StripSelection,
@@ -1146,6 +1154,8 @@ impl Shell {
             restore_notice: None,
             surface_notice: None,
             inspector_disclosure: ui_model::inspector::Disclosure::default(),
+            inspector_evidence: ui_model::evidence::EvidenceDetailCache::default(),
+            inspector_evidence_focus: BTreeMap::new(),
             inspector_focus,
             strip_selection: intervention::StripSelection::default(),
             strip_focus: BTreeMap::new(),

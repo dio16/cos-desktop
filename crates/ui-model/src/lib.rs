@@ -2,6 +2,7 @@
 //! arrive as complete publications from app-core; this crate never calls the client.
 
 pub mod brief;
+pub mod evidence;
 pub mod history;
 pub mod inspector;
 pub mod intervention;
@@ -2763,13 +2764,169 @@ mod tests {
         let view = text.inspector.view(Some(&candidate.candidate_ref));
         let evidence = &view.sections[2];
         assert!(evidence.available);
+        assert!(evidence.summary.contains("見つかりません 1"));
+        assert!(
+            evidence.summary.contains("詳細は未投影"),
+            "{}",
+            evidence.summary
+        );
+        // The collapsed section carries no rows; only an explicit request
+        // materializes the detail.
+        assert!(evidence.entries.is_empty());
+
+        let mut details = super::evidence::EvidenceDetailCache::default();
+        let source = view.evidence.as_ref().expect("evidence source");
+        assert!(details.is_empty(), "no eager detail materialization");
+        let detail = details
+            .request(source, &EvaluationId::fixture("evaluation/c"))
+            .expect("detail is built on request");
         assert_eq!(
-            field_value(evidence, "概要"),
-            Some("概要の情報はありません".into())
+            detail.rows[0].state,
+            super::evidence::EvidenceDisplayState::Missing
         );
         assert_eq!(
-            field_value(evidence, "利用可否"),
-            Some("見つかりません（MISSING）".into())
+            detail.rows[0].summary_text.as_ref(),
+            super::evidence::SUMMARY_NOT_PROJECTED
+        );
+        assert_eq!(
+            detail.rows[0].detail_text.as_ref(),
+            super::evidence::DETAIL_NOT_PROJECTED
+        );
+    }
+
+    #[test]
+    fn synthetic_evaluation_evidence_refs_reach_the_detail_view_with_honest_states() {
+        // End-to-end projection path: a synthetic EVALUATION carries every
+        // evidence state the Runtime can compose, the inspector derives the
+        // evidence source from that evaluation, and the detail view reports
+        // each state without inventing a body or a fetch.
+        let candidate = inspector_candidate("e", "E", 1, &[EvaluationId::fixture("evaluation/e")]);
+        let evaluate = inspector_evaluation(
+            "evaluation/e",
+            &candidate.candidate_ref,
+            EvaluationDecision::Pass,
+            Some("88".to_owned()),
+            Some("0.81".to_owned()),
+            vec![
+                evidence(
+                    "evidence/available",
+                    EvidenceStatus::Available,
+                    Some("axis summary"),
+                ),
+                evidence(
+                    "evidence/pending",
+                    EvidenceStatus::Unknown("PENDING".to_owned()),
+                    None,
+                ),
+                evidence("evidence/missing", EvidenceStatus::Missing, None),
+                evidence("evidence/forbidden", EvidenceStatus::Forbidden, None),
+                evidence(
+                    "evidence/unsupported",
+                    EvidenceStatus::Unknown("UNSUPPORTED".to_owned()),
+                    None,
+                ),
+            ],
+            4,
+        );
+        let mut cache = DerivationCache::default();
+        let text = derive(
+            &mut cache,
+            &publication(
+                inspector_snapshot(
+                    vec![candidate.clone()],
+                    vec![dock_iteration(1, vec![candidate.candidate_ref.clone()])],
+                    vec![evaluate],
+                    vec![],
+                    None,
+                ),
+                1,
+                1,
+                1,
+            ),
+        );
+        let view = text.inspector.view(Some(&candidate.candidate_ref));
+        let source = view.evidence.as_ref().expect("evidence source");
+        assert_eq!(source.groups.len(), 1);
+        assert_eq!(
+            source.groups[0].evaluation_ref.as_str(),
+            "fixture:evaluation/e"
+        );
+
+        let mut details = super::evidence::EvidenceDetailCache::default();
+        let detail = details
+            .request(source, &EvaluationId::fixture("evaluation/e"))
+            .expect("detail");
+        assert_eq!(detail.rows.len(), 5);
+        let labels: Vec<&str> = detail
+            .rows
+            .iter()
+            .map(|row| row.state_label.as_ref())
+            .collect();
+        assert_eq!(
+            labels,
+            vec![
+                "取得可能（AVAILABLE）",
+                "準備中（PENDING）",
+                "見つかりません（MISSING）",
+                "許可されていません（FORBIDDEN）",
+                "未対応（UNSUPPORTED）",
+            ]
+        );
+        assert_eq!(detail.rows[0].summary_text.as_ref(), "axis summary");
+        assert_eq!(
+            detail.rows[1].detail_text.as_ref(),
+            super::evidence::DETAIL_NOT_PROJECTED
+        );
+        assert_eq!(detail.projected_detail_count, 0);
+        assert!(detail.rows[4].ax_label.contains("UNSUPPORTED"));
+
+        // A newer evaluation revision discards the detail; the next request
+        // reads the new projection, never the stale rows.
+        let revised = inspector_evaluation(
+            "evaluation/e",
+            &candidate.candidate_ref,
+            EvaluationDecision::Pass,
+            Some("88".to_owned()),
+            Some("0.81".to_owned()),
+            vec![evidence(
+                "evidence/forbidden",
+                EvidenceStatus::Available,
+                None,
+            )],
+            5,
+        );
+        let revised_source = {
+            let revised_text = derive(
+                &mut DerivationCache::default(),
+                &publication(
+                    inspector_snapshot(
+                        vec![candidate.clone()],
+                        vec![dock_iteration(1, vec![candidate.candidate_ref.clone()])],
+                        vec![revised],
+                        vec![],
+                        None,
+                    ),
+                    1,
+                    2,
+                    2,
+                ),
+            );
+            revised_text
+                .inspector
+                .view(Some(&candidate.candidate_ref))
+                .evidence
+                .expect("revised evidence source")
+        };
+        assert_eq!(details.sync(Some(&revised_source)), 1);
+        assert!(details.is_empty());
+        let fresh = details
+            .request(&revised_source, &EvaluationId::fixture("evaluation/e"))
+            .expect("fresh detail");
+        assert_eq!(fresh.evaluation_revision, Counter::from_u128(5));
+        assert_eq!(fresh.rows.len(), 1);
+        assert_eq!(
+            fresh.rows[0].state,
+            super::evidence::EvidenceDisplayState::Available
         );
     }
 
