@@ -1,0 +1,56 @@
+
+--- start 2026-11-08T23:18:14+0900 ---
+2026-11-08 23:18:16,817 orchestrator.api INFO Config loaded: model=hf.co/empero-ai/Qwythos-9B-v2-GGUF:Q4_K_M, checkpoint=redcraft23INT8INT4FP8_30Krea2.safetensors
+2026-11-08 23:18:16,817 orchestrator.api INFO Config loaded: model=hf.co/empero-ai/Qwythos-9B-v2-GGUF:Q4_K_M, checkpoint=redcraft23INT8INT4FP8_30Krea2.safetensors
+2026-11-08 23:18:16,817 orchestrator.api INFO DB: C:\dev\cos-desktop\target\media-live\run1\generation-copy.sqlite
+2026-11-08 23:18:16,817 orchestrator.api INFO DB: C:\dev\cos-desktop\target\media-live\run1\generation-copy.sqlite
+2026-11-08 23:18:16,817 orchestrator.api INFO Starting API at http://127.0.0.1:8127
+2026-11-08 23:18:16,817 orchestrator.api INFO Starting API at http://127.0.0.1:8127
+INFO:     Started server process [28696]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8127 (Press CTRL+C to quit)
+INFO:     127.0.0.1:53887 - "GET /api/ready HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59869 - "GET /api/cos/desktop/server HTTP/1.1" 200 OK
+2026-11-08 23:18:17,216 orchestrator.api INFO desktop_credential_audit operation=issue principal=desktop:23ed03eb440a94643805e75fe4856839 result=accepted reason=-
+2026-11-08 23:18:17,216 orchestrator.api INFO desktop_credential_audit operation=issue principal=desktop:23ed03eb440a94643805e75fe4856839 result=accepted reason=-
+INFO:     127.0.0.1:52237 - "POST /api/cos/desktop/credentials HTTP/1.1" 200 OK
+2026-11-08 23:18:17,248 orchestrator.api INFO desktop_credential_audit operation=issue principal=desktop:d042bd42246b58b35acd3e30a6319e27 result=accepted reason=-
+2026-11-08 23:18:17,248 orchestrator.api INFO desktop_credential_audit operation=issue principal=desktop:d042bd42246b58b35acd3e30a6319e27 result=accepted reason=-
+INFO:     127.0.0.1:52238 - "POST /api/cos/desktop/credentials HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52239 - "POST /api/cos/desktop/observation HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52240 - "GET /api/cos/media/sha256%3Ab6c49a29ff609a59bcfa46644481e84d02eca7a1536676683e7c1f42d33e07af HTTP/1.1" 403 Forbidden
+INFO:     127.0.0.1:52241 - "GET /api/cos/media/sha256%3Aa41f183168c25e5c60919e04d94780510c0be8e1e77ab95bcddc6443fdf75412 HTTP/1.1" 403 Forbidden
+INFO:     127.0.0.1:52242 - "GET /api/cos/media/sha256%3A59856b19090e3bd1e7afde891438552d114f0915079955b03a41aa12b3117957 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52245 - "GET /api/cos/media/sha256%3A59856b19090e3bd1e7afde891438552d114f0915079955b03a41aa12b3117957 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52245 - "GET /api/cos/media/mh1.<redacted>/blob HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52245 - "GET /api/cos/media/sha256%3A59856b19090e3bd1e7afde891438552d114f0915079955b03a41aa12b3117957 HTTP/1.1" 401 Unauthorized
+INFO:     127.0.0.1:52246 - "GET /api/cos/media/sha256%3A59856b19090e3bd1e7afde891438552d114f0915079955b03a41aa12b3117957 HTTP/1.1" 403 Forbidden
+INFO:     127.0.0.1:52245 - "GET /api/cos/media/mh1.<redacted>/blob HTTP/1.1" 410 Gone
+INFO:     127.0.0.1:52245 - "GET /api/cos/media/mh1.<redacted>/blob HTTP/1.1" 403 Forbidden
+2026-11-08 23:18:21,109 orchestrator.api INFO desktop_credential_audit operation=issue principal=desktop:e506b3cc28b99b1ef26a7e0c7214142e result=accepted reason=-
+2026-11-08 23:18:21,109 orchestrator.api INFO desktop_credential_audit operation=issue principal=desktop:e506b3cc28b99b1ef26a7e0c7214142e result=accepted reason=-
+INFO:     127.0.0.1:52252 - "POST /api/cos/desktop/credentials HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52253 - "GET /api/cos/desktop/server HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52253 - "POST /api/cos/desktop/observation HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52253 - "GET /api/cos/desktop/deltas?cursor=cursor-5234d755eb0f4568a2be22e84d32714c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52253 - "GET /api/cos/desktop/deltas?cursor=cursor-5234d755eb0f4568a2be22e84d32714c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52253 - "GET /api/cos/desktop/deltas?cursor=cursor-5234d755eb0f4568a2be22e84d32714c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52253 - "GET /api/cos/desktop/deltas?cursor=cursor-5234d755eb0f4568a2be22e84d32714c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52253 - "GET /api/cos/desktop/deltas?cursor=cursor-5234d755eb0f4568a2be22e84d32714c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52253 - "GET /api/cos/desktop/deltas?cursor=cursor-5234d755eb0f4568a2be22e84d32714c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52253 - "GET /api/cos/desktop/deltas?cursor=cursor-5234d755eb0f4568a2be22e84d32714c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52253 - "GET /api/cos/desktop/deltas?cursor=cursor-5234d755eb0f4568a2be22e84d32714c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52253 - "GET /api/cos/desktop/deltas?cursor=cursor-5234d755eb0f4568a2be22e84d32714c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56312 - "GET /api/cos/media/sha256%3Ab0af194187a0d871d7df8c1a19a28c0bdcb4528a70c768286c8299e44bf80c3f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56312 - "GET /api/cos/media/mh1.<redacted>/blob HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52253 - "GET /api/cos/desktop/deltas?cursor=cursor-5234d755eb0f4568a2be22e84d32714c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52253 - "GET /api/cos/desktop/deltas?cursor=cursor-5234d755eb0f4568a2be22e84d32714c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52253 - "GET /api/cos/desktop/deltas?cursor=cursor-5234d755eb0f4568a2be22e84d32714c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52253 - "GET /api/cos/desktop/deltas?cursor=cursor-5234d755eb0f4568a2be22e84d32714c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52253 - "GET /api/cos/desktop/deltas?cursor=cursor-5234d755eb0f4568a2be22e84d32714c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52253 - "GET /api/cos/desktop/deltas?cursor=cursor-5234d755eb0f4568a2be22e84d32714c HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52253 - "GET /api/cos/desktop/deltas?cursor=cursor-5234d755eb0f4568a2be22e84d32714c HTTP/1.1" 200 OK
+2026-11-08 23:18:26,300 orchestrator.api INFO desktop_credential_audit operation=revoke principal=desktop:e506b3cc28b99b1ef26a7e0c7214142e result=accepted reason=-
+2026-11-08 23:18:26,300 orchestrator.api INFO desktop_credential_audit operation=revoke principal=desktop:e506b3cc28b99b1ef26a7e0c7214142e result=accepted reason=-
+INFO:     127.0.0.1:61309 - "POST /api/cos/desktop/credentials/revoke HTTP/1.1" 200 OK
