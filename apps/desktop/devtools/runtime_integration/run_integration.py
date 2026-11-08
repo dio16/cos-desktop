@@ -600,7 +600,7 @@ def run_once(label: str, collected: list[str]) -> dict:
         shutil.rmtree(evidence)
     evidence.mkdir(parents=True, exist_ok=True)
 
-    facts: dict = {"label": label, "started_at": started, "scenarios": {}, "files": {}}
+    facts: dict = {"label": label, "started_at": started, "scenarios": {}, "files": {}, "findings": []}
     run_secret = secrets.token_hex(24)
     collected.append(run_secret)
     secrets_list = [run_secret]
@@ -760,8 +760,9 @@ def run_once(label: str, collected: list[str]) -> dict:
             (evidence / "app-connect.stderr.sanitized.txt").write_text(app_stderr, encoding="utf-8")
             close_markers = [marker for marker in CLOSE_MARKERS if marker in app_stderr]
             no_process = not pid_alive(closed["pid"])
+            clean_close_ok = bool(closed["exited"] and close_markers and no_process)
             facts["scenarios"]["clean_close"] = {
-                "verdict": "PASS" if closed["exited"] and close_markers and no_process else "FAIL",
+                "verdict": "PASS" if clean_close_ok else "FAIL",
                 "exit_code": closed["exit_code"],
                 "wm_close_sent": closed.get("wm_close_sent"),
                 "close_markers": close_markers,
@@ -770,6 +771,28 @@ def run_once(label: str, collected: list[str]) -> dict:
                 "settle_seconds": close_settle_seconds,
                 "stderr_sha256": sha256_text(app_stderr),
             }
+            if not clean_close_ok and not closed.get("forced"):
+                facts["findings"].append(
+                    {
+                        "id": "RT-INT-05",
+                        "severity": "ACTIONABLE",
+                        "status": "OBSERVED",
+                        "statement": "WM_CLOSE ended the process, but the bounded observation-shutdown and preferences-save confirmations were not reported within the exit budget; the explicit NOT-confirmed outcome was printed instead.",
+                        "evidence": "app-connect.stderr.sanitized.txt",
+                        "run": label,
+                    }
+                )
+            if "revoke on teardown failed" in app_stderr:
+                facts["findings"].append(
+                    {
+                        "id": "RT-INT-06",
+                        "severity": "NIT",
+                        "status": "OBSERVED",
+                        "statement": "The pre-restart Desktop session's teardown revoke was rejected by the restarted Runtime (new process, in-memory credential registry); the explicit failure line is present in the sanitized stderr.",
+                        "evidence": "app-connect.stderr.sanitized.txt",
+                        "run": label,
+                    }
+                )
 
             # Scenario C2: relaunch with a fresh credential from the restarted Runtime.
             fresh_credential = server.issue_desktop_credential()
@@ -809,6 +832,17 @@ def run_once(label: str, collected: list[str]) -> dict:
             facts["scenarios"]["relaunch_recovery"]["close_markers"] = [
                 marker for marker in CLOSE_MARKERS if marker in app2_stderr
             ]
+            if "revoke on teardown failed" in app2_stderr:
+                facts["findings"].append(
+                    {
+                        "id": "RT-INT-06",
+                        "severity": "NIT",
+                        "status": "OBSERVED",
+                        "statement": "The recovery Desktop session's teardown revoke was rejected after the Runtime restart; the explicit failure line is present in the sanitized stderr.",
+                        "evidence": "app-recovery.stderr.sanitized.txt",
+                        "run": label,
+                    }
+                )
 
             server.stop(clean=True)
             runtime_log = sanitized_log(server.log_path, secrets_list)
@@ -863,14 +897,25 @@ def summarize(runs: list[dict]) -> dict:
                 run["scenarios"].get(scenario, {}).get("verdict") in {"PASS", "DEVIATION"} for run in runs
             ),
         }
-    findings = []
+    findings = [
+        {
+            "id": "RT-INT-05",
+            "severity": "ACTIONABLE",
+            "status": "OBSERVED_ONCE_PRE_SETTLE",
+            "statement": "Before the 3 s close settle existed, one WM_CLOSE issued during the post-restart observation retry backoff exited 0 but printed 'observation shutdown NOT confirmed within the exit budget' and 'preferences save NOT confirmed within the exit budget'. The settle is harness pacing only; this bounded-close limitation is a product observation for the wave-2 lanes, not a passed scenario.",
+            "observed_in": "pre-settle harness run",
+            "runs": [],
+        }
+    ]
     for run in runs:
         restart = run["scenarios"].get("runtime_restart", {})
+        findings.extend(run.get("findings", []))
         if restart.get("verdict") == "DEVIATION":
             findings.append(
                 {
                     "id": "RT-INT-01",
                     "severity": "ACTIONABLE",
+                    "status": "OBSERVED",
                     "statement": "After a Runtime restart the existing Desktop process recovered the projection without a fresh credential; the recorded expectation was withheld-until-relaunch.",
                     "run": run["label"],
                 }
@@ -881,6 +926,7 @@ def summarize(runs: list[dict]) -> dict:
                 {
                     "id": "RT-INT-02",
                     "severity": "BLOCKING",
+                    "status": "OBSERVED",
                     "statement": "WM_CLOSE did not end the Desktop process cleanly; the harness had to force-kill the process it started.",
                     "run": run["label"],
                 }
@@ -890,16 +936,8 @@ def summarize(runs: list[dict]) -> dict:
                 {
                     "id": "RT-INT-03",
                     "severity": "NIT",
+                    "status": "OBSERVED",
                     "statement": "The Runtime restart did not change the HELLO epoch; a fresh process may reuse the DB-backed epoch.",
-                    "run": run["label"],
-                }
-            )
-        if clean.get("verdict") == "FAIL" and not clean.get("forced"):
-            findings.append(
-                {
-                    "id": "RT-INT-05",
-                    "severity": "ACTIONABLE",
-                    "statement": "WM_CLOSE ended the process, but the bounded observation-shutdown and preferences-save confirmations were not reported within the exit budget; the explicit NOT-confirmed outcome was printed instead.",
                     "run": run["label"],
                 }
             )
@@ -913,34 +951,75 @@ def summarize(runs: list[dict]) -> dict:
     }
 
 
+def git_paths(*args: str) -> list[str]:
+    """NUL-delimited path list from git; no porcelain status parsing."""
+    try:
+        completed = subprocess.run(
+            ["git", "-C", str(DESKTOP_ROOT), *args, "-z"],
+            capture_output=True,
+            timeout=30,
+        )
+        if completed.returncode != 0:
+            return []
+        return [entry for entry in completed.stdout.decode("utf-8", errors="replace").split("\0") if entry]
+    except (OSError, subprocess.SubprocessError):
+        return []
+
+
 def source_state() -> dict:
     """Committed HEAD plus the worktree sources the release binary was built from."""
+    staged = git_paths("diff", "--cached", "--name-only")
+    unstaged = git_paths("diff", "--name-only")
+    untracked = git_paths("ls-files", "--others", "--exclude-standard")
     dirty: list[dict] = []
+    other_tracked: list[dict] = []
     untracked_product: list[dict] = []
-    for line in git_value(DESKTOP_ROOT, "status", "--porcelain").splitlines():
-        if not line.strip():
-            continue
-        path_text = line[3:].strip()
-        if " -> " in path_text:
-            path_text = path_text.split(" -> ", 1)[1]
+    for path_text in sorted(set(staged) | set(unstaged)):
         full = DESKTOP_ROOT / path_text
         entry = {
-            "status": line[:2].strip() or "??",
+            "status": "M",
             "path": path_text,
             "sha256": sha256_file(full) if full.is_file() else None,
         }
-        if entry["status"] == "??":
-            if path_text.startswith(("apps/desktop/src/", "crates/")):
-                untracked_product.append(entry)
-        else:
+        if path_text.startswith(("apps/desktop/src/", "crates/")):
             dirty.append(entry)
-    state = {
+        else:
+            other_tracked.append(entry)
+    for path_text in sorted(set(untracked) - set(staged) - set(unstaged)):
+        if not path_text.startswith(("apps/desktop/src/", "crates/")):
+            continue
+        full = DESKTOP_ROOT / path_text
+        untracked_product.append(
+            {
+                "status": "??",
+                "path": path_text,
+                "sha256": sha256_file(full) if full.is_file() else None,
+            }
+        )
+    source = {
         "head": git_value(DESKTOP_ROOT, "rev-parse", "HEAD"),
+        "head_tree": git_value(DESKTOP_ROOT, "rev-parse", "HEAD^{tree}"),
         "dirty_tracked": dirty,
         "untracked_product_sources": untracked_product,
     }
-    state["fingerprint"] = sha256_text(json.dumps(state, ensure_ascii=False, sort_keys=True))
+    state = {**source, "other_tracked_changes": other_tracked}
+    state["fingerprint"] = sha256_text(json.dumps(source, ensure_ascii=False, sort_keys=True))
     return state
+
+
+def source_spot_checks() -> dict:
+    """Content hashes for the credential/runtime sources this evidence depends on."""
+    paths = (
+        "apps/desktop/src/credentials.rs",
+        "apps/desktop/src/runtime.rs",
+        "apps/desktop/src/main.rs",
+        "crates/cos-client/src/protocol_transport.rs",
+    )
+    checks: dict[str, str | None] = {}
+    for relative in paths:
+        full = DESKTOP_ROOT / relative
+        checks[relative] = sha256_file(full) if full.is_file() else None
+    return checks
 
 
 def build_desktop() -> dict:
@@ -981,26 +1060,42 @@ def main(argv: list[str] | None = None) -> int:
 
     EVIDENCE_DIR.mkdir(parents=True, exist_ok=True)
     WORK_ROOT.mkdir(parents=True, exist_ok=True)
-    build_facts: dict = {"performed": False}
+    build_facts: dict = {"performed": False, "attempts": []}
     if not args.no_build:
+        attempts: list[dict] = []
         stable = False
         for attempt in (1, 2):
             before = source_state()
             build = build_desktop()
             after = source_state()
-            build_facts = {
-                "performed": True,
+            stable_now = before["fingerprint"] == after["fingerprint"]
+            record = {
                 "attempt": attempt,
                 "exit": build["exit"],
-                "source_stable": before["fingerprint"] == after["fingerprint"],
+                "ok": build["ok"],
+                "source_stable": stable_now,
                 "tail": build["tail"],
             }
+            if attempt == 1 and not stable_now:
+                record["retry_reason"] = (
+                    "worktree source changed during the build; retrying so the binary matches "
+                    "a stable source state"
+                )
+            attempts.append(record)
             if not build["ok"]:
+                build_facts = {"performed": True, "attempts": attempts, "attempt_count": len(attempts)}
+                write_json(EVIDENCE_DIR / "build-failure.json", {"attempts": attempts})
                 print(f"[harness] build failed: {build['tail']}", file=sys.stderr, flush=True)
                 return 2
-            if build_facts["source_stable"]:
+            if stable_now:
                 stable = True
                 break
+        build_facts = {
+            "performed": True,
+            "attempts": attempts,
+            "attempt_count": len(attempts),
+            "retried": len(attempts) > 1,
+        }
         if not stable:
             print(
                 "[harness] worktree source changed during both build attempts; refusing to measure a mixed binary",
@@ -1060,6 +1155,12 @@ def main(argv: list[str] | None = None) -> int:
                 "source_at_start": source_before,
                 "source_at_end": source_after,
                 "source_changed_during_run": source_changed,
+                "source_binding": {
+                    "head_tree": source_before.get("head_tree"),
+                    "fingerprint": source_before.get("fingerprint"),
+                    "spot_checks": source_spot_checks(),
+                    "note": "The pre-fix evidence listed the malformed path pps/desktop/src/credentials.rs with sha256:null; this run records the corrected source state and the content hashes of the credential/runtime sources the binary was built from.",
+                },
                 "exe": str(DESKTOP_EXE),
                 "exe_sha256": sha256_file(DESKTOP_EXE),
                 "profile": "release",
@@ -1075,6 +1176,7 @@ def main(argv: list[str] | None = None) -> int:
             },
             "runs": runs,
             "determinism": summary,
+            "findings": summary.get("findings", []),
             "credential_store_cleanup": cleanup,
             "harness_error": error,
             "limits": [
