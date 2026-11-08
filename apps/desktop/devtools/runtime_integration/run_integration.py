@@ -1133,6 +1133,7 @@ def main(argv: list[str] | None = None) -> int:
                 {
                     "id": "RT-INT-04",
                     "severity": "NIT",
+                    "status": "OBSERVED",
                     "statement": "The worktree source changed while the harness was running; the recorded start state describes the built binary, the end state is newer.",
                 }
             )
@@ -1188,7 +1189,7 @@ def main(argv: list[str] | None = None) -> int:
                 "A Runtime restart uses a new process and a new in-memory credential registry; no reconnect protocol beyond the current relaunch path is exercised.",
             ],
             "closing_notes": [
-                "The worktree at run time contained another lane's uncommitted product changes; desktop.source_at_start lists every tracked modification and untracked product source with its SHA-256, and build.source_stable is true, so the binary matches that recorded state rather than a clean checkout of HEAD.",
+                "desktop.source_at_start records the product source the release binary was built from (HEAD plus its tree, dirty product entries and untracked product sources with SHA-256). In this run no product source was dirty at build time; source_changed_during_run records that another lane edited product files after the build, so source_at_end is newer than the binary.",
                 "Observed once before the 3 s close settle was added: a WM_CLOSE during the post-restart observation retry backoff exited 0 but printed 'observation shutdown NOT confirmed within the exit budget' and 'preferences save NOT confirmed within the exit budget'. The settle is harness pacing only; the explicit NOT-confirmed outcome remains a documented bounded-close limitation for the wave-2 lane and is recorded as finding RT-INT-05 whenever it recurs.",
                 "The Runtime restart has a new in-memory credential registry. A teardown revoke from the pre-restart Desktop session can therefore log 'Runtime credential revoke on teardown failed: runtime credential request was not authorized' in the sanitized stderr; the harness records the stderr hash instead of treating it as a scenario failure.",
                 "Credential Manager cleanup reported 'Element not found' because the environment-token override path did not leave a stored entry for this loopback origin.",

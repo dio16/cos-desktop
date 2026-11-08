@@ -1,6 +1,6 @@
 {
   "label": "run2",
-  "started_at": "2026-11-08T13:15:19+0900",
+  "started_at": "2026-11-08T13:49:39+0900",
   "scenarios": {
     "connect_snapshot": {
       "verdict": "PASS",
@@ -38,8 +38,8 @@
     "runtime_restart": {
       "verdict": "PASS",
       "epoch_changed": true,
-      "first_epoch": "7617798137a246d6827d836c7bb8351a",
-      "second_epoch": "2bc42cc630f34a49b1622c4088a27fa6",
+      "first_epoch": "9405aa350c094de7974179bb5b40d030",
+      "second_epoch": "4535de8424c54e6a9a101cb929c46974",
       "still_withheld": true,
       "projection_title_visible_without_credential": false,
       "screenshot": {
@@ -82,14 +82,15 @@
     ],
     "evidence_dir": "docs/development/evidence-published/rt-integration-latest/run2"
   },
+  "findings": [],
   "run_secret_recorded": false,
   "db_copy_sha256": "sha256:f87711008a546c31caf75ed6d24c3a5c95b1d824c8b43868f13e1e852bfb3e3d",
   "db_copy_bytes": 11493376,
   "server_first": {
-    "pid": 6944,
+    "pid": 46416,
     "server_identity": "cos-runtime-orchestrator",
     "server_build": "orchestrator-runtime/0.1.0",
-    "epoch": "7617798137a246d6827d836c7bb8351a",
+    "epoch": "9405aa350c094de7974179bb5b40d030",
     "protocol": {
       "major": 2,
       "minor": 0
@@ -97,7 +98,7 @@
     "start_index": 1
   },
   "app_credential": {
-    "principal": "desktop:ce0a4911340d219944de230f7b630614",
+    "principal": "desktop:2cae5ea0b89f8a26f239ffd79accaa74",
     "scopes": [
       "read:observe"
     ],
@@ -118,15 +119,15 @@
     ]
   },
   "server_stop": {
-    "pid": 6944,
+    "pid": 46416,
     "clean": true,
     "exit": 1
   },
   "server_second": {
-    "pid": 28924,
+    "pid": 47944,
     "server_identity": "cos-runtime-orchestrator",
     "server_build": "orchestrator-runtime/0.1.0",
-    "epoch": "2bc42cc630f34a49b1622c4088a27fa6",
+    "epoch": "4535de8424c54e6a9a101cb929c46974",
     "protocol": {
       "major": 2,
       "minor": 0
@@ -134,15 +135,15 @@
     "start_index": 2
   },
   "recovery_credential": {
-    "principal": "desktop:e2ae47b2142145a829ae4333c0f5947a",
+    "principal": "desktop:c06606817f570f39500985583187d34b",
     "token_recorded": false
   },
-  "runtime_log_sha256": "sha256:7f35e82d39284ae7bcb1d5e180279e6c0e87b6fcbf0bb7db1102dc8b69bc6377",
-  "finished_at": "2026-11-08T13:15:46+0900",
+  "runtime_log_sha256": "sha256:5229d4bc7be3a9d7112e322e5213223cbd880ddcad6823ee578146a818aa3ec7",
+  "finished_at": "2026-11-08T13:50:06+0900",
   "file_hashes": {
-    "connected.png": "sha256:49e60393f157245400139185ac235633bb57b59558e1a4bcc764b5837dc77b1b",
-    "withheld.png": "sha256:8f988ebfac7b2a5171ce808a24aa6187a5325ecea8371ea56fb541da4fac971a",
-    "restart-withheld.png": "sha256:8f988ebfac7b2a5171ce808a24aa6187a5325ecea8371ea56fb541da4fac971a",
-    "recovered.png": "sha256:01d8095b55bd8844d03ce3769d94cce48e639024b9e5e0cbdf85abd320d38998"
+    "connected.png": "sha256:d7594288538c39e091cff5716ba572fd7273b5b0b115801cec8fb36b84a7f8c5",
+    "withheld.png": "sha256:55304a9cafe96f3b4fd08c30d40872b607450a1506bfa8c58de3473f3ab28a37",
+    "restart-withheld.png": "sha256:55304a9cafe96f3b4fd08c30d40872b607450a1506bfa8c58de3473f3ab28a37",
+    "recovered.png": "sha256:408634d3dd91307275ab024754e4062ab03897b08d5e6b24be0b95887679e485"
   }
 }

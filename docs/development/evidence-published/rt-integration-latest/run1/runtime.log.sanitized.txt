@@ -1,56 +1,59 @@
 
---- start 1 2026-11-08T13:14:50+0900 ---
-2026-11-08 13:14:53,451 orchestrator.api INFO Config loaded: model=hf.co/empero-ai/Qwythos-9B-v2-GGUF:Q4_K_M, checkpoint=redcraft23INT8INT4FP8_30Krea2.safetensors
-2026-11-08 13:14:53,451 orchestrator.api INFO Config loaded: model=hf.co/empero-ai/Qwythos-9B-v2-GGUF:Q4_K_M, checkpoint=redcraft23INT8INT4FP8_30Krea2.safetensors
-2026-11-08 13:14:53,451 orchestrator.api INFO DB: C:\dev\cos-desktop\target\rt-integration\run1\generation-copy.sqlite
-2026-11-08 13:14:53,451 orchestrator.api INFO DB: C:\dev\cos-desktop\target\rt-integration\run1\generation-copy.sqlite
-2026-11-08 13:14:53,452 orchestrator.api INFO Starting API at http://127.0.0.1:8124
-2026-11-08 13:14:53,452 orchestrator.api INFO Starting API at http://127.0.0.1:8124
-INFO:     Started server process [38728]
+--- start 1 2026-11-08T13:49:06+0900 ---
+2026-11-08 13:49:09,505 orchestrator.api INFO Config loaded: model=hf.co/empero-ai/Qwythos-9B-v2-GGUF:Q4_K_M, checkpoint=redcraft23INT8INT4FP8_30Krea2.safetensors
+2026-11-08 13:49:09,505 orchestrator.api INFO Config loaded: model=hf.co/empero-ai/Qwythos-9B-v2-GGUF:Q4_K_M, checkpoint=redcraft23INT8INT4FP8_30Krea2.safetensors
+2026-11-08 13:49:09,505 orchestrator.api INFO DB: C:\dev\cos-desktop\target\rt-integration\run1\generation-copy.sqlite
+2026-11-08 13:49:09,505 orchestrator.api INFO DB: C:\dev\cos-desktop\target\rt-integration\run1\generation-copy.sqlite
+2026-11-08 13:49:09,505 orchestrator.api INFO Starting API at http://127.0.0.1:8124
+2026-11-08 13:49:09,505 orchestrator.api INFO Starting API at http://127.0.0.1:8124
+INFO:     Started server process [28144]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
 INFO:     Uvicorn running on http://127.0.0.1:8124 (Press CTRL+C to quit)
-INFO:     127.0.0.1:58893 - "GET /api/ready HTTP/1.1" 200 OK
-INFO:     127.0.0.1:58897 - "GET /api/cos/desktop/server HTTP/1.1" 200 OK
-2026-11-08 13:14:53,746 orchestrator.api INFO desktop_credential_audit operation=issue principal=desktop:d9d89604471533fb7ffe557eda165b32 result=accepted reason=-
-2026-11-08 13:14:53,746 orchestrator.api INFO desktop_credential_audit operation=issue principal=desktop:d9d89604471533fb7ffe557eda165b32 result=accepted reason=-
-INFO:     127.0.0.1:58898 - "POST /api/cos/desktop/credentials HTTP/1.1" 200 OK
-2026-11-08 13:14:53,778 orchestrator.api INFO desktop_credential_audit operation=issue principal=desktop:0469c4199ca9fa0c09d38e7f4e71da46 result=accepted reason=-
-2026-11-08 13:14:53,778 orchestrator.api INFO desktop_credential_audit operation=issue principal=desktop:0469c4199ca9fa0c09d38e7f4e71da46 result=accepted reason=-
-INFO:     127.0.0.1:58899 - "POST /api/cos/desktop/credentials HTTP/1.1" 200 OK
-INFO:     127.0.0.1:58900 - "POST /api/cos/desktop/observation HTTP/1.1" 200 OK
-INFO:     127.0.0.1:58905 - "GET /api/cos/desktop/server HTTP/1.1" 200 OK
-INFO:     127.0.0.1:58905 - "POST /api/cos/desktop/observation HTTP/1.1" 200 OK
-INFO:     127.0.0.1:58905 - "GET /api/cos/desktop/deltas?cursor=cursor-89190ac2a3b14967a1a7a260683798ce HTTP/1.1" 200 OK
-INFO:     127.0.0.1:58905 - "GET /api/cos/desktop/deltas?cursor=cursor-89190ac2a3b14967a1a7a260683798ce HTTP/1.1" 200 OK
-INFO:     127.0.0.1:58905 - "GET /api/cos/desktop/deltas?cursor=cursor-89190ac2a3b14967a1a7a260683798ce HTTP/1.1" 200 OK
-INFO:     127.0.0.1:58905 - "GET /api/cos/desktop/deltas?cursor=cursor-89190ac2a3b14967a1a7a260683798ce HTTP/1.1" 200 OK
-INFO:     127.0.0.1:58905 - "GET /api/cos/desktop/deltas?cursor=cursor-89190ac2a3b14967a1a7a260683798ce HTTP/1.1" 200 OK
-INFO:     127.0.0.1:58905 - "GET /api/cos/desktop/deltas?cursor=cursor-89190ac2a3b14967a1a7a260683798ce HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54731 - "GET /api/ready HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60113 - "GET /api/cos/desktop/server HTTP/1.1" 200 OK
+2026-11-08 13:49:09,991 orchestrator.api INFO desktop_credential_audit operation=issue principal=desktop:0f5e6f4fcd6a1ca34804678926da960e result=accepted reason=-
+2026-11-08 13:49:09,991 orchestrator.api INFO desktop_credential_audit operation=issue principal=desktop:0f5e6f4fcd6a1ca34804678926da960e result=accepted reason=-
+INFO:     127.0.0.1:60114 - "POST /api/cos/desktop/credentials HTTP/1.1" 200 OK
+2026-11-08 13:49:10,023 orchestrator.api INFO desktop_credential_audit operation=issue principal=desktop:eeb6a7e402863f90fbbb984b2c4a09ed result=accepted reason=-
+2026-11-08 13:49:10,023 orchestrator.api INFO desktop_credential_audit operation=issue principal=desktop:eeb6a7e402863f90fbbb984b2c4a09ed result=accepted reason=-
+INFO:     127.0.0.1:60115 - "POST /api/cos/desktop/credentials HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60116 - "POST /api/cos/desktop/observation HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60126 - "GET /api/cos/desktop/server HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60126 - "POST /api/cos/desktop/observation HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60126 - "GET /api/cos/desktop/deltas?cursor=cursor-443460eba66549c6961b92ba9ceefb6a HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60126 - "GET /api/cos/desktop/deltas?cursor=cursor-443460eba66549c6961b92ba9ceefb6a HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60126 - "GET /api/cos/desktop/deltas?cursor=cursor-443460eba66549c6961b92ba9ceefb6a HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60126 - "GET /api/cos/desktop/deltas?cursor=cursor-443460eba66549c6961b92ba9ceefb6a HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60126 - "GET /api/cos/desktop/deltas?cursor=cursor-443460eba66549c6961b92ba9ceefb6a HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60126 - "GET /api/cos/desktop/deltas?cursor=cursor-443460eba66549c6961b92ba9ceefb6a HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60126 - "GET /api/cos/desktop/deltas?cursor=cursor-443460eba66549c6961b92ba9ceefb6a HTTP/1.1" 200 OK
+INFO:     127.0.0.1:60126 - "GET /api/cos/desktop/deltas?cursor=cursor-443460eba66549c6961b92ba9ceefb6a HTTP/1.1" 200 OK
 
---- start 2 2026-11-08T13:14:59+0900 ---
-2026-11-08 13:15:02,135 orchestrator.api INFO Config loaded: model=hf.co/empero-ai/Qwythos-9B-v2-GGUF:Q4_K_M, checkpoint=redcraft23INT8INT4FP8_30Krea2.safetensors
-2026-11-08 13:15:02,135 orchestrator.api INFO Config loaded: model=hf.co/empero-ai/Qwythos-9B-v2-GGUF:Q4_K_M, checkpoint=redcraft23INT8INT4FP8_30Krea2.safetensors
-2026-11-08 13:15:02,135 orchestrator.api INFO DB: C:\dev\cos-desktop\target\rt-integration\run1\generation-copy.sqlite
-2026-11-08 13:15:02,135 orchestrator.api INFO DB: C:\dev\cos-desktop\target\rt-integration\run1\generation-copy.sqlite
-2026-11-08 13:15:02,135 orchestrator.api INFO Starting API at http://127.0.0.1:8124
-2026-11-08 13:15:02,135 orchestrator.api INFO Starting API at http://127.0.0.1:8124
-INFO:     Started server process [44092]
+--- start 2 2026-11-08T13:49:19+0900 ---
+2026-11-08 13:49:22,344 orchestrator.api INFO Config loaded: model=hf.co/empero-ai/Qwythos-9B-v2-GGUF:Q4_K_M, checkpoint=redcraft23INT8INT4FP8_30Krea2.safetensors
+2026-11-08 13:49:22,344 orchestrator.api INFO Config loaded: model=hf.co/empero-ai/Qwythos-9B-v2-GGUF:Q4_K_M, checkpoint=redcraft23INT8INT4FP8_30Krea2.safetensors
+2026-11-08 13:49:22,344 orchestrator.api INFO DB: C:\dev\cos-desktop\target\rt-integration\run1\generation-copy.sqlite
+2026-11-08 13:49:22,344 orchestrator.api INFO DB: C:\dev\cos-desktop\target\rt-integration\run1\generation-copy.sqlite
+2026-11-08 13:49:22,344 orchestrator.api INFO Starting API at http://127.0.0.1:8124
+2026-11-08 13:49:22,344 orchestrator.api INFO Starting API at http://127.0.0.1:8124
+INFO:     Started server process [50696]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
 INFO:     Uvicorn running on http://127.0.0.1:8124 (Press CTRL+C to quit)
-INFO:     127.0.0.1:55092 - "GET /api/ready HTTP/1.1" 200 OK
-INFO:     127.0.0.1:55097 - "GET /api/cos/desktop/server HTTP/1.1" 200 OK
-2026-11-08 13:15:17,026 orchestrator.api INFO desktop_credential_audit operation=issue principal=desktop:4a06700cb9a434dc50b7c32b1bfeafc5 result=accepted reason=-
-2026-11-08 13:15:17,026 orchestrator.api INFO desktop_credential_audit operation=issue principal=desktop:4a06700cb9a434dc50b7c32b1bfeafc5 result=accepted reason=-
-INFO:     127.0.0.1:52708 - "POST /api/cos/desktop/credentials HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52709 - "GET /api/cos/desktop/server HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52709 - "POST /api/cos/desktop/observation HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52709 - "GET /api/cos/desktop/deltas?cursor=cursor-75b867b7736d4d30a78e92cb133113b8 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52709 - "GET /api/cos/desktop/deltas?cursor=cursor-75b867b7736d4d30a78e92cb133113b8 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52709 - "GET /api/cos/desktop/deltas?cursor=cursor-75b867b7736d4d30a78e92cb133113b8 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52709 - "GET /api/cos/desktop/deltas?cursor=cursor-75b867b7736d4d30a78e92cb133113b8 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52709 - "GET /api/cos/desktop/deltas?cursor=cursor-75b867b7736d4d30a78e92cb133113b8 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52709 - "GET /api/cos/desktop/deltas?cursor=cursor-75b867b7736d4d30a78e92cb133113b8 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52709 - "GET /api/cos/desktop/deltas?cursor=cursor-75b867b7736d4d30a78e92cb133113b8 HTTP/1.1" 200 OK
-INFO:     127.0.0.1:52709 - "GET /api/cos/desktop/deltas?cursor=cursor-75b867b7736d4d30a78e92cb133113b8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53016 - "GET /api/ready HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53019 - "GET /api/cos/desktop/server HTTP/1.1" 200 OK
+2026-11-08 13:49:35,838 orchestrator.api INFO desktop_credential_audit operation=issue principal=desktop:1327b364a90a6a5f9f00db6623e17e85 result=accepted reason=-
+2026-11-08 13:49:35,838 orchestrator.api INFO desktop_credential_audit operation=issue principal=desktop:1327b364a90a6a5f9f00db6623e17e85 result=accepted reason=-
+INFO:     127.0.0.1:49925 - "POST /api/cos/desktop/credentials HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62519 - "GET /api/cos/desktop/server HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62519 - "POST /api/cos/desktop/observation HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62519 - "GET /api/cos/desktop/deltas?cursor=cursor-6e295cfacc8a45ad80207af851a37a2a HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62519 - "GET /api/cos/desktop/deltas?cursor=cursor-6e295cfacc8a45ad80207af851a37a2a HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62519 - "GET /api/cos/desktop/deltas?cursor=cursor-6e295cfacc8a45ad80207af851a37a2a HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62519 - "GET /api/cos/desktop/deltas?cursor=cursor-6e295cfacc8a45ad80207af851a37a2a HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62519 - "GET /api/cos/desktop/deltas?cursor=cursor-6e295cfacc8a45ad80207af851a37a2a HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62519 - "GET /api/cos/desktop/deltas?cursor=cursor-6e295cfacc8a45ad80207af851a37a2a HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62519 - "GET /api/cos/desktop/deltas?cursor=cursor-6e295cfacc8a45ad80207af851a37a2a HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62519 - "GET /api/cos/desktop/deltas?cursor=cursor-6e295cfacc8a45ad80207af851a37a2a HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62519 - "GET /api/cos/desktop/deltas?cursor=cursor-6e295cfacc8a45ad80207af851a37a2a HTTP/1.1" 200 OK

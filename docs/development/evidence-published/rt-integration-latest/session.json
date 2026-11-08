@@ -1,6 +1,6 @@
 {
   "measurement": "Live Desktop<->Runtime integration baseline (RT2/RT3/ACC1)",
-  "date": "2026-11-08T13:15:46+0900",
+  "date": "2026-11-08T13:50:06+0900",
   "harness": {
     "command": "python apps/desktop/devtools/runtime_integration/run_integration.py --runs 2",
     "port": 8124,
@@ -11,120 +11,230 @@
   },
   "build": {
     "performed": true,
-    "attempt": 2,
-    "exit": 0,
-    "source_stable": true,
-    "tail": "warning: linker stdout: LINK : warning LNK4044: オプション '/fuse-ld=lld' は無効です。無視されます。\n  |\n  = note: `#[warn(linker_messages)]` on by default\n\nwarning: `cos-desktop` (bin \"cos-desktop\") generated 1 warning\n    Finished `release` profile [optimized] target(s) in 1.65s\n"
+    "attempts": [
+      {
+        "attempt": 1,
+        "exit": 0,
+        "ok": true,
+        "source_stable": true,
+        "tail": "   Compiling cos-client v0.1.0 (C:\\dev\\cos-desktop\\crates\\cos-client)\n   Compiling app-core v0.1.0 (C:\\dev\\cos-desktop\\crates\\app-core)\n   Compiling ui-model v0.1.0 (C:\\dev\\cos-desktop\\crates\\ui-model)\n   Compiling desktop-gpui v0.1.0 (C:\\dev\\cos-desktop\\crates\\desktop-gpui)\n   Compiling cos-desktop v0.1.0 (C:\\dev\\cos-desktop\\apps\\desktop)\nwarning: linker stdout: LINK : warning LNK4044: オプション '/fuse-ld=lld' は無効です。無視されます。\n  |\n  = note: `#[warn(linker_messages)]` on by default\n\nwarning: `cos-desktop` (bin \"cos-desktop\") generated 1 warning\n    Finished `release` profile [optimized] target(s) in 1m 41s\n"
+      }
+    ],
+    "attempt_count": 1,
+    "retried": false
   },
   "desktop": {
-    "head": "384350facf82c440e892aa1ecd8fb9b0ca6376e2",
+    "head": "c81763dd545c755c4418d2c02585f2679185aa56",
     "built_from": "worktree at the recorded start state plus the listed tracked/untracked product sources",
     "build_command": "cargo build --locked --release -p cos-desktop --bin cos-desktop",
     "source_at_start": {
-      "head": "384350facf82c440e892aa1ecd8fb9b0ca6376e2",
-      "dirty_tracked": [
-        {
-          "status": "M",
-          "path": "pps/desktop/src/credentials.rs",
-          "sha256": null
-        },
-        {
-          "status": "M",
-          "path": "apps/desktop/src/main.rs",
-          "sha256": "sha256:3f2a1bbaa1cf85978bb0b1de1cfba138d80ebac45b9e61e5a245e79e2c66d484"
-        },
-        {
-          "status": "M",
-          "path": "apps/desktop/src/runtime.rs",
-          "sha256": "sha256:0e5b469a1adb62cda59d5f80ea4f0c0c174da92871e5463f88192611c80d934b"
-        },
-        {
-          "status": "M",
-          "path": "crates/cos-client/src/lib.rs",
-          "sha256": "sha256:5f27c5838498faa9c48ba3a5cfcb48825ce713fa72860ab332f06c78fa7a5fb5"
-        },
-        {
-          "status": "M",
-          "path": "crates/cos-client/src/protocol_transport.rs",
-          "sha256": "sha256:36b2ee5c7de338a28a67eeb3608e0f24659c6853a770f80fac13d79dabb58245"
-        },
-        {
-          "status": "M",
-          "path": "crates/cos-client/tests/observation_compat_v1.rs",
-          "sha256": "sha256:a5fadd5f8939d5acaab0446e47c975b3922a7ecf90359e37f20342ca849bc609"
-        },
-        {
-          "status": "M",
-          "path": "crates/cos-client/tests/protocol_transport.rs",
-          "sha256": "sha256:1c6b413de9a4340789e9d25051335e922159a688c041c48de905b453833c5361"
-        }
-      ],
-      "untracked_product_sources": [
-        {
-          "status": "??",
-          "path": "apps/desktop/src/credential_issuance.rs",
-          "sha256": "sha256:f725690a61254c5616399c044f5ed7536732a91044d50de723385348cb6e47b1"
-        }
-      ],
-      "fingerprint": "sha256:86515715cf515a43e5cdf52b61e3ab9360997a88e2819c615f4366d35d7f1bb3"
+      "head": "c81763dd545c755c4418d2c02585f2679185aa56",
+      "head_tree": "516554dacf5751b4e092732a6506d1709fae4447",
+      "dirty_tracked": [],
+      "untracked_product_sources": [],
+      "other_tracked_changes": [],
+      "fingerprint": "sha256:310363e30c30fa25c2736f096ee1714dc0f10966e74a28763749f1bf5809d1a5"
     },
     "source_at_end": {
-      "head": "384350facf82c440e892aa1ecd8fb9b0ca6376e2",
+      "head": "c81763dd545c755c4418d2c02585f2679185aa56",
+      "head_tree": "516554dacf5751b4e092732a6506d1709fae4447",
       "dirty_tracked": [
         {
           "status": "M",
-          "path": "pps/desktop/src/credentials.rs",
-          "sha256": null
-        },
-        {
-          "status": "M",
           "path": "apps/desktop/src/main.rs",
-          "sha256": "sha256:3f2a1bbaa1cf85978bb0b1de1cfba138d80ebac45b9e61e5a245e79e2c66d484"
-        },
-        {
-          "status": "M",
-          "path": "apps/desktop/src/runtime.rs",
-          "sha256": "sha256:0e5b469a1adb62cda59d5f80ea4f0c0c174da92871e5463f88192611c80d934b"
-        },
-        {
-          "status": "M",
-          "path": "crates/cos-client/src/lib.rs",
-          "sha256": "sha256:5f27c5838498faa9c48ba3a5cfcb48825ce713fa72860ab332f06c78fa7a5fb5"
+          "sha256": "sha256:d69ddcbc2a6fadf0f3d3ff08336c41ba0fd545e49070bc2afe586f06424eef02"
         },
         {
           "status": "M",
           "path": "crates/cos-client/src/protocol_transport.rs",
-          "sha256": "sha256:36b2ee5c7de338a28a67eeb3608e0f24659c6853a770f80fac13d79dabb58245"
+          "sha256": "sha256:20353b01a2f2ce642e62bbe86f09a7c4b1cf8ead953c5cfbf715fcc33fe38dc9"
+        }
+      ],
+      "untracked_product_sources": [],
+      "other_tracked_changes": [
+        {
+          "status": "M",
+          "path": "docs/development/evidence-published/rt-integration-latest/run1/connected.png",
+          "sha256": "sha256:d7594288538c39e091cff5716ba572fd7273b5b0b115801cec8fb36b84a7f8c5"
         },
         {
           "status": "M",
-          "path": "crates/cos-client/tests/observation_compat_v1.rs",
-          "sha256": "sha256:a5fadd5f8939d5acaab0446e47c975b3922a7ecf90359e37f20342ca849bc609"
+          "path": "docs/development/evidence-published/rt-integration-latest/run1/facts.json",
+          "sha256": "sha256:5e4e23eb685b8e1a13992616b58807e586cd72677e14880b02bf9cc68722c43d"
         },
         {
           "status": "M",
-          "path": "crates/cos-client/tests/protocol_transport.rs",
-          "sha256": "sha256:1c6b413de9a4340789e9d25051335e922159a688c041c48de905b453833c5361"
-        }
-      ],
-      "untracked_product_sources": [
+          "path": "docs/development/evidence-published/rt-integration-latest/run1/recovered.png",
+          "sha256": "sha256:408634d3dd91307275ab024754e4062ab03897b08d5e6b24be0b95887679e485"
+        },
         {
-          "status": "??",
-          "path": "apps/desktop/src/credential_issuance.rs",
-          "sha256": "sha256:f725690a61254c5616399c044f5ed7536732a91044d50de723385348cb6e47b1"
+          "status": "M",
+          "path": "docs/development/evidence-published/rt-integration-latest/run1/restart-withheld.png",
+          "sha256": "sha256:55304a9cafe96f3b4fd08c30d40872b607450a1506bfa8c58de3473f3ab28a37"
+        },
+        {
+          "status": "M",
+          "path": "docs/development/evidence-published/rt-integration-latest/run1/runtime.log.sanitized.txt",
+          "sha256": "sha256:d8bc5834db37ece1f4ec5802a3f9ad2edf6b3599ef7ab8a2d3c80b6cf8ca6700"
+        },
+        {
+          "status": "M",
+          "path": "docs/development/evidence-published/rt-integration-latest/run1/shot-connected.json",
+          "sha256": "sha256:6f1357e4bb9099c8d1b682702df560da322fed5abf5a10b84ca74364a6152ec7"
+        },
+        {
+          "status": "M",
+          "path": "docs/development/evidence-published/rt-integration-latest/run1/shot-recovered.json",
+          "sha256": "sha256:a0e2817bdbd1eb9451de0a5cf2af1b12281c9057075927e0a7496a686cc747e1"
+        },
+        {
+          "status": "M",
+          "path": "docs/development/evidence-published/rt-integration-latest/run1/shot-restart-withheld.json",
+          "sha256": "sha256:21907b969292902df43b90845c27184bfb60182a42779f43de0ab4000f67c552"
+        },
+        {
+          "status": "M",
+          "path": "docs/development/evidence-published/rt-integration-latest/run1/shot-withheld.json",
+          "sha256": "sha256:7f3d25cb30927ed1a6ee698e8abd63b77863ffe474ece70a383b66d5c100972c"
+        },
+        {
+          "status": "M",
+          "path": "docs/development/evidence-published/rt-integration-latest/run1/uia-connected.json",
+          "sha256": "sha256:cb8568690c53816805c4265637d4facd9d67e71ff8cc6151a805cbbc2725dddf"
+        },
+        {
+          "status": "M",
+          "path": "docs/development/evidence-published/rt-integration-latest/run1/uia-recovered.json",
+          "sha256": "sha256:7cf62414f41e7778b5ef941d44251cff3b002a6feba66283902d8a046d657b83"
+        },
+        {
+          "status": "M",
+          "path": "docs/development/evidence-published/rt-integration-latest/run1/uia-restart-withheld.json",
+          "sha256": "sha256:4f7414a4421c81faf846e595e95632fb9c476814d9b012ac3a3877f8bffb30cd"
+        },
+        {
+          "status": "M",
+          "path": "docs/development/evidence-published/rt-integration-latest/run1/uia-window-recovery.json",
+          "sha256": "sha256:7cf62414f41e7778b5ef941d44251cff3b002a6feba66283902d8a046d657b83"
+        },
+        {
+          "status": "M",
+          "path": "docs/development/evidence-published/rt-integration-latest/run1/uia-window.json",
+          "sha256": "sha256:cb8568690c53816805c4265637d4facd9d67e71ff8cc6151a805cbbc2725dddf"
+        },
+        {
+          "status": "M",
+          "path": "docs/development/evidence-published/rt-integration-latest/run1/uia-withheld.json",
+          "sha256": "sha256:4f7414a4421c81faf846e595e95632fb9c476814d9b012ac3a3877f8bffb30cd"
+        },
+        {
+          "status": "M",
+          "path": "docs/development/evidence-published/rt-integration-latest/run1/withheld.png",
+          "sha256": "sha256:55304a9cafe96f3b4fd08c30d40872b607450a1506bfa8c58de3473f3ab28a37"
+        },
+        {
+          "status": "M",
+          "path": "docs/development/evidence-published/rt-integration-latest/run2/connected.png",
+          "sha256": "sha256:d7594288538c39e091cff5716ba572fd7273b5b0b115801cec8fb36b84a7f8c5"
+        },
+        {
+          "status": "M",
+          "path": "docs/development/evidence-published/rt-integration-latest/run2/facts.json",
+          "sha256": "sha256:aa5c61e30a6a4156a8cd4e5411e675000d17b8f1f5585ffb866fb6bdee347812"
+        },
+        {
+          "status": "M",
+          "path": "docs/development/evidence-published/rt-integration-latest/run2/recovered.png",
+          "sha256": "sha256:408634d3dd91307275ab024754e4062ab03897b08d5e6b24be0b95887679e485"
+        },
+        {
+          "status": "M",
+          "path": "docs/development/evidence-published/rt-integration-latest/run2/restart-withheld.png",
+          "sha256": "sha256:55304a9cafe96f3b4fd08c30d40872b607450a1506bfa8c58de3473f3ab28a37"
+        },
+        {
+          "status": "M",
+          "path": "docs/development/evidence-published/rt-integration-latest/run2/runtime.log.sanitized.txt",
+          "sha256": "sha256:00d3fc67482f77ff46a507086188886519dc11d269333809dcc199f7f4f65eaa"
+        },
+        {
+          "status": "M",
+          "path": "docs/development/evidence-published/rt-integration-latest/run2/shot-connected.json",
+          "sha256": "sha256:d715c09082d37abba3cb3f5f073b3b212242c65994efc4f0fa944f5aabff49b7"
+        },
+        {
+          "status": "M",
+          "path": "docs/development/evidence-published/rt-integration-latest/run2/shot-recovered.json",
+          "sha256": "sha256:521377788e41522c53f2ca311ac0fe5238581cf6afea70aca7c3b159929e89a4"
+        },
+        {
+          "status": "M",
+          "path": "docs/development/evidence-published/rt-integration-latest/run2/shot-restart-withheld.json",
+          "sha256": "sha256:e6233ca8d3b62f9ef5fbabd63112a8753b435a39e66c3e0a4d1c4dfdb1b72575"
+        },
+        {
+          "status": "M",
+          "path": "docs/development/evidence-published/rt-integration-latest/run2/shot-withheld.json",
+          "sha256": "sha256:ea69ae16cd4080257609bd0042b8d504d562d5266f858fac59290616d62c525a"
+        },
+        {
+          "status": "M",
+          "path": "docs/development/evidence-published/rt-integration-latest/run2/uia-connected.json",
+          "sha256": "sha256:bda55bfd5a42ae42007ac34c2ad76d56a42cf965e90c822183d76b07a15fbde6"
+        },
+        {
+          "status": "M",
+          "path": "docs/development/evidence-published/rt-integration-latest/run2/uia-recovered.json",
+          "sha256": "sha256:e002718f079f9cb0749dcb4a78cae881759297af79477bf468d3481bd0ae5aec"
+        },
+        {
+          "status": "M",
+          "path": "docs/development/evidence-published/rt-integration-latest/run2/uia-restart-withheld.json",
+          "sha256": "sha256:f547d39d6af2c15c4006dda4067fb23e7e20f2879e811dde59b4f47042a3d1a5"
+        },
+        {
+          "status": "M",
+          "path": "docs/development/evidence-published/rt-integration-latest/run2/uia-window-recovery.json",
+          "sha256": "sha256:e002718f079f9cb0749dcb4a78cae881759297af79477bf468d3481bd0ae5aec"
+        },
+        {
+          "status": "M",
+          "path": "docs/development/evidence-published/rt-integration-latest/run2/uia-window.json",
+          "sha256": "sha256:bda55bfd5a42ae42007ac34c2ad76d56a42cf965e90c822183d76b07a15fbde6"
+        },
+        {
+          "status": "M",
+          "path": "docs/development/evidence-published/rt-integration-latest/run2/uia-withheld.json",
+          "sha256": "sha256:f547d39d6af2c15c4006dda4067fb23e7e20f2879e811dde59b4f47042a3d1a5"
+        },
+        {
+          "status": "M",
+          "path": "docs/development/evidence-published/rt-integration-latest/run2/withheld.png",
+          "sha256": "sha256:55304a9cafe96f3b4fd08c30d40872b607450a1506bfa8c58de3473f3ab28a37"
         }
       ],
-      "fingerprint": "sha256:86515715cf515a43e5cdf52b61e3ab9360997a88e2819c615f4366d35d7f1bb3"
+      "fingerprint": "sha256:54eb7d44f914c263708fae999f9512878b3e5dc2b73f340bff39e2b38b349d1d"
     },
-    "source_changed_during_run": false,
+    "source_changed_during_run": true,
+    "source_binding": {
+      "head_tree": "516554dacf5751b4e092732a6506d1709fae4447",
+      "fingerprint": "sha256:310363e30c30fa25c2736f096ee1714dc0f10966e74a28763749f1bf5809d1a5",
+      "spot_checks": {
+        "apps/desktop/src/credentials.rs": "sha256:5d101b223af3804e53d4d69597bfb6b24b40e11cf382b1cd328c41687b7618ba",
+        "apps/desktop/src/runtime.rs": "sha256:0e5b469a1adb62cda59d5f80ea4f0c0c174da92871e5463f88192611c80d934b",
+        "apps/desktop/src/main.rs": "sha256:d69ddcbc2a6fadf0f3d3ff08336c41ba0fd545e49070bc2afe586f06424eef02",
+        "crates/cos-client/src/protocol_transport.rs": "sha256:20353b01a2f2ce642e62bbe86f09a7c4b1cf8ead953c5cfbf715fcc33fe38dc9"
+      },
+      "note": "The pre-fix evidence listed the malformed path pps/desktop/src/credentials.rs with sha256:null; this run records the corrected source state and the content hashes of the credential/runtime sources the binary was built from."
+    },
     "exe": "C:\\dev\\cos-desktop\\target\\release\\cos-desktop.exe",
-    "exe_sha256": "sha256:46c472e975830e7bb6ef26ac5391a0adda08d427364995b7e985cdcbfbef9164",
+    "exe_sha256": "sha256:c4b75e65e4c7a2276fee8632887a5fb12045fe0c688eca399f1b98a0dcfbe6ab",
     "profile": "release",
     "fixture_flags": []
   },
   "runtime": {
     "root": "C:\\AI\\orchestrator",
-    "commit": "d82802d725737488dea9377cea942550d9c066b6",
+    "commit": "d37f68069142fbe29eafe1b13156fec4efd12dff",
     "python": "C:\\AI\\orchestrator\\.venv\\Scripts\\python.exe",
     "source_db": "C:\\AI\\orchestrator\\db\\generation.sqlite",
     "source_db_sha256": "sha256:fbfe3ababb9f53dfb1c373774ce99bdfed813d7b64ad743164fa6adfbc0c56f6",
@@ -136,7 +246,7 @@
   "runs": [
     {
       "label": "run1",
-      "started_at": "2026-11-08T13:14:50+0900",
+      "started_at": "2026-11-08T13:49:05+0900",
       "scenarios": {
         "connect_snapshot": {
           "verdict": "PASS",
@@ -174,8 +284,8 @@
         "runtime_restart": {
           "verdict": "PASS",
           "epoch_changed": true,
-          "first_epoch": "b22f91626c61459b89ab966cfc55fcaf",
-          "second_epoch": "b331e0ffba0a4a43b9df7f17fbb52a69",
+          "first_epoch": "09dfcf00916c432b978a62a4a01b34a2",
+          "second_epoch": "6cb10dffc77e4df39d6829af9791bf53",
           "still_withheld": true,
           "projection_title_visible_without_credential": false,
           "screenshot": {
@@ -218,14 +328,15 @@
         ],
         "evidence_dir": "docs/development/evidence-published/rt-integration-latest/run1"
       },
+      "findings": [],
       "run_secret_recorded": false,
       "db_copy_sha256": "sha256:f87711008a546c31caf75ed6d24c3a5c95b1d824c8b43868f13e1e852bfb3e3d",
       "db_copy_bytes": 11493376,
       "server_first": {
-        "pid": 38488,
+        "pid": 50812,
         "server_identity": "cos-runtime-orchestrator",
         "server_build": "orchestrator-runtime/0.1.0",
-        "epoch": "b22f91626c61459b89ab966cfc55fcaf",
+        "epoch": "09dfcf00916c432b978a62a4a01b34a2",
         "protocol": {
           "major": 2,
           "minor": 0
@@ -233,7 +344,7 @@
         "start_index": 1
       },
       "app_credential": {
-        "principal": "desktop:d9d89604471533fb7ffe557eda165b32",
+        "principal": "desktop:0f5e6f4fcd6a1ca34804678926da960e",
         "scopes": [
           "read:observe"
         ],
@@ -254,15 +365,15 @@
         ]
       },
       "server_stop": {
-        "pid": 38488,
+        "pid": 50812,
         "clean": true,
         "exit": 1
       },
       "server_second": {
-        "pid": 44952,
+        "pid": 42148,
         "server_identity": "cos-runtime-orchestrator",
         "server_build": "orchestrator-runtime/0.1.0",
-        "epoch": "b331e0ffba0a4a43b9df7f17fbb52a69",
+        "epoch": "6cb10dffc77e4df39d6829af9791bf53",
         "protocol": {
           "major": 2,
           "minor": 0
@@ -270,21 +381,21 @@
         "start_index": 2
       },
       "recovery_credential": {
-        "principal": "desktop:4a06700cb9a434dc50b7c32b1bfeafc5",
+        "principal": "desktop:1327b364a90a6a5f9f00db6623e17e85",
         "token_recorded": false
       },
-      "runtime_log_sha256": "sha256:29506b8d60a99b4b1aef18823dc3ad5aa4402874d03eee4f6626ea632313bb03",
-      "finished_at": "2026-11-08T13:15:19+0900",
+      "runtime_log_sha256": "sha256:a29540b49be5a86f28ef42438b9a8d1304095de3f2677f59eafe1d47cc84b0d6",
+      "finished_at": "2026-11-08T13:49:39+0900",
       "file_hashes": {
-        "connected.png": "sha256:49e60393f157245400139185ac235633bb57b59558e1a4bcc764b5837dc77b1b",
-        "withheld.png": "sha256:8f988ebfac7b2a5171ce808a24aa6187a5325ecea8371ea56fb541da4fac971a",
-        "restart-withheld.png": "sha256:8f988ebfac7b2a5171ce808a24aa6187a5325ecea8371ea56fb541da4fac971a",
-        "recovered.png": "sha256:01d8095b55bd8844d03ce3769d94cce48e639024b9e5e0cbdf85abd320d38998"
+        "connected.png": "sha256:d7594288538c39e091cff5716ba572fd7273b5b0b115801cec8fb36b84a7f8c5",
+        "withheld.png": "sha256:55304a9cafe96f3b4fd08c30d40872b607450a1506bfa8c58de3473f3ab28a37",
+        "restart-withheld.png": "sha256:55304a9cafe96f3b4fd08c30d40872b607450a1506bfa8c58de3473f3ab28a37",
+        "recovered.png": "sha256:408634d3dd91307275ab024754e4062ab03897b08d5e6b24be0b95887679e485"
       }
     },
     {
       "label": "run2",
-      "started_at": "2026-11-08T13:15:19+0900",
+      "started_at": "2026-11-08T13:49:39+0900",
       "scenarios": {
         "connect_snapshot": {
           "verdict": "PASS",
@@ -322,8 +433,8 @@
         "runtime_restart": {
           "verdict": "PASS",
           "epoch_changed": true,
-          "first_epoch": "7617798137a246d6827d836c7bb8351a",
-          "second_epoch": "2bc42cc630f34a49b1622c4088a27fa6",
+          "first_epoch": "9405aa350c094de7974179bb5b40d030",
+          "second_epoch": "4535de8424c54e6a9a101cb929c46974",
           "still_withheld": true,
           "projection_title_visible_without_credential": false,
           "screenshot": {
@@ -366,14 +477,15 @@
         ],
         "evidence_dir": "docs/development/evidence-published/rt-integration-latest/run2"
       },
+      "findings": [],
       "run_secret_recorded": false,
       "db_copy_sha256": "sha256:f87711008a546c31caf75ed6d24c3a5c95b1d824c8b43868f13e1e852bfb3e3d",
       "db_copy_bytes": 11493376,
       "server_first": {
-        "pid": 6944,
+        "pid": 46416,
         "server_identity": "cos-runtime-orchestrator",
         "server_build": "orchestrator-runtime/0.1.0",
-        "epoch": "7617798137a246d6827d836c7bb8351a",
+        "epoch": "9405aa350c094de7974179bb5b40d030",
         "protocol": {
           "major": 2,
           "minor": 0
@@ -381,7 +493,7 @@
         "start_index": 1
       },
       "app_credential": {
-        "principal": "desktop:ce0a4911340d219944de230f7b630614",
+        "principal": "desktop:2cae5ea0b89f8a26f239ffd79accaa74",
         "scopes": [
           "read:observe"
         ],
@@ -402,15 +514,15 @@
         ]
       },
       "server_stop": {
-        "pid": 6944,
+        "pid": 46416,
         "clean": true,
         "exit": 1
       },
       "server_second": {
-        "pid": 28924,
+        "pid": 47944,
         "server_identity": "cos-runtime-orchestrator",
         "server_build": "orchestrator-runtime/0.1.0",
-        "epoch": "2bc42cc630f34a49b1622c4088a27fa6",
+        "epoch": "4535de8424c54e6a9a101cb929c46974",
         "protocol": {
           "major": 2,
           "minor": 0
@@ -418,16 +530,16 @@
         "start_index": 2
       },
       "recovery_credential": {
-        "principal": "desktop:e2ae47b2142145a829ae4333c0f5947a",
+        "principal": "desktop:c06606817f570f39500985583187d34b",
         "token_recorded": false
       },
-      "runtime_log_sha256": "sha256:7f35e82d39284ae7bcb1d5e180279e6c0e87b6fcbf0bb7db1102dc8b69bc6377",
-      "finished_at": "2026-11-08T13:15:46+0900",
+      "runtime_log_sha256": "sha256:5229d4bc7be3a9d7112e322e5213223cbd880ddcad6823ee578146a818aa3ec7",
+      "finished_at": "2026-11-08T13:50:06+0900",
       "file_hashes": {
-        "connected.png": "sha256:49e60393f157245400139185ac235633bb57b59558e1a4bcc764b5837dc77b1b",
-        "withheld.png": "sha256:8f988ebfac7b2a5171ce808a24aa6187a5325ecea8371ea56fb541da4fac971a",
-        "restart-withheld.png": "sha256:8f988ebfac7b2a5171ce808a24aa6187a5325ecea8371ea56fb541da4fac971a",
-        "recovered.png": "sha256:01d8095b55bd8844d03ce3769d94cce48e639024b9e5e0cbdf85abd320d38998"
+        "connected.png": "sha256:d7594288538c39e091cff5716ba572fd7273b5b0b115801cec8fb36b84a7f8c5",
+        "withheld.png": "sha256:55304a9cafe96f3b4fd08c30d40872b607450a1506bfa8c58de3473f3ab28a37",
+        "restart-withheld.png": "sha256:55304a9cafe96f3b4fd08c30d40872b607450a1506bfa8c58de3473f3ab28a37",
+        "recovered.png": "sha256:408634d3dd91307275ab024754e4062ab03897b08d5e6b24be0b95887679e485"
       }
     }
   ],
@@ -523,8 +635,39 @@
       }
     },
     "all_required_passed": true,
-    "findings": []
+    "findings": [
+      {
+        "id": "RT-INT-05",
+        "severity": "ACTIONABLE",
+        "status": "OBSERVED_ONCE_PRE_SETTLE",
+        "statement": "Before the 3 s close settle existed, one WM_CLOSE issued during the post-restart observation retry backoff exited 0 but printed 'observation shutdown NOT confirmed within the exit budget' and 'preferences save NOT confirmed within the exit budget'. The settle is harness pacing only; this bounded-close limitation is a product observation for the wave-2 lanes, not a passed scenario.",
+        "observed_in": "pre-settle harness run",
+        "runs": []
+      },
+      {
+        "id": "RT-INT-04",
+        "severity": "NIT",
+        "statement": "The worktree source changed while the harness was running; the recorded start state describes the built binary, the end state is newer.",
+        "status": "OBSERVED"
+      }
+    ]
   },
+  "findings": [
+    {
+      "id": "RT-INT-05",
+      "severity": "ACTIONABLE",
+      "status": "OBSERVED_ONCE_PRE_SETTLE",
+      "statement": "Before the 3 s close settle existed, one WM_CLOSE issued during the post-restart observation retry backoff exited 0 but printed 'observation shutdown NOT confirmed within the exit budget' and 'preferences save NOT confirmed within the exit budget'. The settle is harness pacing only; this bounded-close limitation is a product observation for the wave-2 lanes, not a passed scenario.",
+      "observed_in": "pre-settle harness run",
+      "runs": []
+    },
+    {
+      "id": "RT-INT-04",
+      "severity": "NIT",
+      "statement": "The worktree source changed while the harness was running; the recorded start state describes the built binary, the end state is newer.",
+      "status": "OBSERVED"
+    }
+  ],
   "credential_store_cleanup": {
     "target": "cos-desktop/observation/fedd88a679d52cdce560ecd0c90a0712",
     "exit": 1,
@@ -540,7 +683,7 @@
     "A Runtime restart uses a new process and a new in-memory credential registry; no reconnect protocol beyond the current relaunch path is exercised."
   ],
   "closing_notes": [
-    "The worktree at run time contained another lane's uncommitted product changes; desktop.source_at_start lists every tracked modification and untracked product source with its SHA-256, and build.source_stable is true, so the binary matches that recorded state rather than a clean checkout of HEAD.",
+    "desktop.source_at_start records the product source the release binary was built from (HEAD plus its tree, dirty product entries and untracked product sources with SHA-256). In this run no product source was dirty at build time; source_changed_during_run records that another lane edited product files after the build, so source_at_end is newer than the binary.",
     "Observed once before the 3 s close settle was added: a WM_CLOSE during the post-restart observation retry backoff exited 0 but printed 'observation shutdown NOT confirmed within the exit budget' and 'preferences save NOT confirmed within the exit budget'. The settle is harness pacing only; the explicit NOT-confirmed outcome remains a documented bounded-close limitation for the wave-2 lane and is recorded as finding RT-INT-05 whenever it recurs.",
     "The Runtime restart has a new in-memory credential registry. A teardown revoke from the pre-restart Desktop session can therefore log 'Runtime credential revoke on teardown failed: runtime credential request was not authorized' in the sanitized stderr; the harness records the stderr hash instead of treating it as a scenario failure.",
     "Credential Manager cleanup reported 'Element not found' because the environment-token override path did not leave a stored entry for this loopback origin."
