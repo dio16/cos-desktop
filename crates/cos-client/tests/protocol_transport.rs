@@ -11,16 +11,19 @@ use std::thread::ThreadId;
 use std::time::{Duration, Instant};
 
 use cos_client::{
-    ClientConfig, ClientEvent, ClientSource, ConnectionState, CosClient, DELTAS_PATH, HttpMethod,
-    HttpRequest, HttpResponse, OBSERVATION_PATH, ProtocolHttp, ProtocolTransport,
-    ProtocolTransportConfig, SERVER_PATH, SNAPSHOT_PATH, Transport, TransportError,
+    COMMANDS_LOOKUP_PATH, COMMANDS_PATH, ClientConfig, ClientEvent, ClientSource, CommandLookup,
+    CommandState, ConnectionState, CosClient, DELTAS_PATH, HttpMethod, HttpRequest, HttpResponse,
+    OBSERVATION_PATH, ProtocolHttp, ProtocolTransport, ProtocolTransportConfig, PublicationAccess,
+    SERVER_PATH, SNAPSHOT_PATH, Transport, TransportError,
 };
 use desktop_protocol::{
-    ClientFrame, ClientMessage, ClientWire, CommandEnvelope, CommandId, CommandPayload,
-    CommandTarget, Counter, Cursor, DeltaTransaction, EpochId, HelloAccepted, HelloRequest, Limits,
-    ObservationScope, ObservationScopeRequest, OpenAuthorizedObservation, OpenObservation,
-    PhaseLabel, Projection, ProjectionMutation, ProtocolVersions, ReadContextId, ReadGrant,
-    ReadRequestId, ReadRevision, ReadStamp, ResyncReason, ScopeFilter, ScopeId, ServerId,
+    ArtifactDigest, AuthorizedReceiptLookup, ClientFrame, ClientMessage, ClientWire,
+    CommandEnvelope, CommandId, CommandOperation, CommandPayload, CommandTarget, Counter,
+    CreateTaskCommand, Cursor, DeltaTransaction, EpochId, ErrorCode, GraphId, GraphRef,
+    HelloAccepted, HelloRequest, Limits, ObservationScope, ObservationScopeRequest,
+    OpenAuthorizedObservation, OpenObservation, PhaseLabel, Projection, ProjectionMutation,
+    ProtocolVersions, ReadContextId, ReadGrant, ReadRequestId, ReadRevision, ReadStamp,
+    ReceiptReadId, RecipeId, RecipeRef, ResyncReason, ScopeFilter, ScopeId, ServerId,
     ServerMessage, ServerWire, SnapshotBegin, SnapshotChunk, SnapshotCounts, SnapshotEnd,
     SnapshotId, StopTaskCommand, TaskId, TaskSnapshot, TaskStatus, TransactionId, Version,
     VersionRange, projection_bundle_digest,
@@ -53,9 +56,24 @@ struct ServerState {
     granted_stamp: Option<ReadStamp>,
     /// Serve one delta transaction on the next successful poll.
     delta: bool,
+    /// Next command response: a receipt document override, or a refusal.
+    command_receipt: Option<serde_json::Value>,
+    command_error: Option<(u16, Vec<u8>)>,
+    /// Stamp a receipt with a foreign context to prove it is withheld.
+    foreign_receipt_stamp: bool,
+    /// Receipt-lookup outcome mode and next refusal override.
+    lookup_mode: LookupMode,
+    lookup_error: Option<(u16, Vec<u8>)>,
     next_session: u64,
     next_snapshot: u64,
     cursor: String,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum LookupMode {
+    AllowedSome,
+    AllowedNone,
+    Denied,
 }
 
 impl ServerState {
@@ -74,6 +92,11 @@ impl ServerState {
             granted_context: None,
             granted_stamp: None,
             delta: false,
+            command_receipt: None,
+            command_error: None,
+            foreign_receipt_stamp: false,
+            lookup_mode: LookupMode::AllowedNone,
+            lookup_error: None,
             next_session: 0,
             next_snapshot: 0,
             cursor: String::new(),
@@ -146,6 +169,26 @@ impl ProtocolHttp for StubHttp {
                 }
                 Ok(json_response(snapshot_refresh_document(&mut state, path)))
             }
+            (HttpMethod::Post, COMMANDS_PATH) => {
+                if let Some((status, body)) = state.command_error.take() {
+                    return Ok(HttpResponse { status, body });
+                }
+                let body: serde_json::Value = serde_json::from_slice(&request.body)
+                    .map_err(|error| format!("command body: {error}"))?;
+                let document = state
+                    .command_receipt
+                    .take()
+                    .unwrap_or_else(|| command_receipt_document(&state, &body));
+                Ok(json_response(document))
+            }
+            (HttpMethod::Post, COMMANDS_LOOKUP_PATH) => {
+                if let Some((status, body)) = state.lookup_error.take() {
+                    return Ok(HttpResponse { status, body });
+                }
+                let body: serde_json::Value = serde_json::from_slice(&request.body)
+                    .map_err(|error| format!("lookup body: {error}"))?;
+                Ok(json_response(lookup_result_document(&state, &body)))
+            }
             (HttpMethod::Get, path) if path.starts_with(DELTAS_PATH) => {
                 if state.resync_polls > 0 {
                     state.resync_polls -= 1;
@@ -168,6 +211,63 @@ impl ProtocolHttp for StubHttp {
             }),
         }
     }
+}
+
+/// An authorized command receipt echoing the request's identity and the grant.
+fn command_receipt_document(state: &ServerState, body: &serde_json::Value) -> serde_json::Value {
+    let command_id = body["command_id"].as_str().unwrap_or("command-unknown");
+    let mut stamp = serde_json::to_value(state.granted_stamp.clone().expect("granted stamp"))
+        .expect("stamp encodes");
+    if state.foreign_receipt_stamp {
+        stamp["context_id"] = serde_json::Value::String("context-foreign".to_owned());
+    }
+    let mut receipt = serde_json::json!({
+        "command_id": command_id,
+        "operation": match body["payload"]["kind"].as_str() {
+            Some("CREATE_TASK") => "CREATE_TASK",
+            Some("REUSE_TASK") => "REUSE_TASK",
+            _ => "STOP_TASK",
+        },
+        "state": "ACCEPTED",
+    });
+    if let Some(task_id) = body["target"]["task_id"].as_str() {
+        receipt["task_id"] = serde_json::Value::String(task_id.to_owned());
+    }
+    serde_json::json!({
+        "schema_version": 1,
+        "stamp": stamp,
+        "permission": {"command_id": command_id, "readable": true},
+        "receipt": receipt,
+    })
+}
+
+/// One receipt-lookup result echoing the lookup's exact binding and identity.
+fn lookup_result_document(state: &ServerState, body: &serde_json::Value) -> serde_json::Value {
+    let command_id = body["command_id"].as_str().unwrap_or("command-unknown");
+    let lookup_id = body["lookup_id"].as_str().unwrap_or("lookup-unknown");
+    let stamp = body["stamp"].clone();
+    let outcome = match state.lookup_mode {
+        LookupMode::Denied => serde_json::json!({"outcome": "DENIED"}),
+        LookupMode::AllowedNone => serde_json::json!({"outcome": "ALLOWED", "receipt": null}),
+        LookupMode::AllowedSome => serde_json::json!({
+            "outcome": "ALLOWED",
+            "receipt": {
+                "command_id": command_id,
+                "operation": "STOP_TASK",
+                "state": "ACCEPTED",
+                "task_id": "task/Task-184",
+            },
+        }),
+    };
+    serde_json::json!({
+        "schema_version": 1,
+        "result": {
+            "lookup_id": lookup_id,
+            "stamp": stamp,
+            "command_id": command_id,
+            "outcome": outcome,
+        },
+    })
 }
 
 /// One closed Runtime resync refusal document.
@@ -523,6 +623,50 @@ fn task_title(client: &CosClient<ProtocolTransport<StubHttp>>) -> Option<String>
         .values()
         .next()
         .map(|task| task.title.clone())
+}
+
+/// A client that reached Live over the stub, with the credential configured.
+fn live_authorized_client() -> (
+    CosClient<ProtocolTransport<StubHttp>>,
+    Arc<Mutex<ServerState>>,
+) {
+    let (executor, state) = StubHttp::new();
+    let config = ProtocolTransportConfig {
+        bearer_token: Some("local-test-token".to_owned()),
+        ..config()
+    };
+    let transport = ProtocolTransport::new(executor, config, versions());
+    let mut client = client(transport);
+    client
+        .begin_authorized_observation(client.observation_request(ObservationScopeRequest {
+            task_ids: Vec::new(),
+            filters: vec![ScopeFilter {
+                name: "view".to_owned(),
+                value: "all".to_owned(),
+            }],
+        }))
+        .expect("observation begins");
+    drive_until(&mut client, |client| {
+        matches!(client.connection(), ConnectionState::Live)
+    });
+    (client, state)
+}
+
+fn command_state(
+    client: &CosClient<ProtocolTransport<StubHttp>>,
+    command_id: &CommandId,
+) -> Option<CommandState> {
+    match client.lookup_command(command_id) {
+        CommandLookup::Found(record) => Some(record.state().clone()),
+        CommandLookup::NotRetained => None,
+    }
+}
+
+fn current_stamp(client: &CosClient<ProtocolTransport<StubHttp>>) -> ReadStamp {
+    match client.publication_access() {
+        PublicationAccess::Validated { stamp, .. } => stamp.clone(),
+        PublicationAccess::Withheld { reason } => panic!("publication withheld: {reason:?}"),
+    }
 }
 
 /// (a) `send` enqueues and returns while the executor is still blocked.
@@ -1216,15 +1360,31 @@ fn the_credential_is_presented_on_the_protocol_reads_only() {
     );
 }
 
-/// (i) A non-observation client message is an explicit error, never silence.
+/// (i) A malformed client frame is an explicit error, never silence.
 #[test]
-fn unsupported_client_frame_is_an_explicit_error() {
+fn malformed_client_frame_is_an_explicit_error() {
     let (mut transport, state) = transport();
     let error = transport
-        .send(command_frame())
-        .expect_err("commands are not carried by this transport");
+        .send(b"{\"kind\":\"FRAME\"}".to_vec())
+        .expect_err("a malformed client frame is rejected");
     assert!(
-        matches!(&error, TransportError::Io(message) if message.contains("unsupported client frame")),
+        matches!(&error, TransportError::Io(message) if message.contains("malformed client frame")),
+        "{error:?}"
+    );
+    assert!(state.lock().expect("stub state").calls.is_empty());
+}
+
+/// (i2) A command frame from another version pair is refused before any exchange.
+#[test]
+fn command_with_another_version_pair_is_refused() {
+    let (mut transport, state) = transport();
+    let mut frame: serde_json::Value = serde_json::from_slice(&command_frame()).expect("frame");
+    frame["protocol"] = serde_json::json!({"major": 1, "minor": 0});
+    let error = transport
+        .send(serde_json::to_vec(&frame).expect("frame encodes"))
+        .expect_err("foreign versions are refused");
+    assert!(
+        matches!(&error, TransportError::Io(message) if message.contains("REST transport serves")),
         "{error:?}"
     );
     assert!(state.lock().expect("stub state").calls.is_empty());
@@ -1439,4 +1599,295 @@ fn small_error_documents_still_report_their_status_and_code() {
         ),
         "{error:?}"
     );
+}
+
+// --- RT4 command and receipt channel ---------------------------------------
+
+/// (c1) A stop command reaches the Runtime and its authorized receipt settles it.
+#[test]
+fn command_submission_posts_the_envelope_and_applies_a_receipt() {
+    let (mut client, state) = live_authorized_client();
+    let task_id = TaskId::new("task/Task-184").expect("task id");
+    let command_id = client.stop_task(&task_id).expect("command queued");
+
+    let events = drive_until(&mut client, |client| {
+        matches!(
+            command_state(client, &command_id),
+            Some(CommandState::Accepted(_))
+        )
+    });
+    assert!(events.iter().any(|event| matches!(
+        event,
+        ClientEvent::CommandUpdated { command_id: updated, .. } if updated == &command_id
+    )));
+
+    let state = state.lock().expect("stub state");
+    let calls: Vec<&HttpRequest> = state
+        .calls
+        .iter()
+        .filter(|call| call.method == HttpMethod::Post && call.path == COMMANDS_PATH)
+        .collect();
+    assert_eq!(calls.len(), 1, "one command exchange");
+    let body: serde_json::Value = serde_json::from_slice(&calls[0].body).expect("command body");
+    assert_eq!(body["command_id"], command_id.as_str());
+    assert_eq!(body["payload"]["kind"], "STOP_TASK");
+    assert!(
+        calls[0]
+            .headers
+            .iter()
+            .any(|(name, value)| name == "authorization" && value == "Bearer local-test-token"),
+        "the command carries the credential"
+    );
+    assert!(
+        calls[0]
+            .headers
+            .iter()
+            .any(|(name, value)| name == "x-cos-context" && value == "context-1"),
+        "the command is bound to the current read context"
+    );
+}
+
+/// (c2) A receipt whose stamp is not the client's binding is withheld.
+#[test]
+fn receipt_with_a_foreign_stamp_is_withheld() {
+    let (mut client, state) = live_authorized_client();
+    state.lock().expect("stub state").foreign_receipt_stamp = true;
+    let command_id = client
+        .stop_task(&TaskId::new("task/Task-184").expect("task id"))
+        .expect("command queued");
+    drive_until(&mut client, |client| {
+        matches!(
+            client.publication_access(),
+            PublicationAccess::Withheld { .. }
+        )
+    });
+    assert!(
+        !matches!(
+            command_state(&client, &command_id),
+            Some(CommandState::Accepted(_))
+        ),
+        "a foreign stamp never settles the command"
+    );
+    assert!(client.last_error().is_some());
+}
+
+/// (c3) Allowed{Some}, Allowed{None} and Denied are distinct outcomes.
+#[test]
+fn receipt_lookup_outcomes_are_distinct() {
+    // Allowed with a receipt.
+    let (mut client, state) = live_authorized_client();
+    state.lock().expect("stub state").lookup_mode = LookupMode::AllowedSome;
+    let command_id = CommandId::new("command-lookup-some").expect("command id");
+    client
+        .lookup_receipt_authorized(AuthorizedReceiptLookup {
+            lookup_id: ReceiptReadId::new("lookup-1").expect("lookup id"),
+            stamp: current_stamp(&client),
+            command_id: command_id.clone(),
+        })
+        .expect("lookup sent");
+    drive_until(&mut client, |client| {
+        matches!(
+            command_state(client, &command_id),
+            Some(CommandState::Accepted(_))
+        )
+    });
+
+    // Allowed without a retained receipt: no lifecycle fact is fabricated.
+    for (mode, label) in [
+        (LookupMode::AllowedNone, "allowed-none"),
+        (LookupMode::Denied, "denied"),
+    ] {
+        let (mut client, state) = live_authorized_client();
+        state.lock().expect("stub state").lookup_mode = mode;
+        let command_id = CommandId::new(format!("command-lookup-{label}")).expect("command id");
+        client
+            .lookup_receipt_authorized(AuthorizedReceiptLookup {
+                lookup_id: ReceiptReadId::new(format!("lookup-{label}")).expect("lookup id"),
+                stamp: current_stamp(&client),
+                command_id: command_id.clone(),
+            })
+            .expect("lookup sent");
+        let mut now = 0;
+        for _ in 0..50 {
+            now += 10;
+            let _ = client.pump(now);
+            std::thread::sleep(Duration::from_millis(1));
+        }
+        assert!(
+            command_state(&client, &command_id).is_none(),
+            "{label}: no record is invented"
+        );
+        assert!(client.last_error().is_none(), "{label}: no error");
+    }
+}
+
+/// (c4) Definitive refusals settle the command and preserve the current revision.
+#[test]
+fn definitive_refusals_settle_the_command() {
+    for (body, expected) in [
+        (
+            serde_json::json!({"code": "COMMAND_ID_CONFLICT", "detail": "same id differs"}),
+            ErrorCode::CommandIdConflict,
+        ),
+        (
+            serde_json::json!({
+                "code": "REVISION_CONFLICT",
+                "detail": "stale revision",
+                "current_revision": "7",
+            }),
+            ErrorCode::RevisionConflict,
+        ),
+    ] {
+        let (mut client, state) = live_authorized_client();
+        state.lock().expect("stub state").command_error =
+            Some((409, serde_json::to_vec(&body).expect("refusal body")));
+        let command_id = client
+            .stop_task(&TaskId::new("task/Task-184").expect("task id"))
+            .expect("command queued");
+        let expected_code = expected.clone();
+        drive_until(&mut client, |client| {
+            matches!(
+                command_state(client, &command_id),
+                Some(CommandState::Failed { error }) if error.code == expected_code
+            )
+        });
+        if expected == ErrorCode::RevisionConflict {
+            match command_state(&client, &command_id) {
+                Some(CommandState::Failed { error }) => assert_eq!(
+                    error.current_revision,
+                    Some(Counter::new("7").expect("counter"))
+                ),
+                other => panic!("expected a failed command, got {other:?}"),
+            }
+        }
+    }
+}
+
+/// (c5) A lost command response keeps ResultUnknown; the command is never resent.
+#[test]
+fn lost_command_response_never_resends_the_command() {
+    let (mut client, state) = live_authorized_client();
+    state.lock().expect("stub state").command_error = Some((
+        500,
+        br#"{"code":"INTERNAL","detail":"lost response"}"#.to_vec(),
+    ));
+    let command_id = client
+        .stop_task(&TaskId::new("task/Task-184").expect("task id"))
+        .expect("command queued");
+
+    let deadline = Instant::now() + Duration::from_secs(5);
+    let mut now = 0;
+    let mut saw_error = false;
+    while Instant::now() < deadline && !saw_error {
+        now += 10;
+        saw_error = client
+            .pump(now)
+            .iter()
+            .any(|event| matches!(event, ClientEvent::Error(_)));
+        std::thread::sleep(Duration::from_millis(1));
+    }
+    assert!(saw_error, "the client observes the lost response");
+    drive_until(&mut client, |client| {
+        matches!(client.connection(), ConnectionState::Live)
+    });
+    std::thread::sleep(Duration::from_millis(50));
+    assert_eq!(
+        state
+            .lock()
+            .expect("stub state")
+            .calls_to(HttpMethod::Post, COMMANDS_PATH),
+        1,
+        "a mutating command is never retried automatically"
+    );
+    assert!(
+        !matches!(
+            command_state(&client, &command_id),
+            Some(CommandState::Failed { .. })
+        ),
+        "a lost response is not a definitive failure"
+    );
+}
+
+/// (c6) An oversized command response is refused by the byte bound.
+#[test]
+fn oversized_command_response_is_refused_before_parsing() {
+    let (executor, state) = StubHttp::new();
+    let config = ProtocolTransportConfig {
+        max_response_bytes: 8_000,
+        bearer_token: Some("local-test-token".to_owned()),
+        ..config()
+    };
+    let transport = ProtocolTransport::new(executor, config, versions());
+    let mut client = client(transport);
+    client
+        .begin_authorized_observation(client.observation_request(ObservationScopeRequest {
+            task_ids: Vec::new(),
+            filters: vec![ScopeFilter {
+                name: "view".to_owned(),
+                value: "all".to_owned(),
+            }],
+        }))
+        .expect("observation begins");
+    drive_until(&mut client, |client| {
+        matches!(client.connection(), ConnectionState::Live)
+    });
+    state.lock().expect("stub state").command_error = Some((200, vec![b'x'; 9_000]));
+    client
+        .stop_task(&TaskId::new("task/Task-184").expect("task id"))
+        .expect("command queued");
+    drive_until(&mut client, |client| {
+        client.last_error().is_some_and(|error| {
+            matches!(error, cos_client::ClientError::Transport(message) if message.contains("exceeds"))
+        })
+    });
+}
+
+/// (c7) The create-task command family travels the same channel.
+#[test]
+fn create_task_command_reaches_the_runtime() {
+    let (mut client, state) = live_authorized_client();
+    let command_id = CommandId::new("command-create-1").expect("command id");
+    let envelope = CommandEnvelope {
+        command_id: command_id.clone(),
+        target: CommandTarget::Creation {
+            recipe_ref: RecipeRef {
+                recipe_id: RecipeId::new("recipe-1").expect("recipe id"),
+                graph_ref: GraphRef {
+                    graph_id: GraphId::new("graph-1").expect("graph id"),
+                    version: 1,
+                    digest: ArtifactDigest::new(format!("sha256:{}", "a".repeat(64)))
+                        .expect("digest"),
+                },
+                source_harness_version_id: None,
+                source_harness_digest: None,
+                profile_ref: None,
+                projection_digest: None,
+            },
+        },
+        expected_revision: None,
+        epoch: None,
+        payload: CommandPayload::CreateTask(CreateTaskCommand {
+            objective_text: "observe the transport".to_owned(),
+            text_prompt: None,
+            reference_artifact_refs: Vec::new(),
+            parameter_values: Vec::new(),
+        }),
+    };
+    client.send_command(envelope).expect("command queued");
+    drive_until(&mut client, |client| {
+        matches!(
+            command_state(client, &command_id),
+            Some(CommandState::Accepted(receipt)) if receipt.operation == CommandOperation::CreateTask
+        )
+    });
+    let state = state.lock().expect("stub state");
+    let call = state
+        .calls
+        .iter()
+        .find(|call| call.method == HttpMethod::Post && call.path == COMMANDS_PATH)
+        .expect("command exchange");
+    let body: serde_json::Value = serde_json::from_slice(&call.body).expect("command body");
+    assert_eq!(body["target"]["target"], "CREATION");
+    assert_eq!(body["payload"]["kind"], "CREATE_TASK");
+    assert_eq!(body["payload"]["objective_text"], "observe the transport");
 }

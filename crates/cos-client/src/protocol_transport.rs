@@ -28,9 +28,10 @@
 //!    current. `"transaction": null` publishes nothing, and a delta transaction
 //!    is forwarded as `DELTA_TRANSACTION`.
 //!
-//! The Desktop credential is presented on exactly the three protocol routes
-//! (observation open, snapshot read, delta read) because reads are bound to the
-//! issuing principal; the handshake route and every other path never see it.
+//! The Desktop credential is presented on exactly the five protocol routes
+//! (observation open, fresh snapshot read, delta read, command submit and
+//! receipt lookup) because reads and commands are bound to the issuing
+//! principal; the handshake route and every other path never see it.
 //!
 //! `409 RESYNC_REQUIRED` is not an I/O failure: the Runtime's closed reason is
 //! published as a `RESYNC_REQUIRED` frame and the client's own bounded recovery
@@ -46,6 +47,20 @@
 //! fresh observation open. The retained-command list is bounded at the frozen
 //! contract maximum of 448 distinct identities. Every failure maps to a
 //! [`TransportError`]; a malformed or oversized document publishes nothing.
+//!
+//! # Commands and receipts
+//!
+//! A `COMMAND` frame is submitted on the current read context
+//! (`POST /api/cos/desktop/commands` with `X-Cos-Context`) and answered with one
+//! `RECEIPT` frame carrying the Runtime's authorization stamp, so the client
+//! applies it only when that stamp is its current binding. A `LOOKUP_RECEIPT`
+//! frame maps to `POST /api/cos/desktop/commands/lookup` and is answered with
+//! `RECEIPT_READ_RESULT` (allowed with/without a receipt, or denied). Refusals
+//! become structured `ERROR` frames only for definitive command verdicts
+//! (conflict, revision, validation, unsupported, expired receipt); session-wide
+//! authorization, resync and internal failures stay uncorrelated. A lost or
+//! failed exchange is a transport failure, so the command remains `ResultUnknown`
+//! and is never resent automatically.
 //!
 //! # Streams, generations and bounds
 //!
@@ -66,11 +81,12 @@ use std::thread::{self, JoinHandle};
 use std::time::Duration;
 
 use desktop_protocol::{
-    ClientMessage, ClientWire, Cursor, DeltaTransaction, EpochId, HelloAccepted, Limits,
-    ObservationScope, ObservationScopeRequest, OpenAuthorizedObservation, ProtocolVersions,
-    ReadContextId, ReadGrant, ReadRequestId, ReadStamp, ReplayAccepted, ResyncReason,
-    ResyncRequired, ScopeId, ServerFrame, ServerId, ServerMessage, ServerWire, SnapshotBegin,
-    SnapshotChunk, SnapshotEnd, Version,
+    AuthorizedCommandReceipt, AuthorizedReceiptLookup, ClientMessage, ClientWire, CommandEnvelope,
+    Counter, Cursor, DeltaTransaction, EpochId, ErrorCode, HelloAccepted, Limits, ObservationScope,
+    ObservationScopeRequest, OpenAuthorizedObservation, ProtocolError, ProtocolVersions,
+    ReadContextId, ReadGrant, ReadRequestId, ReadStamp, ReceiptReadResult, ReplayAccepted,
+    ResyncReason, ResyncRequired, ScopeId, ServerFrame, ServerId, ServerMessage, ServerWire,
+    SnapshotBegin, SnapshotChunk, SnapshotEnd, Version,
 };
 use serde::{Deserialize, Serialize};
 
@@ -87,6 +103,10 @@ pub const OBSERVATION_PATH: &str = "/api/cos/desktop/observation";
 pub const SNAPSHOT_PATH: &str = "/api/cos/desktop/snapshot";
 /// `GET` route that polls one delta transaction after a cursor.
 pub const DELTAS_PATH: &str = "/api/cos/desktop/deltas";
+/// `POST` route that submits one command envelope.
+pub const COMMANDS_PATH: &str = "/api/cos/desktop/commands";
+/// `POST` route that reads one authorized command receipt.
+pub const COMMANDS_LOOKUP_PATH: &str = "/api/cos/desktop/commands/lookup";
 
 /// Frozen contract maximum of distinct retained command identities per open.
 ///
@@ -100,19 +120,23 @@ const MAX_RESYNC_MESSAGE_CHARS: usize = 512;
 
 /// Routes that carry the Desktop credential.
 ///
-/// Reads are bound to the issuing principal, so the observation open, the
-/// snapshot read and the delta read all present `Authorization: Bearer <token>`.
-/// The handshake route and every non-protocol path must never see it: the
-/// credential exists only for these three exchanges. A query string is ignored,
-/// so `/deltas?cursor=…` is still the delta route and nothing else can smuggle a
-/// credential through a crafted query.
+/// Reads are bound to the issuing principal, so the observation open, the fresh
+/// snapshot read, the delta read, the command submit and the receipt lookup all
+/// present `Authorization: Bearer <token>`. The handshake route and every
+/// non-protocol path must never see it: the credential exists only for these
+/// exchanges. A query string is ignored, so `/deltas?cursor=…` is still the
+/// delta route and nothing else can smuggle a credential through a crafted
+/// query.
 ///
 /// The composition root uses this to decide when a `401` is evidence that the
 /// credential itself was rejected: a `401` from the handshake (which carries no
 /// credential) says nothing about the stored credential and must not revoke it.
 pub fn is_protocol_route(path: &str) -> bool {
     let route = path.split('?').next().unwrap_or(path);
-    matches!(route, OBSERVATION_PATH | SNAPSHOT_PATH | DELTAS_PATH)
+    matches!(
+        route,
+        OBSERVATION_PATH | SNAPSHOT_PATH | DELTAS_PATH | COMMANDS_PATH | COMMANDS_LOOKUP_PATH
+    )
 }
 
 /// Append the credential to a protocol request's headers, when one is configured.
@@ -320,15 +344,9 @@ impl<E: ProtocolHttp> Transport for ProtocolTransport<E> {
     fn send(&mut self, frame: Vec<u8>) -> Result<(), TransportError> {
         let wire: ClientWire = serde_json::from_slice(&frame)
             .map_err(|error| TransportError::Io(format!("malformed client frame: {error}")))?;
-        let open = match wire {
+        let message = match wire {
             ClientWire::Hello(_) => None,
             ClientWire::Frame(frame) => {
-                let ClientMessage::OpenObservation(request) = frame.message else {
-                    return Err(TransportError::Io(
-                        "unsupported client frame: the REST transport carries observation opens only"
-                            .to_owned(),
-                    ));
-                };
                 if frame.protocol != self.versions.protocol || frame.schema != self.versions.schema
                 {
                     return Err(TransportError::Io(format!(
@@ -336,20 +354,28 @@ impl<E: ProtocolHttp> Transport for ProtocolTransport<E> {
                         frame.protocol, frame.schema, self.versions.protocol, self.versions.schema
                     )));
                 }
-                Some(request)
+                Some(frame.message)
             }
         };
-        if let Some(request) = open.as_ref() {
-            validate_open_request(request)?;
-        }
         {
             let mut state = lock(&self.shared);
             let generation = state.generation;
-            let job = match open {
+            let job = match message {
                 None => Job::Hello { generation },
-                Some(request) => Job::Open {
+                Some(ClientMessage::OpenObservation(request)) => {
+                    validate_open_request(&request)?;
+                    Job::Open {
+                        generation,
+                        request,
+                    }
+                }
+                Some(ClientMessage::Command(envelope)) => Job::Command {
                     generation,
-                    request,
+                    envelope: Box::new(envelope),
+                },
+                Some(ClientMessage::LookupReceipt(request)) => Job::Lookup {
+                    generation,
+                    request: Box::new(request),
                 },
             };
             enqueue_job(&mut state, job, self.config.max_pending_requests)?;
@@ -446,12 +472,23 @@ enum Job {
         generation: u64,
         request: OpenAuthorizedObservation,
     },
+    Command {
+        generation: u64,
+        envelope: Box<CommandEnvelope>,
+    },
+    Lookup {
+        generation: u64,
+        request: Box<AuthorizedReceiptLookup>,
+    },
 }
 
 impl Job {
     fn generation(&self) -> u64 {
         match self {
-            Self::Hello { generation } | Self::Open { generation, .. } => *generation,
+            Self::Hello { generation }
+            | Self::Open { generation, .. }
+            | Self::Command { generation, .. }
+            | Self::Lookup { generation, .. } => *generation,
         }
     }
 }
@@ -476,6 +513,14 @@ enum WorkerAction {
     Open {
         generation: u64,
         request: OpenAuthorizedObservation,
+    },
+    Command {
+        generation: u64,
+        envelope: Box<CommandEnvelope>,
+    },
+    Lookup {
+        generation: u64,
+        request: Box<AuthorizedReceiptLookup>,
     },
     Poll(PollSession),
 }
@@ -612,6 +657,20 @@ fn run_worker<E: ProtocolHttp>(
                             generation,
                             request,
                         },
+                        Job::Command {
+                            generation,
+                            envelope,
+                        } => WorkerAction::Command {
+                            generation,
+                            envelope,
+                        },
+                        Job::Lookup {
+                            generation,
+                            request,
+                        } => WorkerAction::Lookup {
+                            generation,
+                            request,
+                        },
                     };
                 }
                 if let Some(poll) = state.poll.clone() {
@@ -709,6 +768,105 @@ fn run_worker<E: ProtocolHttp>(
                             versions.schema,
                             None,
                             ServerMessage::ResyncRequired(payload),
+                        ) {
+                            Ok(frame) => push_inbound(&mut state, frame),
+                            Err(error) => state.pending_error = Some(error),
+                        }
+                    }
+                    Err(error) => state.pending_error = Some(error),
+                }
+                wake_after(state);
+            }
+            WorkerAction::Command {
+                generation,
+                envelope,
+            } => {
+                // A command is bound to the current read context; without one it
+                // is refused rather than presented unauthenticated.
+                let binding = {
+                    let state = lock(&shared);
+                    if state.closed || generation != state.generation {
+                        continue;
+                    }
+                    state
+                        .poll
+                        .as_ref()
+                        .map(|poll| (poll.context.clone(), poll.stamp.clone()))
+                };
+                let Some((context, stamp)) = binding else {
+                    let mut state = lock(&shared);
+                    if !state.closed && generation == state.generation {
+                        state.pending_error = Some(TransportError::Io(
+                            "command requires a live observation binding".to_owned(),
+                        ));
+                    }
+                    continue;
+                };
+                let outcome = post_command(&mut executor, &config, &envelope, &context);
+                let mut state = lock(&shared);
+                if state.closed || generation != state.generation {
+                    continue;
+                }
+                match outcome {
+                    Ok(CommandOutcome::Receipt(receipt)) => {
+                        let read_stamp = Some(receipt.stamp.clone());
+                        match encode_frame(
+                            versions.protocol,
+                            versions.schema,
+                            read_stamp,
+                            ServerMessage::Receipt(*receipt),
+                        ) {
+                            Ok(frame) => push_inbound(&mut state, frame),
+                            Err(error) => state.pending_error = Some(error),
+                        }
+                    }
+                    Ok(CommandOutcome::Error(error)) => {
+                        // A definitive command refusal is state-bearing: it carries
+                        // the current binding stamp so the client may settle it.
+                        let read_stamp = error.command_id.is_some().then(|| stamp.clone());
+                        match encode_frame(
+                            versions.protocol,
+                            versions.schema,
+                            read_stamp,
+                            ServerMessage::Error(error),
+                        ) {
+                            Ok(frame) => push_inbound(&mut state, frame),
+                            Err(error) => state.pending_error = Some(error),
+                        }
+                    }
+                    Err(error) => state.pending_error = Some(error),
+                }
+                wake_after(state);
+            }
+            WorkerAction::Lookup {
+                generation,
+                request,
+            } => {
+                let outcome = post_lookup(&mut executor, &config, &request);
+                let mut state = lock(&shared);
+                if state.closed || generation != state.generation {
+                    continue;
+                }
+                match outcome {
+                    Ok(LookupOutcome::Result(result)) => {
+                        let read_stamp = Some(result.stamp.clone());
+                        match encode_frame(
+                            versions.protocol,
+                            versions.schema,
+                            read_stamp,
+                            ServerMessage::ReceiptReadResult(*result),
+                        ) {
+                            Ok(frame) => push_inbound(&mut state, frame),
+                            Err(error) => state.pending_error = Some(error),
+                        }
+                    }
+                    Ok(LookupOutcome::Error(error)) => {
+                        let read_stamp = error.command_id.is_some().then(|| request.stamp.clone());
+                        match encode_frame(
+                            versions.protocol,
+                            versions.schema,
+                            read_stamp,
+                            ServerMessage::Error(error),
                         ) {
                             Ok(frame) => push_inbound(&mut state, frame),
                             Err(error) => state.pending_error = Some(error),
@@ -1065,9 +1223,40 @@ struct DeltasDocument {
     transaction: Option<DeltaTransaction>,
 }
 
+/// One authorized command receipt document (`schema_version` optional envelope).
+#[derive(Deserialize)]
+struct CommandReceiptDocument {
+    #[serde(default = "document_schema_version")]
+    schema_version: u32,
+    #[serde(flatten)]
+    receipt: AuthorizedCommandReceipt,
+}
+
+/// One authorized receipt-lookup result document (`result` is the wrapper key).
+#[derive(Deserialize)]
+struct ReceiptReadDocument {
+    #[serde(default = "document_schema_version")]
+    schema_version: u32,
+    result: ReceiptReadResult,
+}
+
+fn document_schema_version() -> u32 {
+    OBSERVATION_DOCUMENT_SCHEMA_VERSION
+}
+
 enum OpenOutcome {
     Document(Box<OpenDocument>),
     Resync(ResyncRequired),
+}
+
+enum CommandOutcome {
+    Receipt(Box<AuthorizedCommandReceipt>),
+    Error(ProtocolError),
+}
+
+enum LookupOutcome {
+    Result(Box<ReceiptReadResult>),
+    Error(ProtocolError),
 }
 
 enum DeltaOutcome {
@@ -1251,6 +1440,94 @@ fn get_deltas<E: ProtocolHttp>(
     })
 }
 
+/// Submit one command envelope on the current read context.
+fn post_command<E: ProtocolHttp>(
+    executor: &mut E,
+    config: &ProtocolTransportConfig,
+    envelope: &CommandEnvelope,
+    context: &ReadContextId,
+) -> Result<CommandOutcome, TransportError> {
+    let body = serde_json::to_vec(envelope)
+        .map_err(|error| TransportError::Io(format!("cannot encode command: {error}")))?;
+    let mut headers = vec![
+        ("accept".to_owned(), "application/json".to_owned()),
+        ("content-type".to_owned(), "application/json".to_owned()),
+        ("x-cos-context".to_owned(), context.as_str().to_owned()),
+    ];
+    authorize(config, &mut headers, COMMANDS_PATH);
+    let response = executor
+        .execute(HttpRequest {
+            method: HttpMethod::Post,
+            path: COMMANDS_PATH.to_owned(),
+            headers,
+            body,
+        })
+        .map_err(|message| TransportError::Io(format!("command request failed: {message}")))?;
+    bound_response(config, &response, "command")?;
+    if !is_success(response.status) {
+        return Ok(CommandOutcome::Error(protocol_refusal(
+            "command",
+            &response,
+            Some(envelope.command_id.clone()),
+            refusal_is_definitive,
+        )));
+    }
+    let document: CommandReceiptDocument = serde_json::from_slice(&response.body)
+        .map_err(|error| TransportError::Io(format!("malformed command document: {error}")))?;
+    if document.schema_version != OBSERVATION_DOCUMENT_SCHEMA_VERSION {
+        return Err(TransportError::Io(format!(
+            "unsupported command document schema version {}",
+            document.schema_version
+        )));
+    }
+    Ok(CommandOutcome::Receipt(Box::new(document.receipt)))
+}
+
+/// Read one authorized command receipt under the lookup's own binding.
+fn post_lookup<E: ProtocolHttp>(
+    executor: &mut E,
+    config: &ProtocolTransportConfig,
+    request: &AuthorizedReceiptLookup,
+) -> Result<LookupOutcome, TransportError> {
+    let body = serde_json::to_vec(request)
+        .map_err(|error| TransportError::Io(format!("cannot encode receipt lookup: {error}")))?;
+    let mut headers = vec![
+        ("accept".to_owned(), "application/json".to_owned()),
+        ("content-type".to_owned(), "application/json".to_owned()),
+        (
+            "x-cos-context".to_owned(),
+            request.stamp.context_id.as_str().to_owned(),
+        ),
+    ];
+    authorize(config, &mut headers, COMMANDS_LOOKUP_PATH);
+    let response = executor
+        .execute(HttpRequest {
+            method: HttpMethod::Post,
+            path: COMMANDS_LOOKUP_PATH.to_owned(),
+            headers,
+            body,
+        })
+        .map_err(|message| TransportError::Io(format!("receipt lookup failed: {message}")))?;
+    bound_response(config, &response, "receipt lookup")?;
+    if !is_success(response.status) {
+        return Ok(LookupOutcome::Error(protocol_refusal(
+            "receipt lookup",
+            &response,
+            Some(request.command_id.clone()),
+            lookup_refusal_is_definitive,
+        )));
+    }
+    let document: ReceiptReadDocument = serde_json::from_slice(&response.body)
+        .map_err(|error| TransportError::Io(format!("malformed receipt read document: {error}")))?;
+    if document.schema_version != OBSERVATION_DOCUMENT_SCHEMA_VERSION {
+        return Err(TransportError::Io(format!(
+            "unsupported receipt read document schema version {}",
+            document.schema_version
+        )));
+    }
+    Ok(LookupOutcome::Result(Box::new(document.result)))
+}
+
 fn is_success(status: u16) -> bool {
     (200..300).contains(&status)
 }
@@ -1328,6 +1605,93 @@ fn http_error(what: &str, response: &HttpResponse) -> TransportError {
     }
 }
 
+/// Stable `ErrorCode` for a Runtime refusal code, normalizing legacy spellings.
+fn map_error_code(raw: &str) -> ErrorCode {
+    match raw {
+        "INTERNAL" => ErrorCode::InternalError,
+        // The Runtime seals read contexts separately; the protocol client only
+        // knows the session-wide Unauthorized class, and closing the binding is
+        // the correct response to a rejected context.
+        "UNAUTHORIZED_CONTEXT" => ErrorCode::Unauthorized,
+        other => ErrorCode::from_wire(other),
+    }
+}
+
+/// Whether a refusal is a definitive verdict the client may settle a command on.
+///
+/// Session-wide authorization, resync and internal failures are not verdicts:
+/// the command stays unresolved and no state-bearing error is fabricated.
+fn refusal_is_definitive(code: &ErrorCode) -> bool {
+    matches!(
+        code,
+        ErrorCode::CommandIdConflict
+            | ErrorCode::RevisionConflict
+            | ErrorCode::ValidationFailed
+            | ErrorCode::UnsupportedCommand
+            | ErrorCode::ReceiptExpired
+            | ErrorCode::MediaUnavailable
+    )
+}
+
+/// A receipt lookup refusal only settles the command when the receipt expired.
+fn lookup_refusal_is_definitive(code: &ErrorCode) -> bool {
+    matches!(code, ErrorCode::ReceiptExpired)
+}
+
+/// Turn one bounded Runtime refusal into the protocol's structured error.
+///
+/// Only the stable code, the bounded safe detail and the optional structured
+/// fields are copied; the raw body never reaches a message. `command_id` is
+/// attached only when the code is a definitive verdict (`is_definitive`), so a
+/// resync/internal failure cannot masquerade as a command failure.
+fn protocol_refusal(
+    what: &str,
+    response: &HttpResponse,
+    command_id: Option<desktop_protocol::CommandId>,
+    is_definitive: fn(&ErrorCode) -> bool,
+) -> ProtocolError {
+    let value: Option<serde_json::Value> = serde_json::from_slice(&response.body).ok();
+    let code = value
+        .as_ref()
+        .and_then(|value| value.get("code"))
+        .and_then(serde_json::Value::as_str)
+        .map(map_error_code)
+        .unwrap_or(ErrorCode::InternalError);
+    let message = value
+        .as_ref()
+        .and_then(|value| value.get("detail"))
+        .and_then(serde_json::Value::as_str)
+        .map(safe_message)
+        .filter(|message| !message.is_empty())
+        .unwrap_or_else(|| format!("{what} rejected: HTTP {}", response.status));
+    let resync_reason = value
+        .as_ref()
+        .and_then(|value| value.get("reason"))
+        .and_then(serde_json::Value::as_str)
+        .map(ResyncReason::from_wire)
+        .filter(ResyncReason::is_known);
+    let current_revision = value
+        .as_ref()
+        .and_then(|value| value.get("current_revision"))
+        .and_then(serde_json::Value::as_str)
+        .and_then(|raw| Counter::new(raw).ok());
+    let retry_after_ms = value
+        .as_ref()
+        .and_then(|value| value.get("retry_after_ms"))
+        .and_then(serde_json::Value::as_u64);
+    ProtocolError {
+        code: code.clone(),
+        message,
+        correlation_id: None,
+        command_id: command_id.filter(|_| is_definitive(&code)),
+        scope_id: None,
+        retry_after_ms,
+        field_errors: Vec::new(),
+        current_revision,
+        resync_reason,
+    }
+}
+
 fn encode_query_value(value: &str) -> String {
     let mut out = String::with_capacity(value.len());
     for byte in value.bytes() {
@@ -1349,17 +1713,23 @@ fn encode_query_value(value: &str) -> String {
 
 #[cfg(test)]
 mod credential_route_tests {
-    //! RC-03: reads are principal-bound, so the credential is presented on the
-    //! three protocol routes and nowhere else.
+    //! RC-03: reads and commands are principal-bound, so the credential is
+    //! presented on the protocol routes and nowhere else.
 
     use super::{
-        DELTAS_PATH, OBSERVATION_PATH, ProtocolTransportConfig, SERVER_PATH, SNAPSHOT_PATH,
-        authorize, is_protocol_route,
+        COMMANDS_LOOKUP_PATH, COMMANDS_PATH, DELTAS_PATH, OBSERVATION_PATH,
+        ProtocolTransportConfig, SERVER_PATH, SNAPSHOT_PATH, authorize, is_protocol_route,
     };
 
     #[test]
-    fn the_credential_is_presented_on_exactly_the_three_protocol_routes() {
-        for route in [OBSERVATION_PATH, SNAPSHOT_PATH, DELTAS_PATH] {
+    fn the_credential_is_presented_on_exactly_the_protocol_routes() {
+        for route in [
+            OBSERVATION_PATH,
+            SNAPSHOT_PATH,
+            DELTAS_PATH,
+            COMMANDS_PATH,
+            COMMANDS_LOOKUP_PATH,
+        ] {
             assert!(is_protocol_route(route), "{route} is a protocol route");
         }
         // A query string belongs to the route, not to another path.
@@ -1370,6 +1740,7 @@ mod credential_route_tests {
             "/api/cos/desktop/other",
             "/api/cos/desktop/deltas-extra",
             "/api/cos/desktop/snapshot/extra",
+            "/api/cos/desktop/commands-extra",
             "/",
         ] {
             assert!(!is_protocol_route(other), "{other} is not a protocol route");
