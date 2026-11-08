@@ -6,7 +6,8 @@
 //! (`POST /api/cos/desktop/credentials` with `X-Auth-Secret`, and the matching
 //! `refresh`/`revoke` routes with `Authorization: Bearer`). Responses are
 //! `{"token","principal","scopes","expires_in"}`; the Desktop-bound principal is
-//! `desktop:<32 lowercase hex>` and the only scope is `read:observe`.
+//! `desktop:<32 lowercase hex>` and the credential carries exactly the two
+//! documented scopes, `read:observe` then `desktop:command`.
 //!
 //! # Operator provisioning
 //!
@@ -66,8 +67,11 @@ const SECRET_HEADER: &str = "X-Auth-Secret";
 const AUTHORIZATION_HEADER: &str = "Authorization";
 const BEARER_PREFIX: &str = "Bearer ";
 
-/// The only scope this build accepts today.
-const EXPECTED_SCOPE: &str = "read:observe";
+/// The scopes a Desktop credential must carry, in the documented order.
+///
+/// The Runtime emits this exact sequence; a missing, extra, duplicate or
+/// reordered scope is a closed-document failure rather than text to tolerate.
+const EXPECTED_SCOPES: [&str; 2] = ["read:observe", "desktop:command"];
 /// Server-managed Desktop principal prefix. The remainder is pinned to 32
 /// lowercase hexadecimal characters (the observed `desktop:<random>` shape); it
 /// is validated on the wire and in the stored record, and never rendered.
@@ -759,7 +763,12 @@ fn parse_document(raw: &[u8]) -> Result<IssuedCredential, CredentialError> {
     if !valid_principal(&principal) {
         return Err(CredentialError::MalformedResponse);
     }
-    if scopes.len() != 1 || scopes[0] != EXPECTED_SCOPE {
+    if scopes.len() != EXPECTED_SCOPES.len()
+        || scopes
+            .iter()
+            .zip(EXPECTED_SCOPES)
+            .any(|(actual, expected)| actual != expected)
+    {
         return Err(CredentialError::MalformedResponse);
     }
     if !(1..=MAX_EXPIRES_IN_SECONDS).contains(&expires_in) {
@@ -791,6 +800,8 @@ mod tests {
     const TOKEN: &str = "sentinel-token-0123456789abcdef";
     const NOW: u64 = 1_700_000_000;
 
+    const TWO_SCOPES: &str = "[\"read:observe\",\"desktop:command\"]";
+
     fn document_with(token: &str, scopes: &str, expires_in: u64) -> Vec<u8> {
         format!(
             "{{\"token\":\"{token}\",\"principal\":\"{PRINCIPAL}\",\"scopes\":{scopes},\"expires_in\":{expires_in}}}"
@@ -803,7 +814,7 @@ mod tests {
     }
 
     fn document(token: &str) -> Vec<u8> {
-        document_with(token, "[\"read:observe\"]", 43_200)
+        document_with(token, TWO_SCOPES, 43_200)
     }
 
     #[derive(Default)]
@@ -1015,10 +1026,10 @@ mod tests {
             b"{\"token\":\"sentinel-token-0123456789abcdef\"}".to_vec(),
             document_with(TOKEN, "[\"read:write\"]", 43_200),
             document_with(TOKEN, "[]", 43_200),
-            document_with(TOKEN, "[\"read:observe\"]", 0),
-            document_with(TOKEN, "[\"read:observe\"]", 86_401),
-            document_with("short", "[\"read:observe\"]", 43_200),
-            document_with(TOKEN, "[\"read:observe\"]", 43_200)
+            document_with(TOKEN, TWO_SCOPES, 0),
+            document_with(TOKEN, TWO_SCOPES, 86_401),
+            document_with("short", TWO_SCOPES, 43_200),
+            document_with(TOKEN, TWO_SCOPES, 43_200)
                 .into_iter()
                 .chain(b"x".iter().copied())
                 .collect(),
@@ -1027,25 +1038,47 @@ mod tests {
             )
             .into_bytes(),
             format!(
-                "{{\"token\":\"{TOKEN}\",\"principal\":\"desktop:0123456789abcdef0123456789abcdef\",\"scopes\":[\"read:observe\"],\"expires_in\":43200,\"extra\":1}}"
+                "{{\"token\":\"{TOKEN}\",\"principal\":\"desktop:0123456789abcdef0123456789abcdef\",\"scopes\":[\"read:observe\",\"desktop:command\"],\"expires_in\":43200,\"extra\":1}}"
             )
             .into_bytes(),
             format!(
-                "{{\"token\":\"{TOKEN}\",\"principal\":\"{PRINCIPAL}\",\"scopes\":[\"read:observe\"],\"expires_in\":43200}} trailing"
+                "{{\"token\":\"{TOKEN}\",\"principal\":\"{PRINCIPAL}\",\"scopes\":[\"read:observe\",\"desktop:command\"],\"expires_in\":43200}} trailing"
             )
             .into_bytes(),
-            document_with("with space in token", "[\"read:observe\"]", 43_200),
+            document_with("with space in token", TWO_SCOPES, 43_200),
+            // Scope shape: one scope only (missing desktop:command).
+            document_with(TOKEN, "[\"read:observe\"]", 43_200),
+            // Scope shape: the command scope alone.
+            document_with(TOKEN, "[\"desktop:command\"]", 43_200),
+            // Scope shape: an extra scope.
+            document_with(
+                TOKEN,
+                "[\"read:observe\",\"desktop:command\",\"desktop:admin\"]",
+                43_200,
+            ),
+            // Scope shape: a duplicate.
+            document_with(
+                TOKEN,
+                "[\"read:observe\",\"desktop:command\",\"desktop:command\"]",
+                43_200,
+            ),
+            // Scope shape: reversed order is not the documented sequence.
+            document_with(
+                TOKEN,
+                "[\"desktop:command\",\"read:observe\"]",
+                43_200,
+            ),
             document_with_principal(&format!(
-                "{{\"token\":\"{TOKEN}\",\"principal\":\"desktop:0123456789ABCDEF0123456789ABCDEF\",\"scopes\":[\"read:observe\"],\"expires_in\":43200}}"
+                "{{\"token\":\"{TOKEN}\",\"principal\":\"desktop:0123456789ABCDEF0123456789ABCDEF\",\"scopes\":[\"read:observe\",\"desktop:command\"],\"expires_in\":43200}}"
             )),
             document_with_principal(&format!(
-                "{{\"token\":\"{TOKEN}\",\"principal\":\"desktop:0123456789abcdef0123456789abcde\",\"scopes\":[\"read:observe\"],\"expires_in\":43200}}"
+                "{{\"token\":\"{TOKEN}\",\"principal\":\"desktop:0123456789abcdef0123456789abcde\",\"scopes\":[\"read:observe\",\"desktop:command\"],\"expires_in\":43200}}"
             )),
             document_with_principal(&format!(
-                "{{\"token\":\"{TOKEN}\",\"principal\":\"desktop:0123456789abcdef0123456789abcdeg\",\"scopes\":[\"read:observe\"],\"expires_in\":43200}}"
+                "{{\"token\":\"{TOKEN}\",\"principal\":\"desktop:0123456789abcdef0123456789abcdeg\",\"scopes\":[\"read:observe\",\"desktop:command\"],\"expires_in\":43200}}"
             )),
             document_with_principal(&format!(
-                "{{\"token\":\"{TOKEN}\",\"principal\":\"principal-without-the-prefix\",\"scopes\":[\"read:observe\"],\"expires_in\":43200}}"
+                "{{\"token\":\"{TOKEN}\",\"principal\":\"principal-without-the-prefix\",\"scopes\":[\"read:observe\",\"desktop:command\"],\"expires_in\":43200}}"
             )),
         ];
         for body in bodies {
@@ -1288,6 +1321,37 @@ mod tests {
         assert!(!rendered.contains(PRINCIPAL));
         assert!(rendered.contains("<redacted>"));
         assert_eq!(parsed.expires_in, 43_200);
+    }
+
+    #[test]
+    fn the_two_scope_document_shape_is_pinned() {
+        let accepted = "[\"read:observe\",\"desktop:command\"]";
+        for scopes in [
+            accepted,
+            "[\"read:observe\"]",
+            "[\"desktop:command\"]",
+            "[\"read:observe\",\"desktop:command\",\"desktop:admin\"]",
+            "[\"read:observe\",\"read:observe\"]",
+            "[\"desktop:command\",\"read:observe\"]",
+            "[]",
+        ] {
+            let document = document_with(TOKEN, scopes, 43_200);
+            let parsed = parse_document(&document);
+            if scopes == accepted {
+                assert_eq!(
+                    parsed
+                        .expect("the two-scope document is accepted")
+                        .expires_in,
+                    43_200
+                );
+            } else {
+                assert_eq!(
+                    parsed.err(),
+                    Some(CredentialError::MalformedResponse),
+                    "{scopes} must be refused"
+                );
+            }
+        }
     }
 
     #[test]
