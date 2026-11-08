@@ -1263,12 +1263,9 @@ impl ObservationSessionOwner {
             ObservationCommand::RequestCreateTask {
                 envelope, reply, ..
             } => {
-                let result = self
-                    .client
-                    .create_task(*envelope)
-                    .map_err(|error| {
-                        CommandReadError::Client(PublicationError::from_client(&error))
-                    });
+                let result = self.client.create_task(*envelope).map_err(|error| {
+                    CommandReadError::Client(PublicationError::from_client(&error))
+                });
                 self.publish(true);
                 reply.resolve(result);
             }
