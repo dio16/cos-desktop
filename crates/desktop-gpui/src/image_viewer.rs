@@ -1437,12 +1437,15 @@ impl Render for ImageViewer {
                     height: f32::from(bounds.size.height) as f64,
                 };
                 let dpi = f64::from(window.scale_factor());
+                // The transform maps the frame's own square edge, not a process-wide constant: a
+                // 1024 or 320 admitted artifact must fill the viewport like the 2048 class does.
+                let source_edge = frame.as_ref().map_or(FRAME_EDGE, |frame| frame.edge());
                 let mut transform = match geometry.clone() {
                     Some(transform) => transform,
                     None => match ViewTransform::new(
                         Size {
-                            width: FRAME_EDGE as f64,
-                            height: FRAME_EDGE as f64,
+                            width: source_edge as f64,
+                            height: source_edge as f64,
                         },
                         viewport,
                         dpi,

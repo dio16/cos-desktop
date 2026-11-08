@@ -1,9 +1,11 @@
-//! Bounded MP-IMG3 presentation of the admitted 2048×2048 RGB8 PNG class.
+//! Bounded MP-IMG3 presentation of the admitted 8-bit RGB PNG class.
 //!
-//! Decode, generated-source work and RGBA→BGRA tile conversion run on GPUI's background
-//! executor. The pinned GPUI accepts whole `RenderImage`s, so this path uses sixteen 512×512
-//! images: each packed row is 2,048 bytes (256-byte aligned) and each whole image is 1 MiB.
-//! A single process-wide 2 MiB / 8.333 ms allowance admits at most two such images per period.
+//! The admitted class is the explicit square edge set [`FRAME_EDGES`] (320, 1024 and 2048
+//! pixels); 2048 is the largest and keeps the original 2048×2048 pixel/byte ceiling. Decode,
+//! generated-source work and RGBA→BGRA tile conversion run on GPUI's background executor. The
+//! pinned GPUI accepts whole `RenderImage`s, so this path covers a frame with 512×512 images: each
+//! packed row is 2,048 bytes (256-byte aligned) and each whole image is 1 MiB. A single
+//! process-wide 2 MiB / 8.333 ms allowance admits at most two such images per period.
 //!
 //! `Window::paint_image` adds the whole image to that window's atlas and the scene. This module
 //! counts only successful API calls as `paint_issued`; GPUI exposes no fence, Present completion,
@@ -13,11 +15,11 @@
 //! share the same frame and atlas IDs. GPUI's sprite atlas is per-window, so a prepared frame is
 //! deliberately bound to its first painting window rather than duplicating uploads in another.
 //!
-//! Retained identities are bounded to two complete frames per process. Each retains the decoded
-//! 16 MiB raster and 16 MiB of packed tile payloads; this 64 MiB ceiling is CPU-side retention,
-//! not a ratified GPU residency budget. Reaching it refuses new identities rather than dropping
-//! payloads or implying GPU completion. Native transfer duration, completion, residency, and
-//! presentation remain NOT_MEASURED.
+//! Retained identities are bounded to two complete frames per process. Each retains its decoded
+//! raster and packed tile payloads; the 64 MiB ceiling is CPU-side retention, not a ratified GPU
+//! residency budget. Reaching it refuses new identities rather than dropping payloads or implying
+//! GPU completion. Native transfer duration, completion, residency, and presentation remain
+//! NOT_MEASURED.
 
 use std::{
     collections::VecDeque,
@@ -37,10 +39,12 @@ use media::{
     decode_for_upload,
 };
 
-use crate::upload_budget::{MAX_SCHEDULE_TILES, TileSpan, schedule_tiles};
+use crate::upload_budget::{MAX_SCHEDULE_TILES, TileSpan, rgba8_frame_bytes, schedule_tiles};
 
-/// The only frame geometry currently admitted by the media proof.
-pub const FRAME_EDGE: u32 = 2048;
+/// The explicit admitted square frame edges, from the media upload class.
+pub const FRAME_EDGES: [u32; media::APPROVED_EDGES.len()] = media::APPROVED_EDGES;
+/// The largest admitted frame edge: the original 2048×2048 pixel bound.
+pub const FRAME_EDGE: u32 = media::MAX_APPROVED_EDGE;
 /// Kept below the largest 120 Hz tile so each row is naturally aligned for the pinned upload APIs.
 pub const TILE_EDGE: u32 = 512;
 /// Conservative process-wide allowance, selected to fit the smaller active canon cap.
@@ -69,8 +73,10 @@ pub fn set_quarantine_capacity(bytes: u64) -> bool {
 pub fn quarantine_capacity() -> u64 {
     *QUARANTINE_CAPACITY.get_or_init(|| PROCESS_QUARANTINE_CAP_BYTES)
 }
-const FRAME_RGBA8_BYTES: u64 = FRAME_EDGE as u64 * FRAME_EDGE as u64 * 4;
-const STAGING_LIMIT_BYTES: u64 = FRAME_RGBA8_BYTES * MAX_RETAINED_FRAMES as u64;
+/// Bytes in the largest admitted frame (2048×2048 RGBA8): the per-frame charge ceiling.
+const MAX_FRAME_RGBA8_BYTES: u64 = FRAME_EDGE as u64 * FRAME_EDGE as u64 * 4;
+/// Staging/in-flight/resident ceiling per pool, unchanged from the original 2048-only class.
+const STAGING_LIMIT_BYTES: u64 = MAX_FRAME_RGBA8_BYTES * MAX_RETAINED_FRAMES as u64;
 
 static PROCESS_EPOCH: LazyLock<Instant> = LazyLock::new(Instant::now);
 static NEXT_FRAME_ORIGIN: AtomicU64 = AtomicU64::new(1);
@@ -857,12 +863,21 @@ impl ImageUploadService {
             return Err(ImageUploadError::Cancelled);
         }
         self.check_device_generation(identity.device_generation)?;
-        if verified.size().width() != FRAME_EDGE
-            || verified.size().height() != FRAME_EDGE
-            || verified.raster().rgba.len() as u64 != FRAME_RGBA8_BYTES
+        // Only a source raster of an explicitly admitted edge is presentable. The class proof
+        // carries the edge, so a mip derivative of a larger source (same class, smaller size) and
+        // any raster the decoder mislabelled are refused instead of being tiled as a frame.
+        let edge = verified.size().width();
+        if edge != verified.size().height()
+            || verified.class().edge() != edge
+            || verified.raster().rgba.len() as u64 != rgba8_frame_bytes(edge)
         {
             return Err(ImageUploadError::InvalidRasterLayout);
         }
+        let frame_bytes = rgba8_frame_bytes(edge);
+        // Preview mode asks for mip level 2, but a small admitted edge has no tile-addressable
+        // level there (320 >> 2 = 80 rows are not 256-byte aligned). Lower the requested level
+        // until the frame's own geometry can actually be tiled; 1024/2048 keep level 2.
+        let minimum_mip = minimum_mip.map(|level| finest_tile_level(edge, level));
         let mips = minimum_mip.is_some();
         let origin = recovered.map(|previous| previous.origin);
         // One process-wide admission decision: live staging/in-flight reservations of **every**
@@ -920,15 +935,12 @@ impl ImageUploadService {
                 || !state.quarantined_views.is_empty()
                 || state.frames.iter().any(|frame| frame.has_mips)
             {
-                let incoming = if source_retained {
-                    0
-                } else {
-                    FRAME_RGBA8_BYTES
-                } + if recovered.is_some() || mips {
-                    0
-                } else {
-                    FRAME_RGBA8_BYTES
-                };
+                let incoming = if source_retained { 0 } else { frame_bytes }
+                    + if recovered.is_some() || mips {
+                        0
+                    } else {
+                        frame_bytes
+                    };
                 if retained_bytes(&state).cpu.saturating_add(incoming) > STAGING_LIMIT_BYTES * 2 {
                     return Err(ImageUploadError::RetainedFrameLimit);
                 }
@@ -955,7 +967,7 @@ impl ImageUploadService {
                 in_flight_total,
                 state.quarantined_payload_bytes,
                 capacity,
-                FRAME_RGBA8_BYTES,
+                frame_bytes,
             ) {
                 return Err(ImageUploadError::QuarantineBudgetExhausted {
                     retained,
@@ -1023,6 +1035,7 @@ impl ImageUploadService {
             decode_calls: AtomicU64::new(0),
             preparation_queue_wait_nanos: AtomicU64::new(0),
             source: Some(verified),
+            edge,
             origin: origin.unwrap_or_else(|| NEXT_FRAME_ORIGIN.fetch_add(1, Ordering::Relaxed)),
             has_mips: mips,
             first_mip: minimum_mip.unwrap_or(0),
@@ -1782,6 +1795,9 @@ struct PaintState {
 pub struct PreparedImage {
     identity: UploadIdentity,
     source: Option<VerifiedRaster>,
+    /// Square source edge of this frame (one of [`FRAME_EDGES`]); the tile/mip geometry derives
+    /// from it, never from a process-wide constant.
+    edge: u32,
     /// Stable across recovery, distinct for independently prepared entries and unrelated to GPU generation.
     origin: u64,
     has_mips: bool,
@@ -1813,16 +1829,33 @@ impl PreparedImage {
         self.first_mip
     }
 
+    /// Square source edge of this frame, i.e. the geometry every tile/mip span derives from.
+    pub fn edge(&self) -> u32 {
+        self.edge
+    }
+
+    /// Resolve one requested mip level to a level this frame can tile.
+    ///
+    /// The clamp keeps the retained preview floor; the walk down handles a requested level whose
+    /// edge has no 256-byte-aligned tight rows (only the smallest admitted edge is affected).
+    fn usable_level(&self, requested: u8) -> u8 {
+        let mut level = requested.clamp(self.first_mip, 4);
+        while level > 0 && !tile_addressable(self.edge >> level) {
+            level -= 1;
+        }
+        level
+    }
+
     pub(crate) fn demand(
         &self,
         image_bounds: Bounds<gpui::Pixels>,
         viewport: Bounds<gpui::Pixels>,
         level: u8,
     ) -> TileDemand {
-        let level = level.clamp(self.first_mip, 4);
+        let level = self.usable_level(level);
         TileDemand {
             level,
-            spans: visible_spans(image_bounds, viewport, level).collect(),
+            spans: visible_spans(image_bounds, viewport, level, self.edge).collect(),
         }
     }
 
@@ -1929,7 +1962,7 @@ impl PreparedImage {
             return Ok(PaintStatus::Evicted);
         };
         let level = if self.has_mips {
-            mip_level.clamp(self.first_mip, 4)
+            self.usable_level(mip_level)
         } else {
             0
         };
@@ -1940,7 +1973,7 @@ impl PreparedImage {
         let tiles = tiles.lock().expect("CPU tile cache");
         let result =
             window.with_content_mask(Some(gpui::ContentMask { bounds: viewport }), |window| {
-                for span in visible_spans(image_bounds, viewport, level) {
+                for span in visible_spans(image_bounds, viewport, level, self.edge) {
                     visible += 1;
                     let Some((index, tile)) = tiles
                         .iter()
@@ -1950,7 +1983,7 @@ impl PreparedImage {
                         missing += 1;
                         continue;
                     };
-                    let bounds = tile_bounds(image_bounds, span, level);
+                    let bounds = tile_bounds(image_bounds, span, level, self.edge);
                     if !issued[index] {
                         if cancel.is_cancelled() {
                             return Ok(PaintStatus::Cancelled);
@@ -2025,12 +2058,32 @@ pub struct ViewPaint<'a> {
     pub cancel: &'a Cancellation,
 }
 
+/// Whether one tight RGBA8 image of `edge` pixels has the aligned row pitch this path requires.
+///
+/// A tight row is `edge * 4` bytes and must be a multiple of [`ROW_PITCH_ALIGNMENT`], i.e. the
+/// edge must be a multiple of 64. Every level of an admitted 1024/2048 frame satisfies this; the
+/// smallest admitted frame (320) only satisfies it at level 0, so the preview floor is derived
+/// per frame instead of assuming every frame has the 2048 pyramid.
+fn tile_addressable(edge: u32) -> bool {
+    edge > 0 && u64::from(edge) * 4 % ROW_PITCH_ALIGNMENT == 0
+}
+
+/// The finest mip level not above `requested` whose edge can still be tiled.
+fn finest_tile_level(frame_edge: u32, requested: u8) -> u8 {
+    let mut level = requested.min(4);
+    while level > 0 && !tile_addressable(frame_edge >> level) {
+        level -= 1;
+    }
+    level
+}
+
 fn visible_spans(
     image: Bounds<gpui::Pixels>,
     viewport: Bounds<gpui::Pixels>,
     level: u8,
+    frame_edge: u32,
 ) -> impl Iterator<Item = TileSpan> {
-    let edge = FRAME_EDGE >> level;
+    let edge = frame_edge >> level;
     (0..edge)
         .step_by(TILE_EDGE as usize)
         .flat_map(move |y| {
@@ -2043,13 +2096,18 @@ fn visible_spans(
                     height: TILE_EDGE.min(edge - y),
                 })
         })
-        .filter(move |span| tile_bounds(image, *span, level).intersects(&viewport))
+        .filter(move |span| tile_bounds(image, *span, level, frame_edge).intersects(&viewport))
 }
 
-fn tile_bounds(bounds: Bounds<gpui::Pixels>, span: TileSpan, level: u8) -> Bounds<gpui::Pixels> {
+fn tile_bounds(
+    bounds: Bounds<gpui::Pixels>,
+    span: TileSpan,
+    level: u8,
+    frame_edge: u32,
+) -> Bounds<gpui::Pixels> {
     let width: f32 = bounds.size.width.into();
     let height: f32 = bounds.size.height.into();
-    let edge = (FRAME_EDGE >> level) as f32;
+    let edge = (frame_edge >> level) as f32;
     let scale_x = width / edge;
     let scale_y = height / edge;
     let x0 = span.x as f32 * scale_x;
@@ -2609,6 +2667,7 @@ mod tests {
             decode_calls: AtomicU64::new(0),
             preparation_queue_wait_nanos: AtomicU64::new(0),
             source: None,
+            edge: FRAME_EDGE,
             origin: NEXT_FRAME_ORIGIN.fetch_add(1, Ordering::Relaxed),
             has_mips: false,
             first_mip: 0,
@@ -2791,9 +2850,12 @@ mod tests {
         let counters = service.counters();
         assert_eq!(counters.retained_frames, 2);
         assert_eq!(counters.reuse_calls, 1);
-        assert_eq!(counters.resident_reservation_bytes, 2 * FRAME_RGBA8_BYTES);
-        assert_eq!(counters.cpu_retained_bytes, FRAME_RGBA8_BYTES);
-        assert_eq!(counters.decoded_retained_bytes, FRAME_RGBA8_BYTES);
+        assert_eq!(
+            counters.resident_reservation_bytes,
+            2 * MAX_FRAME_RGBA8_BYTES
+        );
+        assert_eq!(counters.cpu_retained_bytes, MAX_FRAME_RGBA8_BYTES);
+        assert_eq!(counters.decoded_retained_bytes, MAX_FRAME_RGBA8_BYTES);
         assert_eq!(counters.backup_claims, 0);
         assert_eq!(counters.backup_origins, 0);
         assert_eq!(counters.quarantined_frames, 0);
@@ -2822,7 +2884,10 @@ mod tests {
         let invalidated = service.counters();
         assert_eq!(invalidated.retained_frames, 0);
         assert_eq!(invalidated.quarantined_frames, 2);
-        assert_eq!(invalidated.quarantined_payload_bytes, 2 * FRAME_RGBA8_BYTES);
+        assert_eq!(
+            invalidated.quarantined_payload_bytes,
+            2 * MAX_FRAME_RGBA8_BYTES
+        );
 
         let recovered = service
             .recover_frame(&shared, 2, &cancellation)
@@ -2852,14 +2917,17 @@ mod tests {
         drop(new_tiles);
         drop(old_tiles);
         let usage = service.counters();
-        assert_eq!(usage.cpu_retained_bytes, FRAME_RGBA8_BYTES + 1024 * 1024);
+        assert_eq!(
+            usage.cpu_retained_bytes,
+            MAX_FRAME_RGBA8_BYTES + 1024 * 1024
+        );
         assert_eq!(usage.packed_retained_bytes, 1024 * 1024);
-        assert_eq!(usage.decoded_retained_bytes, FRAME_RGBA8_BYTES);
+        assert_eq!(usage.decoded_retained_bytes, MAX_FRAME_RGBA8_BYTES);
         assert_eq!(usage.quarantined_frames, 2);
-        assert_eq!(usage.quarantined_payload_bytes, 2 * FRAME_RGBA8_BYTES);
+        assert_eq!(usage.quarantined_payload_bytes, 2 * MAX_FRAME_RGBA8_BYTES);
         assert_eq!(
             usage.staging_reservation_bytes + usage.quarantined_staging_bytes,
-            4 * FRAME_RGBA8_BYTES
+            4 * MAX_FRAME_RGBA8_BYTES
         );
         assert!(matches!(
             service.recover_frame(&shared, 1, &cancellation),
@@ -3333,6 +3401,231 @@ mod tests {
         );
     }
 
+    /// One canonical-looking upload request for a real admitted frame of `edge` pixels.
+    fn geometry_request(edge: u32) -> UploadRequest {
+        UploadRequest {
+            key: RepresentationKey {
+                source: RepresentationSource::Local {
+                    provenance: media::LocalProvenance::Fixture {
+                        fixture: media::LocalId::new("geom-fixture").expect("fixture id"),
+                        manifest: media::LocalId::new("geom-manifest").expect("manifest id"),
+                        source: media::LocalId::new("geom-source").expect("source id"),
+                    },
+                    revision: 1,
+                },
+                kind: desktop_protocol::RepresentationKind::Preview,
+                size: media::PixelSize::new(edge, edge).expect("frame size"),
+                orientation: media::Orientation::Normal,
+                policy: media::DecodePolicy {
+                    decoder: media::LocalId::new("png-rgb8").expect("decoder id"),
+                    colour: media::LocalId::new("identity-rgb").expect("colour id"),
+                    generation: 1,
+                },
+            },
+            source_revision: 1,
+            device_generation: 1,
+            current_device_generation: 1,
+            decode_limits: media::DecodeBudget::ratified_default()
+                .limits()
+                .expect("declared decode limits"),
+            max_encoded_bytes: 16 * 1024 * 1024,
+        }
+    }
+
+    /// Encode and admit one real frame of an admitted edge for the given request.
+    fn verified_fixture(request: &UploadRequest, edge: u32) -> VerifiedRaster {
+        use image::ImageEncoder;
+        let rgb = vec![0; edge as usize * edge as usize * 3];
+        let mut encoded = Vec::new();
+        image::codecs::png::PngEncoder::new(&mut encoded)
+            .write_image(&rgb, edge, edge, image::ExtendedColorType::Rgb8)
+            .expect("encode admitted RGB8 fixture");
+        decode_for_upload(&encoded, request.decode_limits, &Cancellation::default())
+            .expect("verify admitted fixture")
+    }
+
+    /// Encode, admit and prepare one real frame of an admitted edge.
+    fn prepared_frame_of_edge(
+        service: &ImageUploadService,
+        edge: u32,
+        minimum_mip: Option<u8>,
+    ) -> Arc<PreparedImage> {
+        let request = geometry_request(edge);
+        let verified = verified_fixture(&request, edge);
+        let identity = UploadIdentity {
+            key: request.key,
+            source_revision: request.source_revision,
+            device_generation: request.device_generation,
+            content_digest: verified.content_digest(),
+        };
+        service
+            .prepare_verified(
+                verified,
+                identity,
+                &Cancellation::default(),
+                minimum_mip,
+                false,
+                None,
+            )
+            .expect("prepared frame")
+    }
+
+    #[test]
+    fn tile_addressable_edges_follow_the_aligned_row_requirement() {
+        for edge in [2048, 1024, 512, 320, 256, 128, 64] {
+            assert!(tile_addressable(edge), "{edge} rows are 256-byte aligned");
+        }
+        for edge in [0, 20, 40, 63, 80, 160, 319, 321, 1023, 2047] {
+            assert!(!tile_addressable(edge), "{edge} rows are not aligned");
+        }
+        assert_eq!(finest_tile_level(2048, 2), 2);
+        assert_eq!(finest_tile_level(1024, 4), 4);
+        assert_eq!(finest_tile_level(320, 4), 0);
+        assert_eq!(finest_tile_level(320, 2), 0);
+    }
+
+    #[test]
+    fn each_admitted_edge_prepares_a_frame_with_its_own_geometry() {
+        let _serial = PREPARATION_SERIAL.lock().expect("test serialization");
+        let service = recovery_service();
+        // 1024 keeps the ordinary preview floor: level 2 is 256 px with aligned rows.
+        let frame = prepared_frame_of_edge(&service, 1024, Some(2));
+        assert_eq!(frame.edge(), 1024);
+        assert_eq!(frame.minimum_mip(), 2);
+        let image = Bounds::new(point(px(0.0), px(0.0)), size(px(1024.0), px(1024.0)));
+        let demand = frame.demand(image, image, 2);
+        assert_eq!(demand.level, 2);
+        assert_eq!(
+            demand.spans,
+            [TileSpan {
+                x: 0,
+                y: 0,
+                width: 256,
+                height: 256
+            }]
+        );
+        // The 320 artifact has no aligned edge below level 0, so its preview floor is level 0 and
+        // a whole-image (phase 0 / fit) demand falls back to the only tiled level it owns.
+        let frame = prepared_frame_of_edge(&service, 320, Some(2));
+        assert_eq!(frame.edge(), 320);
+        assert_eq!(frame.minimum_mip(), 0);
+        let image = Bounds::new(point(px(0.0), px(0.0)), size(px(320.0), px(320.0)));
+        let demand = frame.demand(image, image, 4);
+        assert_eq!(demand.level, 0);
+        assert_eq!(
+            demand.spans,
+            [TileSpan {
+                x: 0,
+                y: 0,
+                width: 320,
+                height: 320
+            }]
+        );
+        // A smaller admitted frame is charged its real bytes, not the 2048 ceiling.
+        assert_eq!(
+            service.counters().cpu_retained_bytes,
+            rgba8_frame_bytes(1024) + rgba8_frame_bytes(320)
+        );
+    }
+
+    #[test]
+    fn the_smallest_admitted_frame_builds_its_single_tile() {
+        let _serial = PREPARATION_SERIAL.lock().expect("test serialization");
+        let service = recovery_service();
+        let frame = prepared_frame_of_edge(&service, 320, Some(2));
+        let image = Bounds::new(point(px(0.0), px(0.0)), size(px(320.0), px(320.0)));
+        let demand = frame.demand(image, image, 4);
+        assert_eq!(demand.level, 0);
+        service
+            .prepare_visible_now(&frame, &demand, &Cancellation::default())
+            .expect("the single 320x320 tile is built");
+        let progress = frame.progress();
+        assert_eq!(progress.tile_count, 1);
+        assert_eq!(
+            progress.packed_bytes,
+            u64::from(320_u32) * u64::from(320_u32) * 4
+        );
+    }
+
+    #[test]
+    fn a_mip_derivative_of_a_larger_source_cannot_be_prepared_as_a_frame() {
+        let _serial = PREPARATION_SERIAL.lock().expect("test serialization");
+        let service = recovery_service();
+        // A 512 px level of a 1024 source keeps the 1024 class proof but is not the source raster;
+        // presenting it as its own frame would mislabel the geometry.
+        let request = geometry_request(1024);
+        let rgb = vec![0; 1024 * 1024 * 3];
+        let mut encoded = Vec::new();
+        {
+            use image::ImageEncoder;
+            image::codecs::png::PngEncoder::new(&mut encoded)
+                .write_image(&rgb, 1024, 1024, image::ExtendedColorType::Rgb8)
+                .expect("encode admitted fixture");
+        }
+        let verified = decode_for_upload(&encoded, request.decode_limits, &Cancellation::default())
+            .expect("verify admitted fixture");
+        let derivative = verified
+            .mip(1, &Cancellation::default())
+            .expect("level one");
+        assert_eq!(derivative.size().width(), 512);
+        let identity = UploadIdentity {
+            key: RepresentationKey {
+                size: media::PixelSize::new(512, 512).expect("derivative size"),
+                ..request.key
+            },
+            source_revision: 1,
+            device_generation: 1,
+            content_digest: derivative.content_digest(),
+        };
+        assert!(matches!(
+            service.prepare_verified(
+                derivative,
+                identity,
+                &Cancellation::default(),
+                Some(0),
+                false,
+                None,
+            ),
+            Err(ImageUploadError::InvalidRasterLayout)
+        ));
+    }
+
+    #[test]
+    fn a_canonical_artifact_identity_prepares_through_the_same_upload_boundary() {
+        let _serial = PREPARATION_SERIAL.lock().expect("test serialization");
+        let service = recovery_service();
+        // The media presentation route names the canonical artifact, not a local file. Its
+        // revision must agree with the request, and the pixels still have to match the identity.
+        let mut request = geometry_request(1024);
+        request.key.source = RepresentationSource::Artifact {
+            server: desktop_protocol::ServerId::new("server-1").expect("server id"),
+            epoch: desktop_protocol::EpochId::new("epoch-1").expect("epoch id"),
+            artifact: desktop_protocol::ArtifactId::new("artifact-a").expect("artifact id"),
+            digest: desktop_protocol::ArtifactDigest::new("sha256:artifact")
+                .expect("artifact digest"),
+            revision: desktop_protocol::Counter::from_u128(1),
+        };
+        let verified = verified_fixture(&request, 1024);
+        let identity = UploadIdentity {
+            key: request.key.clone(),
+            source_revision: request.source_revision,
+            device_generation: request.device_generation,
+            content_digest: verified.content_digest(),
+        };
+        let frame = service
+            .prepare_verified(
+                verified,
+                identity,
+                &Cancellation::default(),
+                Some(2),
+                false,
+                None,
+            )
+            .expect("a canonical artifact frame is prepared");
+        assert_eq!(frame.edge(), 1024);
+        assert_eq!(frame.identity().key, request.key);
+    }
+
     fn demand_frame(first_mip: u8) -> Arc<PreparedImage> {
         Arc::new(PreparedImage {
             identity: media::UploadIdentity {
@@ -3359,6 +3652,7 @@ mod tests {
                 content_digest: [0u8; 32],
             },
             source: None,
+            edge: FRAME_EDGE,
             origin: NEXT_FRAME_ORIGIN.fetch_add(1, Ordering::Relaxed),
             decode_calls: AtomicU64::new(0),
             preparation_queue_wait_nanos: AtomicU64::new(0),

@@ -19,7 +19,7 @@ use media::{
     RepresentationSource,
 };
 
-use crate::image_upload::{FRAME_EDGE, ImageUploadError, UploadRequest};
+use crate::image_upload::{ImageUploadError, UploadRequest};
 
 /// Build one media source for the authenticated read context.
 ///
@@ -112,10 +112,10 @@ pub fn media_binding_statement(binding: &MediaBinding) -> &'static str {
 
 /// The only representation kind this build can decode and present.
 ///
-/// The admitted decode class is the full 2048×2048 RGB8 PNG
-/// (`media::decode_for_upload`). A thumbnail/preview representation is a
-/// different, smaller payload with its own budget, so it is refused explicitly
-/// rather than decoded as if it were the original.
+/// The admitted decode class is the full-resolution RGB8 PNG at one of the explicit square edges
+/// (`media::APPROVED_EDGES`: 320, 1024, 2048 — the real live artifact sizes plus the original
+/// 2048 ceiling). A thumbnail/preview representation is a different, smaller payload with its own
+/// budget, so it is refused explicitly rather than decoded as if it were the original.
 const PRESENTABLE_REPRESENTATION: RepresentationKind = RepresentationKind::Original;
 
 /// Declared processing identity of the one admitted decode class.
@@ -128,8 +128,10 @@ const POLICY_GENERATION: u64 = 1;
 pub enum MediaRequestRefusal {
     /// The representation kind is not the admitted full-resolution class.
     UnsupportedRepresentation,
-    /// The descriptor states a pixel size outside the one admitted decode class.
+    /// The descriptor states a pixel size outside the admitted square edge class.
     UnsupportedGeometry,
+    /// The descriptor states no pixel size, so the admitted class cannot be pinned.
+    UnstatedGeometry,
     /// The canonical revision cannot be represented by the upload identity.
     UnverifiableRevision,
     /// The media identity cannot be turned into a representation key.
@@ -140,9 +142,9 @@ impl MediaRequestRefusal {
     /// Availability state to render for this refusal.
     pub fn availability(self) -> MediaAvailability {
         match self {
-            Self::UnsupportedRepresentation | Self::UnsupportedGeometry => {
-                MediaAvailability::Unsupported
-            }
+            Self::UnsupportedRepresentation
+            | Self::UnsupportedGeometry
+            | Self::UnstatedGeometry => MediaAvailability::Unsupported,
             // A revision or identity this build cannot verify is a failure, not "unsupported".
             Self::UnverifiableRevision | Self::InvalidIdentity => MediaAvailability::Failed,
         }
@@ -156,6 +158,9 @@ impl MediaRequestRefusal {
             }
             Self::UnsupportedGeometry => {
                 "画像を利用できません: 記述子の画像寸法は検証済みの範囲外です。"
+            }
+            Self::UnstatedGeometry => {
+                "画像を利用できません: 記述子に画像寸法がないため、検証済みの表示寸法を決められません。"
             }
             Self::UnverifiableRevision => {
                 "画像を利用できません: 成果物の版を確認できないため表示できません。"
@@ -268,19 +273,26 @@ pub fn media_upload_request(
     if identity.representation != PRESENTABLE_REPRESENTATION {
         return Err(MediaRequestRefusal::UnsupportedRepresentation);
     }
-    // A stated dimension outside the admitted class is refused before the bytes are decoded.
-    for stated in [identity.width, identity.height].into_iter().flatten() {
-        if stated != FRAME_EDGE {
-            return Err(MediaRequestRefusal::UnsupportedGeometry);
-        }
+    // The admitted class is an explicit square edge set; the descriptor must state that edge so
+    // the request identity and the decode class cannot disagree. A stated dimension outside the
+    // set is refused before the bytes are decoded; a descriptor that states nothing cannot be
+    // pinned and is refused instead of silently assuming one class member.
+    let edge = match (identity.width, identity.height) {
+        (Some(width), Some(height)) if width == height => width,
+        (Some(width), None) => width,
+        (None, Some(height)) => height,
+        (Some(_), Some(_)) => return Err(MediaRequestRefusal::UnsupportedGeometry),
+        (None, None) => return Err(MediaRequestRefusal::UnstatedGeometry),
+    };
+    if !media::approved_edge(edge) {
+        return Err(MediaRequestRefusal::UnsupportedGeometry);
     }
     let revision = identity
         .revision
         .to_u128()
         .and_then(|value| u64::try_from(value).ok())
         .ok_or(MediaRequestRefusal::UnverifiableRevision)?;
-    let size =
-        PixelSize::new(FRAME_EDGE, FRAME_EDGE).map_err(|_| MediaRequestRefusal::InvalidIdentity)?;
+    let size = PixelSize::new(edge, edge).map_err(|_| MediaRequestRefusal::InvalidIdentity)?;
     let key = RepresentationKey {
         source: RepresentationSource::Artifact {
             server: identity.server_identity.clone(),
@@ -419,8 +431,72 @@ mod tests {
         assert_eq!(digest.as_str(), "sha256:artifact");
         assert_eq!(revision, &Counter::from_u128(3));
         assert_eq!(request.key.kind, RepresentationKind::Original);
-        assert_eq!(request.key.size.width(), FRAME_EDGE);
+        assert_eq!(request.key.size.width(), 2048);
         assert_eq!(request.key.orientation, Orientation::Normal);
+    }
+
+    #[test]
+    fn every_admitted_square_edge_becomes_a_request_with_its_own_geometry() {
+        for edge in media::APPROVED_EDGES {
+            let mut media = admitted();
+            media.identity.width = Some(edge);
+            media.identity.height = Some(edge);
+            let request = media_upload_request(&media, 7).expect("an admitted live edge");
+            assert_eq!(request.key.size.width(), edge);
+            assert_eq!(request.key.size.height(), edge);
+            let RepresentationSource::Artifact {
+                artifact, digest, ..
+            } = &request.key.source
+            else {
+                panic!("the media route must carry a canonical artifact source");
+            };
+            assert_eq!(artifact.as_str(), "artifact-a");
+            assert_eq!(digest.as_str(), "sha256:artifact");
+        }
+        // A descriptor that states one side of an admitted square edge is enough: the class is
+        // square, and the actual PNG header is checked again at decode/admission.
+        for (width, height) in [(Some(1024), None), (None, Some(1024))] {
+            let mut media = admitted();
+            media.identity.width = width;
+            media.identity.height = height;
+            let request = media_upload_request(&media, 7).expect("square edge from one side");
+            assert_eq!(request.key.size.width(), 1024);
+        }
+    }
+
+    #[test]
+    fn a_geometry_outside_the_admitted_set_is_explicitly_unsupported() {
+        // Just outside each admitted edge, rectangles, and clearly over the 2048 ceiling.
+        for (width, height) in [
+            (Some(319), Some(319)),
+            (Some(321), Some(321)),
+            (Some(1023), Some(1023)),
+            (Some(1025), Some(1025)),
+            (Some(2047), Some(2047)),
+            (Some(2049), Some(2049)),
+            (Some(4096), Some(4096)),
+            (Some(1024), Some(320)),
+        ] {
+            let mut media = admitted();
+            media.identity.width = width;
+            media.identity.height = height;
+            let refusal = media_upload_request(&media, 1).expect_err("outside the admitted set");
+            assert_eq!(refusal, MediaRequestRefusal::UnsupportedGeometry);
+            assert_eq!(refusal.availability(), MediaAvailability::Unsupported);
+            assert!(refusal.text().contains("画像を利用できません"));
+        }
+    }
+
+    #[test]
+    fn a_descriptor_without_stated_geometry_is_explicitly_unsupported() {
+        let mut media = admitted();
+        media.identity.width = None;
+        media.identity.height = None;
+        let refusal = media_upload_request(&media, 1).expect_err("no stated geometry");
+        assert_eq!(refusal, MediaRequestRefusal::UnstatedGeometry);
+        assert_eq!(refusal.availability(), MediaAvailability::Unsupported);
+        assert!(refusal.text().contains("画像を利用できません"));
+        assert!(refusal.text().contains("画像寸法"));
     }
 
     #[test]
@@ -436,19 +512,14 @@ mod tests {
     }
 
     #[test]
-    fn a_geometry_outside_the_pinned_class_is_explicitly_unsupported() {
-        let mut media = admitted();
-        media.identity.width = Some(4096);
-        let refusal = media_upload_request(&media, 1).expect_err("not the pinned class");
-        assert_eq!(refusal, MediaRequestRefusal::UnsupportedGeometry);
-        assert_eq!(refusal.availability(), MediaAvailability::Unsupported);
-        // One stated mismatching dimension is enough; the descriptor need not state both.
+    fn one_stated_mismatching_side_is_enough_to_refuse_a_rectangle() {
+        // The identity fixture states 2048×2048; stating a different height is a rectangle and
+        // must be refused even though 1024 is itself an admitted square edge.
         let mut media = admitted();
         media.identity.height = Some(1024);
-        assert_eq!(
-            media_upload_request(&media, 1).expect_err("height"),
-            MediaRequestRefusal::UnsupportedGeometry
-        );
+        let refusal = media_upload_request(&media, 1).expect_err("not a square");
+        assert_eq!(refusal, MediaRequestRefusal::UnsupportedGeometry);
+        assert_eq!(refusal.availability(), MediaAvailability::Unsupported);
     }
 
     #[test]
