@@ -1,0 +1,80 @@
+{
+  "measurement": "MP-ACC1 Golden Creative Workflow acceptance attempt",
+  "date": "2026-11-09T08:13:14+0900",
+  "verdict": "LIMITED",
+  "harness": {
+    "command": "python apps/desktop/devtools/runtime_integration/run_acc1.py",
+    "port": 8131,
+    "endpoint": "http://127.0.0.1:8131",
+    "work_dir": "C:\\dev\\cos-desktop\\target\\acc1\\20261109T081314",
+    "generation_timeout_s": 1500.0,
+    "desktop_binary_launched": false,
+    "observation": "protocol-level Desktop observation client (not the GUI)"
+  },
+  "desktop": {
+    "root": "C:\\dev\\cos-desktop",
+    "head": "09a298f3bb5ea23e76734221e590dd52fb421dcc",
+    "binary": "C:\\dev\\cos-desktop\\target\\release\\cos-desktop.exe",
+    "binary_sha256": "sha256:5acb4af8b331192b2856692fd04cc527f67107a915d270bedd7f5320c5a2faf7"
+  },
+  "runtime": {
+    "root": "C:\\AI\\orchestrator",
+    "head": "d6e0ba202f4068860c85208f9ea6e3b3b681bfcb",
+    "python": "C:\\AI\\orchestrator\\.venv\\Scripts\\python.exe",
+    "dirty_tracked": [
+      "M orchestrator/docs/guides/development-loop.md",
+      " M orchestrator/orchestrator_app/dev_caller.py",
+      " M orchestrator/tests/test_dev_caller.py",
+      " M orchestrator/tests/test_dev_caller_e2e.py",
+      "?? orchestrator/devplan/plan-draft.json",
+      "?? orchestrator/devplan/plan-prepare.json",
+      "?? orchestrator/devplan/prepare-out.json"
+    ]
+  },
+  "environment_preflight": {
+    "probe": "direct preflight (not the Runtime report)",
+    "at": "2026-11-09T08:13:14+0900",
+    "comfyui": {
+      "url": "http://127.0.0.1:8188/system_stats",
+      "http_status": 200,
+      "comfyui_version": "0.35.1",
+      "argv": [
+        "ComfyUI/main.py",
+        "--windows-standalone-build",
+        "--lowvram",
+        "--reserve-vram",
+        "1.5",
+        "--cache-lru",
+        "10",
+        "--preview-method",
+        "taesd",
+        "--use-pytorch-cross-attention"
+      ]
+    },
+    "ollama": {
+      "url": "http://127.0.0.1:11434/api/tags",
+      "http_status": 200,
+      "model_count": 6
+    }
+  },
+  "runtime_reported_health": {
+    "llm": true,
+    "comfy": true
+  },
+  "generation_plane_ready": true,
+  "recipe": "recipe-cos-production-still",
+  "task_ref": "task-fc882edc96874fb5b6111ce8c5887401",
+  "outcome": {
+    "formal_status": "COMPLETED",
+    "stop_reason": "SUCCESS_ACCEPT",
+    "source": "OUTCOME projection (server-projected formal outcome)"
+  },
+  "media_available": true,
+  "leak_check_clean": true,
+  "files": {
+    "record": "docs/development/evidence-published/acc1-followup-20261109/record.json",
+    "session": "docs/development/evidence-published/acc1-followup-20261109/session.json",
+    "artifact_image": "docs\\development\\evidence-published\\acc1-followup-20261109\\artifact.png",
+    "logs": "docs/development/evidence-published/acc1-followup-20261109/logs/"
+  }
+}

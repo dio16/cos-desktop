@@ -60,9 +60,10 @@ CONFIG_TEMPLATE = base.CONFIG_TEMPLATE
 SOURCE_PRESETS = RUNTIME_ROOT / "db" / "cos_presets.json"
 DESKTOP_EXE = base.DESKTOP_EXE
 
-EVIDENCE_DIR = (
+DEFAULT_EVIDENCE_DIR = (
     DESKTOP_ROOT / "docs" / "development" / "evidence-published" / "acc1-latest"
 )
+EVIDENCE_DIR = DEFAULT_EVIDENCE_DIR
 WORK_ROOT = DESKTOP_ROOT / "target" / "acc1"
 
 PORT = 8131
@@ -763,6 +764,10 @@ def sanitize_log(path: Path, secrets_list: list[str], limit: int = 120_000) -> d
 
 
 def run(args: argparse.Namespace) -> int:
+    global EVIDENCE_DIR
+    evidence_dir = getattr(args, "evidence_dir", None)
+    if evidence_dir:
+        EVIDENCE_DIR = Path(evidence_dir).resolve()
     stamp = time.strftime("%Y%m%dT%H%M%S")
     work = WORK_ROOT / stamp
     work.mkdir(parents=True, exist_ok=True)
@@ -1651,8 +1656,9 @@ def finish(
     (EVIDENCE_DIR / "logs" / "runtime.log.sanitized.txt").write_text(
         combined, encoding="utf-8"
     )
+    evidence_relative = EVIDENCE_DIR.relative_to(DESKTOP_ROOT).as_posix()
     record["logs"] = {
-        "runtime_log_sanitized": "docs/development/evidence-published/acc1-latest/logs/runtime.log.sanitized.txt",
+        "runtime_log_sanitized": f"{evidence_relative}/logs/runtime.log.sanitized.txt",
         "runtime_log_sha256": sha256_bytes(combined.encode("utf-8")),
         "raw_logs_retained_in_work_dir": [str(entry.log_path) for entry in [runtime, *(extra_runtimes or [])]],
     }
@@ -1697,10 +1703,10 @@ def finish(
         "media_available": record.get("media", {}).get("available"),
         "leak_check_clean": record.get("leak_check", {}).get("clean"),
         "files": {
-            "record": "docs/development/evidence-published/acc1-latest/record.json",
-            "session": "docs/development/evidence-published/acc1-latest/session.json",
+            "record": f"{evidence_relative}/record.json",
+            "session": f"{evidence_relative}/session.json",
             "artifact_image": record.get("media", {}).get("image_file"),
-            "logs": "docs/development/evidence-published/acc1-latest/logs/",
+            "logs": f"{evidence_relative}/logs/",
         },
     }
     write_json(EVIDENCE_DIR / "session.json", session)
@@ -1720,6 +1726,15 @@ def main(argv: list[str] | None = None) -> int:
         "--objective",
         default="sunlit botanical still life, soft studio light",
         help="objective text for the created task",
+    )
+    parser.add_argument(
+        "--evidence-dir",
+        default=None,
+        help=(
+            "evidence directory to write (default: the published acc1-latest"
+            " directory); a follow-up run must pass its own directory so the"
+            " existing evidence is never rewritten"
+        ),
     )
     args = parser.parse_args(argv)
     for required in (RUNTIME_PYTHON, SOURCE_DB, CONFIG_TEMPLATE, SOURCE_PRESETS):
