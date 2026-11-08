@@ -581,6 +581,7 @@ Local/generated and fixture feasibility may proceed without Runtime. Production 
 - **Scope:** fetch evidence detail only on demand/near-visible, through authorized references; per-record unavailable states (pending/missing/forbidden/unsupported); truncation never presented as absence.
 - **Non-goals:** no direct filesystem/database access to evidence.
 - **Acceptance:** *detects: rendering a forbidden record as absent, fetching all evidence eagerly, stale detail displayed under a newer evaluation revision.*
+- **Observed implementation boundary (2026-11-08):** evidence rows derive only from the EVALUATION projection's `evidence_refs`; statuses absent from the frozen wire vocabulary stay verbatim `Unknown(...)` (the UI may render the raw `PENDING`/`UNSUPPORTED` strings as distinct labels but never promotes them to AVAILABLE). The Runtime currently projects neither summary nor detail, so those are explicit not-projected markers; there is no eager or background detail fetch. Closed detail fields are a future protocol revision owned by the contract owner.
 
 ## DC-MP-INS3
 
@@ -654,6 +655,7 @@ Local/generated and fixture feasibility may proceed without Runtime. Production 
 
 - **Scope:** UI gates every command/media/feature on the authoritative capability projection; unknown capability ⇒ disabled with reason; no provider-name inference; capability revision changes re-evaluate gating.
 - **Acceptance:** *detects: enabling an action from a provider name, stale capability grant after revocation, disabled UI treated as authorization.*
+- **Observed implementation boundary (2026-11-08):** task/server-scope actions (stop, media) fail closed: an absent projection disables them with `capability not projected`, and unknown/dangling/ambiguous/scope-mismatch values disable with their reason; only a supported in-scope projection enables. The create action uses the sole server-scope CAPABILITIES projection when one is present; when the Runtime projects no server-scope capabilities, the authenticated catalog's server-issued `can_submit`/`reason_codes` remain the create authority (an absent projection is not a grant and is not treated as a blanket denial). No provider-name inference is made anywhere.
 
 ## DC-MP-RT6
 
