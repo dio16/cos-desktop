@@ -3103,16 +3103,8 @@ struct WatchData {
 }
 
 impl ExitWatch {
-    fn start(
-        mut child: std::process::Child,
-        deadline: Duration,
-        watch_delay: Option<Duration>,
-        confirm_bound: Duration,
-        watch_woke: Option<std::sync::Arc<std::sync::atomic::AtomicBool>>,
-        force_kill_failure: bool,
-        force_wait_failure: bool,
-        force_try_wait_error: bool,
-    ) -> Self {
+    fn start(mut child: std::process::Child, deadline: Duration, tuning: WatchTuning) -> Self {
+        let confirm_bound = tuning.confirm_bound.unwrap_or(SAMPLE_EXIT_GRACE);
         let state = std::sync::Arc::new(std::sync::Mutex::new(WatchData {
             state: WatchState::Running,
             kill_requested: false,
@@ -3124,14 +3116,14 @@ impl ExitWatch {
             confirm_at: None,
             kill_failed: false,
             confirm_bound,
-            force_kill_failure,
-            force_wait_failure,
-            force_try_wait_error,
+            force_kill_failure: tuning.force_kill_failure,
+            force_wait_failure: tuning.force_wait_failure,
+            force_try_wait_error: tuning.force_try_wait_error,
         }));
         let thread_state = std::sync::Arc::clone(&state);
         let deadline_at = Instant::now() + deadline;
         let handle = std::thread::spawn(move || {
-            if let Some(delay) = watch_delay {
+            if let Some(delay) = tuning.delay {
                 // Test seam: reproduce a scheduling delay of the watcher thread. The delay
                 // is interruptible so an aborting cancel is never held up by it.
                 let until = Instant::now() + delay;
@@ -3163,7 +3155,7 @@ impl ExitWatch {
                 // this marker's absence is asserting the event, not a duration.
                 // In-process state: recording the wake cannot fail, so a test that asserts the
                 // flag is still false is asserting the event rather than the health of the disk.
-                if let Some(woke) = watch_woke.as_ref() {
+                if let Some(woke) = tuning.woke.as_ref() {
                     woke.store(true, std::sync::atomic::Ordering::SeqCst);
                 }
             }
@@ -3507,16 +3499,7 @@ fn supervise(
         Some(early) => early.min(timeout),
         None => timeout,
     };
-    let mut watch = ExitWatch::start(
-        child,
-        deadline,
-        tuning.delay,
-        tuning.confirm_bound.unwrap_or(SAMPLE_EXIT_GRACE),
-        tuning.woke,
-        tuning.force_kill_failure,
-        tuning.force_wait_failure,
-        tuning.force_try_wait_error,
-    );
+    let mut watch = ExitWatch::start(child, deadline, tuning);
     let mut timeout_fired = false;
     let mut unconfirmed = false;
     let mut cancelled = false;
