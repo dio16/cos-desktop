@@ -6,6 +6,18 @@
 //! `AppCore`. Any missing configuration or construction failure is an explicit
 //! unavailable state; there is no fixture fallback in runtime mode.
 //!
+//! # Credential acquisition and rotation
+//!
+//! `COS_DESKTOP_RUNTIME_ISSUANCE_SECRET` is the operator-provisioned issuance
+//! secret (never logged or persisted). At the next session boundary the startup
+//! path issues a credential when the store is empty, or renews a stored one that
+//! is inside its rotation margin, through the Runtime credential routes; the
+//! fetched token is only written to the protected store and then dropped. The
+//! immutable per-session transport is built after that decision, so a session
+//! that outlives its credential still ends in the `401` → delete → re-authorize
+//! path. An explicit teardown revokes the session credential best-effort inside
+//! a bounded budget after the app loop has stopped.
+//!
 //! # Transport boundary
 //!
 //! `COS_DESKTOP_RUNTIME_ENDPOINT` names a plain-HTTP **loopback IP-literal**
@@ -91,12 +103,54 @@ impl RuntimeUnavailable {
 pub(crate) struct RuntimeSettings {
     endpoint: String,
     token: String,
+    /// Only a credential this app issued or renewed may be revoked on teardown.
+    revocable: bool,
 }
 
 /// One started observation: the client the host drives and the scope to open.
 pub(crate) struct RuntimeObservation {
     pub(crate) client: Box<dyn DesktopClient>,
     pub(crate) scope: ObservationScopeRequest,
+    /// Present when this session owns a credential that must be revoked on exit.
+    pub(crate) teardown: Option<RuntimeTeardown>,
+}
+
+/// Explicit-teardown revocation handle for one started Runtime observation.
+///
+/// It holds one in-memory copy of the session credential so the process can
+/// revoke it after the app loop has stopped. The budget is bounded
+/// ([`credential_issuance::REVOKE_TIMEOUT`]) and every failure is non-fatal and
+/// value-free. Deliberately not `Debug`/`Display`: the token is never rendered.
+pub(crate) struct RuntimeTeardown {
+    origin: String,
+    token: String,
+    store: Arc<dyn CredentialStore>,
+}
+
+impl RuntimeTeardown {
+    /// Revoke the session credential and forget the stored copy.
+    ///
+    /// Called only after the app loop returned, so it delays process exit by at
+    /// most one bounded request. A failed revoke keeps the stored credential for
+    /// a later retry and prints a fixed label.
+    pub(crate) fn revoke(self) {
+        let mut exchange = crate::credential_issuance::UreqExchange::with_timeout(
+            &self.origin,
+            crate::credential_issuance::REVOKE_TIMEOUT,
+        );
+        match crate::credential_issuance::revoke(&self.token, &mut exchange) {
+            Ok(()) => match self.store.delete(&self.origin) {
+                Ok(()) => eprintln!("Runtime credential revoked on explicit teardown"),
+                Err(_) => eprintln!(
+                    "Runtime credential revoked on explicit teardown; the stored entry could not be removed"
+                ),
+            },
+            Err(error) => eprintln!(
+                "Runtime credential revoke on teardown failed: {}",
+                error.label()
+            ),
+        }
+    }
 }
 
 /// What the composition root should launch.
@@ -156,21 +210,28 @@ pub(crate) fn settings(
         return Err(RuntimeUnavailable::UnsupportedEndpoint);
     };
     let env_token = env_token.map(str::trim).filter(|value| !value.is_empty());
-    let token = match env_token {
+    let (token, revocable) = match env_token {
         Some(token) => {
             // Operator override: the credential is persisted through the
             // protected store so the next launch can run without the variable.
             // A store failure is not fatal for this session and is logged with
-            // a value-free label only.
+            // a value-free label only. The operator's value is not revoked by
+            // this app on exit.
             if store.store(&origin, token).is_err() {
                 eprintln!(
                     "Runtime credential store unavailable; the environment credential is used for this session only"
                 );
             }
-            token.to_owned()
+            (token.to_owned(), false)
         }
         None => match store.load(&origin) {
-            Ok(Some(token)) if !token.is_empty() => token,
+            Ok(Some(value)) => match crate::credential_issuance::stored_token(&value) {
+                Some(token) if !token.is_empty() => {
+                    let revocable = crate::credential_issuance::stored_is_versioned(&value);
+                    (token, revocable)
+                }
+                _ => return Err(RuntimeUnavailable::CredentialUnavailable),
+            },
             Ok(_) => return Err(RuntimeUnavailable::CredentialUnavailable),
             Err(error) => {
                 eprintln!("Runtime credential lookup failed: {}", error.label());
@@ -181,6 +242,7 @@ pub(crate) fn settings(
     Ok(RuntimeSettings {
         endpoint: origin,
         token,
+        revocable,
     })
 }
 
@@ -188,6 +250,15 @@ fn is_configured(endpoint: Option<&str>) -> bool {
     endpoint
         .map(str::trim)
         .is_some_and(|value| !value.is_empty())
+}
+
+/// The validated plain-HTTP loopback origin for a configured endpoint.
+///
+/// The composition root uses this to decide whether a credential acquisition or
+/// rotation attempt may talk to the endpoint at all; an unsupported endpoint is
+/// reported by [`plan`] and never contacted.
+pub(crate) fn validated_origin(endpoint: &str) -> Option<String> {
+    plain_http_origin(endpoint)
 }
 
 /// Validate a plain-HTTP **loopback origin**: `http://address[:port]` with no
@@ -297,7 +368,16 @@ pub(crate) fn observation(
     settings: RuntimeSettings,
     store: Arc<dyn CredentialStore>,
 ) -> Result<RuntimeObservation, RuntimeUnavailable> {
-    let RuntimeSettings { endpoint, token } = settings;
+    let RuntimeSettings {
+        endpoint,
+        token,
+        revocable,
+    } = settings;
+    let teardown = revocable.then(|| RuntimeTeardown {
+        origin: endpoint.clone(),
+        token: token.clone(),
+        store: Arc::clone(&store),
+    });
     let executor = RevokingHttp::new(PlainHttp::new(&endpoint), store, endpoint.clone());
     let transport = ProtocolTransport::new(
         executor,
@@ -330,6 +410,7 @@ pub(crate) fn observation(
                 value: "all".to_owned(),
             }],
         },
+        teardown,
     })
 }
 
@@ -632,6 +713,39 @@ mod tests {
         assert_eq!(observation.scope.filters.len(), 1);
         assert_eq!(observation.scope.filters[0].name, "view");
         assert_eq!(observation.scope.filters[0].value, "all");
+    }
+
+    #[test]
+    fn only_an_issued_or_rotated_credential_is_revocable_on_teardown() {
+        let override_store = MemoryStore::default();
+        let override_settings = settings(
+            Some("http://127.0.0.1:8123"),
+            Some("override-token"),
+            &override_store,
+        )
+        .expect("override resolves");
+        let override_observation =
+            observation(override_settings, std::sync::Arc::new(override_store))
+                .expect("observation builds");
+        assert!(
+            override_observation.teardown.is_none(),
+            "an operator override is not revoked by the Desktop"
+        );
+
+        let record = crate::credential_issuance::encode_for_test(
+            "stored-token-0123456789",
+            "desktop:0123456789abcdef0123456789abcdef",
+            1_700_000_000,
+        );
+        let issued_store = MemoryStore::with_token(&record);
+        let issued_settings =
+            settings(Some("http://127.0.0.1:8123"), None, &issued_store).expect("record resolves");
+        let issued_observation = observation(issued_settings, std::sync::Arc::new(issued_store))
+            .expect("observation builds");
+        assert!(
+            issued_observation.teardown.is_some(),
+            "an issued record is revoked on explicit teardown"
+        );
     }
 
     #[test]

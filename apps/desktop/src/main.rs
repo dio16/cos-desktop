@@ -1,5 +1,6 @@
 mod app;
 mod contrast_probe;
+mod credential_issuance;
 mod credentials;
 mod instance;
 #[cfg(all(feature = "r0-s2b-instrumentation", windows))]
@@ -68,6 +69,31 @@ fn main() {
     // in a diagnostic; a 401 on this session deletes the stored entry.
     let runtime_token = std::env::var(runtime::TOKEN_ENV).ok();
     let credential_store = credentials::default_store();
+    // One bounded acquisition/rotation boundary per session. The issuance secret
+    // is read once and used only on the validated loopback origin; the fetched
+    // token is persisted by the protected store and never rendered. A failure is
+    // an explicit fixed label, and `plan` below stays the only launch decision.
+    let issuance_secret = std::env::var(credential_issuance::ISSUANCE_SECRET_ENV).ok();
+    if matches!(&startup.mode, app::Mode::Runtime { .. })
+        && let Some(configured) = endpoint.as_deref()
+        && let Some(origin) = runtime::validated_origin(configured)
+    {
+        let mut exchange = credential_issuance::UreqExchange::new(&origin);
+        if let Err(error) = credential_issuance::prepare(
+            &origin,
+            runtime_token.as_deref(),
+            issuance_secret.as_deref(),
+            credential_store.as_ref(),
+            &mut exchange,
+            std::time::SystemTime::now(),
+        ) {
+            eprintln!(
+                "Runtime credential acquisition unavailable: {}",
+                error.label()
+            );
+        }
+    }
+    drop(issuance_secret);
     let launch = runtime::plan(
         &startup.mode,
         endpoint.as_deref(),
@@ -77,6 +103,9 @@ fn main() {
     drop(runtime_token);
     let observation_store = std::sync::Arc::clone(&credential_store);
     let outcome = std::sync::Arc::clone(&exit_outcome);
+    let teardown: std::sync::Arc<std::sync::Mutex<Option<runtime::RuntimeTeardown>>> =
+        std::sync::Arc::new(std::sync::Mutex::new(None));
+    let teardown_for_app = std::sync::Arc::clone(&teardown);
     #[cfg(all(feature = "r0-s2b-instrumentation", windows))]
     let capture = r0_s2b::Report::default();
     #[cfg(all(feature = "r0-s2b-instrumentation", windows))]
@@ -113,13 +142,19 @@ fn main() {
             runtime::LaunchPlan::Runtime(settings) => {
                 match runtime::observation(settings, std::sync::Arc::clone(&observation_store)) {
                     Ok(observation) => {
+                        let runtime::RuntimeObservation {
+                            client,
+                            scope,
+                            teardown: observation_teardown,
+                        } = observation;
+                        if let Some(session_teardown) = observation_teardown
+                            && let Ok(mut slot) = teardown_for_app.lock()
+                        {
+                            *slot = Some(session_teardown);
+                        }
                         // The same host drives either source; the UI never learns
                         // which client implementation it is.
-                        let (host, handle) = window::ObservationHost::start(
-                            cx,
-                            observation.client,
-                            observation.scope,
-                        );
+                        let (host, handle) = window::ObservationHost::start(cx, client, scope);
                         match handle {
                             Some(handle) => (
                                 Some(handle.clone()),
@@ -169,6 +204,13 @@ fn main() {
             cx.quit();
         }
     });
+    // The app loop has stopped. Revoke the session credential best-effort inside
+    // its bounded budget; failures are fixed labels and never extend shutdown.
+    if let Ok(mut slot) = teardown.lock()
+        && let Some(session_teardown) = slot.take()
+    {
+        session_teardown.revoke();
+    }
     // Report the exit handshake outcome after the app loop returned, so the
     // confirmation is observable even when the process quits immediately.
     match exit_outcome.lock() {

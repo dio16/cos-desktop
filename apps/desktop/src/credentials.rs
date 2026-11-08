@@ -11,6 +11,11 @@
 //! stored entry so later launches need no environment variable (rotation); a
 //! `401` from the Runtime deletes the entry and forces re-authorization.
 //!
+//! The stored value is opaque here: `runtime::settings` accepts either a bare
+//! operator token or the versioned deadline record written by
+//! `credential_issuance` after a Runtime-issued credential. This module never
+//! parses, renders or logs either form.
+//!
 //! Non-Windows builds have no OS store integration: they accept the operator
 //! override only and report the store as unavailable.
 
