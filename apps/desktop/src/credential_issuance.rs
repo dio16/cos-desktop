@@ -6,7 +6,7 @@
 //! (`POST /api/cos/desktop/credentials` with `X-Auth-Secret`, and the matching
 //! `refresh`/`revoke` routes with `Authorization: Bearer`). Responses are
 //! `{"token","principal","scopes","expires_in"}`; the Desktop-bound principal is
-//! `desktop:<random>` and the only scope is `read:observe`.
+//! `desktop:<32 lowercase hex>` and the only scope is `read:observe`.
 //!
 //! # Operator provisioning
 //!
@@ -16,6 +16,13 @@
 //! diagnostic, an error message or a panic message. The fetched token is only
 //! persisted through [`CredentialStore`] (Windows Credential Manager) and then
 //! dropped; it is never rendered by this module.
+//!
+//! Residual exposure: the variable remains in the process environment for the
+//! rest of the process lifetime. `std::env::remove_var` is `unsafe` in Rust
+//! 2024 and this crate forbids unsafe code, so no unset is attempted — the value
+//! is simply never read again after the single acquisition. An operator that
+//! needs it gone must not provision it for the session or start the process with
+//! a scoped environment.
 //!
 //! # Rotation boundary
 //!
@@ -61,8 +68,12 @@ const BEARER_PREFIX: &str = "Bearer ";
 
 /// The only scope this build accepts today.
 const EXPECTED_SCOPE: &str = "read:observe";
-/// Server-managed Desktop principal prefix.
+/// Server-managed Desktop principal prefix. The remainder is pinned to 32
+/// lowercase hexadecimal characters (the observed `desktop:<random>` shape); it
+/// is validated on the wire and in the stored record, and never rendered.
 const PRINCIPAL_PREFIX: &str = "desktop:";
+/// Length of the random suffix of a Desktop principal.
+const PRINCIPAL_SUFFIX_LEN: usize = 32;
 
 /// Bounded accepted credential document (the observed document is 155 bytes).
 pub(crate) const MAX_CREDENTIAL_RESPONSE_BYTES: u64 = 8 * 1024;
@@ -74,8 +85,6 @@ pub(crate) const REVOKE_TIMEOUT: Duration = Duration::from_millis(1500);
 const MAX_EXPIRES_IN_SECONDS: u64 = 24 * 60 * 60;
 const MIN_TOKEN_BYTES: usize = 16;
 const MAX_TOKEN_BYTES: usize = 4096;
-const MIN_PRINCIPAL_BYTES: usize = 8;
-const MAX_PRINCIPAL_BYTES: usize = 256;
 
 const STORED_VERSION: &str = "cos-desktop-credential-v1";
 
@@ -346,10 +355,7 @@ fn decode_stored(raw: &str) -> Option<StoredValue> {
     if lines.next().is_some() {
         return None;
     }
-    if !valid_field(principal, MIN_PRINCIPAL_BYTES, MAX_PRINCIPAL_BYTES)
-        || !principal.starts_with(PRINCIPAL_PREFIX)
-        || !valid_field(token, MIN_TOKEN_BYTES, MAX_TOKEN_BYTES)
-    {
+    if !valid_principal(principal) || !valid_field(token, MIN_TOKEN_BYTES, MAX_TOKEN_BYTES) {
         return None;
     }
     Some(StoredValue::Record(StoredCredential {
@@ -661,6 +667,20 @@ fn valid_field(value: &str, minimum: usize, maximum: usize) -> bool {
     (minimum..=maximum).contains(&length) && value.bytes().all(|byte| (0x21..=0x7e).contains(&byte))
 }
 
+/// Pin the server-managed principal shape: `desktop:` plus 32 lowercase hex.
+///
+/// The Client only validates and compares this value; it never renders it, so a
+/// principal that does not have the documented shape is a closed-document
+/// failure rather than text to display.
+fn valid_principal(value: &str) -> bool {
+    value.strip_prefix(PRINCIPAL_PREFIX).is_some_and(|suffix| {
+        suffix.len() == PRINCIPAL_SUFFIX_LEN
+            && suffix
+                .bytes()
+                .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+    })
+}
+
 fn parse_document(raw: &[u8]) -> Result<IssuedCredential, CredentialError> {
     if raw.is_empty() {
         return Err(CredentialError::MalformedResponse);
@@ -736,9 +756,7 @@ fn parse_document(raw: &[u8]) -> Result<IssuedCredential, CredentialError> {
     if !valid_field(&token, MIN_TOKEN_BYTES, MAX_TOKEN_BYTES) {
         return Err(CredentialError::MalformedResponse);
     }
-    if !valid_field(&principal, MIN_PRINCIPAL_BYTES, MAX_PRINCIPAL_BYTES)
-        || !principal.starts_with(PRINCIPAL_PREFIX)
-    {
+    if !valid_principal(&principal) {
         return Err(CredentialError::MalformedResponse);
     }
     if scopes.len() != 1 || scopes[0] != EXPECTED_SCOPE {
@@ -778,6 +796,10 @@ mod tests {
             "{{\"token\":\"{token}\",\"principal\":\"{PRINCIPAL}\",\"scopes\":{scopes},\"expires_in\":{expires_in}}}"
         )
         .into_bytes()
+    }
+
+    fn document_with_principal(document: &str) -> Vec<u8> {
+        document.as_bytes().to_vec()
     }
 
     fn document(token: &str) -> Vec<u8> {
@@ -1013,6 +1035,18 @@ mod tests {
             )
             .into_bytes(),
             document_with("with space in token", "[\"read:observe\"]", 43_200),
+            document_with_principal(&format!(
+                "{{\"token\":\"{TOKEN}\",\"principal\":\"desktop:0123456789ABCDEF0123456789ABCDEF\",\"scopes\":[\"read:observe\"],\"expires_in\":43200}}"
+            )),
+            document_with_principal(&format!(
+                "{{\"token\":\"{TOKEN}\",\"principal\":\"desktop:0123456789abcdef0123456789abcde\",\"scopes\":[\"read:observe\"],\"expires_in\":43200}}"
+            )),
+            document_with_principal(&format!(
+                "{{\"token\":\"{TOKEN}\",\"principal\":\"desktop:0123456789abcdef0123456789abcdeg\",\"scopes\":[\"read:observe\"],\"expires_in\":43200}}"
+            )),
+            document_with_principal(&format!(
+                "{{\"token\":\"{TOKEN}\",\"principal\":\"principal-without-the-prefix\",\"scopes\":[\"read:observe\"],\"expires_in\":43200}}"
+            )),
         ];
         for body in bodies {
             let store = MemoryStore::default();
@@ -1254,6 +1288,25 @@ mod tests {
         assert!(!rendered.contains(PRINCIPAL));
         assert!(rendered.contains("<redacted>"));
         assert_eq!(parsed.expires_in, 43_200);
+    }
+
+    #[test]
+    fn a_stored_record_must_carry_the_documented_principal_shape() {
+        for principal in [
+            "desktop:0123456789ABCDEF0123456789ABCDEF",
+            "desktop:0123456789abcdef0123456789abcde",
+            "desktop:0123456789abcdef0123456789abcdef0",
+            "desktop:0123456789abcdef0123456789abcdeg",
+            "desktop:",
+            "plain-principal",
+        ] {
+            let record = encode_for_test(TOKEN, principal, NOW);
+            assert_eq!(stored_token(&record), None, "{principal} must be refused");
+        }
+        assert_eq!(
+            stored_token(&encode_for_test(TOKEN, PRINCIPAL, NOW)).as_deref(),
+            Some(TOKEN)
+        );
     }
 
     #[test]
