@@ -17,8 +17,9 @@ use cos_client::{
     DesktopClient, HistoryQuery, ObservationControl, PublicationAccess, SnapshotHandle,
 };
 use desktop_protocol::{
-    CommandId, CommandReceipt, Counter, ErrorCode, ObservationScopeRequest, ReadStamp,
-    ResyncReason, TaskId,
+    CommandId, CommandReceipt, Counter, EpochId, ErrorCode, ObservationScope,
+    ObservationScopeRequest, ReadContextId, ReadRevision, ReadStamp, ResyncReason, ServerId,
+    TaskId,
 };
 
 use crate::diagnostics::{DiagnosticBatch, DiagnosticKind, DiagnosticRing};
@@ -231,6 +232,81 @@ pub struct PublicationNotice {
     pub publication_version: u64,
 }
 
+/// Authenticated read context one validated publication was admitted under.
+///
+/// It is published together with the exact publication version (and only when
+/// that version carries authorized data), so a consumer can address an
+/// authorized read — a media descriptor, for example — without re-deriving the
+/// identity from local state. The `context_id` is an RC-03 bearer capability:
+/// it is sent only as a request header and is deliberately redacted from
+/// `Debug`.
+#[derive(Clone, PartialEq, Eq)]
+pub struct PublicationReadContext {
+    server_identity: ServerId,
+    epoch: EpochId,
+    context_id: ReadContextId,
+    scope: ObservationScope,
+    read_revision: ReadRevision,
+}
+
+impl PublicationReadContext {
+    /// Assemble the context of one validation.
+    pub fn new(
+        server_identity: ServerId,
+        epoch: EpochId,
+        context_id: ReadContextId,
+        scope: ObservationScope,
+        read_revision: ReadRevision,
+    ) -> Self {
+        Self {
+            server_identity,
+            epoch,
+            context_id,
+            scope,
+            read_revision,
+        }
+    }
+
+    /// Authenticated Runtime server identity of the publication.
+    pub fn server_identity(&self) -> &ServerId {
+        &self.server_identity
+    }
+
+    /// Runtime epoch of the publication.
+    pub fn epoch(&self) -> &EpochId {
+        &self.epoch
+    }
+
+    /// RC-03 read context. Callers forward it as a header value only.
+    pub fn context_id(&self) -> &ReadContextId {
+        &self.context_id
+    }
+
+    /// Granted observation scope of the context.
+    pub fn scope(&self) -> &ObservationScope {
+        &self.scope
+    }
+
+    /// Monotonic read authorization revision.
+    pub fn read_revision(&self) -> &ReadRevision {
+        &self.read_revision
+    }
+}
+
+impl std::fmt::Debug for PublicationReadContext {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter
+            .debug_struct("PublicationReadContext")
+            .field("server_identity", &self.server_identity)
+            .field("epoch", &self.epoch)
+            .field("context_id", &"<redacted>")
+            .field("scope_id", &self.scope.scope_id)
+            .field("task_ids", &self.scope.task_ids)
+            .field("read_revision", &self.read_revision)
+            .finish()
+    }
+}
+
 /// One complete immutable publication.
 #[derive(Clone, Debug)]
 pub struct ObservationPublication {
@@ -267,6 +343,24 @@ impl Default for ObservationPublication {
             session_generation: 0,
             publication_version: 0,
         }
+    }
+}
+
+impl ObservationPublication {
+    /// The authoritative artifact projection of one selected candidate.
+    ///
+    /// This is projection lookup only: it fabricates neither a candidate nor an
+    /// artifact, and an artifact absent from the complete projection stays
+    /// absent (the caller renders an explicit unavailable state).
+    pub fn artifact_of_candidate(
+        &self,
+        candidate: &desktop_protocol::CandidateRef,
+    ) -> Option<&desktop_protocol::ArtifactSnapshot> {
+        let snapshot = self.snapshot.as_ref()?;
+        let projected = snapshot.candidates.get(candidate)?;
+        snapshot
+            .artifacts
+            .get(&projected.candidate_ref.artifact_ref)
     }
 }
 
@@ -1621,10 +1715,23 @@ impl ObservationSessionOwner {
         let withheld_error = last_error.clone();
         let current_snapshot = self.client.snapshot();
         let mut access = self.client.publication_access();
+        let mut read_context = None;
         let (snapshot, revision, command_statuses) = match &mut access {
             PublicationAccess::Validated {
-                readable_commands, ..
+                stamp,
+                scope,
+                readable_commands,
+                ..
             } => {
+                // The context travels with this exact validated version: it is
+                // authored by the same grant the projection was read under.
+                read_context = Some(PublicationReadContext::new(
+                    stamp.server_id.clone(),
+                    stamp.epoch.clone(),
+                    stamp.context_id.clone(),
+                    (*scope).clone(),
+                    stamp.read_revision.clone(),
+                ));
                 let mut statuses = BTreeMap::new();
                 for (id, record) in readable_commands.by_ref() {
                     statuses.insert(
@@ -1693,7 +1800,9 @@ impl ObservationSessionOwner {
             return;
         }
         let _ = self.fence.close_for_commit();
-        let guard = self.fence.install(publication, epoch_before);
+        let guard = self
+            .fence
+            .install_with_read_context(publication, epoch_before, read_context);
         if self.fence.open(guard).is_ok() {
             self.fence.notify_subscribers();
         }

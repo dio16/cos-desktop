@@ -10,7 +10,9 @@ use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, RwLock, TryLockError};
 use std::task::{Context, Poll, Waker};
 
-use crate::observation::{ObservationPublication, PublicationError, ReadUnavailable};
+use crate::observation::{
+    ObservationPublication, PublicationError, PublicationReadContext, ReadUnavailable,
+};
 
 /// Bounded number of registered publication subscribers.
 pub const MAX_SUBSCRIBERS: usize = 8;
@@ -22,6 +24,12 @@ struct Record {
     /// Authorization epoch the candidate was assembled under.
     authorization_epoch: u64,
     publication: Arc<ObservationPublication>,
+    /// Authenticated read context this publication was admitted under.
+    ///
+    /// It travels with the record, so a lease can only read the context of the
+    /// exact publication version it also reads; a context from another version
+    /// is never exposed.
+    read_context: Option<Arc<PublicationReadContext>>,
 }
 
 #[derive(Default)]
@@ -242,6 +250,20 @@ impl VisibilityFence {
         publication: ObservationPublication,
         authorization_epoch: u64,
     ) -> ClosedFence {
+        self.install_with_read_context(publication, authorization_epoch, None)
+    }
+
+    /// Install a validated candidate together with the authenticated read context
+    /// it was assembled under.
+    ///
+    /// A withheld publication is installed without a context: no read identity is
+    /// exposed for a version that carries no authorized data.
+    pub fn install_with_read_context(
+        self: &Arc<Self>,
+        publication: ObservationPublication,
+        authorization_epoch: u64,
+        read_context: Option<PublicationReadContext>,
+    ) -> ClosedFence {
         let mut installing = self.installing.lock().expect("installation lock");
         let expected_open = self.sequence.load(Ordering::Acquire) + 1;
         let installation = self.installations.fetch_add(1, Ordering::AcqRel) + 1;
@@ -261,6 +283,7 @@ impl VisibilityFence {
             installation,
             authorization_epoch,
             publication: Arc::new(publication),
+            read_context: read_context.map(Arc::new),
         }));
         guard
     }
@@ -357,6 +380,19 @@ impl VisibilityFence {
             return None;
         }
         Some(derive(&record.publication))
+    }
+
+    /// One publication's authenticated read context, read under its exact tag.
+    fn read_context(&self, tag: u64) -> Option<PublicationReadContext> {
+        let state = self.state.try_read().ok()?;
+        let record = state.as_ref()?;
+        if record.tag != tag {
+            return None;
+        }
+        record
+            .read_context
+            .as_ref()
+            .map(|context| context.as_ref().clone())
     }
 
     /// Register a subscriber waker, bounded by [`MAX_SUBSCRIBERS`].
@@ -578,6 +614,15 @@ impl ObservationLease {
         self.fence
             .with_record(self.tag, |publication| publication.last_error.clone())
             .flatten()
+    }
+
+    /// Authenticated read context of this exact publication version, when the
+    /// version carries authorized data.
+    ///
+    /// The context travels with the record, so it can never be read from a
+    /// different version: a stale lease or a withheld publication yields `None`.
+    pub fn read_context(&self) -> Option<PublicationReadContext> {
+        self.fence.read_context(self.tag)
     }
 }
 

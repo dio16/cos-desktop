@@ -3914,3 +3914,70 @@ fn a_transcript_longer_than_one_pump_budget_completes_without_an_external_wake()
         "every frame beyond one pump budget is applied without an external wake"
     );
 }
+
+// ---------------------------------------------------------------------------
+// Publication read context (RT6/IMG6 production call site)
+// ---------------------------------------------------------------------------
+
+/// The authenticated read context is published with the exact validated
+/// version and disappears with it; a withheld version exposes no identity.
+#[test]
+fn the_read_context_is_bound_to_its_authorized_publication_version() {
+    let live = Live::start();
+    let lease = live
+        .handle
+        .current()
+        .expect("validated publication is open");
+    let context = lease
+        .read_context()
+        .expect("a validated publication carries its read context");
+    assert_eq!(context.server_identity().as_str(), "fixture:server/local");
+    assert_eq!(context.epoch().as_str(), "fixture:epoch/1");
+    assert_eq!(
+        context.context_id().as_str(),
+        "fixture:read-context/task-184-refine"
+    );
+    assert_eq!(context.scope().scope_id.as_str(), "fixture:scope/task-184");
+    assert_eq!(context.read_revision().as_str(), "1");
+    // The RC-03 context value is a bearer capability: Debug must never render it.
+    assert!(
+        !format!("{context:?}").contains("task-184-refine"),
+        "the read context value stays redacted"
+    );
+    drop(lease);
+
+    // The publication selects the authoritative artifact of one candidate; an
+    // unprojected identity stays absent instead of being synthesized.
+    let publication = live.publication();
+    let snapshot = publication.snapshot.as_ref().expect("projection admitted");
+    let candidate = snapshot
+        .candidates
+        .keys()
+        .next()
+        .expect("the fixture projects a candidate")
+        .clone();
+    let artifact = publication
+        .artifact_of_candidate(&candidate)
+        .expect("the candidate's artifact is in the complete projection");
+    assert_eq!(artifact.artifact_ref, candidate.artifact_ref);
+    let unknown = desktop_protocol::CandidateRef {
+        candidate_id: desktop_protocol::CandidateId::fixture("candidate/unknown"),
+        ..candidate
+    };
+    assert!(publication.artifact_of_candidate(&unknown).is_none());
+
+    // An authorization change closes the current version synchronously, so no
+    // context can be read from a version that is no longer authorized.
+    let _reply = live.handle.authentication_changed();
+    assert!(
+        live.handle.current().is_err(),
+        "an authorization change makes the previous version unreadable"
+    );
+    assert!(
+        live.handle
+            .current()
+            .ok()
+            .and_then(|lease| lease.read_context())
+            .is_none()
+    );
+}

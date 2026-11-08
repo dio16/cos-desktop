@@ -447,6 +447,23 @@ impl RememberKey {
     }
 }
 
+/// Production encoded-media limits for one Desktop session.
+///
+/// `max_input_bytes` is the largest accepted representation (the 256 MiB
+/// ORIGINAL budget, so the per-representation protocol bound is never relaxed);
+/// the live cache is capped at 512 MiB across at most 8 entries; `max_pixels` is
+/// the adversarial encoded-geometry ceiling and is not a decode-class adoption
+/// (that remains MP-IMG2). A construction failure is an explicit unavailable
+/// state at the composition root, never an unbounded fallback.
+pub fn media_limits() -> LocalLimits {
+    LocalLimits {
+        max_input_bytes: 256 * 1024 * 1024,
+        max_live_bytes: 512 * 1024 * 1024,
+        max_live_entries: 8,
+        max_pixels: 16_777_216,
+    }
+}
+
 /// Bounded media cache and admission boundary for one Desktop process.
 ///
 /// The cache is keyed by the per-principal bounded identity produced by

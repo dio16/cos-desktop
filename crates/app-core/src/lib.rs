@@ -23,6 +23,12 @@ pub use cos_client::SnapshotHandle;
 /// Re-exported so the GPUI boundary can cancel a background media resolution without
 /// depending on `cos-client` directly.
 pub use cos_client::media::Cancellation as MediaFetchCancellation;
+/// Value-free media fetch failure class and fetched descriptor/bytes pair.
+///
+/// Re-exported because they are part of the [`MediaSource`] boundary app-core
+/// exposes: an implementer at the GPUI/binary boundary must name them, and the
+/// GPUI crate must not depend on `cos-client` to do so.
+pub use cos_client::media::{FetchedMedia, MediaFetchError};
 pub use cos_client::{
     Catalog, CatalogDocument, CatalogExecutionLimits, CatalogGraphRef, CatalogInputLimits,
     CatalogParameter, CatalogParameterBounds, CatalogParameterChoice, CatalogParameterValue,
@@ -46,12 +52,14 @@ pub use history::{
 pub use media_presentation::{
     AdmittedMedia, MediaAvailability, MediaIdentity, MediaPresentation, MediaRepository,
     MediaSelection, MediaSessionContext, MediaSource, MediaUnavailable, MediaUnavailableCause,
+    media_limits,
 };
 pub use observation::{
     CommandPresentation, CommandRead, CommandReadError, CommandReadView, DeadlineScheduler,
     ExitWatch, InvalidCommandReason, ObservationHandle, ObservationPublication,
     ObservationSessionOwner, OwnerClock, OwnerReply, PublicationConnection, PublicationError,
-    PublicationNotice, PublicationSource, ReadUnavailable, ReplacementError, drive,
+    PublicationNotice, PublicationReadContext, PublicationSource, ReadUnavailable,
+    ReplacementError, drive,
 };
 pub use redaction::{
     MAX_DIAGNOSTIC_LINE_BYTES, REDACTED, redact_diagnostic_text, redact_diagnostic_text_within,
