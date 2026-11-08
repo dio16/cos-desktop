@@ -618,23 +618,21 @@ fn validate_parameter(
             }
         }
         BriefParameterValue::Integer(integer) => {
-            if let Some(min) = control.min.as_deref() {
-                if let Ok(min) = min.parse::<i64>()
-                    && *integer < min
-                {
-                    return Err(BriefValidationError::ParameterBounds {
-                        id: control.id.clone(),
-                    });
-                }
+            if let Some(min) = control.min.as_deref()
+                && let Ok(min) = min.parse::<i64>()
+                && *integer < min
+            {
+                return Err(BriefValidationError::ParameterBounds {
+                    id: control.id.clone(),
+                });
             }
-            if let Some(max) = control.max.as_deref() {
-                if let Ok(max) = max.parse::<i64>()
-                    && *integer > max
-                {
-                    return Err(BriefValidationError::ParameterBounds {
-                        id: control.id.clone(),
-                    });
-                }
+            if let Some(max) = control.max.as_deref()
+                && let Ok(max) = max.parse::<i64>()
+                && *integer > max
+            {
+                return Err(BriefValidationError::ParameterBounds {
+                    id: control.id.clone(),
+                });
             }
         }
         BriefParameterValue::Decimal(text) => {
@@ -1151,7 +1149,7 @@ mod tests {
         let first = form.request_submit().expect("submit");
         assert!(matches!(form.state(), BriefState::Submitting { .. }));
         assert_eq!(first.recipe_ref, sample_recipe_ref());
-        assert!(form.set_goal("blocked while submitting") == false);
+        assert!(!form.set_goal("blocked while submitting"));
         assert_eq!(
             form.request_submit().err(),
             Some(BriefValidationError::Submitting)
