@@ -1,0 +1,27 @@
+﻿APP_PID=46476
+EXE=C:\dev\cos-desktop-verification\ins1-20261108\target\release\cos-desktop.exe
+PROFILE=C:\dev\cos-desktop\target\ins1-20261108\profile
+WINDOW_TITLE=COS Desktop HWND=4789474
+DPI=96
+FOREGROUND_AT_ATTACH=False
+UIA_ROOT=COS Desktop NODES=57
+DUMP_INITIAL=57
+SELECT_A name=[fixture:task/Task-184 — 第1回 — A キーボード操作対象] via=invoke
+DUMP_A_SELECTED=57
+SECTION_HEADERS=5
+OPEN_EVAL_A keyboard focused_before=Collapsed after=Expanded
+DUMP_A_EVAL=58
+SHOT_A_EVAL=screenshot 1296x839 bytes=182681
+RAW_A_EVAL=58
+SELECT_B name=[fixture:task/Task-184 — 第1回 — B ] via=invoke
+DUMP_B_SELECTED=64
+SHOT_B_SELECTED=screenshot 1296x839 bytes=185335
+EVAL_STATE_AFTER_B=Collapsed
+OPEN_EVAL_B keyboard focused_before=Collapsed after=Expanded
+DUMP_B_EVAL=65
+SHOT_B_EVAL=screenshot 1296x839 bytes=182165
+RAW_B_EVAL=65
+OPEN_GOAL_KEYBOARD keyboard focused_before=Collapsed after=Expanded
+DUMP_KEYBOARD=66
+FINAL_STATES goal=Expanded eval=Expanded evidence=Collapsed refinement=Collapsed outcome=Collapsed
+APP_STOPPED

@@ -4,24 +4,58 @@
   "contract": "DC-MP-INS1",
   "slice": "native A-to-B candidate switch, identity-change clearing, keyboard section disclosure, and viewed-vs-formal labelling on fixture projections",
   "status": "NATIVE_A2B_SWITCH_AND_IDENTITY_CLEARING_OBSERVED",
+  "repair_revision": 2,
   "authority": "Lead-assigned task-7 (parallel wave 2) under the MP-INS1 card and DC-MP-INS1. Fixture/Desktop-local observation only; no Runtime projection is claimed and no product behaviour was reinterpreted.",
-  "recorded_local": "2026-11-08T10:00:00+09:00",
+  "recorded_local": "2026-11-08T10:36:00+09:00",
+  "repair_of": "fa19737cd8c5e2d6168d7cfd5f619976c072e3e6",
+
+  "review_repair": {
+    "reviewed_commit": "fa19737cd8c5e2d6168d7cfd5f619976c072e3e6",
+    "verdict": "NEEDS_WORK_1_BLOCKING_3_ACTIONABLE_3_NIT",
+    "findings": {
+      "B-01": "driver.log was cited and hashed but was not committed because .gitignore `*.log` excluded it",
+      "A-01": "the 09:28 lock-protocol breach was not in the committed evidence and REC3's release note could not name the remover",
+      "A-02": "the 'C:/tmp profiles refused' claim was over-general and contradicted by same-day REC3/REL3 runs",
+      "A-03": "the keyboard route was under-evidenced: the run log did not publish the per-step foreground check or the key dispatch",
+      "NIT-1": "the fixture hash was the worktree CRLF form, not the git blob form",
+      "NIT-2": "evidence file references needed the run-directory prefix",
+      "NIT-3": "driver.log was listed among the UIA dumps although it is the driver's outcome log"
+    },
+    "resolutions": {
+      "B-01": "the byte-identical file is now committed as 20261108-a2b/driver-log.txt (sha256 unchanged); the ignored .log file was removed from the evidence directory",
+      "A-01": "recorded in environment.lock_protocol_disclosure with the removed owner, age, rule, action, driver fix and the REC3 cross-reference",
+      "A-02": "profile_isolation now lists every attempted path, whether its parent was pre-created, the exact refusal, and the REC3/REL3 counter-evidence; the workspace-confinement inference is retracted",
+      "A-03": "the keyboard row is downgraded to STATE_CHANGED_KEY_ROUTE_NOT_INDEPENDENTLY_EVIDENCED and the limitation is stated explicitly",
+      "NIT-1": "both fixture forms are recorded",
+      "NIT-2": "all evidence references carry the 20261108-a2b/ prefix",
+      "NIT-3": "the driver log is a separate driver_log entry, not part of the UIA dumps list"
+    }
+  },
 
   "baseline": {
     "commit": "abf2310105527461f0d0a16a963ceff962205bc0",
     "branch": "dev",
-    "worktree": "the observation binary was built from a clean detached worktree at abf2310; the main worktree carried only other lanes' uncommitted files (palette.rs, IMPLEMENTATION_MASTER_PLAN.md) plus this new evidence directory",
+    "worktree": "the observation binary was built from a clean detached worktree at abf2310; the main worktree carried only other lanes' uncommitted files (palette.rs, IMPLEMENTATION_MASTER_PLAN.md) plus this evidence directory",
     "build": {
       "source_worktree": "C:/dev/cos-desktop-verification/ins1-20261108/src",
       "command": "cargo build --locked --release -p cos-desktop (CARGO_TARGET_DIR and TEMP/TMP under C:/dev/cos-desktop-verification/ins1-20261108, outside the repository)",
       "duration": "5m 45s",
       "binary": "C:/dev/cos-desktop-verification/ins1-20261108/target/release/cos-desktop.exe",
       "binary_sha256": "ff55b72b8595d7ecc74a995d5d37631c654662949cc35345465622e708ef804c",
-      "why_release": "the assignment asked for the release binary; the earlier debug startup stack-overflow was not re-tested against this target"
+      "why_release": "the assignment asked for the release binary; the earlier debug startup stack-overflow was not re-tested against this target",
+      "retention": "the external worktree and target tree were removed after the run; the binary hash above is the retained identity"
     },
     "fixture": {
       "path": "crates/cos-client/fixtures/task-184.json",
-      "sha256": "db1cfc8014ad44d3a512415af22ab90523b639de36d606e83247ac109daec2c0"
+      "worktree_file": {
+        "sha256": "db1cfc8014ad44d3a512415af22ab90523b639de36d606e83247ac109daec2c0",
+        "form": "worktree file with CRLF line endings; this is the byte form the launched binary actually read"
+      },
+      "git_blob_lf": {
+        "reviewer_reported_prefix": "09eb2bbe",
+        "full_value": null,
+        "form": "git blob at abf2310 and at the reviewing HEAD with LF line endings; only the 8-hex prefix was supplied by the reviewer and the full value was not independently recomputed during this evidence-only repair"
+      }
     },
     "product_change": "NONE: every enumerated row behaved as the contract requires, so no product or test source was changed and no speculative surface edit was made"
   },
@@ -32,15 +66,79 @@
     "app_window": "COS Desktop 1296x839 at DPI 96",
     "profile_isolation": {
       "requested": "isolated LOCALAPPDATA under C:/tmp",
-      "result": "NOT_PROVIDED_BY_THIS_ENVIRONMENT",
-      "evidence": "the application exits before creating a window with 'COS Desktop instance ownership unavailable; startup refused (create-directory)' for profiles under C:/tmp (also under a C:/dev sibling directory and a LOCALAPPDATA subdirectory), for both the debug and the release binaries; a profile inside the workspace target tree starts and renders exactly as observed here",
-      "fallback_used": "C:/dev/cos-desktop/target/ins1-20261108/profile (isolated from the user's real profile, inside the workspace target tree which is not tracked)",
-      "interpretation": "INFERENCE / NOT_DIAGNOSED: writes by the launched application appear to be confined to the workspace in this environment; no OS setting was changed and the product was not modified to work around it"
+      "result": "NOT_ACHIEVED_IN_THIS_RUN",
+      "attempts_local_approx": "2026-11-08 approximately 09:28-09:34 (tool turns were not individually timestamped)",
+      "attempts": [
+        {
+          "localappdata": "C:\\tmp\\ins1-20261108\\profile",
+          "parent_pre_created": true,
+          "binary": "in-repo debug target/debug/cos-desktop.exe",
+          "outcome": "exited before a window; stderr 'COS Desktop instance ownership unavailable; startup refused (create-directory)'"
+        },
+        {
+          "localappdata": "C:\\tmp\\ins1-20261108\\p-debug",
+          "parent_pre_created": true,
+          "binary": "in-repo debug target/debug/cos-desktop.exe",
+          "outcome": "same create-directory refusal"
+        },
+        {
+          "localappdata": "C:\\tmp\\ins1-20261108\\p-rel",
+          "parent_pre_created": true,
+          "binary": "retained stale release target/release/cos-desktop.exe (sha256 45274b90f9bb97e3e63a7914e8d9e510e8ee697fafa0483839d2fd888e577a7d)",
+          "outcome": "exited before a window; stderr 'COS Desktop instance ownership unavailable; startup refused (create-directory)'"
+        },
+        {
+          "localappdata": "C:\\dev\\cos-desktop-verification\\ins1-20261108\\profile",
+          "parent_pre_created": true,
+          "binary": "in-repo debug",
+          "outcome": "same create-directory refusal"
+        },
+        {
+          "localappdata": "C:\\Users\\diobrando\\AppData\\Local\\cos-desktop-ins1-20261108",
+          "parent_pre_created": true,
+          "binary": "in-repo debug",
+          "outcome": "same create-directory refusal"
+        },
+        {
+          "localappdata": "C:\\tmp\\ins1-20261108\\profile-acl",
+          "parent_pre_created": true,
+          "acl_grant": "icacls <dir> /grant \"*S-1-5-11:(OI)(CI)M\" (Authenticated Users modify, inherited)",
+          "binary": "in-repo debug",
+          "outcome": "same create-directory refusal"
+        },
+        {
+          "localappdata": "C:\\dev\\cos-desktop\\target\\ins1-20261108\\profile",
+          "parent_pre_created": true,
+          "binary": "in-repo debug, then the external release binary",
+          "outcome": "the application started and rendered; this is the profile used by the published run"
+        }
+      ],
+      "not_generalized": "This run's refusals are NOT evidence that application writes are confined to the workspace, and the earlier wording to that effect is retracted. Same-day evidence from other lanes used C:/tmp successfully with the same Start-Process launch style: REC3 session.json line 92 records 'Start-Process -NoNewWindow with an isolated per-row LOCALAPPDATA under C:/tmp/rec3-matrix-20261108/profiles/<row> and --fixture' (17 runs), and REL3 record.json records 'isolated LOCALAPPDATA=C:\\\\tmp\\\\rel3-native-work\\\\localappdata'. The cause of this run's refusals is NOT_DIAGNOSED, it did not reproduce for those lanes, and it was not retested during this evidence-only repair because another lane's GUI process was using the desktop (single-GUI rule) and the repair scope was evidence-only.",
+      "no_os_change": "no display, DPI, accessibility or registry setting was changed"
+    },
+    "lock_protocol_disclosure": {
+      "incident_local": "2026-11-08 approximately 09:28-09:29",
+      "removed_lock": "C:/tmp/cos-desktop-native.lock",
+      "removed_owner_marker": "owner=impl-rel1 pid=36688 at=2026-11-08T09:28:46+09:00",
+      "owner_pid_running": false,
+      "lock_age_at_removal": "approximately 0.1 minutes (far below the 5-minute rule)",
+      "rule": "a lock may be removed only when it is empty/stale, no matching PID is running, and it is older than 5 minutes",
+      "action": "this lane removed the lock outside that rule: the first version of the launcher removed any lock whose owner PID was not running, without the age condition; the removal was executed by that launcher and is acknowledged here",
+      "driver_fix": "the launcher and the final driver were corrected to wait while the owner is alive OR the lock is younger than 5 minutes, and only remove a no-owner/no-process lock older than 5 minutes; every acquisition used by the published run followed the corrected rule",
+      "rec3_cross_reference": {
+        "path": "docs/development/evidence-published/rec3-matrix-latest/session.json",
+        "field": "native_lock_and_cleanup",
+        "rec3_acquisition_marker": "owner=impl-rec3 pid=12356 at=2026-11-08T08:32:29.9308846+09:00",
+        "rec3_release_observed": false,
+        "rec3_release_note": "This lane did not delete the lock. No release event was observed; the environment was re-snapshotted between turns. Whether a later lane removed it cannot be distinguished.",
+        "rec3_state_at_post_run_check": "ABSENT at 2026-11-08T09:53:17+09:00",
+        "effect": "this disclosure supplies the missing attribution: the 08:32 impl-rec3 lock disappeared because this lane removed it at about 09:28-09:29 while following its defective launcher rule. REC3's statement that its own lane did not delete the lock remains accurate; its evidence was not edited."
+      }
     },
     "input_route": {
       "launch": "Start-Process <release exe> --fixture with LOCALAPPDATA set; no display, DPI or accessibility setting changed",
       "candidate_switch": "UIA InvokePattern on the real dock button (AutomationId contains fixture:candidate/a or fixture:candidate/b); this is the accessibility activation path on the running window, not a synthetic mouse click",
-      "section_disclosure": "UIA SetFocus on the section header, then a real ENTER key through SendKeys after confirming the application window was foreground; UIA ExpandCollapsePattern was exposed but Expand() did not change the rendered state (recorded, not used)",
+      "section_disclosure": "UIA SetFocus on the section header, then an ENTER key through SendKeys, guarded by a foreground check; the guard result and the dispatch are not logged per step (see the keyboard row limitation)",
       "capture": "CopyFromScreen over the application window rectangle while it was foreground; PNG 1296x839",
       "cleanup": "only the application PID this driver started was stopped, then the native lock was removed; the lock owner file named impl-typ1 before release"
     }
@@ -53,7 +151,7 @@
       "select_a": "inspector caption '閲覧中の候補（この画面での選択）: A — 正式採用ではありません。正式採用は実行基盤から通知されます。'; dock row A '… — A 閲覧中・キーボード操作対象'",
       "select_b": "inspector caption '閲覧中の候補（この画面での選択）: B — 正式採用ではありません。正式採用は実行基盤から通知されます。'; dock row A '… — A 比較対象', dock row B '… — B 閲覧中・比較対象・キーボード操作対象'",
       "side_effect": "the second selection also opened the Compare surface ('作業領域：候補を比較', sides 'A: A' and 'B: B', buttons 'A側を変更'/'B側を変更'/'比較を閉じる'). This is the documented dock D-3 behaviour (first selection fills side A, second fills side B and switches to Compare), recorded as observed, not as a defect.",
-      "evidence": ["ax-00-initial.txt", "ax-01-a-selected.txt", "ax-03-b-selected.txt", "shot-b-selected.png"]
+      "evidence": ["20261108-a2b/ax-00-initial.txt", "20261108-a2b/ax-01-a-selected.txt", "20261108-a2b/ax-03-b-selected.txt", "20261108-a2b/shot-b-selected.png"]
     },
     "identity_change_clearing": {
       "result": "OBSERVED",
@@ -61,13 +159,14 @@
       "after_switch": "after selecting B the Evaluation header is expand=Collapsed, the '評価の詳細' group is absent, and the captured image shows no evaluation field lines (no 0.55 and no 58 anywhere in the inspector)",
       "reopen_b": "re-opening Evaluation shows 確信度 0.62 and visual_quality 66 for B, i.e. the values now belong to the newly viewed identity",
       "fixture_cross_check": "the two observed payloads match the fixture exactly (a: FAIL / HARNESS / 0.55 / visual_quality 58; b: FAIL / HARNESS / 0.62 / visual_quality 66), so the values are not inferred locally",
-      "evidence": ["ax-02-a-eval-open.txt", "ax-03-b-selected.txt", "ax-04-b-eval-open.txt", "shot-a-eval.png", "shot-b-selected.png", "shot-b-eval.png"]
+      "evidence": ["20261108-a2b/ax-02-a-eval-open.txt", "20261108-a2b/ax-03-b-selected.txt", "20261108-a2b/ax-04-b-eval-open.txt", "20261108-a2b/shot-a-eval.png", "20261108-a2b/shot-b-selected.png", "20261108-a2b/shot-b-eval.png"]
     },
     "keyboard_section_disclosure": {
-      "result": "OBSERVED",
-      "observed": "with the application window foreground, UIA SetFocus on a section header followed by a real ENTER key toggled it from Collapsed to Expanded: Evaluation for A (Collapsed→Expanded), Evaluation for B (Collapsed→Expanded), Goal (Collapsed→Expanded); the corresponding '…の詳細' group appeared and the final header states were goal=Expanded, eval=Expanded, evidence/refinement/outcome=Collapsed",
-      "limit": "UIA FocusedElement reported the window ('COS Desktop') rather than the header after SetFocus, so header-level focus reporting is NOT_MEASURED; the key event itself is what changed the rendered state",
-      "evidence": ["ax-05-keyboard-goal.txt", "driver.log"]
+      "result": "STATE_CHANGED_KEY_ROUTE_NOT_INDEPENDENTLY_EVIDENCED",
+      "observed": "the section header states changed Collapsed→Expanded after the driver's SetFocus+ENTER step: Evaluation for A, Evaluation for B and Goal; the corresponding '…の詳細' group appeared and the final states were goal=Expanded, eval=Expanded, evidence/refinement/outcome=Collapsed",
+      "driver_step_logic": "the driver step was: if the app window is not foreground, call SetForegroundWindow; if it is still not foreground, return NOT_FOREGROUND; otherwise SetFocus(header), SendKeys('{ENTER}'), then read the header ExpandCollapseState. The run log prints only the returned state pair ('keyboard focused_before=… after=…'), not the foreground value, the focused element or the key dispatch.",
+      "limitation": "the state change is evidenced by UIA reads and the captured image, but the key route itself is inferred from the driver logic and is NOT independently recorded in this run; UIA FocusedElement also reported the window rather than the header. This row is therefore downgraded from a claimed keyboard OBSERVED to a state change with an unproven key route.",
+      "evidence": ["20261108-a2b/ax-05-keyboard-goal.txt", "20261108-a2b/driver-log.txt"]
     },
     "viewed_vs_formal_labelling": {
       "result": "OBSERVED",
@@ -78,7 +177,7 @@
         "context bar: '正式な結果: 不明 — 正式な結果の情報を受け取れていません'",
         "no candidate carries the formal marker '正式採用（実行基盤から通知）' in any captured state (occurrences across all dumps: 0), and the fixture's Runtime best_candidate_ref (fixture:candidate/d) is never presented as formally selected"
       ],
-      "evidence": ["ax-00-initial.txt", "ax-01-a-selected.txt", "ax-03-b-selected.txt", "shot-a-eval.png", "shot-b-selected.png"]
+      "evidence": ["20261108-a2b/ax-00-initial.txt", "20261108-a2b/ax-01-a-selected.txt", "20261108-a2b/ax-03-b-selected.txt", "20261108-a2b/shot-a-eval.png", "20261108-a2b/shot-b-selected.png"]
     }
   },
 
@@ -87,39 +186,47 @@
     "uia_raw_view": "RawViewWalker returned the identical node set and text as the control view (axr-02 byte-identical to ax-02, axr-04 to ax-04); the section detail field values are therefore not exposed through UIA and were read from the captured images only",
     "window": {"title": "COS Desktop", "width": 1296, "height": 839, "dpi": 96},
     "screenshots": [
-      {"file": "shot-a-eval.png", "sha256": "354165b367098f5c50a422d480a36c2bb441b7e90584feb73d372a765df67650", "bytes": 182681},
-      {"file": "shot-b-selected.png", "sha256": "b14495113403d97e9d2f747b891c352532fd1ffddfb3e77ca93da59ca0484875", "bytes": 185335},
-      {"file": "shot-b-eval.png", "sha256": "71025ae3065488dee52e5ca53f126421c4b9ab878fbadf1afded9e80a845c962", "bytes": 182165}
+      {"file": "20261108-a2b/shot-a-eval.png", "sha256": "354165b367098f5c50a422d480a36c2bb441b7e90584feb73d372a765df67650", "bytes": 182681},
+      {"file": "20261108-a2b/shot-b-selected.png", "sha256": "b14495113403d97e9d2f747b891c352532fd1ffddfb3e77ca93da59ca0484875", "bytes": 185335},
+      {"file": "20261108-a2b/shot-b-eval.png", "sha256": "71025ae3065488dee52e5ca53f126421c4b9ab878fbadf1afded9e80a845c962", "bytes": 182165}
     ],
-    "dumps": [
-      {"file": "ax-00-initial.txt", "sha256": "8c41bd521eec55e6a9f6eabc5634cdde13130c64f73203ffbf6d2e5a06c40415"},
-      {"file": "ax-01-a-selected.txt", "sha256": "55742b1e821c907e97305080204dc5043c370f1cf6f7edba7c4b513ef779368e"},
-      {"file": "ax-02-a-eval-open.txt", "sha256": "903927f0eec4fb2923515a845fa7a6422a3fef6589ac3e1b2aabaf1faf81c9d3"},
-      {"file": "ax-03-b-selected.txt", "sha256": "4181d43de5471a6f2871c2a99d06d10c2cd2d101e03c18de98e68e32de5e6451"},
-      {"file": "ax-04-b-eval-open.txt", "sha256": "7e7369982ff604329ad978d884aae5b51b80775e08b4d859faeed5787ee126a8"},
-      {"file": "ax-05-keyboard-goal.txt", "sha256": "d4abdcbe9e937a38494bc5c1be494a336536cb550b49a6c95774eb675dfbd8cf"},
-      {"file": "axr-02-a-eval.txt", "sha256": "903927f0eec4fb2923515a845fa7a6422a3fef6589ac3e1b2aabaf1faf81c9d3"},
-      {"file": "axr-04-b-eval.txt", "sha256": "7e7369982ff604329ad978d884aae5b51b80775e08b4d859faeed5787ee126a8"},
-      {"file": "driver.log", "sha256": "b53e621d26823fe1646f1d37c67105355920c9def1d115045ab47fc17c87b865"}
-    ]
+    "uia_dumps": [
+      {"file": "20261108-a2b/ax-00-initial.txt", "sha256": "8c41bd521eec55e6a9f6eabc5634cdde13130c64f73203ffbf6d2e5a06c40415"},
+      {"file": "20261108-a2b/ax-01-a-selected.txt", "sha256": "55742b1e821c907e97305080204dc5043c370f1cf6f7edba7c4b513ef779368e"},
+      {"file": "20261108-a2b/ax-02-a-eval-open.txt", "sha256": "903927f0eec4fb2923515a845fa7a6422a3fef6589ac3e1b2aabaf1faf81c9d3"},
+      {"file": "20261108-a2b/ax-03-b-selected.txt", "sha256": "4181d43de5471a6f2871c2a99d06d10c2cd2d101e03c18de98e68e32de5e6451"},
+      {"file": "20261108-a2b/ax-04-b-eval-open.txt", "sha256": "7e7369982ff604329ad978d884aae5b51b80775e08b4d859faeed5787ee126a8"},
+      {"file": "20261108-a2b/ax-05-keyboard-goal.txt", "sha256": "d4abdcbe9e937a38494bc5c1be494a336536cb550b49a6c95774eb675dfbd8cf"},
+      {"file": "20261108-a2b/axr-02-a-eval.txt", "sha256": "903927f0eec4fb2923515a845fa7a6422a3fef6589ac3e1b2aabaf1faf81c9d3"},
+      {"file": "20261108-a2b/axr-04-b-eval.txt", "sha256": "7e7369982ff604329ad978d884aae5b51b80775e08b4d859faeed5787ee126a8"}
+    ],
+    "driver_log": {
+      "file": "20261108-a2b/driver-log.txt",
+      "sha256": "b53e621d26823fe1646f1d37c67105355920c9def1d115045ab47fc17c87b865",
+      "bytes": 1062,
+      "description": "the driver's own outcome log (launch result, node counts, activation routes and header state pairs). It is NOT a UIA dump and is not listed with them.",
+      "gitignore_fix": "the original file was named driver.log and was excluded from commit fa19737 by .gitignore `*.log`; it is committed here under the .txt name with identical bytes"
+    }
   },
 
   "commands": {
     "build": "git worktree add --detach C:/dev/cos-desktop-verification/ins1-20261108/src abf2310; cargo build --locked --release -p cos-desktop (external CARGO_TARGET_DIR/TEMP)",
     "observe": "powershell -NoProfile -ExecutionPolicy Bypass -File C:/tmp/ins1-drive.ps1 -WaitForLockSeconds 240 -RunRoot C:\\dev\\cos-desktop\\target\\ins1-20261108\\run4",
-    "lock": "C:/tmp/cos-desktop-native.lock held with owner=impl-typ1 pid=<driver pid> at=<ISO8601> in owner.txt, removed by the driver after the app was stopped",
-    "note": "the driver script is scratch tooling in C:/tmp and is not part of the repository; its path, parameters and action sequence are recorded here so the run is reproducible"
+    "lock": "C:/tmp/cos-desktop-native.lock held with owner=impl-typ1 pid=<driver pid> at=<ISO8601> in owner.txt, removed by the driver after the app was stopped; see environment.lock_protocol_disclosure for the corrected stale-lock rule and the earlier breach",
+    "note": "the driver script is scratch tooling in C:/tmp and is not part of the repository; its path, parameters, step logic and limitations are recorded here so the run is reproducible"
   },
 
   "not_measured": [
+    "the keyboard row's per-step foreground value, focused element and key dispatch (state change evidenced; key route not independently recorded, so the row is downgraded)",
     "exact projected values through UIA / screen-reader quality (detail groups expose no child nodes; values were read from the captured images, and no AT quality is claimed)",
     "header-level keyboard focus reporting in UIA (FocusedElement reported the window)",
     "pixel/DPI matrix other than the current 96 DPI host",
     "real Runtime projections, evidence bodies and authorization (MP-INS2) and any Runtime/Task-truth claim",
     "a physical mouse-click route for the same switch (the observed route is UIA Invoke; physical-click equivalence is not claimed)",
+    "a retest of the C:/tmp profile refusal under the corrected lock protocol (another lane's GUI was active during the evidence-only repair)",
     "product/UX acceptance"
   ],
 
   "declares_mpins1_complete": false,
-  "statement": "Native fixture observation of the four enumerated Desktop-local rows only. MP-INS1, DD-04b/R1, Runtime projections and product acceptance are unchanged; no product code was modified because no row failed."
+  "statement": "Evidence-only revision of fa19737. Native fixture observation of the enumerated Desktop-local rows with the keyboard row downgraded and the failed C:/tmp profile attempts narrowed to their exact paths and times; the lock-protocol breach and its REC3 cross-reference are disclosed. MP-INS1, DD-04b/R1, Runtime projections and product acceptance are unchanged; no product code was modified because no row failed."
 }
