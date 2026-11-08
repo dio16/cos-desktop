@@ -15,8 +15,10 @@
 //! * Recipe is a catalog `recipe_ref` copied verbatim; callers never build one.
 //! * Constraints are read-only; Advanced exposes only editable catalog
 //!   parameters with typed values. Decimal is canonical text, never a float.
-//! * A command id is minted at the first submit and reused only for a retry of
-//!   the identical payload; any edit changes the fingerprint and mints a new id.
+//! * A new command id is minted on every submit. An identical-payload retry is
+//!   never performed with the same id; reconcile an uncertain outcome through
+//!   the receipt/command lookup instead, and choose a new submission
+//!   deliberately.
 //! * Acceptance is a receipt (no optimistic task row); the task appears only
 //!   when the observation projection delivers it.
 
@@ -230,7 +232,8 @@ pub enum BriefState {
 /// One validated submission produced by [`BriefForm::request_submit`].
 #[derive(Clone, Debug, PartialEq)]
 pub struct BriefSubmission {
-    /// Desktop command identity (minted or reused for an identical retry).
+    /// Desktop command identity (freshly minted for this submit; never reused
+    /// for an identical-payload retry — reconcile via receipt lookup instead).
     pub command_id: CommandId,
     /// Creation target recipe reference (verbatim catalog copy).
     pub recipe_ref: RecipeRef,
