@@ -1,0 +1,1167 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-08",
+  "task": "MP-REC3",
+  "contract": "DC-MP-REC3",
+  "status": "DESKTOP_LOCAL_MATRIX_CLOSED_WITH_ONE_NATIVE_REPAIR",
+  "scope": "Desktop-local crash/restart/reopen matrix under the DD-23 received permission. Runtime Task survival, live revoke/regrant and product acceptance remain outside this record; topology detach/reorder/removed-monitor and mixed-DPI rows remain NOT_MEASURED because producing them would require OS display-setting changes.",
+  "authority": "Caller/Lead task-3; DC-MP-REC3; DD-23 target matrix (ADR-0017) without OS display changes.",
+  "repair": {
+    "commit": "abf2310105527461f0d0a16a963ceff962205bc0",
+    "base_commit": "2652f20",
+    "files": [
+      "crates/desktop-gpui/src/lib.rs"
+    ],
+    "summary": "A missing remembered Task and a missing Viewed/Compare identity are independent unavailable reasons, but apply_restored_presentation overwrote the single restore_notice slot. The fix combines the two bounded static notices (task-only, viewed/compare-only, both) and adds three unit tests. No schema, store, I/O, dependency or OS change.",
+    "tests_added": [
+      "restore_notice_tests::a_missing_remembered_task_survives_presentation_restore",
+      "restore_notice_tests::a_missing_viewed_or_compare_identity_is_reported_on_its_own",
+      "restore_notice_tests::a_missing_task_and_a_missing_restored_identity_are_both_reported"
+    ]
+  },
+  "source_binding": {
+    "fixed_source_commit": "abf2310105527461f0d0a16a963ceff962205bc0",
+    "pre_fix_source_commit": "2652f20",
+    "source_export": "git -C C:/dev/cos-desktop archive --format=zip HEAD -> C:/dev/cos-rec3-src (clean tracked tree; opposite-lane work-in-progress excluded)",
+    "build_command": "CARGO_TARGET_DIR=C:/dev/cos-rec3-build TEMP=TMP=C:/dev/cos-rec3-build/tmp cargo build --locked --release -p cos-desktop --bin cos-desktop",
+    "build_exit": 0,
+    "build_warning": "environmental LINK warning LNK4044: /fuse-ld=lld is invalid and ignored (global cargo config); not a source warning",
+    "rustc": "rustc 1.98.1 (48a229cea 2026-09-01)",
+    "cargo": "cargo 1.98.1 (797e8a9bc 2026-08-05)",
+    "pre_fix_binary": {
+      "path": "C:/dev/cos-rec3-build/release/cos-desktop.exe",
+      "sha256": "sha256:6682dc556c95cd83b00946baf9f1e51f85f3ba55f72fd5e1e621b1602eaaaeaa0",
+      "bytes": 19234304,
+      "source_commit": "2652f20"
+    },
+    "fixed_binary": {
+      "path": "C:/dev/cos-rec3-build/release/cos-desktop.exe",
+      "sha256": "sha256:2fc5c2706c55d763330ea8d9c5645612daa5fa0b443eb479513f3faf45fa0bd6",
+      "bytes": 19235328,
+      "source_commit": "abf2310105527461f0d0a16a963ceff962205bc0"
+    }
+  },
+  "host": {
+    "os": "Microsoft Windows 11 Pro 10.0.26300 build 26300",
+    "displays": [
+      {
+        "device": "\\\\.\\DISPLAY1",
+        "bounds": "0,0 3440x1440",
+        "work": "0,0 3440x1392",
+        "dpi": "96 x 96"
+      },
+      {
+        "device": "\\\\.\\DISPLAY2",
+        "bounds": "1900,-1080 1920x1080",
+        "work": "1900,-1080 1920x1032",
+        "dpi": "96 x 96"
+      }
+    ],
+    "system_dpi": 96,
+    "display_settings_changed": false,
+    "keyboard_delivery_available": false,
+    "native_rule": "Debug-profile startup aborts with a main-thread stack overflow on this environment (recorded §19.214); native sets use the release profile."
+  },
+  "method": {
+    "launch": "Start-Process -NoNewWindow with an isolated per-row LOCALAPPDATA under C:/tmp/rec3-matrix-20261108/profiles/<row> and --fixture",
+    "drive": "UI Automation InvokePattern on the exact accessible element id/name (keyboard unavailable)",
+    "observe": "bounded UIA tree dump (<=1200 elements, UTF-8 JSON) plus the existing pinned apps/desktop/devtools/r0/n03_probe.ps1 bounded PrintWindow/UIA probe",
+    "normal_close": "post WM_CLOSE to the fixture window; wait for exit and read stderr",
+    "crash_row": "Stop-Process -Force on the fixture PID started by this lane (no WM_CLOSE)",
+    "isolation": "one fresh profile per row; only this lane's fixture PIDs were terminated",
+    "driver_script_sha256": "sha256:ba3fc847189c456af74eb5a4bed9c64f19df9236958bd5c75dc8a998ec6e458d",
+    "probe_script_sha256": "sha256:73ab4f8643f057453bf692ab1fec851e0dd39cd49f070e13fc5a5ec9ab09d748",
+    "uia_helper_sha256": "sha256:cc52241ff1ca28fb485ff0d7f72847a37a8905cd2b5b116cade28c5520e8571b",
+    "screenshot_limit": "n03_probe refuses a capture when the display region differs from the bound PrintWindow content (occluded) or when the maximized capture is empty; those refusals are retained as NOT_MEASURED with the probe reason and are not substituted"
+  },
+  "matrix": [
+    {
+      "row": "REC3-M01",
+      "statement": "Reopen restores Flow, the remembered Task and Viewed B.",
+      "result": "PASS_NATIVE",
+      "runs": [
+        "m01-save",
+        "m01-restore"
+      ],
+      "observed": {
+        "saved_preferences": {
+          "surface": "flow",
+          "last_task_id": "fixture:task/Task-184",
+          "viewed": "fixture:candidate/b",
+          "window": "1080,308 1280x800 dpr 1.0 maximized false"
+        },
+        "restored": {
+          "surface": "処理の流れ",
+          "rail_selected": true,
+          "viewed_row": "fixture:task/Task-184 — 第1回 — B 閲覧中・キーボード操作対象",
+          "viewed_caption": "閲覧中の候補（この画面での選択）: B — 正式採用ではありません。"
+        },
+        "close": "exit 0; stderr observation shutdown confirmed + preferences save confirmed"
+      }
+    },
+    {
+      "row": "REC3-M02",
+      "statement": "Corrupt, truncated, oversized and unknown-version stores restore defaults with a bounded notice, no crash, no partial merge.",
+      "result": "PASS_NATIVE",
+      "runs": [
+        "m02-corrupt",
+        "m02-truncated",
+        "m02-oversized",
+        "m02-unknown-version"
+      ],
+      "observed": {
+        "notices": {
+          "corrupt": "Preferences corrupt; defaults restored.",
+          "truncated": "Preferences corrupt; defaults restored.",
+          "oversized": "Preferences ignored: file exceeds the bounded size.",
+          "unknown-version": "Preferences schema unknown; defaults restored."
+        },
+        "common": "exit 0; Artifact surface; no Viewed row; default geometry; clean close saved the normalized defaults"
+      }
+    },
+    {
+      "row": "REC3-M03",
+      "statement": "Missing remembered Task/Viewed identities are explicit unavailable notices, never substituted or silently dropped.",
+      "result": "PASS_NATIVE_AFTER_REPAIR",
+      "runs": [
+        "m03-missing-task",
+        "m03-missing-viewed",
+        "m03-both-missing"
+      ],
+      "before_repair": {
+        "binary": {
+          "path": "C:/dev/cos-rec3-build/release/cos-desktop.exe",
+          "sha256": "sha256:6682dc556c95cd83b00946baf9f1e51f85f3ba55f72fd5e1e621b1602eaaaeaa0",
+          "bytes": 19234304,
+          "source_commit": "2652f20"
+        },
+        "missing_task_observed_notice": null,
+        "both_missing_observed_notice": "復元した表示中の候補は、現在の認可済み観測情報では利用できません。 only",
+        "why": "apply_restored_presentation overwrote the single restore_notice set by restore_pending_task"
+      },
+      "observed_after_repair": {
+        "missing-task": "前回のタスクは、現在閲覧できる情報に含まれていません。",
+        "missing-viewed": "復元した表示中の候補は、現在の認可済み観測情報では利用できません。",
+        "both-missing": "前回のタスクは、現在閲覧できる情報に含まれていません。 復元した表示中の候補は、現在の認可済み観測情報では利用できません。"
+      }
+    },
+    {
+      "row": "REC3-M04",
+      "statement": "Off-screen/oversized saved geometry is clamped into the present display set.",
+      "result": "PASS_NATIVE",
+      "runs": [
+        "m04-offscreen"
+      ],
+      "observed": {
+        "saved_geometry": "x=9000 y=9000 5000x4000",
+        "restored_window_outer": "-8,-19 3456x1431 on the present 3440x1440 display",
+        "saved_after_close": "0,12 3440x1392 dpr 1.0",
+        "close": "exit 0; preferences save confirmed"
+      }
+    },
+    {
+      "row": "REC3-M05",
+      "statement": "Killing the app without a clean quit restores only the last confirmed save; the latest unsaved change is not durable and the store is not torn.",
+      "result": "PASS_NATIVE",
+      "runs": [
+        "m05-save",
+        "m05-change-kill",
+        "m05-restart"
+      ],
+      "observed": {
+        "confirmed_save": "surface=flow Task-184 viewed=B; preferences sha256:e2886f46...",
+        "before_kill": "Viewed changed to C (UIA row 閲覧中の候補: C); store unchanged while running (sha256:e2886f46...)",
+        "kill": "Stop-Process -Force; exit -1; no stderr; store unchanged (same sha256)",
+        "restart": "restored Flow, Task-184 and Viewed B (not C); then clean close saved a new record",
+        "limit": "This is the documented bounded-save behavior: crash-before-quit latest-change durability is NOT claimed."
+      }
+    },
+    {
+      "row": "REC3-M06",
+      "statement": "A Compare pair and the Compare surface restore only when both exact identities are present.",
+      "result": "PASS_NATIVE",
+      "runs": [
+        "m06-save",
+        "m06-restore"
+      ],
+      "observed": {
+        "saved_preferences": "surface=compare compare=[fixture:candidate/a, fixture:candidate/b] viewed=fixture:candidate/b",
+        "restored_surface": "候補を比較",
+        "restored_pair": [
+          "A: A",
+          "B: B"
+        ],
+        "restored_rows": [
+          "fixture:task/Task-184 — 第1回 — A 比較対象",
+          "fixture:task/Task-184 — 第1回 — B 閲覧中・比較対象・キーボード操作対象"
+        ]
+      }
+    },
+    {
+      "row": "REC3-M07",
+      "statement": "A maximized window restores maximized at 100% scale.",
+      "result": "PASS_NATIVE",
+      "runs": [
+        "m07-save",
+        "m07-restore"
+      ],
+      "observed": {
+        "maximize": "WM_SYSCOMMAND SC_MAXIMIZE -> IsZoomed true; outer -8,-8 3456x1408",
+        "saved_preferences": "window 0,23 3440x1369 maximized=true",
+        "restore": "initial IsZoomed true, same maximized frame; no display-setting change"
+      }
+    }
+  ],
+  "not_measured": [
+    {
+      "row": "REC3-TOPOLOGY",
+      "reason": "Detach/reorder/removed-monitor and cross-display certification would require OS display topology changes, which this task forbids. The host has two present displays, both at 96 DPI. A crafted secondary-display geometry probe (saved 2500,-1000 1000x700) was not certifiable: the observed restore landed on the primary display at 952,185 1536x1095 rather than at the saved intersection, so it is recorded as an ambiguity for a dedicated topology run, not as a pass or a failure. No display setting was changed."
+    },
+    {
+      "row": "REC3-MIXED-DPI",
+      "reason": "Both present displays report 96 DPI (100%); no OS display-scale change was made."
+    },
+    {
+      "row": "REC3-MAXIMIZED-SCREENSHOT",
+      "reason": "The bounded probe refused the maximized capture as WINDOW_CAPTURE_EMPTY; IsZoomed/window bounds and UIA tree were observed instead."
+    },
+    {
+      "row": "REC3-OCCLUDED-CAPTURES",
+      "reason": "Every published capture is probe-OBSERVED. The remaining snapshot probes refused as WINDOW_OCCLUDED/WINDOW_CAPTURE_EMPTY (and one extra observed pair-a frame is not published to keep the bundle bounded). UIA trees, window bounds, stderr and preference hashes remain the primary observations for those rows."
+    },
+    {
+      "row": "REC3-RUNTIME-TASK-SURVIVAL",
+      "reason": "RUNTIME_BLOCKED by MP-RT8/RC-16; no claim is made from this fixture matrix."
+    },
+    {
+      "row": "REC3-LIVE-REVOKE-REGRANT",
+      "reason": "No live Runtime authorization path exists in fixture mode; remains NOT_MEASURED."
+    }
+  ],
+  "deterministic_checks": [
+    {
+      "command": "cargo fmt --all -- --check",
+      "result": "exit 0"
+    },
+    {
+      "command": "cargo test --locked -p desktop-gpui (TEMP=TMP=C:/dev/cos-desktop/target/rec3-tmp)",
+      "result": "225 passed; 0 failed; 5 ignored; 0 measured; 0 filtered out (27.49 s); doc-tests 0",
+      "log": "C:/dev/cos-desktop/target/rec3-tmp/desktop-gpui-test.log",
+      "log_sha256": "sha256:6ab4739304c63664fa40254ce384282d57797bfca49a9c0d9530d69ebad55da0",
+      "new_tests_observed": [
+        "restore_notice_tests::a_missing_remembered_task_survives_presentation_restore ... ok",
+        "restore_notice_tests::a_missing_task_and_a_missing_restored_identity_are_both_reported ... ok",
+        "restore_notice_tests::a_missing_viewed_or_compare_identity_is_reported_on_its_own ... ok"
+      ]
+    }
+  ],
+  "captures": [
+    {
+      "path": "captures/m01-save-flow-viewed-b.png",
+      "bytes": 142671,
+      "sha256": "sha256:e44de9f27c14ebabb5588fc143728a4c8412d96ed0c3839dd8831a4df777011d"
+    },
+    {
+      "path": "captures/m04-offscreen-clamped.png",
+      "bytes": 196321,
+      "sha256": "sha256:46ed187b87b007c67491e970076cc4516c94ae5a522963d1e83bc3ddbed31d36"
+    },
+    {
+      "path": "captures/m05-save-flow-b.png",
+      "bytes": 139951,
+      "sha256": "sha256:bd581a91c9b35c5a0b468d919bdf4b5cb5eb80a848c44e6cd56fa9f9051e1025"
+    },
+    {
+      "path": "captures/m05-change-kill-viewed-c.png",
+      "bytes": 140233,
+      "sha256": "sha256:b343ec507e3517b2bdec1c970e06316db55a491398b1ef49748ddaa1f653518a"
+    },
+    {
+      "path": "captures/m05-restart-viewed-b.png",
+      "bytes": 139783,
+      "sha256": "sha256:ee333bc6bb929e7f0b49e1ac017bbf106c9d1e92f491b95217cb4759b7af666f"
+    },
+    {
+      "path": "captures/m06-save-compare-pair.png",
+      "bytes": 142511,
+      "sha256": "sha256:fc1a77cde91749d9130e9a2f4e683d59d0fdcd3098f7fbd7395848af15c877ff"
+    },
+    {
+      "path": "captures/m06-restore-compare-pair.png",
+      "bytes": 137277,
+      "sha256": "sha256:cb1d1e22625e3ca67308052bc137e210b142cf2200e435bc00e0dc0b16122a6d"
+    }
+  ],
+  "capture_note": "Only probe-OBSERVED captures are published; every refusal is listed in not_measured with its probe reason.",
+  "runs": {
+    "m01-restore": {
+      "exit_code": 0,
+      "failure": null,
+      "stderr_lines": [
+        "observation shutdown confirmed",
+        "preferences save confirmed"
+      ],
+      "initial_window": {
+        "left": 1072,
+        "width": 1296,
+        "top": 289,
+        "height": 839
+      },
+      "initial_zoomed": false,
+      "preferences_file": {
+        "status": "OBSERVED",
+        "bytes": 488,
+        "sha256": "sha256:2d351fd84c0e2cd5befb266478d841c013b852d6082b7ac79f459880ce5914a7"
+      },
+      "snapshots": [
+        {
+          "name": "restore",
+          "window": {
+            "left": 1072,
+            "width": 1296,
+            "top": 289,
+            "height": 839
+          },
+          "zoomed": false,
+          "surface": "作業領域：処理の流れ",
+          "rail_selected": [
+            "Task-184 — 新製品キービジュアル"
+          ],
+          "viewed_caption": [
+            "閲覧中の候補（この画面での選択）: B — 正式採用ではありません。正式採用は実行基盤から通知されます。"
+          ],
+          "viewed_rows": [
+            "fixture:task/Task-184 — 第1回 — B 閲覧中・キーボード操作対象"
+          ],
+          "compare_labels": [],
+          "restore_notices": [],
+          "tree_elements": 72,
+          "tree_truncated": false,
+          "screenshot": {
+            "status": "NOT_MEASURED",
+            "reason": "WINDOW_OCCLUDED"
+          }
+        }
+      ],
+      "run_record_sha256": "sha256:0d0370022d9ea1613b180a5286885fdbbac70fe90a32ef5562e6ebf501e8ccb2"
+    },
+    "m01-save": {
+      "exit_code": 0,
+      "failure": null,
+      "stderr_lines": [
+        "observation shutdown confirmed",
+        "preferences save confirmed"
+      ],
+      "initial_window": {
+        "left": 1072,
+        "width": 1296,
+        "top": 277,
+        "height": 839
+      },
+      "initial_zoomed": false,
+      "preferences_file": {
+        "status": "OBSERVED",
+        "bytes": 488,
+        "sha256": "sha256:e2886f46e4853beefe2f04dd52ed865e36f2181013ca234fbff653be9230c041"
+      },
+      "snapshots": [
+        {
+          "name": "save-viewed-b",
+          "window": {
+            "left": 1072,
+            "width": 1296,
+            "top": 277,
+            "height": 839
+          },
+          "zoomed": false,
+          "surface": "作業領域：処理の流れ",
+          "rail_selected": [],
+          "viewed_caption": [
+            "閲覧中の候補（この画面での選択）: B — 正式採用ではありません。正式採用は実行基盤から通知されます。"
+          ],
+          "viewed_rows": [
+            "fixture:task/Task-184 — 第1回 — B 閲覧中・キーボード操作対象"
+          ],
+          "compare_labels": [],
+          "restore_notices": [],
+          "tree_elements": 71,
+          "tree_truncated": false,
+          "screenshot": {
+            "status": "OBSERVED",
+            "reason": null
+          }
+        }
+      ],
+      "run_record_sha256": "sha256:40bb03081994de67b9addeb00df56664d9809a4377f917a0b733307dc5213f88"
+    },
+    "m02-corrupt": {
+      "exit_code": 0,
+      "failure": null,
+      "stderr_lines": [
+        "Preferences corrupt; defaults restored.",
+        "observation shutdown confirmed",
+        "preferences save confirmed"
+      ],
+      "initial_window": {
+        "left": 1072,
+        "width": 1296,
+        "top": 277,
+        "height": 839
+      },
+      "initial_zoomed": false,
+      "preferences_file": {
+        "status": "OBSERVED",
+        "bytes": 340,
+        "sha256": "sha256:eeca647e896eb7a57412597332b89d4047f9f29ce1b454d6f1f3c5ce41c2aa45"
+      },
+      "snapshots": [
+        {
+          "name": "corrupt",
+          "window": {
+            "left": 1072,
+            "width": 1296,
+            "top": 277,
+            "height": 839
+          },
+          "zoomed": false,
+          "surface": "作業領域：成果物",
+          "rail_selected": [],
+          "viewed_caption": [],
+          "viewed_rows": [],
+          "compare_labels": [],
+          "restore_notices": [],
+          "tree_elements": 56,
+          "tree_truncated": false,
+          "screenshot": {
+            "status": "NOT_MEASURED",
+            "reason": "WINDOW_OCCLUDED"
+          }
+        }
+      ],
+      "run_record_sha256": "sha256:66570631a27bfefee655f6e9a38662769b9aa8fbd3eb168662c9ea5f4bf938d6"
+    },
+    "m02-oversized": {
+      "exit_code": 0,
+      "failure": null,
+      "stderr_lines": [
+        "Preferences ignored: file exceeds the bounded size.",
+        "observation shutdown confirmed",
+        "preferences save confirmed"
+      ],
+      "initial_window": {
+        "left": 1072,
+        "width": 1296,
+        "top": 277,
+        "height": 839
+      },
+      "initial_zoomed": false,
+      "preferences_file": {
+        "status": "OBSERVED",
+        "bytes": 340,
+        "sha256": "sha256:eeca647e896eb7a57412597332b89d4047f9f29ce1b454d6f1f3c5ce41c2aa45"
+      },
+      "snapshots": [
+        {
+          "name": "oversized",
+          "window": {
+            "left": 1072,
+            "width": 1296,
+            "top": 277,
+            "height": 839
+          },
+          "zoomed": false,
+          "surface": "作業領域：成果物",
+          "rail_selected": [],
+          "viewed_caption": [],
+          "viewed_rows": [],
+          "compare_labels": [],
+          "restore_notices": [],
+          "tree_elements": 56,
+          "tree_truncated": false,
+          "screenshot": {
+            "status": "NOT_MEASURED",
+            "reason": "WINDOW_OCCLUDED"
+          }
+        }
+      ],
+      "run_record_sha256": "sha256:38f8a5784945b8cc2456169fadee2875360577dc0d3f912eff64a71895dc3db9"
+    },
+    "m02-truncated": {
+      "exit_code": 0,
+      "failure": null,
+      "stderr_lines": [
+        "Preferences corrupt; defaults restored.",
+        "observation shutdown confirmed",
+        "preferences save confirmed"
+      ],
+      "initial_window": {
+        "left": 1072,
+        "width": 1296,
+        "top": 277,
+        "height": 839
+      },
+      "initial_zoomed": false,
+      "preferences_file": {
+        "status": "OBSERVED",
+        "bytes": 340,
+        "sha256": "sha256:eeca647e896eb7a57412597332b89d4047f9f29ce1b454d6f1f3c5ce41c2aa45"
+      },
+      "snapshots": [
+        {
+          "name": "truncated",
+          "window": {
+            "left": 1072,
+            "width": 1296,
+            "top": 277,
+            "height": 839
+          },
+          "zoomed": false,
+          "surface": "作業領域：成果物",
+          "rail_selected": [],
+          "viewed_caption": [],
+          "viewed_rows": [],
+          "compare_labels": [],
+          "restore_notices": [],
+          "tree_elements": 56,
+          "tree_truncated": false,
+          "screenshot": {
+            "status": "NOT_MEASURED",
+            "reason": "WINDOW_OCCLUDED"
+          }
+        }
+      ],
+      "run_record_sha256": "sha256:0060c66b7d27234ce9b2227dae3e7371bd1eace7539153de9a6a1cc6d2428eca"
+    },
+    "m02-unknown-version": {
+      "exit_code": 0,
+      "failure": null,
+      "stderr_lines": [
+        "Preferences schema unknown; defaults restored.",
+        "observation shutdown confirmed",
+        "preferences save confirmed"
+      ],
+      "initial_window": {
+        "left": 1072,
+        "width": 1296,
+        "top": 277,
+        "height": 839
+      },
+      "initial_zoomed": false,
+      "preferences_file": {
+        "status": "OBSERVED",
+        "bytes": 340,
+        "sha256": "sha256:eeca647e896eb7a57412597332b89d4047f9f29ce1b454d6f1f3c5ce41c2aa45"
+      },
+      "snapshots": [
+        {
+          "name": "unknown-version",
+          "window": {
+            "left": 1072,
+            "width": 1296,
+            "top": 277,
+            "height": 839
+          },
+          "zoomed": false,
+          "surface": "作業領域：成果物",
+          "rail_selected": [],
+          "viewed_caption": [],
+          "viewed_rows": [],
+          "compare_labels": [],
+          "restore_notices": [],
+          "tree_elements": 56,
+          "tree_truncated": false,
+          "screenshot": {
+            "status": "NOT_MEASURED",
+            "reason": "WINDOW_OCCLUDED"
+          }
+        }
+      ],
+      "run_record_sha256": "sha256:9de4eb3db28f5e4bd1a0a76df9431f8d97470e8fb09cf45f0743a84ea36cba69"
+    },
+    "m03-both-missing": {
+      "exit_code": 0,
+      "failure": null,
+      "stderr_lines": [
+        "observation shutdown confirmed",
+        "preferences save confirmed"
+      ],
+      "initial_window": {
+        "left": 112,
+        "width": 1296,
+        "top": 71,
+        "height": 839
+      },
+      "initial_zoomed": false,
+      "preferences_file": {
+        "status": "OBSERVED",
+        "bytes": 339,
+        "sha256": "sha256:77c04b8ecfc79bf9c4ae91695b6d3d4b91db695543dc99cd5bcfad2e38f38f59"
+      },
+      "snapshots": [
+        {
+          "name": "both-missing",
+          "window": {
+            "left": 112,
+            "width": 1296,
+            "top": 71,
+            "height": 839
+          },
+          "zoomed": false,
+          "surface": "作業領域：成果物",
+          "rail_selected": [],
+          "viewed_caption": [],
+          "viewed_rows": [],
+          "compare_labels": [],
+          "restore_notices": [
+            "前回のタスクは、現在閲覧できる情報に含まれていません。 復元した表示中の候補は、現在の認可済み観測情報では利用できません。"
+          ],
+          "tree_elements": 57,
+          "tree_truncated": false,
+          "screenshot": {
+            "status": "NOT_MEASURED",
+            "reason": "WINDOW_OCCLUDED"
+          }
+        }
+      ],
+      "run_record_sha256": "sha256:5b4b72a55a2ee231c6652d93620fbd7461698de5da9996e372718cd4dd380a9a"
+    },
+    "m03-missing-task": {
+      "exit_code": 0,
+      "failure": null,
+      "stderr_lines": [
+        "observation shutdown confirmed",
+        "preferences save confirmed"
+      ],
+      "initial_window": {
+        "left": 112,
+        "width": 1296,
+        "top": 71,
+        "height": 839
+      },
+      "initial_zoomed": false,
+      "preferences_file": {
+        "status": "OBSERVED",
+        "bytes": 335,
+        "sha256": "sha256:641e4af2b5502bf3473c81c9fcb80a08974531d26098749f28993872f1317c32"
+      },
+      "snapshots": [
+        {
+          "name": "missing-task",
+          "window": {
+            "left": 112,
+            "width": 1296,
+            "top": 71,
+            "height": 839
+          },
+          "zoomed": false,
+          "surface": "作業領域：処理の流れ",
+          "rail_selected": [],
+          "viewed_caption": [],
+          "viewed_rows": [],
+          "compare_labels": [],
+          "restore_notices": [
+            "前回のタスクは、現在閲覧できる情報に含まれていません。"
+          ],
+          "tree_elements": 72,
+          "tree_truncated": false,
+          "screenshot": {
+            "status": "NOT_MEASURED",
+            "reason": "WINDOW_OCCLUDED"
+          }
+        }
+      ],
+      "run_record_sha256": "sha256:d441661f1be75cafa64d0a89c3cf4280f9ff0d2021c459cd9488136f4fdad3ce"
+    },
+    "m03-missing-viewed": {
+      "exit_code": 0,
+      "failure": null,
+      "stderr_lines": [
+        "observation shutdown confirmed",
+        "preferences save confirmed"
+      ],
+      "initial_window": {
+        "left": 112,
+        "width": 1296,
+        "top": 71,
+        "height": 839
+      },
+      "initial_zoomed": false,
+      "preferences_file": {
+        "status": "OBSERVED",
+        "bytes": 339,
+        "sha256": "sha256:77c04b8ecfc79bf9c4ae91695b6d3d4b91db695543dc99cd5bcfad2e38f38f59"
+      },
+      "snapshots": [
+        {
+          "name": "missing-viewed",
+          "window": {
+            "left": 112,
+            "width": 1296,
+            "top": 71,
+            "height": 839
+          },
+          "zoomed": false,
+          "surface": "作業領域：成果物",
+          "rail_selected": [
+            "Task-184 — 新製品キービジュアル"
+          ],
+          "viewed_caption": [],
+          "viewed_rows": [],
+          "compare_labels": [],
+          "restore_notices": [
+            "復元した表示中の候補は、現在の認可済み観測情報では利用できません。"
+          ],
+          "tree_elements": 58,
+          "tree_truncated": false,
+          "screenshot": {
+            "status": "NOT_MEASURED",
+            "reason": "WINDOW_OCCLUDED"
+          }
+        }
+      ],
+      "run_record_sha256": "sha256:7b18650e9e8dc5b1d74a218e7f0dda52c65ac18dd570f9e5aede43ae56541d91"
+    },
+    "m04-offscreen": {
+      "exit_code": 0,
+      "failure": null,
+      "stderr_lines": [
+        "observation shutdown confirmed",
+        "preferences save confirmed"
+      ],
+      "initial_window": {
+        "left": -8,
+        "width": 3456,
+        "top": -19,
+        "height": 1431
+      },
+      "initial_zoomed": false,
+      "preferences_file": {
+        "status": "OBSERVED",
+        "bytes": 333,
+        "sha256": "sha256:03d923e355731be66b7c8db780708cf0727848a44fd0cc6a008d7286f1501121"
+      },
+      "snapshots": [
+        {
+          "name": "offscreen",
+          "window": {
+            "left": -8,
+            "width": 3456,
+            "top": -19,
+            "height": 1431
+          },
+          "zoomed": false,
+          "surface": "作業領域：処理の流れ",
+          "rail_selected": [
+            "Task-184 — 新製品キービジュアル"
+          ],
+          "viewed_caption": [],
+          "viewed_rows": [],
+          "compare_labels": [],
+          "restore_notices": [],
+          "tree_elements": 81,
+          "tree_truncated": false,
+          "screenshot": {
+            "status": "OBSERVED",
+            "reason": null
+          }
+        }
+      ],
+      "run_record_sha256": "sha256:7bb20dae7fea5de2f4511325d7c680703174de822468f33450eb79ab47ec5d04"
+    },
+    "m05-change-kill": {
+      "exit_code": -1,
+      "failure": null,
+      "stderr_lines": [],
+      "initial_window": {
+        "left": 1072,
+        "width": 1296,
+        "top": 289,
+        "height": 839
+      },
+      "initial_zoomed": false,
+      "preferences_file": {
+        "status": "OBSERVED",
+        "bytes": 488,
+        "sha256": "sha256:e2886f46e4853beefe2f04dd52ed865e36f2181013ca234fbff653be9230c041"
+      },
+      "snapshots": [
+        {
+          "name": "changed-c-before-kill",
+          "window": {
+            "left": 1072,
+            "width": 1296,
+            "top": 289,
+            "height": 839
+          },
+          "zoomed": false,
+          "surface": "作業領域：成果物",
+          "rail_selected": [
+            "Task-184 — 新製品キービジュアル"
+          ],
+          "viewed_caption": [
+            "閲覧中の候補（この画面での選択）: C — 正式採用ではありません。正式採用は実行基盤から通知されます。"
+          ],
+          "viewed_rows": [
+            "fixture:task/Task-184 — 第2回 — C 閲覧中・キーボード操作対象"
+          ],
+          "compare_labels": [],
+          "restore_notices": [],
+          "tree_elements": 57,
+          "tree_truncated": false,
+          "screenshot": {
+            "status": "OBSERVED",
+            "reason": null
+          }
+        }
+      ],
+      "run_record_sha256": "sha256:438cff2c4f21cffc14f52b569fbe56dafb3294213dee431c62ab7ae6da7b77f4"
+    },
+    "m05-restart": {
+      "exit_code": 0,
+      "failure": null,
+      "stderr_lines": [
+        "observation shutdown confirmed",
+        "preferences save confirmed"
+      ],
+      "initial_window": {
+        "left": 1072,
+        "width": 1296,
+        "top": 289,
+        "height": 839
+      },
+      "initial_zoomed": false,
+      "preferences_file": {
+        "status": "OBSERVED",
+        "bytes": 488,
+        "sha256": "sha256:2d351fd84c0e2cd5befb266478d841c013b852d6082b7ac79f459880ce5914a7"
+      },
+      "snapshots": [
+        {
+          "name": "restart-after-kill",
+          "window": {
+            "left": 1072,
+            "width": 1296,
+            "top": 289,
+            "height": 839
+          },
+          "zoomed": false,
+          "surface": "作業領域：処理の流れ",
+          "rail_selected": [
+            "Task-184 — 新製品キービジュアル"
+          ],
+          "viewed_caption": [
+            "閲覧中の候補（この画面での選択）: B — 正式採用ではありません。正式採用は実行基盤から通知されます。"
+          ],
+          "viewed_rows": [
+            "fixture:task/Task-184 — 第1回 — B 閲覧中・キーボード操作対象"
+          ],
+          "compare_labels": [],
+          "restore_notices": [],
+          "tree_elements": 72,
+          "tree_truncated": false,
+          "screenshot": {
+            "status": "OBSERVED",
+            "reason": null
+          }
+        }
+      ],
+      "run_record_sha256": "sha256:bbb40eee12cd3d6a98cc1ca993567912f907177daadca4ac6f0fe2b1bf7d6b24"
+    },
+    "m05-save": {
+      "exit_code": 0,
+      "failure": null,
+      "stderr_lines": [
+        "observation shutdown confirmed",
+        "preferences save confirmed"
+      ],
+      "initial_window": {
+        "left": 1072,
+        "width": 1296,
+        "top": 277,
+        "height": 839
+      },
+      "initial_zoomed": false,
+      "preferences_file": {
+        "status": "OBSERVED",
+        "bytes": 488,
+        "sha256": "sha256:e2886f46e4853beefe2f04dd52ed865e36f2181013ca234fbff653be9230c041"
+      },
+      "snapshots": [
+        {
+          "name": "save-flow-b",
+          "window": {
+            "left": 1072,
+            "width": 1296,
+            "top": 277,
+            "height": 839
+          },
+          "zoomed": false,
+          "surface": "作業領域：処理の流れ",
+          "rail_selected": [],
+          "viewed_caption": [
+            "閲覧中の候補（この画面での選択）: B — 正式採用ではありません。正式採用は実行基盤から通知されます。"
+          ],
+          "viewed_rows": [
+            "fixture:task/Task-184 — 第1回 — B 閲覧中・キーボード操作対象"
+          ],
+          "compare_labels": [],
+          "restore_notices": [],
+          "tree_elements": 71,
+          "tree_truncated": false,
+          "screenshot": {
+            "status": "OBSERVED",
+            "reason": null
+          }
+        }
+      ],
+      "run_record_sha256": "sha256:50b2b91cd420dbadb19c0bc69260a2015cd12e2ad833f664924d2a861b79dd45"
+    },
+    "m06-restore": {
+      "exit_code": 0,
+      "failure": null,
+      "stderr_lines": [
+        "observation shutdown confirmed",
+        "preferences save confirmed"
+      ],
+      "initial_window": {
+        "left": 1072,
+        "width": 1296,
+        "top": 289,
+        "height": 839
+      },
+      "initial_zoomed": false,
+      "preferences_file": {
+        "status": "OBSERVED",
+        "bytes": 802,
+        "sha256": "sha256:f9ff5c9dbd63723cc85acecc26a4669009399d13ea51933766909ecfb9430a44"
+      },
+      "snapshots": [
+        {
+          "name": "compare-restored",
+          "window": {
+            "left": 1072,
+            "width": 1296,
+            "top": 289,
+            "height": 839
+          },
+          "zoomed": false,
+          "surface": "作業領域：候補を比較",
+          "rail_selected": [
+            "Task-184 — 新製品キービジュアル"
+          ],
+          "viewed_caption": [
+            "閲覧中の候補（この画面での選択）: B — 正式採用ではありません。正式採用は実行基盤から通知されます。"
+          ],
+          "viewed_rows": [
+            "fixture:task/Task-184 — 第1回 — B 閲覧中・比較対象・キーボード操作対象"
+          ],
+          "compare_labels": [
+            "A: A",
+            "B: B"
+          ],
+          "restore_notices": [],
+          "tree_elements": 64,
+          "tree_truncated": false,
+          "screenshot": {
+            "status": "OBSERVED",
+            "reason": null
+          }
+        }
+      ],
+      "run_record_sha256": "sha256:e206b59b209c9a02ca71bd02ec0c21ad1aaf88332167cf059bbf066379f9337d"
+    },
+    "m06-save": {
+      "exit_code": 0,
+      "failure": null,
+      "stderr_lines": [
+        "observation shutdown confirmed",
+        "preferences save confirmed"
+      ],
+      "initial_window": {
+        "left": 1072,
+        "width": 1296,
+        "top": 277,
+        "height": 839
+      },
+      "initial_zoomed": false,
+      "preferences_file": {
+        "status": "OBSERVED",
+        "bytes": 802,
+        "sha256": "sha256:0b56afcff4ddade6952be2b014fd48fbe3ff2bdf72cd7319d9d437a0dfed44b6"
+      },
+      "snapshots": [
+        {
+          "name": "pair-a",
+          "window": {
+            "left": 1072,
+            "width": 1296,
+            "top": 277,
+            "height": 839
+          },
+          "zoomed": false,
+          "surface": "作業領域：成果物",
+          "rail_selected": [],
+          "viewed_caption": [
+            "閲覧中の候補（この画面での選択）: A — 正式採用ではありません。正式採用は実行基盤から通知されます。"
+          ],
+          "viewed_rows": [
+            "fixture:task/Task-184 — 第1回 — A 閲覧中・キーボード操作対象"
+          ],
+          "compare_labels": [],
+          "restore_notices": [],
+          "tree_elements": 56,
+          "tree_truncated": false,
+          "screenshot": {
+            "status": "OBSERVED",
+            "reason": null
+          }
+        },
+        {
+          "name": "compare-saved",
+          "window": {
+            "left": 1072,
+            "width": 1296,
+            "top": 277,
+            "height": 839
+          },
+          "zoomed": false,
+          "surface": "作業領域：候補を比較",
+          "rail_selected": [],
+          "viewed_caption": [
+            "閲覧中の候補（この画面での選択）: B — 正式採用ではありません。正式採用は実行基盤から通知されます。"
+          ],
+          "viewed_rows": [
+            "fixture:task/Task-184 — 第1回 — B 閲覧中・比較対象・キーボード操作対象"
+          ],
+          "compare_labels": [
+            "A: A",
+            "B: B"
+          ],
+          "restore_notices": [],
+          "tree_elements": 63,
+          "tree_truncated": false,
+          "screenshot": {
+            "status": "OBSERVED",
+            "reason": null
+          }
+        }
+      ],
+      "run_record_sha256": "sha256:e922dbc0e1b90b4da9ca80b0f27495d321f4829c7a032c19371d505f5cf3d6d2"
+    },
+    "m07-restore": {
+      "exit_code": 0,
+      "failure": null,
+      "stderr_lines": [
+        "observation shutdown confirmed",
+        "preferences save confirmed"
+      ],
+      "initial_window": {
+        "left": -8,
+        "width": 3456,
+        "top": -8,
+        "height": 1408
+      },
+      "initial_zoomed": true,
+      "preferences_file": {
+        "status": "OBSERVED",
+        "bytes": 336,
+        "sha256": "sha256:7720340bbe9e1e862da3e17f4e32a0b8f991860c4d4efc42d5b0cd7ab4c71672"
+      },
+      "snapshots": [
+        {
+          "name": "maximized-restored",
+          "window": {
+            "left": -8,
+            "width": 3456,
+            "top": -8,
+            "height": 1408
+          },
+          "zoomed": true,
+          "surface": "作業領域：成果物",
+          "rail_selected": [
+            "Task-184 — 新製品キービジュアル"
+          ],
+          "viewed_caption": [],
+          "viewed_rows": [],
+          "compare_labels": [],
+          "restore_notices": [],
+          "tree_elements": 57,
+          "tree_truncated": false,
+          "screenshot": {
+            "status": "NOT_MEASURED",
+            "reason": "WINDOW_CAPTURE_EMPTY"
+          }
+        }
+      ],
+      "run_record_sha256": "sha256:7fbeabdc97a2fa9f4ccffb544e48c8bdd79883178765f61e8c5fabe0c799344d"
+    },
+    "m07-save": {
+      "exit_code": 0,
+      "failure": null,
+      "stderr_lines": [
+        "observation shutdown confirmed",
+        "preferences save confirmed"
+      ],
+      "initial_window": {
+        "left": 1072,
+        "width": 1296,
+        "top": 277,
+        "height": 839
+      },
+      "initial_zoomed": false,
+      "preferences_file": {
+        "status": "OBSERVED",
+        "bytes": 336,
+        "sha256": "sha256:7720340bbe9e1e862da3e17f4e32a0b8f991860c4d4efc42d5b0cd7ab4c71672"
+      },
+      "snapshots": [
+        {
+          "name": "maximized-saved",
+          "window": {
+            "left": -8,
+            "width": 3456,
+            "top": -8,
+            "height": 1408
+          },
+          "zoomed": true,
+          "surface": "作業領域：成果物",
+          "rail_selected": [],
+          "viewed_caption": [],
+          "viewed_rows": [],
+          "compare_labels": [],
+          "restore_notices": [],
+          "tree_elements": 56,
+          "tree_truncated": false,
+          "screenshot": {
+            "status": "NOT_MEASURED",
+            "reason": "WINDOW_CAPTURE_EMPTY"
+          }
+        }
+      ],
+      "run_record_sha256": "sha256:803ff49129a8a8ec1f91fedec9d0daa66a3f4e3466f076b850b6cce672cbc8a0"
+    }
+  },
+  "pre_fix_runs": {
+    "binary_sha256": "sha256:6682dc556c95cd83b00946baf9f1e51f85f3ba55f72fd5e1e621b1602eaaaeaa0",
+    "m03-missing-task": {
+      "exit_code": 0,
+      "notices": [],
+      "run_record_sha256": "sha256:fd4ad1369be8bed30f1188b73bc1cfa7aa17a7b92b0cca4525be4caf492bf716"
+    },
+    "m03-both-missing": {
+      "exit_code": 0,
+      "notices": [
+        "復元した表示中の候補は、現在の認可済み観測情報では利用できません。"
+      ],
+      "run_record_sha256": "sha256:6f7e228690d0d33c850601ae109787bc788942f7b71b6ca216dfa70c69c581e6"
+    }
+  },
+  "residual_limits": [
+    "Runtime Task survival remains RUNTIME_BLOCKED; fixture restoration is not Runtime evidence.",
+    "Crash-before-quit restores the last confirmed save only; the latest unsaved change is not durable.",
+    "Live revoke/regrant during restore, mixed-DPI, detach/reorder/removed-monitor and screen-reader acceptance remain NOT_MEASURED.",
+    "The preferences store is written at quit; a kill before the save attempt leaves the previous file.",
+    "No canonical data, credential, media locator or command is stored; the closed schema and atomic bounded writer are unchanged by the repair."
+  ],
+  "generated_utc": "2026-11-08T00:27:24.600574+00:00"
+}
