@@ -2604,7 +2604,11 @@ impl<T: TransportTrait> CosClient<T> {
         self.withhold();
         self.transport.reset_stream();
         self.projection_stale = true;
-        if self.requested_scope.is_none() || self.session.is_none() {
+        if self.requested_scope.is_none()
+            || (self.session.is_none() && !matches!(self.source, ClientSource::Runtime { .. }))
+        {
+            // Never started, or a first connection that never reached a verified
+            // server: there is nothing to recover yet.
             self.set_state(ConnectionState::Disconnected, events);
             return;
         }

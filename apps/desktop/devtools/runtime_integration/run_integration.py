@@ -240,7 +240,16 @@ def wait_http(url: str, timeout: float) -> None:
 
 
 class RuntimeServer:
-    def __init__(self, *, label: str, work: Path, db_copy: Path, secret: str):
+    def __init__(
+        self,
+        *,
+        label: str,
+        work: Path,
+        db_copy: Path,
+        secret: str,
+        discovery_path: Path | None = None,
+        stop_file: Path | None = None,
+    ):
         self.label = label
         self.work = work
         self.db_copy = db_copy
@@ -249,6 +258,13 @@ class RuntimeServer:
         self.log_path = work / f"runtime-{label}.log"
         self.log_handle = None
         self.config_path = work / f"runtime-{label}-config.yaml"
+        # RT8/RC-16: the isolated run redirects the per-user discovery descriptor
+        # so a harness runtime never publishes into the real Desktop location.
+        self.discovery_path = discovery_path or (work / f"runtime-discovery-{label}.json")
+        # When set, a clean stop asks the isolated launcher to exit through the
+        # async lifespan instead of terminating the process.
+        self.stop_file = stop_file
+        self.ready_file = work / f"runtime-{label}.ready"
         self.starts = 0
 
     def _write_config(self) -> None:
@@ -273,6 +289,11 @@ class RuntimeServer:
         self._write_config()
         environment = {**os.environ, "ORCHESTRATOR_AUTH_SECRET": self.secret}
         environment.pop("ORCHESTRATOR_AUTH_DISABLED", None)
+        environment["COS_RUNTIME_DISCOVERY_PATH"] = str(self.discovery_path)
+        environment["ORCHESTRATOR_RUNTIME_ROOT"] = str(RUNTIME_ROOT)
+        # RT8: the isolated launcher does not pass through api.main(), so the
+        # bound origin must be supplied explicitly for the descriptor.
+        environment["COS_RUNTIME_ORIGIN"] = ENDPOINT
         self.log_handle = self.log_path.open("ab")
         self.log_handle.write(f"\n--- start {self.starts} {now_iso()} ---\n".encode())
         self.log_handle.flush()
@@ -287,6 +308,24 @@ class RuntimeServer:
             "--port",
             str(PORT),
         ]
+        if self.stop_file is not None:
+            for stale in (self.stop_file, self.ready_file):
+                with contextlib.suppress(FileNotFoundError):
+                    stale.unlink()
+            command = [
+                str(RUNTIME_PYTHON),
+                str(Path(__file__).resolve().parent / "isolated_runtime.py"),
+                "--config",
+                str(self.config_path),
+                "--host",
+                "127.0.0.1",
+                "--port",
+                str(PORT),
+                "--stop-file",
+                str(self.stop_file),
+                "--ready-file",
+                str(self.ready_file),
+            ]
         self.process = subprocess.Popen(  # noqa: S603 - fixed argv, loopback only
             command,
             cwd=str(RUNTIME_ROOT),
@@ -343,7 +382,15 @@ class RuntimeServer:
             return {"stopped": False, "reason": "not_started"}
         pid = self.process.pid
         if self.process.poll() is None:
-            if clean:
+            if clean and self.stop_file is not None:
+                # Ask the isolated launcher for an async-lifespan shutdown.
+                self.stop_file.write_text("stop", encoding="utf-8")
+                try:
+                    self.process.wait(timeout=60)
+                except subprocess.TimeoutExpired:
+                    forced = kill_tree(pid)
+                    return {"pid": pid, "clean": False, "forced": forced}
+            elif clean:
                 self.process.terminate()
             else:
                 return kill_tree(pid)

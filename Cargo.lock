@@ -1130,6 +1130,8 @@ dependencies = [
  "gpui_platform",
  "keyring",
  "media",
+ "serde",
+ "serde_json",
  "ui-model",
  "ureq",
 ]

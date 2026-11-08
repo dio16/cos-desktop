@@ -1,0 +1,49 @@
+
+--- start 1 2026-11-09T05:04:35+0900 ---
+INFO:     Started server process [41920]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8124 (Press CTRL+C to quit)
+INFO:     127.0.0.1:65066 - "GET /api/ready HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65068 - "GET /api/cos/desktop/server HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65069 - "POST /api/cos/desktop/credentials HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65070 - "POST /api/cos/desktop/observation HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65071 - "POST /api/cos/desktop/credentials HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65072 - "GET /api/cos/desktop/server HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65072 - "POST /api/cos/desktop/observation HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65072 - "GET /api/cos/desktop/deltas?cursor=cursor-dc210ec421c54f29a136e3129b78e77b HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65072 - "GET /api/cos/desktop/deltas?cursor=cursor-dc210ec421c54f29a136e3129b78e77b HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65072 - "GET /api/cos/desktop/deltas?cursor=cursor-dc210ec421c54f29a136e3129b78e77b HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65072 - "GET /api/cos/desktop/deltas?cursor=cursor-dc210ec421c54f29a136e3129b78e77b HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65072 - "GET /api/cos/desktop/deltas?cursor=cursor-dc210ec421c54f29a136e3129b78e77b HTTP/1.1" 200 OK
+INFO:     127.0.0.1:65072 - "GET /api/cos/desktop/deltas?cursor=cursor-dc210ec421c54f29a136e3129b78e77b HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [41920]
+
+--- start 2 2026-11-09T05:04:45+0900 ---
+INFO:     Started server process [46104]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8124 (Press CTRL+C to quit)
+INFO:     127.0.0.1:54114 - "GET /api/cos/desktop/server HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54114 - "POST /api/cos/desktop/observation HTTP/1.1" 401 Unauthorized
+INFO:     127.0.0.1:59499 - "POST /api/cos/desktop/credentials/refresh HTTP/1.1" 401 Unauthorized
+INFO:     127.0.0.1:59500 - "POST /api/cos/desktop/credentials HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54114 - "POST /api/cos/desktop/observation HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59501 - "GET /api/ready HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54114 - "GET /api/cos/desktop/deltas?cursor=cursor-f90d8a7227de49e5a9fdaacc5da3bc90 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59502 - "GET /api/cos/desktop/server HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54114 - "GET /api/cos/desktop/deltas?cursor=cursor-f90d8a7227de49e5a9fdaacc5da3bc90 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54114 - "GET /api/cos/desktop/deltas?cursor=cursor-f90d8a7227de49e5a9fdaacc5da3bc90 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54114 - "GET /api/cos/desktop/deltas?cursor=cursor-f90d8a7227de49e5a9fdaacc5da3bc90 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54114 - "GET /api/cos/desktop/deltas?cursor=cursor-f90d8a7227de49e5a9fdaacc5da3bc90 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54114 - "GET /api/cos/desktop/deltas?cursor=cursor-f90d8a7227de49e5a9fdaacc5da3bc90 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54114 - "GET /api/cos/desktop/deltas?cursor=cursor-f90d8a7227de49e5a9fdaacc5da3bc90 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52402 - "POST /api/cos/desktop/credentials/revoke HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52403 - "GET /api/ready HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [46104]

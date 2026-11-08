@@ -337,12 +337,27 @@ pub fn is_protocol_route(path: &str) -> bool {
     ) || is_task_read_route(route)
 }
 
+/// Mutable credential shared by a `ProtocolTransport` and its executor.
+///
+/// The composition root rotates this slot after a bounded reauthorization; the
+/// transport reads it per request, so a session that outlives its credential
+/// never keeps presenting a rejected value. A slot that holds `None` is
+/// authoritative: no fallback to the startup token occurs.
+pub type CredentialSlot = Arc<Mutex<Option<String>>>;
+
 /// Append the credential to a protocol request's headers, when one is configured.
+///
+/// When a [`CredentialSlot`] is configured it is the only credential source, so
+/// rotating its value changes the header of every later request in place.
 fn authorize(config: &ProtocolTransportConfig, headers: &mut Vec<(String, String)>, path: &str) {
     if !is_protocol_route(path) {
         return;
     }
-    if let Some(token) = &config.bearer_token {
+    let token = match &config.credential_slot {
+        Some(slot) => slot.lock().ok().and_then(|value| value.clone()),
+        None => config.bearer_token.clone(),
+    };
+    if let Some(token) = token {
         headers.push(("authorization".to_owned(), format!("Bearer {token}")));
     }
 }
@@ -424,7 +439,16 @@ pub struct ProtocolTransportConfig {
     /// Desktop credential presented on the protocol routes (observation open,
     /// snapshot read, delta read, catalog read, command submit, receipt
     /// lookup); never on the handshake or another path.
+    ///
+    /// Ignored when [`Self::credential_slot`] is set: the slot is then the
+    /// mutable credential authority.
     pub bearer_token: Option<String>,
+    /// Mutable credential authority shared with the executor.
+    ///
+    /// The composition root updates this slot after reauthorization; every
+    /// later protocol request presents the current value without rebuilding
+    /// the transport or the observation session.
+    pub credential_slot: Option<CredentialSlot>,
     /// Interval between delta polls after the initial snapshot.
     pub delta_poll_interval: Duration,
     /// Maximum accepted response-document size in bytes.
@@ -444,6 +468,10 @@ impl fmt::Debug for ProtocolTransportConfig {
                 "bearer_token",
                 &self.bearer_token.as_ref().map(|_| "<redacted>"),
             )
+            .field(
+                "credential_slot",
+                &self.credential_slot.as_ref().map(|_| "<redacted>"),
+            )
             .field("delta_poll_interval", &self.delta_poll_interval)
             .field("max_response_bytes", &self.max_response_bytes)
             .field("max_pending_requests", &self.max_pending_requests)
@@ -457,6 +485,7 @@ impl Default for ProtocolTransportConfig {
         let limits = Limits::DEFAULT;
         Self {
             bearer_token: None,
+            credential_slot: None,
             delta_poll_interval: Duration::from_millis(250),
             // One document carries the whole snapshot plus the grant report;
             // bound it by the staged bundle ceiling plus one control frame of
@@ -2189,6 +2218,38 @@ mod credential_route_tests {
         CATALOG_PATH, COMMANDS_LOOKUP_PATH, COMMANDS_PATH, DELTAS_PATH, OBSERVATION_PATH,
         ProtocolTransportConfig, SERVER_PATH, SNAPSHOT_PATH, authorize, is_protocol_route,
     };
+    use std::sync::{Arc, Mutex};
+
+    #[test]
+    fn a_rotated_credential_slot_is_presented_by_the_next_request() {
+        let slot: super::CredentialSlot = Arc::new(Mutex::new(Some("first-token".to_owned())));
+        let config = ProtocolTransportConfig {
+            bearer_token: Some("startup-token".to_owned()),
+            credential_slot: Some(Arc::clone(&slot)),
+            ..ProtocolTransportConfig::default()
+        };
+        let mut headers = Vec::new();
+        authorize(&config, &mut headers, DELTAS_PATH);
+        assert_eq!(
+            headers,
+            vec![("authorization".to_owned(), "Bearer first-token".to_owned())],
+            "the slot is authoritative over the startup value"
+        );
+        *slot.lock().expect("slot") = Some("second-token".to_owned());
+        let mut headers = Vec::new();
+        authorize(&config, &mut headers, OBSERVATION_PATH);
+        assert_eq!(
+            headers,
+            vec![("authorization".to_owned(), "Bearer second-token".to_owned())],
+            "a reauthorized value is used without rebuilding the transport"
+        );
+        // An empty slot is authoritative too: the startup value is never
+        // replayed after the session lost its credential.
+        *slot.lock().expect("slot") = None;
+        let mut headers = Vec::new();
+        authorize(&config, &mut headers, SNAPSHOT_PATH);
+        assert!(headers.is_empty());
+    }
 
     #[test]
     fn the_credential_is_presented_on_exactly_the_protocol_routes() {

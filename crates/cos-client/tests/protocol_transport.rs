@@ -2103,3 +2103,124 @@ fn create_task_posts_a_create_envelope_on_the_command_route() {
     assert_eq!(body["command_id"], command_id.as_str());
     assert_eq!(body["payload"]["kind"], "CREATE_TASK");
 }
+
+/// A handshake that fails after a live session must stay inside the bounded
+/// reconnect plan instead of collapsing to `Disconnected` and never retrying.
+///
+/// Runtime restart recovery depends on this: a restart can make the first one
+/// or two reconnect handshakes fail before the new process accepts connections.
+#[test]
+fn handshake_failures_after_a_live_session_keep_the_bounded_reconnect_plan() {
+    use std::sync::atomic::{AtomicU32, Ordering};
+
+    struct FlakyHttp {
+        state: Arc<Mutex<ServerState>>,
+        remaining_failures: Arc<AtomicU32>,
+    }
+
+    impl ProtocolHttp for FlakyHttp {
+        fn execute(&mut self, request: HttpRequest) -> Result<HttpResponse, String> {
+            if self
+                .remaining_failures
+                .fetch_update(Ordering::SeqCst, Ordering::SeqCst, |left| {
+                    left.checked_sub(1)
+                })
+                .is_ok()
+            {
+                return Err("plain HTTP transport failed (ConnectionFailed)".to_owned());
+            }
+            StubHttp {
+                state: Arc::clone(&self.state),
+            }
+            .execute(request)
+        }
+    }
+
+    let (_executor, state) = StubHttp::new();
+    let remaining = Arc::new(AtomicU32::new(0));
+    let transport = ProtocolTransport::new(
+        FlakyHttp {
+            state: Arc::clone(&state),
+            remaining_failures: Arc::clone(&remaining),
+        },
+        config(),
+        versions(),
+    );
+    let mut client = CosClient::new(
+        transport,
+        ClientConfig::default(),
+        Limits::DEFAULT,
+        ClientSource::Unknown,
+    );
+    client
+        .begin_authorized_observation(client.observation_request(ObservationScopeRequest {
+            task_ids: Vec::new(),
+            filters: vec![ScopeFilter {
+                name: "view".to_owned(),
+                value: "all".to_owned(),
+            }],
+        }))
+        .expect("observation begins");
+
+    let mut now = 0u64;
+    let deadline = Instant::now() + Duration::from_secs(10);
+    while Instant::now() < deadline {
+        now += 10;
+        client.pump(now);
+        if matches!(client.connection(), ConnectionState::Live) {
+            break;
+        }
+        std::thread::sleep(Duration::from_millis(1));
+    }
+    assert_eq!(
+        client.connection(),
+        &ConnectionState::Live,
+        "the initial session is live"
+    );
+
+    // Simulate a Runtime restart: three consecutive exchanges fail, then the
+    // new process answers again.
+    remaining.store(3, Ordering::SeqCst);
+    client.request_resync(ResyncReason::Internal);
+    let mut saw_retry_attempt = false;
+    let mut recovered = false;
+    let deadline = Instant::now() + Duration::from_secs(20);
+    while Instant::now() < deadline {
+        now += 10;
+        client.pump(now);
+        match client.connection() {
+            ConnectionState::Reconnecting { attempt, .. } if *attempt >= 2 => {
+                saw_retry_attempt = true;
+            }
+            ConnectionState::Disconnected => {
+                panic!("a failed reconnect handshake collapsed to Disconnected instead of retrying")
+            }
+            ConnectionState::Incompatible { reason } => {
+                panic!("recovery stopped before the server returned: {reason}")
+            }
+            ConnectionState::Live if remaining.load(Ordering::SeqCst) == 0 => {
+                recovered = true;
+                break;
+            }
+            ConnectionState::Live => {}
+            _ => {}
+        }
+        std::thread::sleep(Duration::from_millis(1));
+    }
+    assert!(
+        saw_retry_attempt,
+        "the client must schedule another bounded attempt after a failed handshake"
+    );
+    assert!(
+        recovered,
+        "the client reaches the Runtime again after the restart; state {:?}, last error {:?}",
+        client.connection(),
+        client.last_error()
+    );
+    assert_eq!(
+        client.source(),
+        ClientSource::Runtime {
+            server_identity: ServerId::new(SERVER_IDENTITY).expect("server id"),
+        }
+    );
+}

@@ -40,18 +40,19 @@
 
 use std::io::Read;
 use std::net::{Ipv4Addr, Ipv6Addr};
-use std::sync::Arc;
-use std::time::Duration;
+use std::sync::{Arc, Mutex};
+use std::time::{Duration, Instant};
 
 use cos_client::media::MediaFetcher;
 use cos_client::{
-    ClientConfig, ClientSource, CosClient, DesktopClient, HttpMethod, HttpRequest, HttpResponse,
-    ProtocolHttp, ProtocolTransport, ProtocolTransportConfig,
+    ClientConfig, ClientSource, CosClient, CredentialSlot, DesktopClient, HttpMethod, HttpRequest,
+    HttpResponse, ProtocolHttp, ProtocolTransport, ProtocolTransportConfig,
 };
 use desktop_gpui::media_presentation::{MediaBinding, MediaRuntime};
 use desktop_protocol::{Limits, ObservationScopeRequest, ProtocolVersions, ScopeFilter, Version};
 
 use crate::app::Mode;
+use crate::credential_issuance::CredentialExchange;
 use crate::credentials::CredentialStore;
 use crate::media_executor::MediaHttp;
 
@@ -62,6 +63,8 @@ pub(crate) const TOKEN_ENV: &str = "COS_DESKTOP_RUNTIME_TOKEN";
 
 /// Whole-request budget for one protocol exchange.
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(15);
+/// Whole-request budget for one credential reauthorization exchange.
+const REAUTH_TIMEOUT: Duration = Duration::from_secs(5);
 /// Bounded accepted response body (staged bundle ceiling plus one control frame).
 const MAX_RESPONSE_BYTES: u64 = Limits::DEFAULT
     .max_bundle_bytes
@@ -74,8 +77,12 @@ const SCHEMA: Version = Version::new(2, 0);
 /// Why an explicitly configured runtime observation cannot start.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum RuntimeUnavailable {
-    /// No endpoint is configured.
+    /// No endpoint is configured and no usable per-user discovery descriptor
+    /// exists.
     NotConfigured,
+    /// The per-user discovery descriptor is absent, invalid, stale or names
+    /// something this build refuses. Never a fixture fallback.
+    DiscoveryUnavailable,
     /// The configured endpoint is not a plain-HTTP origin this build may use.
     UnsupportedEndpoint,
     /// No bearer token is configured for the authenticated observation request.
@@ -89,6 +96,9 @@ impl RuntimeUnavailable {
     pub(crate) fn label(self) -> &'static str {
         match self {
             Self::NotConfigured => "runtime endpoint is not configured",
+            Self::DiscoveryUnavailable => {
+                "runtime discovery descriptor is unavailable or not usable"
+            }
             Self::UnsupportedEndpoint => {
                 "runtime endpoint is not a plain-HTTP origin this build supports"
             }
@@ -120,13 +130,15 @@ pub(crate) struct RuntimeObservation {
 
 /// Explicit-teardown revocation handle for one started Runtime observation.
 ///
-/// It holds one in-memory copy of the session credential so the process can
-/// revoke it after the app loop has stopped. The budget is bounded
+/// It holds the one in-memory copy of the credential this session must revoke
+/// (empty until this app has issued, refreshed or recovered a versioned
+/// credential) so the process can revoke it after the app loop has stopped. An
+/// operator-provisioned value is never placed here. The budget is bounded
 /// ([`credential_issuance::REVOKE_TIMEOUT`]) and every failure is non-fatal and
 /// value-free. Deliberately not `Debug`/`Display`: the token is never rendered.
 pub(crate) struct RuntimeTeardown {
     origin: String,
-    token: String,
+    token: Arc<Mutex<Option<String>>>,
     store: Arc<dyn CredentialStore>,
 }
 
@@ -134,14 +146,22 @@ impl RuntimeTeardown {
     /// Revoke the session credential and forget the stored copy.
     ///
     /// Called only after the app loop returned, so it delays process exit by at
-    /// most one bounded request. A failed revoke keeps the stored credential for
-    /// a later retry and prints a fixed label.
+    /// most one bounded request. With nothing armed (an operator override that
+    /// was never replaced) this performs no exchange at all. A failed revoke
+    /// keeps the stored credential for a later retry and prints a fixed label.
     pub(crate) fn revoke(self) {
+        let token = match self.token.lock() {
+            Ok(mut slot) => slot.take(),
+            Err(_) => None,
+        };
+        let Some(token) = token else {
+            return;
+        };
         let mut exchange = crate::credential_issuance::UreqExchange::with_timeout(
             &self.origin,
             crate::credential_issuance::REVOKE_TIMEOUT,
         );
-        match crate::credential_issuance::revoke(&self.token, &mut exchange) {
+        match crate::credential_issuance::revoke(&token, &mut exchange) {
             Ok(()) => match self.store.delete(&self.origin) {
                 Ok(()) => eprintln!("Runtime credential revoked on explicit teardown"),
                 Err(_) => eprintln!(
@@ -153,6 +173,11 @@ impl RuntimeTeardown {
                 error.label()
             ),
         }
+    }
+
+    #[cfg(test)]
+    fn armed(&self) -> bool {
+        self.token.lock().is_ok_and(|slot| slot.is_some())
     }
 }
 
@@ -423,19 +448,42 @@ pub(crate) fn observation(
         token,
         revocable,
     } = settings;
-    let teardown = revocable.then(|| RuntimeTeardown {
+    // One in-memory credential value shared by the transport and the recovery
+    // executor: a reauthorized value is presented by every later request
+    // without rebuilding the session. Only a credential this app issued or
+    // recovered is ever armed for teardown revocation.
+    let slot: CredentialSlot = Arc::new(Mutex::new(Some(token)));
+    let revoke_slot: Arc<Mutex<Option<String>>> = Arc::new(Mutex::new(None));
+    let teardown = Some(RuntimeTeardown {
         origin: endpoint.clone(),
-        token: token.clone(),
+        token: Arc::clone(&revoke_slot),
         store: Arc::clone(&store),
     });
-    let executor = RevokingHttp::new(PlainHttp::new(&endpoint), store, endpoint.clone());
+    if revocable {
+        let initial = slot.lock().ok().and_then(|value| value.clone());
+        if let Ok(mut armed) = revoke_slot.lock() {
+            *armed = initial;
+        }
+    }
+    let executor = ReauthHttp::new(
+        PlainHttp::new(&endpoint),
+        Arc::clone(&store),
+        endpoint.clone(),
+        Arc::clone(&slot),
+        Arc::clone(&revoke_slot),
+        // Re-read at each bounded recovery boundary; the secret is never
+        // retained by the long-lived executor.
+        Arc::new(|| std::env::var(crate::credential_issuance::ISSUANCE_SECRET_ENV).ok()),
+        crate::credential_issuance::UreqExchange::with_timeout(&endpoint, REAUTH_TIMEOUT),
+    );
     let transport = ProtocolTransport::new(
         executor,
         ProtocolTransportConfig {
-            // The transport owns the credential rule: it presents the token on
-            // the three protocol routes only (open, snapshot, deltas), never on
-            // the handshake or another path.
-            bearer_token: Some(token),
+            // The transport presents the current slot value on the credential
+            // routes only (open, snapshot, deltas, catalog, commands, receipt
+            // lookups), never on the handshake or another path.
+            bearer_token: None,
+            credential_slot: Some(slot),
             ..ProtocolTransportConfig::default()
         },
         ProtocolVersions {
@@ -464,49 +512,192 @@ pub(crate) fn observation(
     })
 }
 
-/// Executor wrapper that clears the stored credential when the Runtime rejects
-/// it on a **credential-bearing route**, so the next launch requires an explicit
-/// re-authorization instead of retrying a credential that can never succeed.
+/// Executor wrapper that recovers one rejected Desktop credential inside the
+/// same session, without a relaunch.
 ///
-/// Only a `401` from the observation open, the snapshot read or the delta read
-/// is evidence against the credential. The handshake route sends no credential
-/// at all, so its `401` (for example a misconfigured endpoint in front of the
-/// adapter) must never destroy a valid stored credential.
-struct RevokingHttp<E: ProtocolHttp> {
+/// Only a `401` on a **credential-bearing route** is evidence against the
+/// credential; the handshake route carries no credential, so its `401` never
+/// triggers a reauthorization. Recovery is bounded (a small attempt count and a
+/// minimum interval between attempts) and never resends a command: a `401`
+/// proves the request was refused before any effect, but a command intent is
+/// still only ever sent once. Reading routes are retried exactly once with the
+/// replacement credential; a second `401` is returned to the client, which tears
+/// the session down and opens a fresh observation (never a stale cursor).
+struct ReauthHttp<E: ProtocolHttp, X: CredentialExchange + Send> {
     inner: E,
     store: Arc<dyn CredentialStore>,
     origin: String,
-    revoked: bool,
+    /// Credential the transport presents per request. Updated in place after a
+    /// successful reauthorization so later requests never replay a rejected
+    /// value.
+    slot: cos_client::CredentialSlot,
+    /// Token this session must revoke on explicit teardown, if any. Empty for
+    /// an operator-provisioned value, which the Desktop must not revoke.
+    revoke_slot: Arc<Mutex<Option<String>>>,
+    /// Reads the operator issuance secret at the recovery boundary only, so the
+    /// value is never retained by this long-lived executor.
+    secret: Arc<dyn Fn() -> Option<String> + Send + Sync>,
+    exchange: X,
+    policy: ReauthPolicy,
+    attempts: u32,
+    last_attempt: Option<Instant>,
 }
 
-impl<E: ProtocolHttp> RevokingHttp<E> {
-    fn new(inner: E, store: Arc<dyn CredentialStore>, origin: String) -> Self {
+/// Bounds for automatic reauthorization.
+#[derive(Clone, Copy)]
+struct ReauthPolicy {
+    /// Maximum replaceable credentials per session.
+    max_attempts: u32,
+    /// Minimum spacing between attempts.
+    min_interval: Duration,
+}
+
+impl Default for ReauthPolicy {
+    fn default() -> Self {
         Self {
-            inner,
-            store,
-            origin,
-            revoked: false,
+            max_attempts: 3,
+            min_interval: Duration::from_secs(2),
         }
     }
 }
 
-impl<E: ProtocolHttp> ProtocolHttp for RevokingHttp<E> {
-    fn execute(&mut self, request: HttpRequest) -> Result<HttpResponse, String> {
-        let credential_route = cos_client::is_protocol_route(&request.path);
-        let response = self.inner.execute(request)?;
-        if response.status == 401 && credential_route && !self.revoked {
-            self.revoked = true;
-            // A failed deletion stays fail-closed: the session is still
-            // re-authorization-required and a later launch retries the delete
-            // only if the stale entry is still there.
-            match self.store.delete(&self.origin) {
-                Ok(()) => eprintln!("Runtime credential revoked; re-authorization is required"),
-                Err(_) => eprintln!(
-                    "Runtime credential rejected and could not be removed from the store; re-authorization is required"
-                ),
+impl<E: ProtocolHttp, X: CredentialExchange + Send> ReauthHttp<E, X> {
+    fn new(
+        inner: E,
+        store: Arc<dyn CredentialStore>,
+        origin: String,
+        slot: cos_client::CredentialSlot,
+        revoke_slot: Arc<Mutex<Option<String>>>,
+        secret: Arc<dyn Fn() -> Option<String> + Send + Sync>,
+        exchange: X,
+    ) -> Self {
+        Self {
+            inner,
+            store,
+            origin,
+            slot,
+            revoke_slot,
+            secret,
+            exchange,
+            policy: ReauthPolicy::default(),
+            attempts: 0,
+            last_attempt: None,
+        }
+    }
+
+    /// Claim one bounded recovery attempt, or `None` when the budget or the
+    /// minimum interval forbids it.
+    #[cfg(test)]
+    fn set_policy(&mut self, policy: ReauthPolicy) {
+        self.policy = policy;
+    }
+
+    fn claim_attempt(&mut self) -> bool {
+        if self.attempts >= self.policy.max_attempts {
+            return false;
+        }
+        let now = Instant::now();
+        if self
+            .last_attempt
+            .is_some_and(|last| now.duration_since(last) < self.policy.min_interval)
+        {
+            return false;
+        }
+        self.attempts += 1;
+        self.last_attempt = Some(now);
+        true
+    }
+
+    /// Exchange the rejected credential for a replacement, if any is available.
+    fn reauthorize(&mut self) -> Option<String> {
+        let secret = (self.secret)();
+        match crate::credential_issuance::recover(
+            &self.origin,
+            secret.as_deref(),
+            self.store.as_ref(),
+            &mut self.exchange,
+            std::time::SystemTime::now(),
+        ) {
+            crate::credential_issuance::Recovery::Rotated(token) => {
+                if let Ok(mut slot) = self.slot.lock() {
+                    *slot = Some(token.clone());
+                }
+                if let Ok(mut revoke) = self.revoke_slot.lock() {
+                    *revoke = Some(token.clone());
+                }
+                eprintln!(
+                    "Runtime credential reauthorized after rejection; the session reopens a fresh observation"
+                );
+                Some(token)
+            }
+            crate::credential_issuance::Recovery::Unavailable => {
+                eprintln!(
+                    "Runtime credential reauthorization unavailable; the session requires authorization"
+                );
+                None
+            }
+            crate::credential_issuance::Recovery::Transient => {
+                eprintln!(
+                    "Runtime credential reauthorization deferred; a later bounded attempt may succeed"
+                );
+                None
             }
         }
-        Ok(response)
+    }
+}
+
+/// The bearer value presented by one protocol request.
+fn presented_token(request: &HttpRequest) -> Option<String> {
+    request
+        .headers
+        .iter()
+        .find(|(name, _)| name.eq_ignore_ascii_case("authorization"))
+        .and_then(|(_, value)| {
+            value
+                .strip_prefix("Bearer ")
+                .or_else(|| value.strip_prefix("bearer "))
+        })
+        .map(str::to_owned)
+        .filter(|token| !token.is_empty())
+}
+
+/// One protocol command route: never retried after a `401`.
+fn is_command_route(path: &str) -> bool {
+    let route = path.split('?').next().unwrap_or(path);
+    route == cos_client::COMMANDS_PATH || route == cos_client::COMMANDS_LOOKUP_PATH
+}
+
+/// Rebuild a request with the replacement credential.
+fn with_authorization(mut request: HttpRequest, token: &str) -> HttpRequest {
+    request
+        .headers
+        .retain(|(name, _)| !name.eq_ignore_ascii_case("authorization"));
+    request
+        .headers
+        .push(("authorization".to_owned(), format!("Bearer {token}")));
+    request
+}
+
+impl<E: ProtocolHttp, X: CredentialExchange + Send> ProtocolHttp for ReauthHttp<E, X> {
+    fn execute(&mut self, request: HttpRequest) -> Result<HttpResponse, String> {
+        let credential_route = cos_client::is_protocol_route(&request.path);
+        let presented = presented_token(&request);
+        let response = self.inner.execute(request.clone())?;
+        if response.status != 401 || !credential_route || presented.is_none() {
+            return Ok(response);
+        }
+        // A 401 is a refusal before any effect. Only a bounded, due recovery
+        // may replace the credential; a command is never resent.
+        if !self.claim_attempt() {
+            return Ok(response);
+        }
+        let Some(token) = self.reauthorize() else {
+            return Ok(response);
+        };
+        if is_command_route(&request.path) {
+            return Ok(response);
+        }
+        self.inner.execute(with_authorization(request, &token))
     }
 }
 
@@ -604,17 +795,18 @@ impl PlainHttp {
 #[cfg(test)]
 mod tests {
     use super::{
-        LaunchPlan, Mode, PlainHttp, RevokingHttp, RuntimeUnavailable, observation,
+        LaunchPlan, Mode, PlainHttp, ReauthHttp, ReauthPolicy, RuntimeUnavailable, observation,
         plain_http_origin, plan, settings,
     };
     use cos_client::{
-        DELTAS_PATH, HttpMethod, HttpRequest, HttpResponse, OBSERVATION_PATH, ProtocolHttp,
-        SERVER_PATH, SNAPSHOT_PATH,
+        COMMANDS_PATH, DELTAS_PATH, HttpMethod, HttpRequest, HttpResponse, OBSERVATION_PATH,
+        ProtocolHttp, SERVER_PATH, SNAPSHOT_PATH,
     };
     use std::io::{Read, Write};
     use std::net::TcpListener;
     use std::time::Duration;
 
+    use crate::credential_issuance::{CredentialExchange, ExchangeFailure, HttpResponseBytes};
     use crate::credentials::{CredentialStore, CredentialStoreError};
     use std::sync::Mutex;
     use std::sync::atomic::{AtomicUsize, Ordering};
@@ -778,8 +970,11 @@ mod tests {
             observation(override_settings, std::sync::Arc::new(override_store))
                 .expect("observation builds");
         assert!(
-            override_observation.teardown.is_none(),
-            "an operator override is not revoked by the Desktop"
+            override_observation
+                .teardown
+                .as_ref()
+                .is_some_and(|teardown| !teardown.armed()),
+            "an operator override is never armed for revocation"
         );
 
         let record = crate::credential_issuance::encode_for_test(
@@ -793,8 +988,11 @@ mod tests {
         let issued_observation = observation(issued_settings, std::sync::Arc::new(issued_store))
             .expect("observation builds");
         assert!(
-            issued_observation.teardown.is_some(),
-            "an issued record is revoked on explicit teardown"
+            issued_observation
+                .teardown
+                .as_ref()
+                .is_some_and(|teardown| teardown.armed()),
+            "an issued record is armed for explicit teardown revocation"
         );
     }
 
@@ -854,114 +1052,340 @@ mod tests {
         );
     }
 
-    #[test]
-    fn a_401_on_each_credential_route_revokes_the_stored_credential_once() {
-        struct FixedResponse(u16);
-        impl ProtocolHttp for FixedResponse {
-            fn execute(&mut self, _request: HttpRequest) -> Result<HttpResponse, String> {
-                Ok(HttpResponse {
-                    status: self.0,
-                    body: b"{}".to_vec(),
-                })
-            }
-        }
+    /// Scripted protocol executor: consumes canned responses, records requests.
+    struct SequencedHttp {
+        responses: std::collections::VecDeque<(u16, Vec<u8>)>,
+        requests: Vec<HttpRequest>,
+    }
 
-        // Every route that actually carries the credential is evidence against it.
-        for (path, method) in [
-            (OBSERVATION_PATH.to_owned(), HttpMethod::Post),
-            (SNAPSHOT_PATH.to_owned(), HttpMethod::Get),
-            (format!("{DELTAS_PATH}?cursor=cursor-1"), HttpMethod::Get),
-        ] {
-            let store = std::sync::Arc::new(MemoryStore::with_token("stale-token"));
-            let store_for_http: std::sync::Arc<dyn CredentialStore> = store.clone();
-            let mut revoking = RevokingHttp::new(
-                FixedResponse(401),
-                store_for_http,
-                "http://127.0.0.1:8123".to_owned(),
-            );
-            for _ in 0..3 {
-                revoking
-                    .execute(request_for(&path, method))
-                    .expect("a 401 is a response");
+    impl SequencedHttp {
+        fn new(responses: impl IntoIterator<Item = (u16, Vec<u8>)>) -> Self {
+            Self {
+                responses: responses.into_iter().collect(),
+                requests: Vec::new(),
             }
-            assert_eq!(store.delete_calls(), 1, "{path} revokes exactly once");
-            assert_eq!(store.stored(), None, "{path} clears the stored value");
         }
     }
 
-    #[test]
-    fn a_401_on_the_handshake_never_revokes_the_stored_credential() {
-        struct FixedResponse(u16);
-        impl ProtocolHttp for FixedResponse {
-            fn execute(&mut self, _request: HttpRequest) -> Result<HttpResponse, String> {
-                Ok(HttpResponse {
-                    status: self.0,
-                    body: b"{}".to_vec(),
-                })
+    impl ProtocolHttp for SequencedHttp {
+        fn execute(&mut self, request: HttpRequest) -> Result<HttpResponse, String> {
+            self.requests.push(request);
+            let (status, body) = self.responses.pop_front().unwrap_or((500, b"{}".to_vec()));
+            Ok(HttpResponse { status, body })
+        }
+    }
+
+    /// Scripted credential endpoint; records the paths it was asked for.
+    struct SequencedExchange {
+        responses: std::collections::VecDeque<(u16, Vec<u8>)>,
+        paths: Vec<String>,
+    }
+
+    impl SequencedExchange {
+        fn new(responses: impl IntoIterator<Item = (u16, Vec<u8>)>) -> Self {
+            Self {
+                responses: responses.into_iter().collect(),
+                paths: Vec::new(),
             }
         }
+    }
 
-        // The handshake sends no credential, so its 401 says nothing about the
-        // stored one: a misconfigured endpoint must not destroy a valid entry.
+    impl CredentialExchange for SequencedExchange {
+        fn post(
+            &mut self,
+            path: &str,
+            _headers: &[(&str, &str)],
+            _body: &[u8],
+        ) -> Result<HttpResponseBytes, ExchangeFailure> {
+            self.paths.push(path.to_owned());
+            let (status, body) = self.responses.pop_front().unwrap_or((500, Vec::new()));
+            Ok(HttpResponseBytes { status, body })
+        }
+    }
+
+    const OLD_TOKEN: &str = "old-token-0123456789abcdef";
+    const NEW_TOKEN: &str = "new-token-0123456789abcdef";
+    const OPERATOR_TOKEN: &str = "operator-token-0123456789ab";
+    const TEST_ORIGIN: &str = "http://127.0.0.1:8123";
+
+    fn versioned_record(token: &str) -> String {
+        crate::credential_issuance::encode_for_test(
+            token,
+            "desktop:0123456789abcdef0123456789abcdef",
+            1_700_000_000,
+        )
+    }
+
+    fn credential_document(token: &str) -> Vec<u8> {
+        format!(
+            r#"{{"token":"{token}","principal":"desktop:0123456789abcdef0123456789abcdef","scopes":["read:observe","desktop:command"],"expires_in":43200}}"#
+        )
+        .into_bytes()
+    }
+
+    fn authorized(path: &str, method: HttpMethod, token: &str) -> HttpRequest {
+        let mut request = request_for(path, method);
+        request
+            .headers
+            .push(("authorization".to_owned(), format!("Bearer {token}")));
+        request
+    }
+
+    fn reauth_http(
+        responses: impl IntoIterator<Item = (u16, Vec<u8>)>,
+        store: std::sync::Arc<MemoryStore>,
+        slot: cos_client::CredentialSlot,
+        revoke: std::sync::Arc<Mutex<Option<String>>>,
+        secret: Option<&'static str>,
+        exchange: SequencedExchange,
+    ) -> ReauthHttp<SequencedHttp, SequencedExchange> {
+        let mut executor = ReauthHttp::new(
+            SequencedHttp::new(responses),
+            store,
+            TEST_ORIGIN.to_owned(),
+            slot,
+            revoke,
+            std::sync::Arc::new(move || secret.map(str::to_owned)),
+            exchange,
+        );
+        executor.set_policy(ReauthPolicy {
+            max_attempts: 3,
+            min_interval: Duration::ZERO,
+        });
+        executor
+    }
+
+    #[test]
+    fn a_401_on_a_read_route_refreshes_the_issued_credential_and_retries_once() {
+        let store = std::sync::Arc::new(MemoryStore::with_token(&versioned_record(OLD_TOKEN)));
+        let slot: cos_client::CredentialSlot =
+            std::sync::Arc::new(Mutex::new(Some(OLD_TOKEN.to_owned())));
+        let revoke = std::sync::Arc::new(Mutex::new(None));
+        let mut executor = reauth_http(
+            [(401, b"{}".to_vec()), (200, b"{}".to_vec())],
+            std::sync::Arc::clone(&store),
+            std::sync::Arc::clone(&slot),
+            std::sync::Arc::clone(&revoke),
+            None,
+            SequencedExchange::new([(200, credential_document(NEW_TOKEN))]),
+        );
+        let response = executor
+            .execute(authorized(DELTAS_PATH, HttpMethod::Get, OLD_TOKEN))
+            .expect("two responses");
+        assert_eq!(response.status, 200);
+        let requests = executor.inner.requests;
+        assert_eq!(requests.len(), 2, "the read is retried exactly once");
+        assert_eq!(presented_header(&requests[0]).as_deref(), Some(OLD_TOKEN));
+        assert_eq!(
+            presented_header(&requests[1]).as_deref(),
+            Some(NEW_TOKEN),
+            "the retry presents the replacement, not the rejected value"
+        );
+        assert_eq!(
+            slot.lock().expect("slot").as_deref(),
+            Some(NEW_TOKEN),
+            "later requests use the rotated credential"
+        );
+        assert_eq!(
+            revoke.lock().expect("revoke").as_deref(),
+            Some(NEW_TOKEN),
+            "the rotated credential is armed for teardown revocation"
+        );
+        let stored = store.stored().expect("record");
+        assert_eq!(
+            crate::credential_issuance::stored_token(&stored).as_deref(),
+            Some(NEW_TOKEN)
+        );
+        assert_eq!(store.delete_calls(), 0);
+    }
+
+    #[test]
+    fn a_command_401_reauthorizes_but_never_resends_the_command() {
+        let store = std::sync::Arc::new(MemoryStore::with_token(&versioned_record(OLD_TOKEN)));
+        let slot: cos_client::CredentialSlot =
+            std::sync::Arc::new(Mutex::new(Some(OLD_TOKEN.to_owned())));
+        let revoke = std::sync::Arc::new(Mutex::new(None));
+        let mut executor = reauth_http(
+            [(401, b"{}".to_vec())],
+            std::sync::Arc::clone(&store),
+            std::sync::Arc::clone(&slot),
+            std::sync::Arc::clone(&revoke),
+            None,
+            SequencedExchange::new([(200, credential_document(NEW_TOKEN))]),
+        );
+        let response = executor
+            .execute(authorized(COMMANDS_PATH, HttpMethod::Post, OLD_TOKEN))
+            .expect("one response");
+        assert_eq!(response.status, 401);
+        assert_eq!(
+            executor.inner.requests.len(),
+            1,
+            "a command intent is sent once and never automatically resent"
+        );
+        assert_eq!(
+            slot.lock().expect("slot").as_deref(),
+            Some(NEW_TOKEN),
+            "the credential is still renewed for later reads"
+        );
+    }
+
+    #[test]
+    fn a_401_on_the_handshake_never_reauthorizes() {
         let store = std::sync::Arc::new(MemoryStore::with_token("valid-token"));
-        let store_for_http: std::sync::Arc<dyn CredentialStore> = store.clone();
-        let mut revoking = RevokingHttp::new(
-            FixedResponse(401),
-            store_for_http,
-            "http://127.0.0.1:8123".to_owned(),
+        let slot: cos_client::CredentialSlot =
+            std::sync::Arc::new(Mutex::new(Some("valid-token".to_owned())));
+        let revoke = std::sync::Arc::new(Mutex::new(None));
+        let mut executor = reauth_http(
+            vec![(401, b"{}".to_vec()); 3],
+            std::sync::Arc::clone(&store),
+            std::sync::Arc::clone(&slot),
+            std::sync::Arc::clone(&revoke),
+            Some("operator-secret"),
+            SequencedExchange::new([]),
         );
         for _ in 0..3 {
-            revoking
+            executor
                 .execute(request_for(SERVER_PATH, HttpMethod::Get))
                 .expect("a 401 is a response");
         }
-        assert_eq!(store.delete_calls(), 0, "the handshake never revokes");
+        assert_eq!(executor.inner.requests.len(), 3);
+        assert_eq!(executor.exchange.paths.len(), 0, "no credential exchange");
         assert_eq!(store.stored().as_deref(), Some("valid-token"));
     }
 
     #[test]
-    fn a_successful_response_never_revokes_and_a_failed_delete_stays_explicit() {
-        struct FixedResponse(u16);
-        impl ProtocolHttp for FixedResponse {
-            fn execute(&mut self, _request: HttpRequest) -> Result<HttpResponse, String> {
-                Ok(HttpResponse {
-                    status: self.0,
-                    body: b"{}".to_vec(),
-                })
-            }
-        }
-
-        let stable = std::sync::Arc::new(MemoryStore::with_token("fresh-token"));
-        let stable_for_http: std::sync::Arc<dyn CredentialStore> = stable.clone();
-        let mut healthy = RevokingHttp::new(
-            FixedResponse(200),
-            stable_for_http,
-            "http://127.0.0.1:8123".to_owned(),
+    fn an_operator_provisioned_token_is_never_rotated_or_deleted() {
+        let store = std::sync::Arc::new(MemoryStore::with_token(OPERATOR_TOKEN));
+        let slot: cos_client::CredentialSlot =
+            std::sync::Arc::new(Mutex::new(Some(OPERATOR_TOKEN.to_owned())));
+        let revoke = std::sync::Arc::new(Mutex::new(None));
+        let mut executor = reauth_http(
+            vec![(401, b"{}".to_vec()); 4],
+            std::sync::Arc::clone(&store),
+            slot,
+            revoke,
+            None,
+            SequencedExchange::new([]),
         );
-        healthy
-            .execute(request_for(DELTAS_PATH, HttpMethod::Get))
-            .expect("a 200 is a response");
-        assert_eq!(stable.delete_calls(), 0);
-        assert_eq!(stable.stored().as_deref(), Some("fresh-token"));
-
-        // A failed deletion does not turn into a panic or a silent retry loop:
-        // the session still reports re-authorization required.
-        let unwritable = std::sync::Arc::new(MemoryStore {
-            fail_delete: true,
-            ..MemoryStore::with_token("stale-token")
-        });
-        let unwritable_for_http: std::sync::Arc<dyn CredentialStore> = unwritable.clone();
-        let mut failing = RevokingHttp::new(
-            FixedResponse(401),
-            unwritable_for_http,
-            "http://127.0.0.1:8123".to_owned(),
-        );
-        for _ in 0..2 {
-            failing
-                .execute(request_for(OBSERVATION_PATH, HttpMethod::Post))
-                .expect("a 401 is still a response");
+        for _ in 0..3 {
+            executor
+                .execute(authorized(
+                    OBSERVATION_PATH,
+                    HttpMethod::Post,
+                    OPERATOR_TOKEN,
+                ))
+                .expect("a 401 is a response");
         }
-        assert_eq!(unwritable.delete_calls(), 1, "one attempt per session");
+        assert_eq!(executor.exchange.paths.len(), 0, "no refresh is attempted");
+        assert_eq!(store.delete_calls(), 0, "the operator value is preserved");
+        assert_eq!(store.stored().as_deref(), Some(OPERATOR_TOKEN));
+    }
+
+    #[test]
+    fn a_rejected_issued_credential_is_reissued_once_after_refresh_fails() {
+        let store = std::sync::Arc::new(MemoryStore::with_token(&versioned_record(OLD_TOKEN)));
+        let slot: cos_client::CredentialSlot =
+            std::sync::Arc::new(Mutex::new(Some(OLD_TOKEN.to_owned())));
+        let revoke = std::sync::Arc::new(Mutex::new(None));
+        let mut executor = reauth_http(
+            [(401, b"{}".to_vec()), (200, b"{}".to_vec())],
+            std::sync::Arc::clone(&store),
+            std::sync::Arc::clone(&slot),
+            std::sync::Arc::clone(&revoke),
+            Some("operator-secret"),
+            SequencedExchange::new([(401, b"{}".to_vec()), (200, credential_document(NEW_TOKEN))]),
+        );
+        let response = executor
+            .execute(authorized(SNAPSHOT_PATH, HttpMethod::Get, OLD_TOKEN))
+            .expect("two responses");
+        assert_eq!(response.status, 200);
+        assert_eq!(
+            executor.exchange.paths,
+            vec![
+                crate::credential_issuance::REFRESH_PATH.to_owned(),
+                crate::credential_issuance::ISSUE_PATH.to_owned()
+            ],
+            "refresh preserves the principal; issuance is the fallback"
+        );
+        assert_eq!(store.delete_calls(), 1, "the dead record is cleared");
+        let stored = store.stored().expect("replacement record");
+        assert_eq!(
+            crate::credential_issuance::stored_token(&stored).as_deref(),
+            Some(NEW_TOKEN)
+        );
+    }
+
+    #[test]
+    fn reauthorization_is_bounded_and_a_transient_failure_keeps_the_record() {
+        let store = std::sync::Arc::new(MemoryStore::with_token(&versioned_record(OLD_TOKEN)));
+        let slot: cos_client::CredentialSlot =
+            std::sync::Arc::new(Mutex::new(Some(OLD_TOKEN.to_owned())));
+        let revoke = std::sync::Arc::new(Mutex::new(None));
+        let mut executor = reauth_http(
+            vec![(401, b"{}".to_vec()); 5],
+            std::sync::Arc::clone(&store),
+            slot,
+            revoke,
+            None,
+            SequencedExchange::new([(503, Vec::new())]),
+        );
+        for _ in 0..5 {
+            executor
+                .execute(authorized(DELTAS_PATH, HttpMethod::Get, OLD_TOKEN))
+                .expect("a 401 is a response");
+        }
+        assert_eq!(
+            executor.exchange.paths.len(),
+            3,
+            "transient refusals stay inside the bounded attempt budget"
+        );
+        assert_eq!(
+            store.stored().as_deref(),
+            Some(versioned_record(OLD_TOKEN).as_str()),
+            "a transient failure keeps the existing record"
+        );
+        assert_eq!(store.delete_calls(), 0);
+
+        // A hard refusal exhausts the bounded attempt budget across rejections.
+        let store = std::sync::Arc::new(MemoryStore::with_token(&versioned_record(OLD_TOKEN)));
+        let slot: cos_client::CredentialSlot =
+            std::sync::Arc::new(Mutex::new(Some(OLD_TOKEN.to_owned())));
+        let revoke = std::sync::Arc::new(Mutex::new(None));
+        let mut executor = reauth_http(
+            vec![(401, b"{}".to_vec()); 8],
+            store,
+            slot,
+            revoke,
+            Some("operator-secret"),
+            SequencedExchange::new([
+                (401, Vec::new()),
+                (401, Vec::new()),
+                (401, Vec::new()),
+                (401, Vec::new()),
+            ]),
+        );
+        for _ in 0..8 {
+            executor
+                .execute(authorized(DELTAS_PATH, HttpMethod::Get, OLD_TOKEN))
+                .expect("a 401 is a response");
+        }
+        assert_eq!(
+            executor.exchange.paths.len(),
+            4,
+            "three bounded attempts: one refresh+issue, then one issue each"
+        );
+        assert_eq!(
+            executor.attempts, 3,
+            "the attempt budget stops reauthorization"
+        );
+    }
+
+    fn presented_header(request: &HttpRequest) -> Option<String> {
+        request
+            .headers
+            .iter()
+            .find(|(name, _)| name.eq_ignore_ascii_case("authorization"))
+            .and_then(|(_, value)| value.strip_prefix("Bearer ").map(str::to_owned))
     }
 
     #[test]
@@ -1204,5 +1628,307 @@ mod tests {
             .expect_err("a refused connection is a transport failure");
         assert!(!error.contains("token-that-must-never-leak"), "{error}");
         assert!(!error.contains(&format!("{address}")), "{error}");
+    }
+
+    /// End-to-end stub-server recovery: a rejected open is reauthorized from the
+    /// operator secret and the client applies a fresh observation under the new
+    /// credential, with no command retry.
+    #[test]
+    fn a_401_reissues_the_credential_and_opens_a_fresh_observation() {
+        use desktop_protocol::{
+            Counter, Cursor, EpochId, HelloAccepted, Limits, ObservationScope,
+            ObservationScopeRequest, Projection, ProjectionMutation, ProtocolVersions,
+            ReadContextId, ReadGrant, ReadRequestId, ReadRevision, ReadStamp, ScopeFilter, ScopeId,
+            ServerId, SnapshotBegin, SnapshotChunk, SnapshotCounts, SnapshotEnd, SnapshotId,
+            TaskId, TaskSnapshot, TaskStatus, Version, projection_bundle_digest,
+        };
+        use serde_json::json;
+
+        const STALE: &str = "stale-token-0123456789";
+        const FRESH: &str = "fresh-token-0123456789";
+        const NEW_EPOCH: &str = "epoch-after-restart";
+        const TITLE: &str = "Fresh observation after reauthorization";
+
+        struct StubState {
+            opens: Vec<Option<String>>,
+            issues: u32,
+        }
+
+        struct StubProtocol {
+            state: std::sync::Arc<Mutex<StubState>>,
+            expected: String,
+        }
+
+        fn hello_document() -> serde_json::Value {
+            json!({
+                "schema_version": 1,
+                "server": serde_json::to_value(HelloAccepted {
+                    protocol: Version::new(2, 0),
+                    schema: Version::new(2, 0),
+                    server_identity: ServerId::new("cos-runtime-orchestrator").expect("id"),
+                    server_build: "orchestrator-runtime/test".to_owned(),
+                    epoch: EpochId::new(NEW_EPOCH).expect("epoch"),
+                    dedupe_retention_ms: None,
+                    limits: None,
+                })
+                .expect("hello"),
+            })
+        }
+
+        fn open_document(body: &serde_json::Value, title: &str) -> serde_json::Value {
+            let request_id = body["request_id"].as_str().expect("request id");
+            let protocol: Version =
+                serde_json::from_value(body["protocol"].clone()).expect("protocol");
+            let schema: Version = serde_json::from_value(body["schema"].clone()).expect("schema");
+            let scope_request: ObservationScopeRequest =
+                serde_json::from_value(body["scope"].clone()).expect("scope");
+            let scope = ObservationScope {
+                scope_id: ScopeId::new("scope-1").expect("scope id"),
+                task_ids: scope_request.task_ids,
+                filters: scope_request.filters,
+                protocol,
+                schema,
+            };
+            let stamp = ReadStamp {
+                request_id: ReadRequestId::new(request_id).expect("request id"),
+                server_id: ServerId::new("cos-runtime-orchestrator").expect("server id"),
+                epoch: EpochId::new(NEW_EPOCH).expect("epoch"),
+                context_id: ReadContextId::new("context-1").expect("context"),
+                read_revision: ReadRevision::new(Counter::new("1").expect("counter")),
+                scope_id: scope.scope_id.clone(),
+            };
+            let mutations = vec![ProjectionMutation::Upsert {
+                base_revision: None,
+                projection: Projection::Task(TaskSnapshot {
+                    task_ref: TaskId::new("task/Task-184").expect("task"),
+                    display_id: Some("Task-184".to_owned()),
+                    title: title.to_owned(),
+                    task_status: TaskStatus::Active,
+                    inner_phase: None,
+                    iteration_ref: None,
+                    iteration_index: None,
+                    best_candidate_ref: None,
+                    formal_outcome_ref: None,
+                    accepted_brief_ref: None,
+                    capabilities_ref: None,
+                    projection_revision: Counter::new("1").expect("revision"),
+                }),
+            }];
+            let snapshot_id = SnapshotId::new("snapshot-1").expect("snapshot");
+            let cursor = Cursor::new("cursor-1").expect("cursor");
+            let begin = SnapshotBegin {
+                snapshot_id: snapshot_id.clone(),
+            };
+            let chunks = [SnapshotChunk {
+                snapshot_id: snapshot_id.clone(),
+                part_index: 0,
+                mutations: mutations.clone(),
+            }];
+            let end = SnapshotEnd {
+                snapshot_id,
+                scope: scope.clone(),
+                epoch: EpochId::new(NEW_EPOCH).expect("epoch"),
+                cursor,
+                expected: SnapshotCounts::of(&mutations),
+                integrity_digest: projection_bundle_digest(&mutations).expect("digest"),
+            };
+            let grant = ReadGrant {
+                stamp,
+                scope,
+                local_intents_readable: false,
+                command_reads: Vec::new(),
+            };
+            json!({
+                "schema_version": 1,
+                "server": hello_document()["server"].clone(),
+                "grant": serde_json::to_value(grant).expect("grant"),
+                "snapshot": {
+                    "begin": serde_json::to_value(begin).expect("begin"),
+                    "chunks": chunks
+                        .iter()
+                        .map(|chunk| serde_json::to_value(chunk).expect("chunk"))
+                        .collect::<Vec<_>>(),
+                    "end": serde_json::to_value(end).expect("end"),
+                },
+            })
+        }
+
+        impl ProtocolHttp for StubProtocol {
+            fn execute(&mut self, request: HttpRequest) -> Result<HttpResponse, String> {
+                let route = request
+                    .path
+                    .split('?')
+                    .next()
+                    .unwrap_or(request.path.as_str());
+                match (request.method, route) {
+                    (HttpMethod::Get, SERVER_PATH) => Ok(HttpResponse {
+                        status: 200,
+                        body: serde_json::to_vec(&hello_document()).expect("hello"),
+                    }),
+                    (HttpMethod::Post, OBSERVATION_PATH) => {
+                        let token = super::presented_token(&request);
+                        let rejected = token.as_deref() != Some(self.expected.as_str());
+                        {
+                            let mut state = self.state.lock().expect("state");
+                            state.opens.push(token);
+                        }
+                        if rejected {
+                            return Ok(HttpResponse {
+                                status: 401,
+                                body: b"{}".to_vec(),
+                            });
+                        }
+                        let body: serde_json::Value =
+                            serde_json::from_slice(&request.body).expect("open body");
+                        Ok(HttpResponse {
+                            status: 200,
+                            body: serde_json::to_vec(&open_document(&body, TITLE))
+                                .expect("open document"),
+                        })
+                    }
+                    (HttpMethod::Get, DELTAS_PATH) => Ok(HttpResponse {
+                        status: 200,
+                        body: json!({"schema_version": 1, "transaction": null})
+                            .to_string()
+                            .into_bytes(),
+                    }),
+                    _ => Ok(HttpResponse {
+                        status: 404,
+                        body: b"{}".to_vec(),
+                    }),
+                }
+            }
+        }
+
+        struct StubExchange {
+            state: std::sync::Arc<Mutex<StubState>>,
+        }
+
+        impl CredentialExchange for StubExchange {
+            fn post(
+                &mut self,
+                path: &str,
+                _headers: &[(&str, &str)],
+                _body: &[u8],
+            ) -> Result<HttpResponseBytes, ExchangeFailure> {
+                match path {
+                    crate::credential_issuance::ISSUE_PATH => {
+                        self.state.lock().expect("state").issues += 1;
+                        Ok(HttpResponseBytes {
+                            status: 200,
+                            body: credential_document(FRESH),
+                        })
+                    }
+                    crate::credential_issuance::REFRESH_PATH => Ok(HttpResponseBytes {
+                        status: 401,
+                        body: Vec::new(),
+                    }),
+                    _ => Ok(HttpResponseBytes {
+                        status: 404,
+                        body: Vec::new(),
+                    }),
+                }
+            }
+        }
+
+        let state = std::sync::Arc::new(Mutex::new(StubState {
+            opens: Vec::new(),
+            issues: 0,
+        }));
+        let memory_store = std::sync::Arc::new(MemoryStore::default());
+        let store: std::sync::Arc<dyn CredentialStore> = memory_store.clone();
+        let slot: cos_client::CredentialSlot =
+            std::sync::Arc::new(Mutex::new(Some(STALE.to_owned())));
+        let revoke = std::sync::Arc::new(Mutex::new(None));
+        let executor = ReauthHttp::new(
+            StubProtocol {
+                state: std::sync::Arc::clone(&state),
+                expected: FRESH.to_owned(),
+            },
+            std::sync::Arc::clone(&store),
+            TEST_ORIGIN.to_owned(),
+            std::sync::Arc::clone(&slot),
+            revoke,
+            std::sync::Arc::new(|| Some("operator-secret".to_owned())),
+            StubExchange {
+                state: std::sync::Arc::clone(&state),
+            },
+        );
+        let transport = cos_client::ProtocolTransport::new(
+            executor,
+            cos_client::ProtocolTransportConfig {
+                credential_slot: Some(std::sync::Arc::clone(&slot)),
+                ..cos_client::ProtocolTransportConfig::default()
+            },
+            ProtocolVersions {
+                protocol: Version::new(2, 0),
+                schema: Version::new(2, 0),
+            },
+        );
+        let mut client = cos_client::CosClient::new(
+            transport,
+            cos_client::ClientConfig::default(),
+            Limits::DEFAULT,
+            cos_client::ClientSource::Unknown,
+        );
+        client
+            .begin_authorized_observation(client.observation_request(ObservationScopeRequest {
+                task_ids: Vec::new(),
+                filters: vec![ScopeFilter {
+                    name: "view".to_owned(),
+                    value: "all".to_owned(),
+                }],
+            }))
+            .expect("observation begins");
+
+        let mut now = 0u64;
+        let deadline = std::time::Instant::now() + Duration::from_secs(10);
+        while std::time::Instant::now() < deadline {
+            now += 10;
+            client.pump(now);
+            if client.connection().is_live()
+                && client
+                    .snapshot()
+                    .tasks
+                    .values()
+                    .any(|task| task.title == TITLE)
+            {
+                break;
+            }
+            std::thread::sleep(Duration::from_millis(1));
+        }
+        assert!(
+            client.connection().is_live(),
+            "state {:?}, last error {:?}",
+            client.connection(),
+            client.last_error()
+        );
+        assert!(
+            client
+                .snapshot()
+                .tasks
+                .values()
+                .any(|task| task.title == TITLE),
+            "a fresh snapshot from the reissued credential is published"
+        );
+        {
+            let state = state.lock().expect("state");
+            assert_eq!(state.issues, 1, "the operator secret issues one credential");
+            assert_eq!(
+                state.opens,
+                vec![Some(STALE.to_owned()), Some(FRESH.to_owned())],
+                "the rejected open is retried once with the replacement credential"
+            );
+        }
+        assert_eq!(
+            slot.lock().expect("slot").as_deref(),
+            Some(FRESH),
+            "the transport slot carries the replacement for later requests"
+        );
+        let stored = memory_store.stored().expect("record");
+        assert_eq!(
+            crate::credential_issuance::stored_token(&stored).as_deref(),
+            Some(FRESH)
+        );
     }
 }

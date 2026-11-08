@@ -60,8 +60,8 @@ use crate::credentials::CredentialStore;
 /// Operator-provisioned issuance secret. Never logged or persisted.
 pub(crate) const ISSUANCE_SECRET_ENV: &str = "COS_DESKTOP_RUNTIME_ISSUANCE_SECRET";
 
-const ISSUE_PATH: &str = "/api/cos/desktop/credentials";
-const REFRESH_PATH: &str = "/api/cos/desktop/credentials/refresh";
+pub(crate) const ISSUE_PATH: &str = "/api/cos/desktop/credentials";
+pub(crate) const REFRESH_PATH: &str = "/api/cos/desktop/credentials/refresh";
 const REVOKE_PATH: &str = "/api/cos/desktop/credentials/revoke";
 const SECRET_HEADER: &str = "X-Auth-Secret";
 const AUTHORIZATION_HEADER: &str = "Authorization";
@@ -513,6 +513,90 @@ pub(crate) fn prepare(
     }
 }
 
+/// Outcome of one bounded reauthorization after a rejected credential.
+#[derive(Debug, PartialEq, Eq)]
+pub(crate) enum Recovery {
+    /// A new credential was issued or rotated and persisted. The token is
+    /// returned only for the in-memory transport slot and is never rendered.
+    Rotated(String),
+    /// No usable credential exists; the caller must surface the authorization
+    /// failure instead of retrying an unusable value.
+    Unavailable,
+    /// A transient exchange or store failure kept the existing record; a later
+    /// bounded attempt may succeed.
+    Transient,
+}
+
+/// Reauthorize one rejected Desktop credential inside a bounded exchange.
+///
+/// Precedence preserves the Desktop principal whenever possible: a versioned
+/// record this module issued is refreshed in place (rotation keeps the same
+/// server-bound principal), and only when that fails — for example after a
+/// Runtime restart invalidated the process-local registry — is a new credential
+/// issued from the operator issuance secret. An operator-provisioned bare token
+/// is never refreshed or deleted here: it is not this module's credential and
+/// the Runtime may still accept it under a fresh observation context.
+pub(crate) fn recover(
+    origin: &str,
+    issuance_secret: Option<&str>,
+    store: &dyn CredentialStore,
+    exchange: &mut dyn CredentialExchange,
+    now: SystemTime,
+) -> Recovery {
+    let stored = match store.load(origin) {
+        Ok(value) => value,
+        Err(_) => return Recovery::Transient,
+    };
+    let versioned = stored
+        .as_deref()
+        .and_then(|raw| stored_token(raw).map(|token| (token, stored_is_versioned(raw))));
+    if let Some((token, true)) = versioned {
+        match refresh(&token, exchange) {
+            Ok(document) => {
+                return match persist(store, origin, &document, now) {
+                    Ok(()) => Recovery::Rotated(document.token),
+                    Err(_) => {
+                        // The rotation already invalidated the presented value;
+                        // revoke the replacement instead of leaving a usable
+                        // credential nothing can read.
+                        let _ = revoke(&document.token, exchange);
+                        Recovery::Transient
+                    }
+                };
+            }
+            Err(error) => {
+                if error.requires_reauthorization() || matches!(error, CredentialError::Expired) {
+                    // The Runtime no longer recognizes this credential (for
+                    // example after a restart). Remove the dead record before
+                    // attempting the issuance path.
+                    let _ = store.delete(origin);
+                } else {
+                    return Recovery::Transient;
+                }
+            }
+        }
+    }
+    let Some(secret) = normalize_secret(issuance_secret) else {
+        return Recovery::Unavailable;
+    };
+    match issue(secret, exchange) {
+        Ok(document) => match persist(store, origin, &document, now) {
+            Ok(()) => Recovery::Rotated(document.token),
+            Err(_) => {
+                let _ = revoke(&document.token, exchange);
+                Recovery::Transient
+            }
+        },
+        Err(error) => {
+            if error.requires_reauthorization() {
+                Recovery::Unavailable
+            } else {
+                Recovery::Transient
+            }
+        }
+    }
+}
+
 fn issue(
     secret: &str,
     exchange: &mut dyn CredentialExchange,
@@ -801,8 +885,8 @@ mod tests {
     use super::{
         CredentialError, CredentialExchange, CredentialState, ExchangeFailure, HttpResponseBytes,
         ISSUANCE_SECRET_ENV, ISSUE_PATH, MAX_CREDENTIAL_RESPONSE_BYTES, REFRESH_MARGIN,
-        REFRESH_PATH, REVOKE_PATH, UreqExchange, encode_for_test, parse_document, prepare, revoke,
-        stored_principal, stored_token,
+        REFRESH_PATH, REVOKE_PATH, Recovery, UreqExchange, encode_for_test, parse_document,
+        prepare, revoke, stored_principal, stored_token,
     };
     use crate::credentials::{CredentialStore, CredentialStoreError};
     use std::collections::VecDeque;
@@ -1426,6 +1510,102 @@ mod tests {
                 );
             }
         }
+    }
+
+    #[test]
+    fn recovery_refreshes_an_issued_record_before_issuing_a_new_principal() {
+        let store = MemoryStore::with_value(&encode_for_test(TOKEN, PRINCIPAL, NOW + 3600));
+        let mut exchange = ScriptedExchange::new([(200, document("rotated-token-0123456789"))]);
+        let outcome = super::recover(
+            ORIGIN,
+            Some("operator-secret"),
+            &store,
+            &mut exchange,
+            now(NOW),
+        );
+        assert_eq!(
+            outcome,
+            Recovery::Rotated("rotated-token-0123456789".to_owned())
+        );
+        let requests = exchange.requests();
+        assert_eq!(requests.len(), 1);
+        assert_eq!(
+            requests[0].path, REFRESH_PATH,
+            "rotation keeps the principal"
+        );
+        assert_eq!(
+            stored_token(&store.value().expect("rotated record")).as_deref(),
+            Some("rotated-token-0123456789")
+        );
+    }
+
+    #[test]
+    fn recovery_issues_a_new_credential_when_the_runtime_no_longer_knows_the_record() {
+        let store = MemoryStore::with_value(&encode_for_test(TOKEN, PRINCIPAL, NOW + 3600));
+        let mut exchange = ScriptedExchange::new([
+            (401, Vec::new()),
+            (200, document("reissued-token-0123456789")),
+        ]);
+        let outcome = super::recover(
+            ORIGIN,
+            Some("operator-secret"),
+            &store,
+            &mut exchange,
+            now(NOW),
+        );
+        assert_eq!(
+            outcome,
+            Recovery::Rotated("reissued-token-0123456789".to_owned())
+        );
+        let requests = exchange.requests();
+        assert_eq!(requests.len(), 2);
+        assert_eq!(requests[0].path, REFRESH_PATH);
+        assert_eq!(requests[1].path, ISSUE_PATH);
+        assert_eq!(store.delete_calls(), 1, "the dead record is cleared");
+        assert_eq!(
+            stored_token(&store.value().expect("reissued record")).as_deref(),
+            Some("reissued-token-0123456789")
+        );
+    }
+
+    #[test]
+    fn recovery_never_reissues_without_a_provisioned_secret() {
+        let store = MemoryStore::with_value(&encode_for_test(TOKEN, PRINCIPAL, NOW + 3600));
+        let mut exchange = ScriptedExchange::new([(401, Vec::new())]);
+        let outcome = super::recover(ORIGIN, None, &store, &mut exchange, now(NOW));
+        assert_eq!(outcome, Recovery::Unavailable);
+        assert_eq!(exchange.requests().len(), 1);
+        assert_eq!(store.delete_calls(), 1);
+        assert_eq!(store.value(), None);
+    }
+
+    #[test]
+    fn recovery_never_rotates_or_deletes_an_operator_provisioned_token() {
+        let store = MemoryStore::with_value("operator-token-0123456789");
+        let mut exchange = ScriptedExchange::new([]);
+        let outcome = super::recover(ORIGIN, None, &store, &mut exchange, now(NOW));
+        assert_eq!(outcome, Recovery::Unavailable);
+        assert!(exchange.requests().is_empty());
+        assert_eq!(store.delete_calls(), 0);
+        assert_eq!(store.value().as_deref(), Some("operator-token-0123456789"));
+    }
+
+    #[test]
+    fn a_transient_recovery_failure_keeps_the_record_for_a_later_attempt() {
+        let store = MemoryStore::with_value(&encode_for_test(TOKEN, PRINCIPAL, NOW + 3600));
+        let mut exchange = ScriptedExchange::new([(503, Vec::new())]);
+        let outcome = super::recover(ORIGIN, None, &store, &mut exchange, now(NOW));
+        assert_eq!(outcome, Recovery::Transient);
+        assert_eq!(store.delete_calls(), 0);
+        assert_eq!(
+            store_value_token(&store),
+            Some(TOKEN.to_owned()),
+            "the record survives a transient refusal"
+        );
+    }
+
+    fn store_value_token(store: &MemoryStore) -> Option<String> {
+        store.value().as_deref().and_then(stored_token)
     }
 
     #[test]

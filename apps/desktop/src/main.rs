@@ -2,6 +2,7 @@ mod app;
 mod contrast_probe;
 mod credential_issuance;
 mod credentials;
+mod discovery;
 mod instance;
 mod media_executor;
 #[cfg(all(feature = "r0-s2b-instrumentation", windows))]
@@ -28,9 +29,12 @@ fn main() {
         std::sync::Arc::new(std::sync::Mutex::new(window::ExitReport::default()));
     let default_fixture = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("../../crates/cos-client/fixtures/task-184.json");
-    let endpoint = std::env::var(runtime::ENDPOINT_ENV).ok();
-    let startup = match Startup::parse(std::env::args().skip(1), endpoint.clone(), default_fixture)
-    {
+    let endpoint_env = std::env::var(runtime::ENDPOINT_ENV).ok();
+    let startup = match Startup::parse(
+        std::env::args().skip(1),
+        endpoint_env.clone(),
+        default_fixture,
+    ) {
         Ok(startup) => startup,
         Err(error) => {
             eprintln!("{error}");
@@ -65,6 +69,40 @@ fn main() {
             std::process::exit(2);
         }
     };
+    // RT8/RC-16: the explicit endpoint override wins. Only when it is absent is
+    // the per-user Runtime descriptor read, validated and used; an invalid,
+    // stale or missing descriptor is an explicit unavailable state, never a
+    // fixture fallback.
+    let discovery = if endpoint_env
+        .as_deref()
+        .map(str::trim)
+        .is_some_and(|value| !value.is_empty())
+    {
+        Ok(None)
+    } else {
+        match discovery::default_path() {
+            Some(path) => discovery::discover(&path).map(Some),
+            None => Err(discovery::DiscoveryError::PathUnavailable),
+        }
+    };
+    let discovered = match &discovery {
+        Ok(Some(descriptor)) => Some(descriptor),
+        _ => None,
+    };
+    if let Some(descriptor) = discovered {
+        eprintln!(
+            "Runtime discovered: server_identity={} epoch={} pid={}",
+            descriptor.server_identity(),
+            descriptor.epoch(),
+            descriptor.pid()
+        );
+    }
+    if let Err(reason) = &discovery {
+        eprintln!("Runtime discovery unavailable: {}", reason.label());
+    }
+    let endpoint = endpoint_env
+        .clone()
+        .or_else(|| discovered.map(|descriptor| descriptor.origin().to_owned()));
     // The Runtime credential is resolved once: the environment override wins,
     // then the protected store (MP-SEC1). It is never rendered, logged or placed
     // in a diagnostic; a 401 on this session deletes the stored entry.
@@ -73,14 +111,12 @@ fn main() {
     // One bounded acquisition/rotation boundary per session. The issuance secret
     // is read only for a real Runtime launch (a fixture run never touches the
     // variable), used only on the validated loopback origin, and then dropped.
-    // The fetched token is persisted by the protected store and never rendered.
-    // A failure is an explicit fixed label, and `plan` below stays the only
-    // launch decision.
+    // A later bounded reauthorization re-reads it from the environment.
+    let issuance_secret = std::env::var(credential_issuance::ISSUANCE_SECRET_ENV).ok();
     if matches!(&startup.mode, app::Mode::Runtime { .. })
         && let Some(configured) = endpoint.as_deref()
         && let Some(origin) = runtime::validated_origin(configured)
     {
-        let issuance_secret = std::env::var(credential_issuance::ISSUANCE_SECRET_ENV).ok();
         let mut exchange = credential_issuance::UreqExchange::new(&origin);
         if let Err(error) = credential_issuance::prepare(
             &origin,
@@ -95,8 +131,8 @@ fn main() {
                 error.label()
             );
         }
-        drop(issuance_secret);
     }
+    drop(issuance_secret);
     // The authenticated Desktop principal of the stored credential record is the
     // media audience. A bare operator override carries no principal: media
     // acquisition is then explicitly unavailable instead of trusting a
@@ -106,12 +142,18 @@ fn main() {
         .and_then(runtime::validated_origin)
         .and_then(|origin| credential_store.load(&origin).ok().flatten())
         .and_then(|raw| credential_issuance::stored_principal(&raw));
-    let launch = runtime::plan(
-        &startup.mode,
-        endpoint.as_deref(),
-        runtime_token.as_deref(),
-        credential_store.as_ref(),
-    );
+    let launch = match &discovery {
+        Err(_) => runtime::LaunchPlan::RuntimeUnavailable {
+            endpoint_configured: false,
+            reason: runtime::RuntimeUnavailable::DiscoveryUnavailable,
+        },
+        _ => runtime::plan(
+            &startup.mode,
+            endpoint.as_deref(),
+            runtime_token.as_deref(),
+            credential_store.as_ref(),
+        ),
+    };
     drop(runtime_token);
     let observation_store = std::sync::Arc::clone(&credential_store);
     let outcome = std::sync::Arc::clone(&exit_outcome);

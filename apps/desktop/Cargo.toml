@@ -21,6 +21,11 @@ desktop-gpui = { path = "../../crates/desktop-gpui" }
 app-core = { path = "../../crates/app-core" }
 cos-client = { path = "../../crates/cos-client" }
 desktop-protocol = { path = "../../crates/desktop-protocol" }
+# RT8/RC-16 discovery descriptor: a closed, bounded JSON document received from
+# a per-user Runtime location, never a control-plane payload. Same versions the
+# protocol crates already resolve, so no new crate enters the graph.
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = { version = "1.0.151" }
 # Blocking plain-HTTP executor for the Runtime protocol transport.
 # `default-features = false` keeps TLS (and every other optional feature) out:
 # the only configured endpoint is a loopback development origin, and a real

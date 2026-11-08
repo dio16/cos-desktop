@@ -1,0 +1,651 @@
+{
+  "measurement": "RT3 automatic reauthorization + RT8 service discovery live campaign",
+  "date": "2026-11-09T05:04:50+0900",
+  "harness": {
+    "command": "python apps/desktop/devtools/runtime_integration/run_rt3_rt8.py --runs 2",
+    "port": 8124,
+    "runs_requested": 2,
+    "endpoint_passed_to_desktop": false,
+    "token_passed_to_desktop": false,
+    "discovery_redirect_env": "COS_RUNTIME_DISCOVERY_PATH",
+    "run_secret_recorded": false
+  },
+  "desktop": {
+    "head": "01903e7bdf00aae60dbcc7c0193f3b1017925788",
+    "binary": "C:\\dev\\cos-desktop\\target\\release\\cos-desktop.exe",
+    "binary_sha256": "sha256:5acb4af8b331192b2856692fd04cc527f67107a915d270bedd7f5320c5a2faf7",
+    "build": {
+      "performed": false,
+      "attempts": []
+    },
+    "source_at_end": {
+      "head": "01903e7bdf00aae60dbcc7c0193f3b1017925788",
+      "head_tree": "300be88147da1c38ab768b0a6db279533f621055",
+      "dirty_tracked": [
+        {
+          "status": "M",
+          "path": "apps/desktop/src/credential_issuance.rs",
+          "sha256": "sha256:28b0e525973f8ed75a145ea556bfc8b5e23ace68aa6934a0fc54877925b08b78"
+        },
+        {
+          "status": "M",
+          "path": "apps/desktop/src/main.rs",
+          "sha256": "sha256:e44c41dd175c081dbce324a4f597e4ecf991258f322c39b33ae49764fad68dff"
+        },
+        {
+          "status": "M",
+          "path": "apps/desktop/src/runtime.rs",
+          "sha256": "sha256:69b52e1b37a518bbe24de91da8a6b9f659e929234513a785890318ef7503ea37"
+        },
+        {
+          "status": "M",
+          "path": "crates/cos-client/src/client.rs",
+          "sha256": "sha256:0d93989ce3d4a3d11846232f458daea3cf3ce0f739b27c43d8828902df55aa83"
+        },
+        {
+          "status": "M",
+          "path": "crates/cos-client/src/lib.rs",
+          "sha256": "sha256:2dc97c30f9bafbf76967ba88f20b958ab40548755856d3deb54bb7cc6ee56290"
+        },
+        {
+          "status": "M",
+          "path": "crates/cos-client/src/protocol_transport.rs",
+          "sha256": "sha256:ee2c7889a89806a727346973ab26a9af81069566271db38ebe9645ab4b3d0028"
+        },
+        {
+          "status": "M",
+          "path": "crates/cos-client/tests/protocol_transport.rs",
+          "sha256": "sha256:eb83e3efd6110ffd19fee9d57d004ceba275352ef409e37e8253b9fe3890434e"
+        }
+      ],
+      "untracked_product_sources": [
+        {
+          "status": "??",
+          "path": "apps/desktop/src/discovery.rs",
+          "sha256": "sha256:a345c52b58774a714fd1fc610be460b6bed5e56227a5d9b77992ff7342ba7232"
+        }
+      ],
+      "other_tracked_changes": [
+        {
+          "status": "M",
+          "path": "Cargo.lock",
+          "sha256": "sha256:801ab96e8efdc57a2f0a36fed8ad9378ed5538ba4dca757eb3bee06e72bdfa03"
+        },
+        {
+          "status": "M",
+          "path": "apps/desktop/Cargo.toml",
+          "sha256": "sha256:a8ef78766d0b85b1c767c533e9b175e87bf27363e2023af699e1be1121881caa"
+        },
+        {
+          "status": "M",
+          "path": "apps/desktop/devtools/runtime_integration/run_integration.py",
+          "sha256": "sha256:f668f219ea0218435ef52e01d0b457fd3b15f4800dd9283172f1506096a8470d"
+        },
+        {
+          "status": "M",
+          "path": "docs/architecture/DEPENDENCY_RULES.md",
+          "sha256": "sha256:c9d3829743aba290c6481e6b7c32d27deb8c361066af840cf47cb54caeb11311"
+        },
+        {
+          "status": "M",
+          "path": "docs/architecture/DESKTOP_DESIGN_CONTRACTS.md",
+          "sha256": "sha256:ac587e8954401836055626b80272ef8793b2dc0952ec35be1fb88c787063f77c"
+        },
+        {
+          "status": "M",
+          "path": "docs/architecture/DESKTOP_PROTOCOL.md",
+          "sha256": "sha256:5b8d57fa7a37879c0450ebc384af0e61aa1b5647bf94fe67b3838601a71d9867"
+        },
+        {
+          "status": "M",
+          "path": "docs/development/IMPLEMENTATION_MASTER_PLAN.md",
+          "sha256": "sha256:3755db39802360fbf161ae4a980a07a7342303a897f283df0d19518fca1c45f2"
+        },
+        {
+          "status": "M",
+          "path": "docs/integration/COS_RUNTIME_REQUIRED_CHANGES.md",
+          "sha256": "sha256:d1e747b2a247473924ab1c9efa592b4141170c736a477ec204d65ae01b927eee"
+        }
+      ],
+      "fingerprint": "sha256:6e873a3736d9343fbdf7e61fcc2e5abbcc21f8a847c5ccb37eacfdbedebdf33e"
+    }
+  },
+  "runtime": {
+    "root": "C:\\AI\\orchestrator",
+    "head": "d490704d626cb2b7d434e18c45375c1e3fb5a885",
+    "python": "C:\\AI\\orchestrator\\.venv\\Scripts\\python.exe"
+  },
+  "runs": [
+    {
+      "label": "run1",
+      "started_at": "2026-11-09T05:04:20+0900",
+      "scenarios": {
+        "discovery_connect": {
+          "verdict": "PASS",
+          "window": {
+            "found": true,
+            "title": "COS Desktop"
+          },
+          "title_visible": true,
+          "status_label_visible": true,
+          "descriptor_origin": "http://127.0.0.1:8124",
+          "descriptor_epoch": "412f9412ab154142b1e577b2b21a077c",
+          "matched_excerpt": "task-00eeff7805964e1f835534b81e57065b  北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。\nタスクの状態: 完了（COMPLETED）\n正式な結果: 完了（COMPLETED）\ntask-00eeff7805964e1f835534b81e57065b — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。\n完了（COMPLETED）\ntask-019e673007d848018cf3dc7366258d38 — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。\n完了（COMPLETED）\n目的 — 利用可能: task-00eeff7805964e1f835534b81e57065b — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。\n結果 — 利用可能: 正式状態: 完了（COMPLETED）",
+          "screenshot": {
+            "file": "connected.png",
+            "printed": true,
+            "width": 1296,
+            "height": 839
+          },
+          "uia_element_count": 65,
+          "discovered_line": true
+        },
+        "restart_recovery_without_relaunch": {
+          "verdict": "PASS",
+          "withheld_after_stop": true,
+          "same_desktop_process": true,
+          "desktop_pid": 43052,
+          "process_alive": true,
+          "epoch_changed": true,
+          "first_epoch": "412f9412ab154142b1e577b2b21a077c",
+          "second_epoch": "32ff5bfa7020425cae6b87006884e69b",
+          "title_visible_after_restart": true,
+          "reauthorized_line": true,
+          "matched_excerpt": "task-00eeff7805964e1f835534b81e57065b  北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。\nタスクの状態: 完了（COMPLETED）\n正式な結果: 完了（COMPLETED）\ntask-00eeff7805964e1f835534b81e57065b — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。\n完了（COMPLETED）\ntask-019e673007d848018cf3dc7366258d38 — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。\n完了（COMPLETED）\n目的 — 利用可能: task-00eeff7805964e1f835534b81e57065b — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。\n結果 — 利用可能: 正式状態: 完了（COMPLETED）",
+          "screenshot": {
+            "file": "recovered.png",
+            "printed": true,
+            "width": 1296,
+            "height": 839
+          }
+        },
+        "task_survival_after_desktop_exit": {
+          "verdict": "PASS",
+          "runtime_ready_after_desktop_exit": true,
+          "descriptor_still_published": true,
+          "desktop_forced": null
+        },
+        "clean_close": {
+          "verdict": "PASS",
+          "exit_code": 0,
+          "wm_close_sent": true,
+          "close_markers": [
+            "observation shutdown confirmed",
+            "preferences save confirmed"
+          ],
+          "process_gone": true,
+          "forced": null
+        },
+        "descriptor_lifecycle": {
+          "verdict": "PASS",
+          "first_published": true,
+          "first_sha256": "sha256:d3c3fe25a05186d3b78b71f07a4d099f916a1c7ac872c8dfd6877f12ebe3dc77",
+          "removed_on_first_shutdown": true,
+          "second_published": true,
+          "second_sha256": "sha256:6ca6c378c6d2cc822d2fc2a9d3d68d59ca305680b2de03e7acf194adc8143897",
+          "removed_on_second_shutdown": true,
+          "epoch_changed": true
+        }
+      },
+      "files": {
+        "screenshots": [
+          "connected.png",
+          "withheld.png",
+          "recovered.png"
+        ],
+        "evidence_dir": "docs/development/evidence-published/rt3-rt8-latest/run1"
+      },
+      "findings": [],
+      "endpoint_env_recorded": false,
+      "token_recorded": false,
+      "run_secret_recorded": false,
+      "db_copy_sha256": "sha256:f87711008a546c31caf75ed6d24c3a5c95b1d824c8b43868f13e1e852bfb3e3d",
+      "db_copy_bytes": 11493376,
+      "server_first": {
+        "pid": 49876,
+        "server_identity": "cos-runtime-orchestrator",
+        "server_build": "orchestrator-runtime/0.1.0",
+        "epoch": "412f9412ab154142b1e577b2b21a077c",
+        "protocol": {
+          "major": 2,
+          "minor": 0
+        },
+        "start_index": 1,
+        "stop": {
+          "pid": 49876,
+          "clean": true,
+          "exit": 0
+        }
+      },
+      "descriptor_first": {
+        "present": true,
+        "sha256": "sha256:d3c3fe25a05186d3b78b71f07a4d099f916a1c7ac872c8dfd6877f12ebe3dc77",
+        "bytes": 307,
+        "document": {
+          "epoch": "412f9412ab154142b1e577b2b21a077c",
+          "origin": "http://127.0.0.1:8124",
+          "pid": 33360,
+          "protocol": {
+            "major": 2,
+            "max_minor": 0,
+            "min_minor": 0
+          },
+          "ready": true,
+          "schema": {
+            "major": 2,
+            "max_minor": 0,
+            "min_minor": 0
+          },
+          "schema_version": 1,
+          "server_identity": "cos-runtime-orchestrator",
+          "started_at": "2026-11-08T20:04:23+00:00"
+        }
+      },
+      "projection": {
+        "task_count": 39,
+        "expected_task_ref": "task-00eeff7805964e1f835534b81e57065b",
+        "expected_title": "北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+        "expected_task_status": "COMPLETED",
+        "expected_status_label": "完了（COMPLETED）",
+        "expected_inner_phase": "RUNNING",
+        "expected_iteration_index": 0
+      },
+      "desktop": {
+        "pid": 43052,
+        "endpoint_env_absent": true,
+        "token_env_absent": true,
+        "issuance_secret_present": true,
+        "discovery_override_present": true
+      },
+      "descriptor_removed_on_shutdown": true,
+      "withheld_after_stop": {
+        "observed": true,
+        "uia_element_count": 45,
+        "matched_excerpt": "情報源なし / データ非公開\n接続・情報の鮮度: データは非公開 — 現在の許可がありません\nDesktop内 · 観測情報を利用できません — 再接続する",
+        "screenshot": {
+          "file": "withheld.png",
+          "printed": true
+        }
+      },
+      "server_second": {
+        "pid": 48044,
+        "server_identity": "cos-runtime-orchestrator",
+        "server_build": "orchestrator-runtime/0.1.0",
+        "epoch": "32ff5bfa7020425cae6b87006884e69b",
+        "protocol": {
+          "major": 2,
+          "minor": 0
+        },
+        "start_index": 2,
+        "stop": {
+          "pid": 48044,
+          "clean": true,
+          "exit": 0
+        }
+      },
+      "descriptor_second": {
+        "present": true,
+        "sha256": "sha256:6ca6c378c6d2cc822d2fc2a9d3d68d59ca305680b2de03e7acf194adc8143897",
+        "bytes": 307,
+        "document": {
+          "epoch": "32ff5bfa7020425cae6b87006884e69b",
+          "origin": "http://127.0.0.1:8124",
+          "pid": 46436,
+          "protocol": {
+            "major": 2,
+            "max_minor": 0,
+            "min_minor": 0
+          },
+          "ready": true,
+          "schema": {
+            "major": 2,
+            "max_minor": 0,
+            "min_minor": 0
+          },
+          "schema_version": 1,
+          "server_identity": "cos-runtime-orchestrator",
+          "started_at": "2026-11-08T20:04:32+00:00"
+        }
+      },
+      "epoch_changed": true,
+      "same_desktop_process": true,
+      "runtime_log_sha256": "sha256:7a85a432f21c0b243206982d5049821b2a9a940351569584367f57b3566b2752",
+      "descriptor_first_document": {
+        "epoch": "412f9412ab154142b1e577b2b21a077c",
+        "origin": "http://127.0.0.1:8124",
+        "pid": 33360,
+        "protocol": {
+          "major": 2,
+          "max_minor": 0,
+          "min_minor": 0
+        },
+        "ready": true,
+        "schema": {
+          "major": 2,
+          "max_minor": 0,
+          "min_minor": 0
+        },
+        "schema_version": 1,
+        "server_identity": "cos-runtime-orchestrator",
+        "started_at": "2026-11-08T20:04:23+00:00"
+      },
+      "descriptor_second_document": {
+        "epoch": "32ff5bfa7020425cae6b87006884e69b",
+        "origin": "http://127.0.0.1:8124",
+        "pid": 46436,
+        "protocol": {
+          "major": 2,
+          "max_minor": 0,
+          "min_minor": 0
+        },
+        "ready": true,
+        "schema": {
+          "major": 2,
+          "max_minor": 0,
+          "min_minor": 0
+        },
+        "schema_version": 1,
+        "server_identity": "cos-runtime-orchestrator",
+        "started_at": "2026-11-08T20:04:32+00:00"
+      },
+      "finished_at": "2026-11-09T05:04:35+0900",
+      "file_hashes": {
+        "connected.png": "sha256:5b81faa6db49e9b67e9b33fddf916a17746b7567ab5e3af74ef38be56098f123",
+        "withheld.png": "sha256:4c1d0eb5681f338c739645e80dbc1cbf1a6efd22d42ac2084597072a3c9712b1",
+        "recovered.png": "sha256:5b81faa6db49e9b67e9b33fddf916a17746b7567ab5e3af74ef38be56098f123",
+        "uia-connected.json": "sha256:49eb802000d511e8445da00fa79efff0bb9f498a0bdd41ce1ee6aa6d89b1a45a",
+        "uia-window.json": "sha256:49eb802000d511e8445da00fa79efff0bb9f498a0bdd41ce1ee6aa6d89b1a45a",
+        "uia-withheld.json": "sha256:b2d2996052f68a6803861cbcf63963a5d32048b698133815b75769bd18745503",
+        "shot-connected.json": "sha256:73754d1e73fb127a64852830944341ea489778e86802be6d83d2e891a91d7bad",
+        "shot-withheld.json": "sha256:523525ccc5ff4d41fee6e2284e97b54a0f8fc702811b249417dfcbe6bbe99442",
+        "shot-recovered.json": "sha256:5482ce071ade43abc17e33ee0bf3e0d4524e44d1801b747f7c9bacda75763fa3"
+      }
+    },
+    {
+      "label": "run2",
+      "started_at": "2026-11-09T05:04:35+0900",
+      "scenarios": {
+        "discovery_connect": {
+          "verdict": "PASS",
+          "window": {
+            "found": true,
+            "title": "COS Desktop"
+          },
+          "title_visible": true,
+          "status_label_visible": true,
+          "descriptor_origin": "http://127.0.0.1:8124",
+          "descriptor_epoch": "3e2102561d934e83bae9a1b40ef336d0",
+          "matched_excerpt": "task-00eeff7805964e1f835534b81e57065b  北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。\nタスクの状態: 完了（COMPLETED）\n正式な結果: 完了（COMPLETED）\ntask-00eeff7805964e1f835534b81e57065b — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。\n完了（COMPLETED）\ntask-019e673007d848018cf3dc7366258d38 — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。\n完了（COMPLETED）\n目的 — 利用可能: task-00eeff7805964e1f835534b81e57065b — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。\n結果 — 利用可能: 正式状態: 完了（COMPLETED）",
+          "screenshot": {
+            "file": "connected.png",
+            "printed": true,
+            "width": 1296,
+            "height": 839
+          },
+          "uia_element_count": 65,
+          "discovered_line": true
+        },
+        "restart_recovery_without_relaunch": {
+          "verdict": "PASS",
+          "withheld_after_stop": true,
+          "same_desktop_process": true,
+          "desktop_pid": 27232,
+          "process_alive": true,
+          "epoch_changed": true,
+          "first_epoch": "3e2102561d934e83bae9a1b40ef336d0",
+          "second_epoch": "7f37e6f866734294933aca216044b39e",
+          "title_visible_after_restart": true,
+          "reauthorized_line": true,
+          "matched_excerpt": "task-00eeff7805964e1f835534b81e57065b  北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。\nタスクの状態: 完了（COMPLETED）\n正式な結果: 完了（COMPLETED）\ntask-00eeff7805964e1f835534b81e57065b — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。\n完了（COMPLETED）\ntask-019e673007d848018cf3dc7366258d38 — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。\n完了（COMPLETED）\n目的 — 利用可能: task-00eeff7805964e1f835534b81e57065b — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。\n結果 — 利用可能: 正式状態: 完了（COMPLETED）",
+          "screenshot": {
+            "file": "recovered.png",
+            "printed": true,
+            "width": 1296,
+            "height": 839
+          }
+        },
+        "task_survival_after_desktop_exit": {
+          "verdict": "PASS",
+          "runtime_ready_after_desktop_exit": true,
+          "descriptor_still_published": true,
+          "desktop_forced": null
+        },
+        "clean_close": {
+          "verdict": "PASS",
+          "exit_code": 0,
+          "wm_close_sent": true,
+          "close_markers": [
+            "observation shutdown confirmed",
+            "preferences save confirmed"
+          ],
+          "process_gone": true,
+          "forced": null
+        },
+        "descriptor_lifecycle": {
+          "verdict": "PASS",
+          "first_published": true,
+          "first_sha256": "sha256:c117144018ab0b4bf6f565a1d5ccf1252ac71e10c5c14b26985122ae86c151ae",
+          "removed_on_first_shutdown": true,
+          "second_published": true,
+          "second_sha256": "sha256:c7c77629536bbd46f84de799b26d73ed4e4aa693bce90bbe16cda2740975d8c7",
+          "removed_on_second_shutdown": true,
+          "epoch_changed": true
+        }
+      },
+      "files": {
+        "screenshots": [
+          "connected.png",
+          "withheld.png",
+          "recovered.png"
+        ],
+        "evidence_dir": "docs/development/evidence-published/rt3-rt8-latest/run2"
+      },
+      "findings": [],
+      "endpoint_env_recorded": false,
+      "token_recorded": false,
+      "run_secret_recorded": false,
+      "db_copy_sha256": "sha256:f87711008a546c31caf75ed6d24c3a5c95b1d824c8b43868f13e1e852bfb3e3d",
+      "db_copy_bytes": 11493376,
+      "server_first": {
+        "pid": 45644,
+        "server_identity": "cos-runtime-orchestrator",
+        "server_build": "orchestrator-runtime/0.1.0",
+        "epoch": "3e2102561d934e83bae9a1b40ef336d0",
+        "protocol": {
+          "major": 2,
+          "minor": 0
+        },
+        "start_index": 1,
+        "stop": {
+          "pid": 45644,
+          "clean": true,
+          "exit": 0
+        }
+      },
+      "descriptor_first": {
+        "present": true,
+        "sha256": "sha256:c117144018ab0b4bf6f565a1d5ccf1252ac71e10c5c14b26985122ae86c151ae",
+        "bytes": 307,
+        "document": {
+          "epoch": "3e2102561d934e83bae9a1b40ef336d0",
+          "origin": "http://127.0.0.1:8124",
+          "pid": 41920,
+          "protocol": {
+            "major": 2,
+            "max_minor": 0,
+            "min_minor": 0
+          },
+          "ready": true,
+          "schema": {
+            "major": 2,
+            "max_minor": 0,
+            "min_minor": 0
+          },
+          "schema_version": 1,
+          "server_identity": "cos-runtime-orchestrator",
+          "started_at": "2026-11-08T20:04:38+00:00"
+        }
+      },
+      "projection": {
+        "task_count": 39,
+        "expected_task_ref": "task-00eeff7805964e1f835534b81e57065b",
+        "expected_title": "北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+        "expected_task_status": "COMPLETED",
+        "expected_status_label": "完了（COMPLETED）",
+        "expected_inner_phase": "RUNNING",
+        "expected_iteration_index": 0
+      },
+      "desktop": {
+        "pid": 27232,
+        "endpoint_env_absent": true,
+        "token_env_absent": true,
+        "issuance_secret_present": true,
+        "discovery_override_present": true
+      },
+      "descriptor_removed_on_shutdown": true,
+      "withheld_after_stop": {
+        "observed": true,
+        "uia_element_count": 45,
+        "matched_excerpt": "情報源なし / データ非公開\n接続・情報の鮮度: データは非公開 — 現在の許可がありません\nDesktop内 · 観測情報を利用できません — 再接続する",
+        "screenshot": {
+          "file": "withheld.png",
+          "printed": true
+        }
+      },
+      "server_second": {
+        "pid": 32580,
+        "server_identity": "cos-runtime-orchestrator",
+        "server_build": "orchestrator-runtime/0.1.0",
+        "epoch": "7f37e6f866734294933aca216044b39e",
+        "protocol": {
+          "major": 2,
+          "minor": 0
+        },
+        "start_index": 2,
+        "stop": {
+          "pid": 32580,
+          "clean": true,
+          "exit": 0
+        }
+      },
+      "descriptor_second": {
+        "present": true,
+        "sha256": "sha256:c7c77629536bbd46f84de799b26d73ed4e4aa693bce90bbe16cda2740975d8c7",
+        "bytes": 307,
+        "document": {
+          "epoch": "7f37e6f866734294933aca216044b39e",
+          "origin": "http://127.0.0.1:8124",
+          "pid": 46104,
+          "protocol": {
+            "major": 2,
+            "max_minor": 0,
+            "min_minor": 0
+          },
+          "ready": true,
+          "schema": {
+            "major": 2,
+            "max_minor": 0,
+            "min_minor": 0
+          },
+          "schema_version": 1,
+          "server_identity": "cos-runtime-orchestrator",
+          "started_at": "2026-11-08T20:04:47+00:00"
+        }
+      },
+      "epoch_changed": true,
+      "same_desktop_process": true,
+      "runtime_log_sha256": "sha256:b7e4680c4462008d639364be59bea71c4bcf62036291d918df05963361376d6e",
+      "descriptor_first_document": {
+        "epoch": "3e2102561d934e83bae9a1b40ef336d0",
+        "origin": "http://127.0.0.1:8124",
+        "pid": 41920,
+        "protocol": {
+          "major": 2,
+          "max_minor": 0,
+          "min_minor": 0
+        },
+        "ready": true,
+        "schema": {
+          "major": 2,
+          "max_minor": 0,
+          "min_minor": 0
+        },
+        "schema_version": 1,
+        "server_identity": "cos-runtime-orchestrator",
+        "started_at": "2026-11-08T20:04:38+00:00"
+      },
+      "descriptor_second_document": {
+        "epoch": "7f37e6f866734294933aca216044b39e",
+        "origin": "http://127.0.0.1:8124",
+        "pid": 46104,
+        "protocol": {
+          "major": 2,
+          "max_minor": 0,
+          "min_minor": 0
+        },
+        "ready": true,
+        "schema": {
+          "major": 2,
+          "max_minor": 0,
+          "min_minor": 0
+        },
+        "schema_version": 1,
+        "server_identity": "cos-runtime-orchestrator",
+        "started_at": "2026-11-08T20:04:47+00:00"
+      },
+      "finished_at": "2026-11-09T05:04:50+0900",
+      "file_hashes": {
+        "connected.png": "sha256:5b81faa6db49e9b67e9b33fddf916a17746b7567ab5e3af74ef38be56098f123",
+        "withheld.png": "sha256:4c1d0eb5681f338c739645e80dbc1cbf1a6efd22d42ac2084597072a3c9712b1",
+        "recovered.png": "sha256:5b81faa6db49e9b67e9b33fddf916a17746b7567ab5e3af74ef38be56098f123",
+        "uia-connected.json": "sha256:a45f0c4401e896240413226cfc7941c285e3001ef39b8289827cc65234b27274",
+        "uia-window.json": "sha256:a45f0c4401e896240413226cfc7941c285e3001ef39b8289827cc65234b27274",
+        "uia-withheld.json": "sha256:57e68b9bf8182ea7896fddda23a956b0e0029c5cd3a84833ad5f92efa685a4e6",
+        "shot-connected.json": "sha256:de2a6f6c4b84ecc9d56a4376fbef4e898a580e5de4727837d770d628c66ad85f",
+        "shot-withheld.json": "sha256:307013802bbf14b005af60e159a43d85098a6dbe20ddcad3da9d67dbb3ee8876",
+        "shot-recovered.json": "sha256:d25b909ae48567cfec089b4befe25eb1342d9d5926a8ad82619479b9391d39ac"
+      }
+    }
+  ],
+  "summary": {
+    "scenarios": {
+      "discovery_connect": {
+        "verdicts": [
+          "PASS",
+          "PASS"
+        ],
+        "passed": true
+      },
+      "restart_recovery_without_relaunch": {
+        "verdicts": [
+          "PASS",
+          "PASS"
+        ],
+        "passed": true
+      },
+      "descriptor_lifecycle": {
+        "verdicts": [
+          "PASS",
+          "PASS"
+        ],
+        "passed": true
+      },
+      "task_survival_after_desktop_exit": {
+        "verdicts": [
+          "PASS",
+          "PASS"
+        ],
+        "passed": true
+      },
+      "clean_close": {
+        "verdicts": [
+          "PASS",
+          "PASS"
+        ],
+        "passed": true
+      }
+    },
+    "all_required_passed": true,
+    "epoch_changed_all_runs": true
+  }
+}
