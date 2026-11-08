@@ -4,9 +4,9 @@
   "decision": "DD-22",
   "slice": "Native UIA reachability of the support preview, export entry point and bounded report/status text",
   "status": "NATIVE_REACHABILITY_OBSERVED_EXPORT_POLICY_OPEN",
-  "revision_note": "repair of the evidence at commit 1e204a5 after review (B-01, A-01, A-02 and three NITs); no product code and no plan text changed",
+  "revision_note": "second repair (artifact provenance and HEAD lineage) of the evidence published at 1e204a5 and repaired at 812894a; no product code and no plan text changed",
   "base_commit": "abf2310105527461f0d0a16a963ceff962205bc0",
-  "dev_head_advanced_to": "ae82b9d (HEAD moved while this slice ran; the measured binary was built from a clean `git archive` of abf2310 and the archived lib.rs blob hash matched abf2310)",
+  "dev_head_advanced_to": "HEAD at the controlled measurement was ae82b9d; the parent of repair 812894a was e3fbfdd; the parent of this provenance repair is 2ba5476. The dev branch moved during the work; the measured binary remains the clean archive of abf2310.",
   "binary": {
     "source_commit": "abf2310105527461f0d0a16a963ceff962205bc0",
     "path": "target/release/cos-desktop.exe",
@@ -292,17 +292,75 @@
     "Lock-owner evidence is published only for the controlled session; the earlier sessions predate the wrapper's owner logging and no lock claim is made for them.",
     "The private PowerShell probe scripts and the isolated build tree are not committed; the evidence records their observations and the binary/source hashes instead."
   ],
-  "artifact_sessions": {
-    "app-stderr.txt": "controlled",
-    "report-preview.txt": "controlled",
-    "session-cancel.txt": "cancel",
-    "session-controlled.txt": "controlled",
-    "session-success.txt": "success",
-    "tab-backward.txt": "controlled",
-    "tab-forward.txt": "controlled",
-    "uia-tree-initial.txt": "controlled",
-    "uia-tree-panel-preview.txt": "controlled",
-    "uia-tree-panel.txt": "controlled"
+  "artifact_provenance": {
+    "app-stderr.txt": {
+      "producer_session": "controlled",
+      "first_published_in": "1e204a5",
+      "published_bytes_changed_in_812894a": false,
+      "regenerated_from_controlled_session_output_in_this_repair": true
+    },
+    "report-preview.txt": {
+      "producer_session": "controlled",
+      "first_published_in": "1e204a5",
+      "published_bytes_changed_in_812894a": false,
+      "regenerated_from_controlled_session_output_in_this_repair": true
+    },
+    "session-cancel.txt": {
+      "producer_session": "cancel",
+      "first_published_in": "1e204a5",
+      "published_bytes_changed_in_812894a": true,
+      "regenerated_from_controlled_session_output_in_this_repair": false
+    },
+    "session-controlled.txt": {
+      "producer_session": "controlled",
+      "first_published_in": "812894a",
+      "published_bytes_changed_in_812894a": true,
+      "regenerated_from_controlled_session_output_in_this_repair": false
+    },
+    "session-success.txt": {
+      "producer_session": "success",
+      "first_published_in": "1e204a5",
+      "published_bytes_changed_in_812894a": true,
+      "regenerated_from_controlled_session_output_in_this_repair": false
+    },
+    "tab-backward.txt": {
+      "producer_session": "controlled",
+      "first_published_in": "1e204a5",
+      "published_bytes_changed_in_812894a": false,
+      "regenerated_from_controlled_session_output_in_this_repair": true
+    },
+    "tab-forward.txt": {
+      "producer_session": "controlled",
+      "first_published_in": "1e204a5",
+      "published_bytes_changed_in_812894a": false,
+      "regenerated_from_controlled_session_output_in_this_repair": true
+    },
+    "uia-tree-initial.txt": {
+      "producer_session": "controlled",
+      "first_published_in": "1e204a5",
+      "published_bytes_changed_in_812894a": false,
+      "regenerated_from_controlled_session_output_in_this_repair": true
+    },
+    "uia-tree-panel-preview.txt": {
+      "producer_session": "controlled",
+      "first_published_in": "1e204a5",
+      "published_bytes_changed_in_812894a": false,
+      "regenerated_from_controlled_session_output_in_this_repair": true
+    },
+    "uia-tree-panel.txt": {
+      "producer_session": "controlled",
+      "first_published_in": "1e204a5",
+      "published_bytes_changed_in_812894a": false,
+      "regenerated_from_controlled_session_output_in_this_repair": true
+    }
+  },
+  "superseded_artifact": {
+    "path": "session-locked-focus.txt",
+    "removed_in": "812894a",
+    "exists_only_in_git_history": true,
+    "git_blob_id_in_1e204a5": "0ab99e8ccdf1270049dca41d682008f8620daba4",
+    "sha256_in_1e204a5": "be98427daaa6e10febc94ac99fea5d904402261172f594a605a101cfde9f0fd0",
+    "note": "the superseded session produced the tree, trail, report and app-stderr artifacts first published byte-identically in 1e204a5. The controlled session reproduced identical bytes, and those seven files were copied again from the controlled session's output in this provenance repair, so their blobs did not change. The superseded log itself exists only in git history and is not a published artifact."
   },
   "files": {
     "app-stderr.txt": {
