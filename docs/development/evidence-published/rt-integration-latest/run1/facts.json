@@ -1,0 +1,148 @@
+{
+  "label": "run1",
+  "started_at": "2026-11-08T13:14:50+0900",
+  "scenarios": {
+    "connect_snapshot": {
+      "verdict": "PASS",
+      "window": {
+        "found": true,
+        "title": "COS Desktop"
+      },
+      "title_visible": true,
+      "status_label_visible": true,
+      "expected_title": "北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+      "matched_excerpt": "task-00eeff7805964e1f835534b81e57065b  北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。\nタスクの状態: 完了（COMPLETED）\ntask-00eeff7805964e1f835534b81e57065b — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。\n完了（COMPLETED）\ntask-019e673007d848018cf3dc7366258d38 — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。\n完了（COMPLETED）\n目的 — 利用可能: task-00eeff7805964e1f835534b81e57065b — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+      "uia_element_count": 56,
+      "screenshot": {
+        "file": "connected.png",
+        "printed": true,
+        "width": 1296,
+        "height": 839
+      }
+    },
+    "runtime_stop": {
+      "verdict": "PASS",
+      "withheld_markers": [
+        "情報源なし / データ非公開",
+        "非公開",
+        "再接続する",
+        "再接続"
+      ],
+      "title_still_visible": false,
+      "matched_excerpt": "情報源なし / データ非公開\n接続・情報の鮮度: データは非公開 — 現在の許可がありません\nDesktop内 · 観測情報を利用できません — 再接続する",
+      "screenshot": {
+        "file": "withheld.png",
+        "printed": true
+      }
+    },
+    "runtime_restart": {
+      "verdict": "PASS",
+      "epoch_changed": true,
+      "first_epoch": "b22f91626c61459b89ab966cfc55fcaf",
+      "second_epoch": "b331e0ffba0a4a43b9df7f17fbb52a69",
+      "still_withheld": true,
+      "projection_title_visible_without_credential": false,
+      "screenshot": {
+        "file": "restart-withheld.png",
+        "printed": true
+      }
+    },
+    "clean_close": {
+      "verdict": "PASS",
+      "exit_code": 0,
+      "wm_close_sent": true,
+      "close_markers": [
+        "observation shutdown confirmed",
+        "preferences save confirmed"
+      ],
+      "process_gone": true,
+      "forced": null,
+      "settle_seconds": 3.0,
+      "stderr_sha256": "sha256:668f5657b56dc28bfe7c63c69b0e103f0f3df694c6daefaef784b7a0fa32595c"
+    },
+    "relaunch_recovery": {
+      "verdict": "PASS",
+      "title_visible": true,
+      "screenshot": {
+        "file": "recovered.png",
+        "printed": true
+      },
+      "close_markers": [
+        "observation shutdown confirmed",
+        "preferences save confirmed"
+      ]
+    }
+  },
+  "files": {
+    "screenshots": [
+      "connected.png",
+      "withheld.png",
+      "restart-withheld.png",
+      "recovered.png"
+    ],
+    "evidence_dir": "docs/development/evidence-published/rt-integration-latest/run1"
+  },
+  "run_secret_recorded": false,
+  "db_copy_sha256": "sha256:f87711008a546c31caf75ed6d24c3a5c95b1d824c8b43868f13e1e852bfb3e3d",
+  "db_copy_bytes": 11493376,
+  "server_first": {
+    "pid": 38488,
+    "server_identity": "cos-runtime-orchestrator",
+    "server_build": "orchestrator-runtime/0.1.0",
+    "epoch": "b22f91626c61459b89ab966cfc55fcaf",
+    "protocol": {
+      "major": 2,
+      "minor": 0
+    },
+    "start_index": 1
+  },
+  "app_credential": {
+    "principal": "desktop:d9d89604471533fb7ffe557eda165b32",
+    "scopes": [
+      "read:observe"
+    ],
+    "expires_in": 43200,
+    "token_recorded": false
+  },
+  "projection": {
+    "task_count": 39,
+    "expected_task_ref": "task-00eeff7805964e1f835534b81e57065b",
+    "expected_title": "北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+    "expected_task_status": "COMPLETED",
+    "expected_status_label": "完了（COMPLETED）",
+    "expected_inner_phase": "RUNNING",
+    "expected_iteration_index": 0,
+    "distinct_statuses": [
+      "CANCELLED",
+      "COMPLETED"
+    ]
+  },
+  "server_stop": {
+    "pid": 38488,
+    "clean": true,
+    "exit": 1
+  },
+  "server_second": {
+    "pid": 44952,
+    "server_identity": "cos-runtime-orchestrator",
+    "server_build": "orchestrator-runtime/0.1.0",
+    "epoch": "b331e0ffba0a4a43b9df7f17fbb52a69",
+    "protocol": {
+      "major": 2,
+      "minor": 0
+    },
+    "start_index": 2
+  },
+  "recovery_credential": {
+    "principal": "desktop:4a06700cb9a434dc50b7c32b1bfeafc5",
+    "token_recorded": false
+  },
+  "runtime_log_sha256": "sha256:29506b8d60a99b4b1aef18823dc3ad5aa4402874d03eee4f6626ea632313bb03",
+  "finished_at": "2026-11-08T13:15:19+0900",
+  "file_hashes": {
+    "connected.png": "sha256:49e60393f157245400139185ac235633bb57b59558e1a4bcc764b5837dc77b1b",
+    "withheld.png": "sha256:8f988ebfac7b2a5171ce808a24aa6187a5325ecea8371ea56fb541da4fac971a",
+    "restart-withheld.png": "sha256:8f988ebfac7b2a5171ce808a24aa6187a5325ecea8371ea56fb541da4fac971a",
+    "recovered.png": "sha256:01d8095b55bd8844d03ce3769d94cce48e639024b9e5e0cbdf85abd320d38998"
+  }
+}
