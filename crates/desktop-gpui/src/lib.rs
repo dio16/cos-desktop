@@ -21,6 +21,7 @@ use ui_model::task_rail::{TaskRailCache, TaskRailState};
 use ui_model::{DerivationCache, DisplayCache, Workbench, presentation::CompareSide};
 
 mod accessibility;
+mod brief_surface;
 pub mod budget;
 pub mod compare_view;
 pub mod contrast;
@@ -102,7 +103,12 @@ actions!(
         PaletteDelete,
         PaletteLeft,
         PaletteRight,
-        PaletteSelectAll
+        PaletteSelectAll,
+        BriefOpen,
+        BriefClose,
+        BriefSubmit,
+        BriefRecheck,
+        BriefReload
     ]
 );
 
@@ -206,6 +212,8 @@ pub fn bind_keys(cx: &mut App) {
         KeyBinding::new("left", PaletteLeft, Some("CommandPalette")),
         KeyBinding::new("right", PaletteRight, Some("CommandPalette")),
         KeyBinding::new("ctrl-a", PaletteSelectAll, Some("CommandPalette")),
+        KeyBinding::new("ctrl-n", BriefOpen, None),
+        KeyBinding::new("escape", BriefClose, Some("Brief")),
     ]);
 }
 
@@ -707,6 +715,20 @@ pub struct Shell {
     palette_marked_range: Option<Range<usize>>,
     palette_active: Option<usize>,
     palette_hit_len: usize,
+    /// NAV2 Brief surface: the frozen form model, authenticated catalog fetch
+    /// state, the one submitted command identity and its bounded status tasks.
+    brief_open: bool,
+    brief_form: ui_model::brief::BriefForm,
+    brief_catalog_state: brief_surface::BriefCatalogState,
+    brief_notice: Option<String>,
+    brief_command: Option<desktop_protocol::CommandId>,
+    brief_catalog_task: Task<()>,
+    brief_submit_task: Task<()>,
+    brief_goal_focus: FocusHandle,
+    brief_direction_focus: FocusHandle,
+    brief_focus: FocusHandle,
+    brief_input_selection: Range<usize>,
+    brief_marked_range: Option<Range<usize>>,
     stop_intent: StopTracker,
     /// One dock-level focus handle with an active-descendant row: focus identity
     /// stays stable while the mounted window moves, and no per-candidate handle
@@ -981,6 +1003,18 @@ impl Shell {
             palette_marked_range: None,
             palette_active: None,
             palette_hit_len: 0,
+            brief_open: false,
+            brief_form: ui_model::brief::BriefForm::new(),
+            brief_catalog_state: brief_surface::BriefCatalogState::Idle,
+            brief_notice: None,
+            brief_command: None,
+            brief_catalog_task: cx.spawn(async move |_this, _cx| {}),
+            brief_submit_task: cx.spawn(async move |_this, _cx| {}),
+            brief_goal_focus: cx.focus_handle(),
+            brief_direction_focus: cx.focus_handle(),
+            brief_focus: cx.focus_handle(),
+            brief_input_selection: 0..0,
+            brief_marked_range: None,
             stop_intent: StopTracker::default(),
             dock_focus: cx.focus_handle().tab_index(30).tab_stop(true),
             dock_active: None,
@@ -2840,7 +2874,11 @@ impl EntityInputHandler for Shell {
         window: &mut Window,
         _cx: &mut Context<Self>,
     ) -> Option<String> {
-        let text = if self.palette_focus.is_focused(window) {
+        let text = if self.brief_open && self.brief_goal_focus.is_focused(window) {
+            self.brief_form.goal().to_owned()
+        } else if self.brief_open && self.brief_direction_focus.is_focused(window) {
+            self.brief_form.direction().to_owned()
+        } else if self.palette_focus.is_focused(window) {
             self.palette_query.clone()
         } else if self.flow_input_focus.is_focused(window) {
             self.flow_query.clone()
@@ -2859,7 +2897,17 @@ impl EntityInputHandler for Shell {
         window: &mut Window,
         _cx: &mut Context<Self>,
     ) -> Option<UTF16Selection> {
-        let (text, selection) = if self.palette_focus.is_focused(window) {
+        let (text, selection) = if self.brief_open && self.brief_goal_focus.is_focused(window) {
+            (
+                self.brief_form.goal().to_owned(),
+                self.brief_input_selection.clone(),
+            )
+        } else if self.brief_open && self.brief_direction_focus.is_focused(window) {
+            (
+                self.brief_form.direction().to_owned(),
+                self.brief_input_selection.clone(),
+            )
+        } else if self.palette_focus.is_focused(window) {
             (
                 self.palette_query.clone(),
                 self.palette_input_selection.clone(),
@@ -2883,7 +2931,18 @@ impl EntityInputHandler for Shell {
         window: &mut Window,
         _cx: &mut Context<Self>,
     ) -> Option<Range<usize>> {
-        let (text, range) = if self.palette_focus.is_focused(window) {
+        let (text, range) = if self.brief_open
+            && (self.brief_goal_focus.is_focused(window)
+                || self.brief_direction_focus.is_focused(window))
+        {
+            let range = self.brief_marked_range.as_ref()?;
+            let text = if self.brief_goal_focus.is_focused(window) {
+                self.brief_form.goal()
+            } else {
+                self.brief_form.direction()
+            };
+            (text, range)
+        } else if self.palette_focus.is_focused(window) {
             let range = self.palette_marked_range.as_ref()?;
             (self.palette_query.as_str(), range)
         } else if self.flow_input_focus.is_focused(window) {
@@ -2897,7 +2956,12 @@ impl EntityInputHandler for Shell {
     }
 
     fn unmark_text(&mut self, window: &mut Window, _cx: &mut Context<Self>) {
-        if self.palette_focus.is_focused(window) {
+        if self.brief_open
+            && (self.brief_goal_focus.is_focused(window)
+                || self.brief_direction_focus.is_focused(window))
+        {
+            self.brief_marked_range = None;
+        } else if self.palette_focus.is_focused(window) {
             self.palette_marked_range = None;
         } else if self.flow_input_focus.is_focused(window) {
             self.flow_marked_range = None;
@@ -2913,6 +2977,34 @@ impl EntityInputHandler for Shell {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
+        if self.brief_open && self.brief_goal_focus.is_focused(window) {
+            let current = self.brief_form.goal().to_owned();
+            let range = ime_byte_range(
+                &current,
+                range_utf16,
+                self.brief_marked_range.clone(),
+                &self.brief_input_selection,
+            );
+            let (replacement, cursor) = ime_splice(&current, &range, new_text);
+            self.brief_form.set_goal(replacement);
+            self.brief_input_selection = cursor..cursor;
+            cx.notify();
+            return;
+        }
+        if self.brief_open && self.brief_direction_focus.is_focused(window) {
+            let current = self.brief_form.direction().to_owned();
+            let range = ime_byte_range(
+                &current,
+                range_utf16,
+                self.brief_marked_range.clone(),
+                &self.brief_input_selection,
+            );
+            let (replacement, cursor) = ime_splice(&current, &range, new_text);
+            self.brief_form.set_direction(replacement);
+            self.brief_input_selection = cursor..cursor;
+            cx.notify();
+            return;
+        }
         if self.palette_focus.is_focused(window) {
             let current = self.palette_query.clone();
             let range = ime_byte_range(
@@ -4942,6 +5034,7 @@ impl Render for Shell {
         );
 
         let palette_overlay = self.palette_overlay(&palette_facts, palette, cx);
+        let brief_overlay = self.brief_overlay(palette, cx);
 
         div()
             .id("cos-shell")
@@ -4951,6 +5044,21 @@ impl Render for Shell {
             .relative()
             .on_action(cx.listener(|this, _: &PaletteToggle, window, cx| {
                 this.palette_toggle(window, cx);
+            }))
+            .on_action(cx.listener(|this, _: &BriefOpen, window, cx| {
+                this.brief_open_surface(window, cx);
+            }))
+            .on_action(cx.listener(|this, _: &BriefClose, window, cx| {
+                this.brief_close_surface(window, cx);
+            }))
+            .on_action(cx.listener(|this, _: &BriefSubmit, _, cx| {
+                this.brief_submit(cx);
+            }))
+            .on_action(cx.listener(|this, _: &BriefRecheck, _, cx| {
+                this.brief_check_receipt(cx);
+            }))
+            .on_action(cx.listener(|this, _: &BriefReload, _, cx| {
+                this.brief_reload_catalog(cx);
             }))
             .on_action(
                 cx.listener(|this, _: &Artifact, _, cx| this.navigate(Surface::Artifact, cx)),
@@ -5075,6 +5183,20 @@ impl Render for Shell {
                                 contrast::role_color(scheme, 0x202328, colors.raised_face),
                             )))
                             .child("タスク一覧")
+                            .child(
+                                div()
+                                    .id("brief-new")
+                                    .role(Role::Button)
+                                    .aria_label("新しいタスクを作成")
+                                    .px_2()
+                                    .py_1()
+                                    .border_1()
+                                    .border_color(rgb(colors.border))
+                                    .on_click(cx.listener(|this, _, window, cx| {
+                                        this.brief_open_surface(window, cx);
+                                    }))
+                                    .child("+ 新しいタスク"),
+                            )
                             .child(
                                 div()
                                     .id("task-search")
@@ -5736,6 +5858,7 @@ impl Render for Shell {
                     })),
             )
             .child(palette_overlay)
+            .child(brief_overlay)
     }
 }
 
