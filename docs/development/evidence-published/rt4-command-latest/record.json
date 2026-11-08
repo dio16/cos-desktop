@@ -1,0 +1,12 @@
+{
+  "date": "2026-11-08",
+  "files": {
+    "session.json": {
+      "bytes": 9436,
+      "sha256": "sha256:15c577d8e2914972345207c19e2469894168d1bd90bbef3484f8a7513cbeaf7d"
+    }
+  },
+  "record_version": 1,
+  "slice": "live accepted command receipt",
+  "task": "MP-RT2 / RT4"
+}

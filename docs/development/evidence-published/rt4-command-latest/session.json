@@ -1,0 +1,223 @@
+{
+  "task": "MP-RT2 / RT4",
+  "slice": "Live accepted command receipt through the REST protocol transport",
+  "date": "2026-11-08",
+  "status": "LIVE_OBSERVED_LIMITED",
+  "environment": {
+    "instance": "disposable Runtime adapter on http://127.0.0.1:8126 (own process/port; 8123 and 8125 untouched)",
+    "db": "C:/tmp/rt-rt4/generation.sqlite (fresh copy; the shared 8123 DB was not reused)",
+    "config": "C:/tmp/rt-rt4/config.yaml, derived from C:/tmp/rt-int/default.yaml with db_path replaced",
+    "presets": "C:/tmp/rt-rt4/cos_presets.json generated from the Runtime's own test preset",
+    "seed": "Runtime test helper _seed_recipe_rows() into the disposable DB; one task created through the Runtime's own POST /api/cos/tasks route with the same operator token (created_by=caller='rt4-smoke'), then opened and stopped. Test fixture seeded into a disposable DB copy, labelled as such.",
+    "runtime": "Runtime commit c67fa52 (RT4 command protocol)",
+    "desktop": "Desktop transport commits 5366d99 + 5310759",
+    "credential": "per-run ORCHESTRATOR_AUTH_SECRET and operator token (read:observe, desktop:command, run:start); no secret recorded here"
+  },
+  "sequence": [
+    "POST /api/cos/desktop/hello (2.0 overlap) -> 200",
+    "POST /api/auth/token (secret header) -> 200",
+    "GET /api/cos/catalog -> 200, can_submit true, 1 recipe",
+    "POST /api/cos/tasks (same token, UUIDv4 command id) -> 202, task_id",
+    "POST /api/cos/desktop/observation -> 200, task present in the snapshot (task_count 1)",
+    "POST /api/cos/desktop/commands STOP_TASK -> 200 accepted receipt",
+    "identical envelope replay -> 200 same command_id/task_id/accepted_at",
+    "changed payload, same command_id -> 409 COMMAND_ID_CONFLICT",
+    "POST /api/cos/desktop/commands/lookup -> 200 result: ALLOWED + receipt",
+    "GET /api/cos/tasks/{id} + fresh observation -> reflection read"
+  ],
+  "observed": {
+    "hello": {
+      "status": 200,
+      "epoch": "0905fb4f8c3f4f27ac057aea0288d17b",
+      "dedupe_retention_ms": null
+    },
+    "create_task": {
+      "status": 202,
+      "task_id": "task-5ff9a25425754df582353b25cc7a864d",
+      "operation": "create_task"
+    },
+    "open": {
+      "status": 200,
+      "context": "context-a13d514762414be2b02736f214efe51d",
+      "snapshot_cursor": "cursor-8d6df133bd5d45d2a48e50c2328ae646",
+      "task_in_snapshot": true,
+      "task_count": 1
+    },
+    "stop_accepted": {
+      "status": 200,
+      "top_keys": [
+        "permission",
+        "receipt",
+        "schema_version",
+        "stamp"
+      ],
+      "stamp_matches_context": true,
+      "permission": {
+        "command_id": "3e098eea-1f73-41e9-8643-e817e5475fd1",
+        "readable": true
+      },
+      "receipt": {
+        "command_id": "3e098eea-1f73-41e9-8643-e817e5475fd1",
+        "operation": "STOP_TASK",
+        "state": "ACCEPTED",
+        "task_id": "task-5ff9a25425754df582353b25cc7a864d",
+        "accepted_at": "2026-11-08T06:00:20.265356+00:00",
+        "reject_reason": null,
+        "effect_refs": [],
+        "dedupe_expires_at": null,
+        "message": null
+      }
+    },
+    "identical_replay": {
+      "status": 200,
+      "same_command_id": true,
+      "same_task_id": true,
+      "same_accepted_at": true,
+      "state": "ACCEPTED"
+    },
+    "changed_envelope": {
+      "status": 409,
+      "code": "COMMAND_ID_CONFLICT"
+    },
+    "lookup": {
+      "status": 200,
+      "top_keys": [
+        "result",
+        "schema_version"
+      ],
+      "result_keys": [
+        "command_id",
+        "lookup_id",
+        "outcome",
+        "stamp"
+      ],
+      "stamp_matches": true,
+      "outcome": "ALLOWED",
+      "receipt_command_id": "3e098eea-1f73-41e9-8643-e817e5475fd1",
+      "receipt_accepted_at": "2026-11-08T06:00:20.265356+00:00"
+    },
+    "reflection": {
+      "task_detail": {
+        "schema_version": 1,
+        "epoch": "0905fb4f8c3f4f27ac057aea0288d17b",
+        "projection_revision": 2,
+        "task_id": "task-5ff9a25425754df582353b25cc7a864d",
+        "title": "rt4 live accepted-receipt fixture",
+        "task_status": "CANCELLED",
+        "phase": null,
+        "iteration": null,
+        "capabilities_ref": null,
+        "stop_pending": false,
+        "watch": false,
+        "accepted_input": {
+          "objective_text": "rt4 live accepted-receipt fixture",
+          "text_prompt": "soft morning light",
+          "recipe_ref": {
+            "recipe_id": "recipe-intake-still",
+            "source_harness_version_id": "hvid_be4c43fefac5f9e3fcd93d572b4734cc4f450ab2aeac4639aa2d3b5940652825",
+            "source_harness_digest": "sha256:c15cd7329ddffabd65fd98054784802eda0fdc8d75df0b7c6130e3026dfcf524",
+            "graph_ref": {
+              "graph_id": "graph-intake-001",
+              "graph_version": 2,
+              "graph_digest": "sha256:a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1"
+            },
+            "profile_ref": null,
+            "projection_digest": "sha256:70cd3a797d074451d35ef4821036a5354f56dabb241d9d88fc8fd0e8798e0d29"
+          },
+          "reference_artifact_refs": [],
+          "parameters": [
+            {
+              "id": "prompt",
+              "label": "Prompt",
+              "type": "text",
+              "value": "a lighthouse",
+              "bounds": {
+                "min": null,
+                "max": null,
+                "max_length": 8000
+              },
+              "choices": [],
+              "editable": true
+            },
+            {
+              "id": "steps",
+              "label": "Steps",
+              "type": "integer",
+              "value": 12,
+              "bounds": {
+                "min": "1",
+                "max": "32",
+                "max_length": null
+              },
+              "choices": [],
+              "editable": true
+            },
+            {
+              "id": "sampler",
+              "label": "Sampler",
+              "type": "choice",
+              "value": "euler",
+              "bounds": null,
+              "choices": [
+                {
+                  "value": "euler",
+                  "label": "Euler"
+                },
+                {
+                  "value": "dpm",
+                  "label": "DPM"
+                }
+              ],
+              "editable": true
+            },
+            {
+              "id": "profile",
+              "label": "Profile",
+              "type": "text",
+              "value": "natural",
+              "bounds": null,
+              "choices": [],
+              "editable": false
+            }
+          ],
+          "execution_limits": {
+            "max_iterations": 4,
+            "summary": "up to 4 iterations"
+          },
+          "constraint_summary": "keep it tasteful"
+        },
+        "outcome": null,
+        "available_actions": {
+          "stop": {
+            "enabled": false,
+            "reason_code": "terminal"
+          }
+        },
+        "issues": []
+      },
+      "task_list_row": null,
+      "desktop_projection": {
+        "projection": "TASK",
+        "task_ref": "task-5ff9a25425754df582353b25cc7a864d",
+        "title": "rt4 live accepted-receipt fixture",
+        "task_status": "CANCELLED",
+        "projection_revision": "2"
+      },
+      "observation_status": 200,
+      "note": "The fixture task was created but never started (no worker/drain on this disposable instance). STOP_TASK acceptance is not completion; here the task view reflected CANCELLED with stop_pending=false immediately, and a fresh desktop observation projected task_status CANCELLED at projection_revision 2. The stop_pending=true-before-drain state of a running task is not reachable without a worker and is NOT_MEASURED."
+    },
+    "transport_alignment": {
+      "submit": "flat {schema_version,stamp,permission,receipt} parsed by CommandReceiptDocument; permission.readable=true; receipt.state=ACCEPTED; the same stamp is carried on the RECEIPT frame",
+      "lookup": "wrapped {schema_version,result:{lookup_id,stamp,command_id,outcome}} parsed by ReceiptReadDocument (nested result)",
+      "conflict": "COMMAND_ID_CONFLICT mapped to the definitive command refusal with the current binding stamp",
+      "replay": "same accepted_at, no double execution",
+      "stamp": "returned stamp context equals the grant context; the client accepts it only when it is the current binding"
+    }
+  },
+  "limits": [
+    "single disposable instance; no worker/drain, so a running task's stop_pending-before-drain axis is NOT_MEASURED",
+    "CREATE_TASK live remains blocked by the Runtime command bridge (task-26); it was not attempted, and the Desktop create-task path is stub-tested (creation target, CREATE_TASK payload, receipt operation)",
+    "the fixture task was created with the operator token that also owns it; a freshly minted desktop-only credential owns no existing task and receives 403 FORBIDDEN (observed on 8123), which is the Runtime's documented ownership rule and is classified session-wide by the transport, not as a command failure",
+    "the shared 8123 instance was unusable for observation opens (multiple instances claimed its DB epoch ledger, fail-closed 409 RESYNC_REQUIRED); this evidence comes only from the disposable 8126 copy"
+  ]
+}
