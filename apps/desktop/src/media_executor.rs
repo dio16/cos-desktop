@@ -180,7 +180,7 @@ mod tests {
     use super::{MEDIA_ROUTE_PREFIX, MediaHttp};
     use cos_client::media::{
         Cancellation, MEDIA_CONTEXT_HEADER, MEDIA_DESCRIPTOR_PATH, MEDIA_HANDLE_HEADER,
-        MediaExecutor, MediaFetcher, MediaTransportError,
+        MediaExecutor, MediaFetchError, MediaFetcher, MediaTransportError,
     };
     use std::io::{Read, Write};
     use std::net::{TcpListener, TcpStream};
@@ -210,6 +210,16 @@ mod tests {
                 status,
                 headers: Vec::new(),
                 body: br#"{"code":"MEDIA_UNAUTHORIZED"}"#.to_vec(),
+                declared_length: true,
+            }
+        }
+
+        /// The RC-13 handle-expiry answer: 410 with the value-free wire code.
+        fn gone() -> Self {
+            Self {
+                status: "HTTP/1.1 410 Gone",
+                headers: vec![("Content-Type", "application/json".to_owned())],
+                body: br#"{"code":"MEDIA_HANDLE_EXPIRED"}"#.to_vec(),
                 declared_length: true,
             }
         }
@@ -285,6 +295,23 @@ mod tests {
             let _ = stream.write_all(&stub.render());
             let _ = stream.flush();
             request
+        });
+        (format!("http://{address}"), handle)
+    }
+
+    /// Serve a scripted sequence of requests, capturing each in order.
+    fn serve_many(stubs: Vec<Stub>) -> (String, std::thread::JoinHandle<Vec<String>>) {
+        let (listener, address) = bind();
+        let handle = std::thread::spawn(move || {
+            let mut requests = Vec::new();
+            for stub in stubs {
+                let (mut stream, _) = listener.accept().expect("request accepted");
+                let request = read_request(&mut stream);
+                let _ = stream.write_all(&stub.render());
+                let _ = stream.flush();
+                requests.push(request);
+            }
+            requests
         });
         (format!("http://{address}"), handle)
     }
@@ -581,6 +608,122 @@ mod tests {
             .expect("a status is a response");
         assert_eq!(response.status, 410);
         let _ = server.join();
+    }
+
+    /// A live 410 from the real executor is `DescriptorExpired`/`Expired`, never
+    /// `Missing`; the exact RC-13 wire body is carried but not rendered.
+    #[test]
+    fn a_410_from_the_real_executor_is_descriptor_expired_not_missing() {
+        let body = png();
+        let (hex, _digest) = expected_hex_and_digest(&body);
+        let descriptor = descriptor_body(
+            SERVER,
+            AUDIENCE,
+            DIGEST,
+            &hex,
+            "/api/cos/media/mh1.expired/blob",
+            body.len(),
+        );
+        let (origin, server) = serve_twice(Stub::json_ok(&descriptor), Stub::gone());
+        let executor = MediaHttp::new(&origin, "local-test-token").expect("loopback origin");
+        let mut fetcher = MediaFetcher::new(executor, SERVER, AUDIENCE);
+        let descriptor = fetcher
+            .fetch_descriptor(DIGEST, "read-context-value", &Cancellation::default())
+            .expect("descriptor fetched");
+        let error = fetcher
+            .fetch_bytes(&descriptor, &Cancellation::default())
+            .expect_err("410 is a client fetch error");
+        assert_eq!(error, MediaFetchError::DescriptorExpired);
+        assert_eq!(
+            app_core::MediaAvailability::from_fetch_error(error),
+            Some(app_core::MediaAvailability::Expired)
+        );
+        assert_ne!(
+            app_core::MediaAvailability::from_fetch_error(error),
+            Some(app_core::MediaAvailability::Missing)
+        );
+        let (descriptor_request, byte_request) = server.join().expect("server finished");
+        assert!(
+            descriptor_request.starts_with("get /api/cos/media/sha256:"),
+            "{descriptor_request}"
+        );
+        assert!(
+            byte_request.contains("x-media-handle: /api/cos/media/mh1.expired/blob"),
+            "{byte_request}"
+        );
+    }
+
+    /// The real executor/client/repository path reauthorizes once after a live 410
+    /// and admits the bytes from the fresh handle; it never reports `Missing`.
+    #[test]
+    fn an_expired_handle_reauthorizes_the_descriptor_and_admits() {
+        let body = png();
+        let (hex, digest) = expected_hex_and_digest(&body);
+        let first = descriptor_body(
+            SERVER,
+            AUDIENCE,
+            DIGEST,
+            &hex,
+            "/api/cos/media/mh1.first/blob",
+            body.len(),
+        );
+        let second = descriptor_body(
+            SERVER,
+            AUDIENCE,
+            DIGEST,
+            &hex,
+            "/api/cos/media/mh1.second/blob",
+            body.len(),
+        );
+        let (origin, server) = serve_many(vec![
+            Stub::json_ok(&first),
+            Stub::gone(),
+            Stub::json_ok(&second),
+            Stub::bytes(body.clone()),
+        ]);
+        let executor = MediaHttp::new(&origin, "local-test-token").expect("loopback origin");
+        let mut source = MediaFetcher::new(executor, SERVER, AUDIENCE);
+        let mut repository = repository();
+        let artifact = desktop_protocol::ArtifactSnapshot {
+            artifact_ref: desktop_protocol::ArtifactId::new("artifact-1").expect("artifact id"),
+            artifact_digest: desktop_protocol::ArtifactDigest::new(DIGEST).expect("digest"),
+            media_type: Some("image/png".to_owned()),
+            availability: desktop_protocol::Availability::Available,
+            descriptor_refs: Vec::new(),
+            verification: None,
+            projection_revision: desktop_protocol::Counter::from_u128(1),
+        };
+        let session = app_core::MediaSessionContext::new(
+            desktop_protocol::ServerId::new(SERVER).expect("server"),
+            AUDIENCE,
+            desktop_protocol::EpochId::new("epoch-1").expect("epoch"),
+            "read-context-value",
+        );
+        let selection = app_core::MediaSelection::for_artifact(
+            &artifact,
+            session,
+            desktop_protocol::RepresentationKind::Original,
+        );
+        let presentation = repository.load(&mut source, &selection, &Cancellation::default());
+        let admitted = presentation
+            .admitted()
+            .expect("reauthorized bytes admitted");
+        assert_eq!(admitted.computed_digest, digest);
+        assert!(admitted.identity.verified());
+        let requests = server.join().expect("server finished");
+        assert_eq!(requests.len(), 4, "{requests:#?}");
+        assert!(requests[0].starts_with("get /api/cos/media/sha256:"));
+        assert!(
+            requests[1].contains("x-media-handle: /api/cos/media/mh1.first/blob"),
+            "{}",
+            requests[1]
+        );
+        assert!(requests[2].starts_with("get /api/cos/media/sha256:"));
+        assert!(
+            requests[3].contains("x-media-handle: /api/cos/media/mh1.second/blob"),
+            "{}",
+            requests[3]
+        );
     }
 
     #[test]
@@ -915,9 +1058,22 @@ mod tests {
             crafted.byte_length = None;
             crafted.verification = None;
             let outcome = fetcher.fetch_bytes(&crafted, &cancellation);
+            let availability = outcome
+                .as_ref()
+                .err()
+                .copied()
+                .and_then(app_core::MediaAvailability::from_fetch_error);
             negatives.push(format!(
                 "\"{label}\":{}",
                 json_string(&format!("{outcome:?}"))
+            ));
+            negatives.push(format!(
+                "\"{label}_availability\":{}",
+                json_string(&format!("{availability:?}"))
+            ));
+            negatives.push(format!(
+                "\"{label}_is_missing\":{}",
+                availability == Some(app_core::MediaAvailability::Missing)
             ));
         }
         lines.push(format!("\"negatives\":{{{}}}", negatives.join(",")));

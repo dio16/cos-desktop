@@ -1,0 +1,29 @@
+
+--- start 2026-11-10T02:18:00+0900 ---
+INFO:     Started server process [31644]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8160 (Press CTRL+C to quit)
+INFO:     127.0.0.1:54683 - "GET /api/ready HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54684 - "GET /api/cos/desktop/server HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54685 - "POST /api/cos/desktop/credentials HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54686 - "POST /api/cos/desktop/credentials HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54687 - "POST /api/cos/desktop/observation HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54688 - "GET /api/cos/media/sha256%3Ab6c49a29ff609a59bcfa46644481e84d02eca7a1536676683e7c1f42d33e07af HTTP/1.1" 403 Forbidden
+INFO:     127.0.0.1:54689 - "GET /api/cos/media/sha256%3Aa41f183168c25e5c60919e04d94780510c0be8e1e77ab95bcddc6443fdf75412 HTTP/1.1" 403 Forbidden
+INFO:     127.0.0.1:54690 - "GET /api/cos/media/sha256%3A59856b19090e3bd1e7afde891438552d114f0915079955b03a41aa12b3117957 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54691 - "GET /api/cos/media/<handle-redacted>/blob HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49919 - "GET /api/cos/media/<handle-redacted>/blob HTTP/1.1" 410 Gone
+INFO:     127.0.0.1:49924 - "GET /api/cos/media/sha256%3A59856b19090e3bd1e7afde891438552d114f0915079955b03a41aa12b3117957 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49925 - "GET /api/cos/media/<handle-redacted>/blob HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51800 - "GET /api/cos/media/sha256%3A59856b19090e3bd1e7afde891438552d114f0915079955b03a41aa12b3117957 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51800 - "GET /api/cos/media/<handle-redacted>/blob HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51800 - "GET /api/cos/media/sha256%3A59856b19090e3bd1e7afde891438552d114f0915079955b03a41aa12b3117957 HTTP/1.1" 401 Unauthorized
+INFO:     127.0.0.1:51801 - "GET /api/cos/media/sha256%3A59856b19090e3bd1e7afde891438552d114f0915079955b03a41aa12b3117957 HTTP/1.1" 403 Forbidden
+INFO:     127.0.0.1:51800 - "GET /api/cos/media/<handle-redacted>/blob HTTP/1.1" 410 Gone
+INFO:     127.0.0.1:51802 - "GET /api/cos/media/sha256%3A59856b19090e3bd1e7afde891438552d114f0915079955b03a41aa12b3117957 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51803 - "GET /api/cos/media/<handle-redacted>/blob HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [31644]

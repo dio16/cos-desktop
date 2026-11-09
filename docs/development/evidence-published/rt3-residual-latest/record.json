@@ -1,0 +1,429 @@
+{
+  "label": "run1",
+  "started_at": "2026-11-10T02:17:59+0900",
+  "endpoint": "http://127.0.0.1:8160",
+  "ttl_seconds": 60,
+  "source": {
+    "db_source": "C:\\AI\\orchestrator\\db\\generation.sqlite",
+    "db_source_sha256": "sha256:fbfe3ababb9f53dfb1c373774ce99bdfed813d7b64ad743164fa6adfbc0c56f6",
+    "db_source_bytes": 11493376,
+    "db_copy_sha256_at_start": "sha256:f87711008a546c31caf75ed6d24c3a5c95b1d824c8b43868f13e1e852bfb3e3d",
+    "db_copy_bytes_at_start": 11493376,
+    "cas_source": "C:\\AI\\orchestrator\\db\\cas",
+    "cas_copy_files": 73,
+    "cas_copy_bytes": 53340103,
+    "candidate_count": 72
+  },
+  "desktop": {
+    "root": "C:\\dev\\cos-desktop",
+    "head": "c1d97a4f028fed099c2e86f4150a7cc043029603",
+    "head_tree": "16c5b9afe94854b5f283ab9227c618d5cf274979",
+    "dirty_paths": [
+      "apps/desktop/devtools/runtime_integration/probe_window.ps1",
+      "apps/desktop/src/media_executor.rs",
+      "docs/architecture/DESKTOP_DESIGN_CONTRACTS.md",
+      "docs/development/IMPLEMENTATION_MASTER_PLAN.md",
+      "docs/development/evidence-published/acc1-native-closure-latest/README.md",
+      "apps/desktop/devtools/runtime_integration/run_ax_ime_dpi.py",
+      "apps/desktop/devtools/runtime_integration/run_rt3_residual.py",
+      "docs/development/evidence-published/acc1-native-closure-latest/golden-generation/desktop-main.log.sanitized.txt",
+      "docs/development/evidence-published/acc1-native-closure-latest/golden-generation/desktop-relaunch.log.sanitized.txt",
+      "docs/development/evidence-published/native-ax-ime-dpi-latest/"
+    ],
+    "executor_source_sha256": "sha256:9969c614a33ee9e83c37477ad24b1b82aba0d14938f7220df1b416a7ff05d019"
+  },
+  "runtime": {
+    "root": "C:\\AI\\orchestrator",
+    "head": "e1bc3e68944f4c4658efa7310dbab1dc8698fd5d",
+    "python": "C:\\AI\\orchestrator\\.venv\\Scripts\\python.exe",
+    "python_version": "3.13.14",
+    "dirty_paths": [
+      "orchestrator/docs/guides/development-loop.md",
+      "orchestrator/orchestrator_app/dev_caller.py",
+      "orchestrator/tests/test_dev_caller.py",
+      "orchestrator/tests/test_dev_caller_e2e.py",
+      "orchestrator/devplan/plan-draft.json",
+      "orchestrator/devplan/plan-prepare.json",
+      "orchestrator/devplan/prepare-out.json"
+    ],
+    "instance": {
+      "first": {
+        "label": "runtime-1",
+        "pid": 52568,
+        "endpoint": "http://127.0.0.1:8160",
+        "server_identity": "cos-runtime-orchestrator",
+        "server_build": "orchestrator-runtime/0.1.0",
+        "epoch": "36c7a5e51a2845a0bbc453136b8604a4",
+        "protocol": {
+          "major": 2,
+          "minor": 0
+        },
+        "schema": {
+          "major": 2,
+          "minor": 0
+        },
+        "discovery": {
+          "present": true,
+          "sha256": "sha256:824ec1b9ca150cea6655ab23f34c6cc54e17ba298090be951bbcf8ab5df4e642",
+          "bytes": 307,
+          "origin": "http://127.0.0.1:8160",
+          "server_identity": "cos-runtime-orchestrator",
+          "epoch": "36c7a5e51a2845a0bbc453136b8604a4",
+          "ready": true,
+          "pid": 31644,
+          "launcher_pid": 52568,
+          "pid_matches_launcher": false,
+          "pid_note": "the uv-managed venv python.exe is a launcher shim, so the launcher pid and the serving interpreter pid can differ",
+          "pid_matches_serving_process": true
+        },
+        "startup_seconds": 2.422,
+        "credential": {
+          "principal": "desktop:76a335cd03a068fa7b61ec670228d9a2",
+          "other_principal": "desktop:c5f79e8ebbe237aa9a9402f2d6cf952b",
+          "scopes": [
+            "read:observe",
+            "desktop:command"
+          ],
+          "expires_in": 43200,
+          "token_recorded": false
+        },
+        "observation": {
+          "epoch": "36c7a5e51a2845a0bbc453136b8604a4",
+          "server_id": "cos-runtime-orchestrator",
+          "read_revision": "1",
+          "task_count": 39,
+          "context_recorded": false
+        },
+        "stop": {
+          "pid": 52568,
+          "serving_pid": 31644,
+          "exit": 0,
+          "clean_exit": true,
+          "port_closed": true,
+          "discovery_removed": true
+        },
+        "log": {
+          "file": "runtime-first.log.sanitized.txt",
+          "handle_redactions": 6,
+          "sha256": "sha256:baf3dd7016f223fdf5be566d64f0b2fb59d2d11e93864651c7f140be7588d6f2"
+        }
+      },
+      "second": {
+        "label": "runtime-2",
+        "pid": 22744,
+        "endpoint": "http://127.0.0.1:8160",
+        "server_identity": "cos-runtime-orchestrator",
+        "server_build": "orchestrator-runtime/0.1.0",
+        "epoch": "d8b30946619b4cf6ae3f2836bafe252a",
+        "protocol": {
+          "major": 2,
+          "minor": 0
+        },
+        "schema": {
+          "major": 2,
+          "minor": 0
+        },
+        "discovery": {
+          "present": true,
+          "sha256": "sha256:f31b03cd930f60f1b160c4e75cffc86ec4613eca7a1a4f6040249a05ec8efff6",
+          "bytes": 307,
+          "origin": "http://127.0.0.1:8160",
+          "server_identity": "cos-runtime-orchestrator",
+          "epoch": "d8b30946619b4cf6ae3f2836bafe252a",
+          "ready": true,
+          "pid": 44416,
+          "launcher_pid": 22744,
+          "pid_matches_launcher": false,
+          "pid_note": "the uv-managed venv python.exe is a launcher shim, so the launcher pid and the serving interpreter pid can differ",
+          "pid_matches_serving_process": true
+        },
+        "startup_seconds": 2.367,
+        "credential": {
+          "principal": "desktop:6a3cad58fb05f2b18d766eee37a8778a",
+          "other_principal": "desktop:c550efd0ed9ff7dc835cd38e3aec23d6",
+          "scopes": [
+            "read:observe",
+            "desktop:command"
+          ],
+          "expires_in": 43200,
+          "token_recorded": false
+        },
+        "observation": {
+          "epoch": "d8b30946619b4cf6ae3f2836bafe252a",
+          "server_id": "cos-runtime-orchestrator",
+          "read_revision": "1",
+          "task_count": 39,
+          "context_recorded": false
+        },
+        "log": {
+          "file": "runtime-second.log.sanitized.txt",
+          "handle_redactions": 4,
+          "sha256": "sha256:6d2e32379806c27180b421fdce9f44404e626644d8ff210e544202a3aa27575e"
+        }
+      }
+    }
+  },
+  "measurements": {
+    "ttl": {
+      "descriptor_expires_at_unix_ms": 1794244743769,
+      "descriptor_issued_at": 1794244683.8202596,
+      "immediate_fetch": {
+        "label": "immediate",
+        "status": 200,
+        "elapsed_ms": 71.681,
+        "response_bytes": 1247461,
+        "content_length_header": "1247461",
+        "content_type": "image/png",
+        "at": "2026-11-10T02:18:03+0900",
+        "at_unix_ms": 1794244683891,
+        "body_sha256": "sha256:59856b19090e3bd1e7afde891438552d114f0915079955b03a41aa12b3117957",
+        "declared_byte_length": 1247461,
+        "length_matches_descriptor": true
+      },
+      "immediate_ok": true,
+      "immediate_digest_matches_declared": true,
+      "wait": {
+        "waited_seconds": 64.928,
+        "seconds_since_issuance": 65.001,
+        "seconds_past_server_expiry": 5.052
+      },
+      "after_ttl_fetch": {
+        "label": "after_ttl",
+        "status": 410,
+        "elapsed_ms": 42.626,
+        "response_bytes": 31,
+        "content_length_header": "31",
+        "content_type": "application/json",
+        "at": "2026-11-10T02:19:08+0900",
+        "at_unix_ms": 1794244748863,
+        "body": {
+          "code": "MEDIA_HANDLE_EXPIRED"
+        },
+        "body_code": "MEDIA_HANDLE_EXPIRED"
+      },
+      "after_ttl_expected": {
+        "status": 410,
+        "code": "MEDIA_HANDLE_EXPIRED"
+      },
+      "fresh_descriptor": {
+        "status": 200,
+        "descriptor": {
+          "descriptor_id": "descriptor-d69c53dfefd1516580e1112318ccd87c",
+          "artifact_ref": "art-v1-0d346285-c0ec-47fd-872e-428cbc467bab",
+          "artifact_digest": "sha256:59856b19090e3bd1e7afde891438552d114f0915079955b03a41aa12b3117957",
+          "representation": "ORIGINAL",
+          "representation_version": 1,
+          "media_type": "image/png",
+          "byte_length": 1247461,
+          "width": 1024,
+          "height": 1024,
+          "availability": "AVAILABLE",
+          "verification": {
+            "state": "VERIFIED",
+            "algorithm": "sha256",
+            "expected_digest": "59856b19090e3bd1e7afde891438552d114f0915079955b03a41aa12b3117957"
+          },
+          "server_identity": "cos-runtime-orchestrator",
+          "audience": "desktop:76a335cd03a068fa7b61ec670228d9a2",
+          "expires_at_unix_ms": 1794244808903,
+          "access_handle_present": true,
+          "access_handle_length": 474
+        },
+        "new_handle_differs_from_expired": true,
+        "fetch": {
+          "label": "fresh_after_ttl",
+          "status": 200,
+          "elapsed_ms": 76.215,
+          "response_bytes": 1247461,
+          "content_length_header": "1247461",
+          "content_type": "image/png",
+          "at": "2026-11-10T02:19:09+0900",
+          "at_unix_ms": 1794244749001,
+          "body_sha256": "sha256:59856b19090e3bd1e7afde891438552d114f0915079955b03a41aa12b3117957",
+          "declared_byte_length": 1247461,
+          "length_matches_descriptor": true
+        },
+        "fetch_ok": true
+      }
+    },
+    "instance_change": {
+      "probe_descriptor_expires_at_unix_ms": 1794244810644,
+      "probe_fetch": {
+        "label": "before_restart",
+        "status": 200,
+        "elapsed_ms": 69.694,
+        "response_bytes": 1247461,
+        "content_length_header": "1247461",
+        "content_type": "image/png",
+        "at": "2026-11-10T02:19:10+0900",
+        "at_unix_ms": 1794244750735,
+        "body_sha256": "sha256:59856b19090e3bd1e7afde891438552d114f0915079955b03a41aa12b3117957",
+        "declared_byte_length": 1247461,
+        "length_matches_descriptor": true
+      },
+      "handle_epoch_matches_serving_epoch": true,
+      "remaining_ttl_seconds_at_restart_request": 60,
+      "after_restart_fetch": {
+        "label": "old_handle_new_instance",
+        "status": 410,
+        "elapsed_ms": 75.748,
+        "response_bytes": 31,
+        "content_length_header": "31",
+        "content_type": "application/json",
+        "at": "2026-11-10T02:19:14+0900",
+        "at_unix_ms": 1794244754817,
+        "body": {
+          "code": "MEDIA_HANDLE_EXPIRED"
+        },
+        "body_code": "MEDIA_HANDLE_EXPIRED",
+        "handle_epoch": "36c7a5e51a2845a0bbc453136b8604a4",
+        "serving_epoch": "d8b30946619b4cf6ae3f2836bafe252a",
+        "handle_principal_matches_new_credential": false,
+        "remaining_ttl_seconds_at_fetch": 56
+      },
+      "after_restart_expected": {
+        "status": 410,
+        "code": "MEDIA_HANDLE_EXPIRED",
+        "epoch_changed": true,
+        "server_identity_unchanged": true
+      },
+      "fresh_after_restart": {
+        "status": 200,
+        "descriptor": {
+          "descriptor_id": "descriptor-54e0a360e4c92fe5d965b9e405b1ee03",
+          "artifact_ref": "art-v1-0d346285-c0ec-47fd-872e-428cbc467bab",
+          "artifact_digest": "sha256:59856b19090e3bd1e7afde891438552d114f0915079955b03a41aa12b3117957",
+          "representation": "ORIGINAL",
+          "representation_version": 1,
+          "media_type": "image/png",
+          "byte_length": 1247461,
+          "width": 1024,
+          "height": 1024,
+          "availability": "AVAILABLE",
+          "verification": {
+            "state": "VERIFIED",
+            "algorithm": "sha256",
+            "expected_digest": "59856b19090e3bd1e7afde891438552d114f0915079955b03a41aa12b3117957"
+          },
+          "server_identity": "cos-runtime-orchestrator",
+          "audience": "desktop:6a3cad58fb05f2b18d766eee37a8778a",
+          "expires_at_unix_ms": 1794244814860,
+          "access_handle_present": true,
+          "access_handle_length": 474
+        },
+        "fetch": {
+          "label": "fresh_after_restart",
+          "status": 200,
+          "elapsed_ms": 67.501,
+          "response_bytes": 1247461,
+          "content_length_header": "1247461",
+          "content_type": "image/png",
+          "at": "2026-11-10T02:19:14+0900",
+          "at_unix_ms": 1794244754973,
+          "body_sha256": "sha256:59856b19090e3bd1e7afde891438552d114f0915079955b03a41aa12b3117957",
+          "declared_byte_length": 1247461,
+          "length_matches_descriptor": true
+        },
+        "fetch_ok": true
+      }
+    }
+  },
+  "executor": {
+    "ttl": {
+      "command": "cargo test --locked -q -p cos-desktop --bin cos-desktop media_executor::tests::live_media_evidence -- --ignored --nocapture",
+      "exit": 0,
+      "elapsed_seconds": 1.59,
+      "produced_evidence": true,
+      "tail": "\nrunning 1 test\n{\"descriptor_id\":\"descriptor-dfcc01138e1ecba8964ca3a1d3656d9f\",\"representation\":\"Original\",\"media_type\":\"image/png\",\"byte_length\":1247461,\"width\":1024,\"height\":1024,\"availability\":\"Available\",\"verification_state\":\"Verified\",\"verification_algorithm\":\"sha256\",\"expected_digest\":\"59856b19090e3bd1e7afde891438552d114f0915079955b03a41aa12b3117957\",\"access_handle_present\":true,\"access_handle_length\":474,\"expires_at_unix_ms\":1794244810185,\"fetched_bytes\":1247461,\"computed_digest\":\"59856b19090e3bd1e7afde891438552d114f0915079955b03a41aa12b3117957\",\"admitted_verified\":true,\"digest_matches_declared\":true,\"decoded\":{\"width\":1024,\"height\":1024,\"rgba_bytes\":4194304},\"presentation\":\"request\",\"negatives\":{\"descriptor_bogus_context\":\"Err(Unauthorized)\",\"descriptor_foreign_principal\":\"Err(Forbidden)\",\"expired_handle\":\"Err(DescriptorExpired)\",\"expired_handle_availability\":\"Some(Expired)\",\"expired_handle_is_missing\":false,\"foreign_handle\":\"NOT_PROVIDED\"}}\n.\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 91 filtered out; finished in 0.41s\n\nwarning: linker stdout: LINK : warning LNK4044: オプション '/fuse-ld=lld' は無効です。無視されます。\n  |\n  = note: `#[warn(linker_messages)]` on by default\n\n",
+      "handle_recorded": false
+    },
+    "epoch": {
+      "command": "cargo test --locked -q -p cos-desktop --bin cos-desktop media_executor::tests::live_media_evidence -- --ignored --nocapture",
+      "exit": 0,
+      "elapsed_seconds": 1.588,
+      "produced_evidence": true,
+      "tail": "\nrunning 1 test\n{\"descriptor_id\":\"descriptor-05ddd4b20ff2d7aaf2ae8ef67208f78b\",\"representation\":\"Original\",\"media_type\":\"image/png\",\"byte_length\":1247461,\"width\":1024,\"height\":1024,\"availability\":\"Available\",\"verification_state\":\"Verified\",\"verification_algorithm\":\"sha256\",\"expected_digest\":\"59856b19090e3bd1e7afde891438552d114f0915079955b03a41aa12b3117957\",\"access_handle_present\":true,\"access_handle_length\":474,\"expires_at_unix_ms\":1794244816161,\"fetched_bytes\":1247461,\"computed_digest\":\"59856b19090e3bd1e7afde891438552d114f0915079955b03a41aa12b3117957\",\"admitted_verified\":true,\"digest_matches_declared\":true,\"decoded\":{\"width\":1024,\"height\":1024,\"rgba_bytes\":4194304},\"presentation\":\"request\",\"negatives\":{\"descriptor_bogus_context\":\"Err(Unauthorized)\",\"descriptor_foreign_principal\":\"Err(Forbidden)\",\"expired_handle\":\"Err(DescriptorExpired)\",\"expired_handle_availability\":\"Some(Expired)\",\"expired_handle_is_missing\":false,\"foreign_handle\":\"NOT_PROVIDED\"}}\n.\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 91 filtered out; finished in 0.41s\n\nwarning: linker stdout: LINK : warning LNK4044: オプション '/fuse-ld=lld' は無効です。無視されます。\n  |\n  = note: `#[warn(linker_messages)]` on by default\n\n",
+      "handle_recorded": false
+    }
+  },
+  "cleanup": {
+    "runtime_2_stop": {
+      "pid": 22744,
+      "serving_pid": 44416,
+      "exit": 0,
+      "clean_exit": true,
+      "port_closed": true,
+      "discovery_removed": true
+    },
+    "db_copy_sha256_at_end": "sha256:261bc609629d37880b35679d3a0b8abededc885aa14e2f60a934f3561a3a5192",
+    "db_copy_bytes_at_end": 11522048,
+    "work_root": "C:\\dev\\cos-desktop\\target\\rt3-residual\\run1",
+    "work_root_removed": true,
+    "leak_scan": {
+      "files": 6,
+      "findings": []
+    },
+    "port_closed": true,
+    "discovery_absent": true,
+    "notes": [
+      "isolated DB/CAS copy and raw logs removed after evidence write"
+    ]
+  },
+  "residuals": [
+    "The live executor mapping was measured from the live 410 status; the one-shot descriptor reauthorization/refetch is pinned by the bounded stub-server test (the live server cannot be forced to expire only the handle while a fresh descriptor read succeeds under the same repository call).",
+    "No Desktop GPUI/native rendering is exercised by this slice (executor/client boundary only); the RT6 native artifact surface evidence stays separate.",
+    "Only ORIGINAL PNG artifacts are measured; PREVIEW/THUMBNAIL byte routes and non-image types are out of scope.",
+    "The instance-change 410 uses the same per-run handle secret across both processes; with the default ephemeral secret a restart would instead be a 401 MAC failure (documented Runtime rotation behavior).",
+    "The 60 s TTL minimum was used; the 300 s default was not separately timed."
+  ],
+  "artifact": {
+    "artifact_ref": "art-v1-0d346285-c0ec-47fd-872e-428cbc467bab",
+    "digest": "sha256:59856b19090e3bd1e7afde891438552d114f0915079955b03a41aa12b3117957",
+    "db_media_type": "image/png",
+    "db_length": 1247461,
+    "probed_candidates": 3,
+    "probe_rejections_sample": [
+      {
+        "artifact_ref": "art-v1-03f8a167-d86c-4bfe-814d-c80aec908d7a",
+        "status": 403
+      },
+      {
+        "artifact_ref": "art-v1-0a494ae6-f3fd-4b5f-a030-63cdd813fec8",
+        "status": 403
+      }
+    ],
+    "descriptor": {
+      "descriptor_id": "descriptor-93c7e19d670ef79517e7a73a3ef43540",
+      "artifact_ref": "art-v1-0d346285-c0ec-47fd-872e-428cbc467bab",
+      "artifact_digest": "sha256:59856b19090e3bd1e7afde891438552d114f0915079955b03a41aa12b3117957",
+      "representation": "ORIGINAL",
+      "representation_version": 1,
+      "media_type": "image/png",
+      "byte_length": 1247461,
+      "width": 1024,
+      "height": 1024,
+      "availability": "AVAILABLE",
+      "verification": {
+        "state": "VERIFIED",
+        "algorithm": "sha256",
+        "expected_digest": "59856b19090e3bd1e7afde891438552d114f0915079955b03a41aa12b3117957"
+      },
+      "server_identity": "cos-runtime-orchestrator",
+      "audience": "desktop:76a335cd03a068fa7b61ec670228d9a2",
+      "expires_at_unix_ms": 1794244743769,
+      "access_handle_present": true,
+      "access_handle_length": 474
+    },
+    "access_handle_recorded": false
+  },
+  "verdict": {
+    "ttl_expiry_410": true,
+    "fresh_handle_after_ttl": true,
+    "instance_change_410": true,
+    "fresh_handle_after_restart": true,
+    "live_executor_ttl_mapping": "Err(DescriptorExpired)",
+    "live_executor_epoch_mapping": "Err(DescriptorExpired)",
+    "stub_executor_refetch_test": "apps/desktop/src/media_executor.rs::tests::an_expired_handle_reauthorizes_the_descriptor_and_admits"
+  },
+  "finished_at": "2026-11-10T02:19:17+0900"
+}

@@ -1,0 +1,33 @@
+{
+  "descriptor_id": "descriptor-dfcc01138e1ecba8964ca3a1d3656d9f",
+  "representation": "Original",
+  "media_type": "image/png",
+  "byte_length": 1247461,
+  "width": 1024,
+  "height": 1024,
+  "availability": "Available",
+  "verification_state": "Verified",
+  "verification_algorithm": "sha256",
+  "expected_digest": "59856b19090e3bd1e7afde891438552d114f0915079955b03a41aa12b3117957",
+  "access_handle_present": true,
+  "access_handle_length": 474,
+  "expires_at_unix_ms": 1794244810185,
+  "fetched_bytes": 1247461,
+  "computed_digest": "59856b19090e3bd1e7afde891438552d114f0915079955b03a41aa12b3117957",
+  "admitted_verified": true,
+  "digest_matches_declared": true,
+  "decoded": {
+    "width": 1024,
+    "height": 1024,
+    "rgba_bytes": 4194304
+  },
+  "presentation": "request",
+  "negatives": {
+    "descriptor_bogus_context": "Err(Unauthorized)",
+    "descriptor_foreign_principal": "Err(Forbidden)",
+    "expired_handle": "Err(DescriptorExpired)",
+    "expired_handle_availability": "Some(Expired)",
+    "expired_handle_is_missing": false,
+    "foreign_handle": "NOT_PROVIDED"
+  }
+}
