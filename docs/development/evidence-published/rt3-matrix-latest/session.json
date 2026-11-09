@@ -1,0 +1,1140 @@
+{
+  "measurement": "RT3 full reconnect/resync/epoch matrix (isolated Runtime, native Desktop)",
+  "date": "2026-11-09T11:19:58+0900",
+  "harness": {
+    "command": "python apps/desktop/devtools/runtime_integration/run_rt3_matrix.py --long-seconds 180",
+    "ports": [
+      8135,
+      8136
+    ],
+    "endpoint_passed_to_desktop": false,
+    "token_passed_to_desktop": false,
+    "discovery_redirect_env": "COS_DESKTOP_RUNTIME_DISCOVERY_PATH",
+    "run_secret_recorded": false,
+    "client_bounds": {
+      "max_reauth_attempts": 3,
+      "reauth_min_interval_seconds": 2.0,
+      "max_resync_attempts": 5,
+      "delta_poll_millis": 250,
+      "credential_registry_max": 64
+    },
+    "long_observation_seconds": 180
+  },
+  "desktop": {
+    "head": "0dbe3c57e29257a7726aa2183578415df6621de9",
+    "head_tree": "24b0c3d53ac8b4f5ade420c298728330fe645fba",
+    "binary": "C:\\dev\\cos-desktop\\target\\release\\cos-desktop.exe",
+    "binary_sha256": "sha256:5acb4af8b331192b2856692fd04cc527f67107a915d270bedd7f5320c5a2faf7",
+    "binary_bytes": 21109760,
+    "binary_built_at": "2026-11-09T05:01:38+0900",
+    "last_product_commit": "0dbe3c5 1794188119 2026-11-09 10:35:19 +0900",
+    "source_state": {
+      "head": "0dbe3c57e29257a7726aa2183578415df6621de9",
+      "head_tree": "24b0c3d53ac8b4f5ade420c298728330fe645fba",
+      "dirty_tracked": [],
+      "untracked_product_sources": [],
+      "other_tracked_changes": [
+        {
+          "status": "M",
+          "path": "apps/desktop/devtools/runtime_integration/README.md",
+          "sha256": "sha256:934c1c7fd97ff006b090ee25578b8b9caf0e3999ded86cfe0e2534d3938ab36e"
+        },
+        {
+          "status": "M",
+          "path": "apps/desktop/devtools/runtime_integration/probe_window.ps1",
+          "sha256": "sha256:3b51cc848142408cfc4122e5b81f53b588c82dfaec840ae7c32e7c50ca1f1e0b"
+        },
+        {
+          "status": "M",
+          "path": "docs/architecture/DESKTOP_DESIGN_CONTRACTS.md",
+          "sha256": "sha256:698c94cbd08ebbed4f2d90090ab8d1265326d8399797d8c49a1f6998ff04d70f"
+        },
+        {
+          "status": "M",
+          "path": "docs/development/IMPLEMENTATION_MASTER_PLAN.md",
+          "sha256": "sha256:9da3cec6b6ea29f44493777a0c317534cb267850d110f89aa4fd60bed42ce3e7"
+        },
+        {
+          "status": "M",
+          "path": "docs/development/IMPLEMENTATION_STATUS_AUDIT.md",
+          "sha256": "sha256:9a9b5b150b23c5cb820e7d7eba68a8e2a187395455db5beedbdb6ec819f521c3"
+        },
+        {
+          "status": "M",
+          "path": "docs/integration/COS_RUNTIME_REQUIRED_CHANGES.md",
+          "sha256": "sha256:ec277eee8ead9f1ab2c6a0704570584ef0d0a1a8d44a9dbaf9dcef1ff771f280"
+        }
+      ],
+      "fingerprint": "sha256:d8d9edac68db7c76c23f19dce5642ec43be768571ff5f665a64614103833fd48"
+    },
+    "source_spot_checks": {
+      "apps/desktop/src/credentials.rs": "sha256:5d101b223af3804e53d4d69597bfb6b24b40e11cf382b1cd328c41687b7618ba",
+      "apps/desktop/src/runtime.rs": "sha256:69b52e1b37a518bbe24de91da8a6b9f659e929234513a785890318ef7503ea37",
+      "apps/desktop/src/main.rs": "sha256:e44c41dd175c081dbce324a4f597e4ecf991258f322c39b33ae49764fad68dff",
+      "crates/cos-client/src/protocol_transport.rs": "sha256:ee2c7889a89806a727346973ab26a9af81069566271db38ebe9645ab4b3d0028"
+    }
+  },
+  "runtime": {
+    "root": "C:\\AI\\orchestrator",
+    "head": "d6e0ba202f4068860c85208f9ea6e3b3b681bfcb",
+    "dirty_paths": [
+      "orchestrator/docs/guides/development-loop.md",
+      "orchestrator/orchestrator_app/dev_caller.py",
+      "orchestrator/tests/test_dev_caller.py",
+      "orchestrator/tests/test_dev_caller_e2e.py",
+      "orchestrator/devplan/plan-draft.json",
+      "orchestrator/devplan/plan-prepare.json",
+      "orchestrator/devplan/prepare-out.json"
+    ],
+    "python": "C:\\AI\\orchestrator\\.venv\\Scripts\\python.exe",
+    "python_version": "3.13.14"
+  },
+  "db_copy": {
+    "source": "C:\\AI\\orchestrator\\db\\generation.sqlite",
+    "source_sha256": "sha256:fbfe3ababb9f53dfb1c373774ce99bdfed813d7b64ad743164fa6adfbc0c56f6",
+    "copy": "C:\\dev\\cos-desktop\\target\\rt3-matrix\\run1\\generation-copy.sqlite",
+    "copy_sha256": "sha256:f87711008a546c31caf75ed6d24c3a5c95b1d824c8b43868f13e1e852bfb3e3d",
+    "copy_bytes": 11493376
+  },
+  "projection": {
+    "task_count": 39,
+    "target_task_ref": "task-00eeff7805964e1f835534b81e57065b",
+    "target_title_sha256_16": "sha256:5c8077570a2602c6",
+    "target_title": "北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+    "task_status": "COMPLETED",
+    "status_label": "完了（COMPLETED）",
+    "inner_phase": "RUNNING",
+    "iteration_index": 0,
+    "projection_revision": "1",
+    "epoch": "fed08b626eda474ea63ec4b60d487ddf",
+    "snapshot_id": "snapshot-4c5cdd9eb8224acb9e5a744a215c552f",
+    "snapshot_expected": {
+      "artifacts": 36,
+      "candidates": 37,
+      "capabilities": 0,
+      "evaluations": 37,
+      "graphs": 37,
+      "iterations": 37,
+      "outcomes": 37,
+      "tasks": 39
+    },
+    "snapshot_mutations": 260,
+    "context_sha256_16": "sha256:33383c19826463a1",
+    "scope_sha256_16": "sha256:86686f0366ba27f3",
+    "cursor_sha256_16": "sha256:2cb41a7ec832e914"
+  },
+  "projection_after_epoch_change": {
+    "alt": {
+      "epoch": "440452865eb74021acb449d1b5c169fc",
+      "task_count": 39,
+      "target_task_ref": "task-00eeff7805964e1f835534b81e57065b",
+      "target_title_sha256_16": "sha256:5c8077570a2602c6",
+      "task_status": "CANCELLED",
+      "status_label": "中止（CANCELLED）",
+      "snapshot_id": "snapshot-5984604e771140b6b03e67f86c104685",
+      "snapshot_mutations": 260
+    }
+  },
+  "main_server": {
+    "pid": 44460,
+    "port": 8135,
+    "origin": "http://127.0.0.1:8135",
+    "start_index": 1,
+    "started_at": "2026-11-09T11:15:28+0900",
+    "epoch": "fed08b626eda474ea63ec4b60d487ddf",
+    "server_identity": "cos-runtime-orchestrator",
+    "server_build": "orchestrator-runtime/0.1.0",
+    "protocol": {
+      "major": 2,
+      "minor": 0
+    },
+    "descriptor": {
+      "present": true,
+      "bytes": 307,
+      "sha256": "sha256:31b2fcd5aca52ba31a27d10e984acb4219c7e615bc75ada3e0f825473547f2aa",
+      "origin": "http://127.0.0.1:8135",
+      "epoch": "fed08b626eda474ea63ec4b60d487ddf",
+      "schema_version": 1,
+      "ready": true
+    }
+  },
+  "scenarios": {
+    "gap_closed_resync": {
+      "verdict": "PASS",
+      "recorded_at": "2026-11-09T11:15:38+0900",
+      "details": {
+        "injection": {
+          "updated_rows": 1,
+          "head_before": 0,
+          "head_after": 2,
+          "expected_head_after": 2,
+          "journal_rows_after": 0,
+          "deleted_rows": 1
+        },
+        "cursor_before_sha256_16": "sha256:60316d47c3068d5b",
+        "status_before": "COMPLETED",
+        "status_after": "CANCELLED",
+        "prior_label": "完了（COMPLETED）",
+        "expected_label": "中止（CANCELLED）",
+        "conflict": {
+          "status": 409,
+          "path_sha256_16": "sha256:188070ee1cbca652",
+          "cursor_sha256_16": "sha256:60316d47c3068d5b"
+        },
+        "resync_request": {
+          "method": "GET",
+          "path": "/api/cos/desktop/snapshot",
+          "status": 200
+        },
+        "ui": {
+          "ok": true,
+          "seconds": 0.74,
+          "label": "中止（CANCELLED）",
+          "label_visible": true,
+          "title_visible": true,
+          "live_label": true,
+          "uia_element_count": 65,
+          "excerpt": "task-00eeff7805964e1f835534b81e57065b  北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。\nタスクの状態: 中止（CANCELLED）\ntask-00eeff7805964e1f835534b81e57065b — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。\n中止（CANCELLED）\n中止（CANCELLED）\n目的 — 利用可能: task-00eeff7805964e1f835534b81e57065b — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。"
+        },
+        "settle_window_seconds": 8.0,
+        "additional_conflicts": 0,
+        "cursors_after_sha256_16": [
+          "sha256:25652b97c0e8c8ac"
+        ],
+        "stderr_extract": {
+          "file": "app-a0-gap.stderr.sanitized.txt",
+          "bytes": 110,
+          "lines": 1,
+          "sha256": "sha256:3eaa4be0cb38477c951444fdfdce42d656d92e35fb819be83dca74e62342bff3"
+        }
+      }
+    },
+    "cursor_overflow_resync": {
+      "verdict": "PASS",
+      "recorded_at": "2026-11-09T11:15:47+0900",
+      "details": {
+        "injection": {
+          "rows_inserted": 10001,
+          "head_before": 2,
+          "head_after": 10003,
+          "journal_rows_after": 10001
+        },
+        "retention_bound": 10000,
+        "journal_rows_after_prune": 0,
+        "status_before": "CANCELLED",
+        "status_after": "CANCELLED",
+        "conflict": {
+          "status": 409,
+          "cursor_sha256_16": "sha256:25652b97c0e8c8ac"
+        },
+        "resync_request": {
+          "method": "GET",
+          "path": "/api/cos/desktop/snapshot",
+          "status": 200
+        },
+        "ui": {
+          "ok": true,
+          "seconds": 0.768,
+          "label": "中止（CANCELLED）",
+          "label_visible": true,
+          "title_visible": true,
+          "live_label": true,
+          "uia_element_count": 65,
+          "excerpt": "task-00eeff7805964e1f835534b81e57065b  北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。\nタスクの状態: 中止（CANCELLED）\ntask-00eeff7805964e1f835534b81e57065b — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。\n中止（CANCELLED）\n中止（CANCELLED）\n目的 — 利用可能: task-00eeff7805964e1f835534b81e57065b — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。"
+        },
+        "settle_window_seconds": 8.0,
+        "additional_conflicts": 0,
+        "stderr_extract": {
+          "file": "app-a0-overflow.stderr.sanitized.txt",
+          "bytes": 0,
+          "lines": 0,
+          "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      }
+    },
+    "desktop_clean_restart": {
+      "verdict": "PASS",
+      "recorded_at": "2026-11-09T11:15:54+0900",
+      "details": {
+        "close": {
+          "exited": true,
+          "exit_code": 0,
+          "pid": 25096,
+          "wm_close_sent": true,
+          "close_markers": [
+            "observation shutdown confirmed"
+          ],
+          "forced": null
+        },
+        "runtime_ready_after_desktop_exit": true,
+        "relaunch": {
+          "instance": "clean",
+          "launch": {
+            "pid": 44052,
+            "launched_at": "2026-11-09T11:15:51+0900",
+            "endpoint_env_absent": true,
+            "token_env_absent": true,
+            "issuance_secret_present": true,
+            "discovery_override_present": true
+          },
+          "live": {
+            "ok": true,
+            "seconds": 2.883,
+            "title_visible": true,
+            "live_label": true,
+            "uia_element_count": 64,
+            "excerpt": "task-00eeff7805964e1f835534b81e57065b  北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。\nRuntime / 情報を受信中\n接続・情報の鮮度: 情報を受信中\ntask-019e673007d848018cf3dc7366258d38 — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。\n目的 — 利用可能: task-00eeff7805964e1f835534b81e57065b — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。"
+          },
+          "alive": true
+        },
+        "prior_cursors_sha256_16": [
+          "sha256:60316d47c3068d5b",
+          "sha256:25652b97c0e8c8ac",
+          "sha256:7929dc9031b91307"
+        ],
+        "fresh_cursors_sha256_16": [
+          "sha256:38f6f444c25c3758"
+        ],
+        "reused_cursor": false,
+        "observation_opens_total": 3,
+        "epoch": "fed08b626eda474ea63ec4b60d487ddf",
+        "stderr_extracts": {
+          "close": {
+            "file": "app-a0-clean-close.stderr.sanitized.txt",
+            "bytes": 133,
+            "lines": 3,
+            "sha256": "sha256:4fdfc084380087c0fac2c151a9bb22eab60c15da6a22917f761d0e458aaf8ce9"
+          },
+          "relaunch": {
+            "file": "app-clean-clean-relaunch.stderr.sanitized.txt",
+            "bytes": 110,
+            "lines": 1,
+            "sha256": "sha256:3eaa4be0cb38477c951444fdfdce42d656d92e35fb819be83dca74e62342bff3"
+          }
+        }
+      }
+    },
+    "desktop_forced_restart": {
+      "verdict": "PASS",
+      "recorded_at": "2026-11-09T11:15:58+0900",
+      "details": {
+        "forced": {
+          "exited": true,
+          "exit_code": 1,
+          "pid": 44052,
+          "forced": {
+            "pid": 44052,
+            "exit": 0,
+            "output": "SUCCESS: The process with PID 44052 (child process of PID 9572) has been terminated."
+          },
+          "alive_after": false
+        },
+        "close_markers_in_forced_close": [],
+        "runtime_ready_after_desktop_exit": true,
+        "relaunch": {
+          "instance": "forced",
+          "launch": {
+            "pid": 39152,
+            "launched_at": "2026-11-09T11:15:56+0900",
+            "endpoint_env_absent": true,
+            "token_env_absent": true,
+            "issuance_secret_present": true,
+            "discovery_override_present": true
+          },
+          "live": {
+            "ok": true,
+            "seconds": 2.302,
+            "title_visible": true,
+            "live_label": true,
+            "uia_element_count": 64,
+            "excerpt": "task-00eeff7805964e1f835534b81e57065b  北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。\nRuntime / 情報を受信中\n接続・情報の鮮度: 情報を受信中\ntask-019e673007d848018cf3dc7366258d38 — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。\n目的 — 利用可能: task-00eeff7805964e1f835534b81e57065b — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。"
+          },
+          "alive": true
+        },
+        "prior_cursors_sha256_16": [
+          "sha256:60316d47c3068d5b",
+          "sha256:25652b97c0e8c8ac",
+          "sha256:7929dc9031b91307",
+          "sha256:38f6f444c25c3758"
+        ],
+        "fresh_cursors_sha256_16": [
+          "sha256:888430dd3658581a"
+        ],
+        "reused_cursor": false,
+        "stderr_extracts": {
+          "forced_close": {
+            "file": "app-clean-forced-close.stderr.sanitized.txt",
+            "bytes": 0,
+            "lines": 0,
+            "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "relaunch": {
+            "file": "app-forced-forced-relaunch.stderr.sanitized.txt",
+            "bytes": 110,
+            "lines": 1,
+            "sha256": "sha256:3eaa4be0cb38477c951444fdfdce42d656d92e35fb819be83dca74e62342bff3"
+          }
+        }
+      }
+    },
+    "runtime_epoch_change_desktop_restart": {
+      "verdict": "PASS",
+      "recorded_at": "2026-11-09T11:16:05+0900",
+      "details": {
+        "close": {
+          "exited": true,
+          "exit_code": 0,
+          "pid": 39152,
+          "wm_close_sent": true,
+          "close_markers": [
+            "observation shutdown confirmed",
+            "preferences save confirmed"
+          ],
+          "forced": null
+        },
+        "old_origin": "http://127.0.0.1:8135",
+        "old_epoch": "fed08b626eda474ea63ec4b60d487ddf",
+        "desktop_requests_to_old_origin_after_close": 0,
+        "old_origin_requests_after_close": [],
+        "teardown_revoke_requests": [],
+        "main_stop": {
+          "pid": 44460,
+          "clean": true,
+          "exit": 0,
+          "stopped_at": "2026-11-09T11:16:01+0900"
+        },
+        "descriptor_removed_on_stop": true,
+        "new_origin": "http://127.0.0.1:8136",
+        "new_epoch": "440452865eb74021acb449d1b5c169fc",
+        "epoch_changed": true,
+        "descriptor": {
+          "present": true,
+          "bytes": 307,
+          "sha256": "sha256:9efe71222e314c1a6c7a0c3fc38f91cac295f678fa7f972b30d22662ac0c907a",
+          "origin": "http://127.0.0.1:8136",
+          "epoch": "440452865eb74021acb449d1b5c169fc",
+          "schema_version": 1,
+          "ready": true
+        },
+        "relaunch": {
+          "instance": "epoch",
+          "launch": {
+            "pid": 28756,
+            "launched_at": "2026-11-09T11:16:04+0900",
+            "endpoint_env_absent": true,
+            "token_env_absent": true,
+            "issuance_secret_present": true,
+            "discovery_override_present": true
+          },
+          "live": {
+            "ok": true,
+            "seconds": 0.774,
+            "title_visible": true,
+            "live_label": true,
+            "uia_element_count": 64,
+            "excerpt": "task-00eeff7805964e1f835534b81e57065b  北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。\nRuntime / 情報を受信中\n接続・情報の鮮度: 情報を受信中\ntask-019e673007d848018cf3dc7366258d38 — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。\n目的 — 利用可能: task-00eeff7805964e1f835534b81e57065b — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。"
+          },
+          "alive": true
+        },
+        "fresh_cursors_sha256_16": [
+          "sha256:8bffd0162b4ae933"
+        ],
+        "reused_cursor": false,
+        "stderr_extract": {
+          "file": "app-epoch-epoch-relaunch.stderr.sanitized.txt",
+          "bytes": 110,
+          "lines": 1,
+          "sha256": "sha256:291605b9061b9272e51f890125c078d3124e1cd2aea538a9a6fe33dd5a7bb59b"
+        }
+      }
+    },
+    "epoch_change_under_load": {
+      "verdict": "PASS",
+      "recorded_at": "2026-11-09T11:16:15+0900",
+      "details": {
+        "projection_stream": {
+          "status_change": {
+            "updated_rows": 1,
+            "head_before": 0,
+            "head_after": 1,
+            "journal_rows": 1
+          },
+          "expected_label": "完了（COMPLETED）",
+          "ui": {
+            "ok": true,
+            "seconds": 0.737,
+            "label": "完了（COMPLETED）",
+            "label_visible": true,
+            "title_visible": true,
+            "live_label": true,
+            "uia_element_count": 64,
+            "excerpt": "task-00eeff7805964e1f835534b81e57065b  北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。\nタスクの状態: 完了（COMPLETED）\n正式な結果: 完了（COMPLETED）\ntask-019e673007d848018cf3dc7366258d38 — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。\n完了（COMPLETED）\n完了（COMPLETED）\n目的 — 利用可能: task-00eeff7805964e1f835534b81e57065b — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。\n結果 — 利用可能: 正式状態: 完了（COMPLETED）"
+          },
+          "delta_requests_during_stream": 3,
+          "delta_conflicts_during_stream": 0,
+          "journal_head": 0
+        },
+        "runtime_stop": {
+          "pid": 17300,
+          "clean": true,
+          "exit": 0,
+          "stopped_at": "2026-11-09T11:16:06+0900"
+        },
+        "withheld": {
+          "ok": true,
+          "seconds": 1.963,
+          "title_absent": true,
+          "labels_present": [
+            "情報源なし / データ非公開",
+            "データは非公開"
+          ],
+          "uia_element_count": 45,
+          "excerpt": "情報源なし / データ非公開\n接続・情報の鮮度: データは非公開 — 現在の許可がありません"
+        },
+        "epoch_before_stop": "440452865eb74021acb449d1b5c169fc",
+        "epoch_while_down": null,
+        "epoch_after_restart": "945a984b09dc4bfc95980dd0ee90e457",
+        "epoch_changed": true,
+        "descriptor": {
+          "present": true,
+          "bytes": 307,
+          "sha256": "sha256:36a14482cdfdc33fa0918f9e0e5421e37e5205373277c8462b97e3428fcde02f",
+          "origin": "http://127.0.0.1:8136",
+          "epoch": "945a984b09dc4bfc95980dd0ee90e457",
+          "schema_version": 1,
+          "ready": true
+        },
+        "recovery": {
+          "ui": {
+            "ok": true,
+            "seconds": 0.672,
+            "label": "完了（COMPLETED）",
+            "label_visible": true,
+            "title_visible": true,
+            "live_label": true,
+            "uia_element_count": 64,
+            "excerpt": "task-00eeff7805964e1f835534b81e57065b  北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。\nタスクの状態: 完了（COMPLETED）\n正式な結果: 完了（COMPLETED）\ntask-019e673007d848018cf3dc7366258d38 — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。\n完了（COMPLETED）\n完了（COMPLETED）\n目的 — 利用可能: task-00eeff7805964e1f835534b81e57065b — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。\n結果 — 利用可能: 正式状態: 完了（COMPLETED）"
+          },
+          "same_process": true,
+          "desktop_pid_before": 28756,
+          "desktop_pid_after": 28756,
+          "deltas_401": 0,
+          "deltas_409": 0,
+          "observations_401": 1,
+          "observations_200": 1,
+          "refreshes_401": 1,
+          "issues_200": 1,
+          "snapshots_200": 0,
+          "command_requests": 0,
+          "reauth_budget": 3,
+          "reauthorized_line": true
+        },
+        "reauth_line_count_after_recovery": 1,
+        "budget_reset_relaunch": {
+          "reason": "the automatic-replacement budget is per process runtime binding: the epoch-change recovery above consumed one of three replacements, so a relaunch is recorded explicitly to start the auth-change matrix from a fresh per-process budget",
+          "close": {
+            "exited": true,
+            "exit_code": 0,
+            "pid": 28756,
+            "wm_close_sent": true,
+            "close_markers": [
+              "observation shutdown confirmed",
+              "preferences save confirmed"
+            ],
+            "forced": null
+          },
+          "relaunch": {
+            "instance": "reset",
+            "launch": {
+              "pid": 1072,
+              "launched_at": "2026-11-09T11:16:15+0900",
+              "endpoint_env_absent": true,
+              "token_env_absent": true,
+              "issuance_secret_present": true,
+              "discovery_override_present": true
+            },
+            "live": {
+              "ok": true,
+              "seconds": 0.765,
+              "title_visible": true,
+              "live_label": true,
+              "uia_element_count": 66,
+              "excerpt": "task-00eeff7805964e1f835534b81e57065b  北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。\nRuntime / 情報を受信中\n接続・情報の鮮度: 情報を受信中\ntask-00eeff7805964e1f835534b81e57065b — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。\ntask-019e673007d848018cf3dc7366258d38 — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。\n目的 — 利用可能: task-00eeff7805964e1f835534b81e57065b — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。"
+            },
+            "alive": true
+          },
+          "fresh_observation": true,
+          "fresh_cursors_sha256_16": [
+            "sha256:274876c4c8112b72"
+          ],
+          "reauth_line_count_after_relaunch": 0
+        },
+        "stderr_extract": {
+          "file": "app-epoch-epoch-under-load.stderr.sanitized.txt",
+          "bytes": 89,
+          "lines": 1,
+          "sha256": "sha256:c2b38e3d00814c4cf192f559887adaa75646b76f6174bf979a36a90a7625421b"
+        }
+      }
+    },
+    "long_observation_idle": {
+      "verdict": "PASS",
+      "recorded_at": "2026-11-09T11:19:17+0900",
+      "details": {
+        "window_seconds": 181.08,
+        "requested_seconds": 180,
+        "policy": "no mid-window UIA enumeration: PowerShell UIA tree walks can stall the UI-driven poll loop and would be measured as a harness-induced keepalive gap",
+        "start_ui": {
+          "ok": true,
+          "title_visible": true,
+          "live_label": true,
+          "status_label": true,
+          "uia_element_count": 66
+        },
+        "end_ui": {
+          "ok": true,
+          "title_visible": true,
+          "live_label": true,
+          "status_label": true,
+          "uia_element_count": 66
+        },
+        "alive_checks": [
+          {
+            "at_seconds": 15.01,
+            "alive": true,
+            "epoch": "945a984b09dc4bfc95980dd0ee90e457"
+          },
+          {
+            "at_seconds": 30.05,
+            "alive": true,
+            "epoch": "945a984b09dc4bfc95980dd0ee90e457"
+          },
+          {
+            "at_seconds": 45.08,
+            "alive": true,
+            "epoch": "945a984b09dc4bfc95980dd0ee90e457"
+          },
+          {
+            "at_seconds": 60.12,
+            "alive": true,
+            "epoch": "945a984b09dc4bfc95980dd0ee90e457"
+          },
+          {
+            "at_seconds": 75.15,
+            "alive": true,
+            "epoch": "945a984b09dc4bfc95980dd0ee90e457"
+          },
+          {
+            "at_seconds": 90.19,
+            "alive": true,
+            "epoch": "945a984b09dc4bfc95980dd0ee90e457"
+          },
+          {
+            "at_seconds": 105.22,
+            "alive": true,
+            "epoch": "945a984b09dc4bfc95980dd0ee90e457"
+          },
+          {
+            "at_seconds": 120.25,
+            "alive": true,
+            "epoch": "945a984b09dc4bfc95980dd0ee90e457"
+          },
+          {
+            "at_seconds": 135.29,
+            "alive": true,
+            "epoch": "945a984b09dc4bfc95980dd0ee90e457"
+          },
+          {
+            "at_seconds": 150.33,
+            "alive": true,
+            "epoch": "945a984b09dc4bfc95980dd0ee90e457"
+          },
+          {
+            "at_seconds": 165.37,
+            "alive": true,
+            "epoch": "945a984b09dc4bfc95980dd0ee90e457"
+          }
+        ],
+        "alive_check_count": 11,
+        "checks_all_alive": true,
+        "delta_requests": 621,
+        "distinct_delta_cursors": 1,
+        "expected_polls_at_250ms": 720,
+        "max_delta_gap_seconds": 0.369,
+        "conflict_requests": 0,
+        "credential_or_401_requests": 0,
+        "observation_requests": 0,
+        "command_requests": 0,
+        "epoch_before": "945a984b09dc4bfc95980dd0ee90e457",
+        "epoch_after": "945a984b09dc4bfc95980dd0ee90e457",
+        "epoch_stable": true,
+        "checks_epochs": [
+          "945a984b09dc4bfc95980dd0ee90e457"
+        ],
+        "title_occurrences_set": [
+          4
+        ],
+        "stderr_extract": {
+          "file": "app-reset-long.stderr.sanitized.txt",
+          "bytes": 110,
+          "lines": 1,
+          "sha256": "sha256:bb0638096a22c48630964207deea3ffeed36d4b308b80cf7c985887425391987"
+        }
+      }
+    },
+    "auth_change_bounded_reauth": {
+      "verdict": "PASS",
+      "recorded_at": "2026-11-09T11:19:39+0900",
+      "details": {
+        "mechanism": "Runtime credential registry pressure: each burst issues past the registry bound (64), which evicts the Desktop's stored credential through the supported issuance API (no test-only Runtime hook).",
+        "attempts": [
+          {
+            "attempt": 1,
+            "burst": {
+              "issued": 71,
+              "all_ok": true,
+              "statuses": [
+                "200"
+              ],
+              "seconds": 2.373,
+              "registry_bound": 64,
+              "stopped_on": "delta_401"
+            },
+            "trigger_401": {
+              "path": "/api/cos/desktop/deltas",
+              "status": 401
+            },
+            "trigger_401_present": true,
+            "refresh_401": true,
+            "issue_200_after_refresh": true,
+            "delta_403_principal_mismatch": true,
+            "observation_403_principal_mismatch": true,
+            "observation_200_fresh": true,
+            "fresh_cursor": true,
+            "fresh_cursors_sha256_16": [
+              "sha256:928ff5b617b1f352"
+            ],
+            "reauth_line_delta": 1,
+            "ui_live": {
+              "ok": true,
+              "seconds": 0.693,
+              "label": "完了（COMPLETED）",
+              "label_visible": true,
+              "title_visible": true,
+              "live_label": true,
+              "uia_element_count": 66,
+              "excerpt": "task-00eeff7805964e1f835534b81e57065b  北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。\nタスクの状態: 完了（COMPLETED）\n正式な結果: 完了（COMPLETED）\ntask-00eeff7805964e1f835534b81e57065b — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。\n完了（COMPLETED）\ntask-019e673007d848018cf3dc7366258d38 — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。\n完了（COMPLETED）\n目的 — 利用可能: task-00eeff7805964e1f835534b81e57065b — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。\n結果 — 利用可能: 正式状態: 完了（COMPLETED）"
+            },
+            "stderr_extract": {
+              "file": "app-reset-auth-burst-1.stderr.sanitized.txt",
+              "bytes": 89,
+              "lines": 1,
+              "sha256": "sha256:c2b38e3d00814c4cf192f559887adaa75646b76f6174bf979a36a90a7625421b"
+            }
+          },
+          {
+            "attempt": 2,
+            "burst": {
+              "issued": 69,
+              "all_ok": true,
+              "statuses": [
+                "200"
+              ],
+              "seconds": 2.178,
+              "registry_bound": 64,
+              "stopped_on": "delta_401"
+            },
+            "trigger_401": {
+              "path": "/api/cos/desktop/deltas",
+              "status": 401
+            },
+            "trigger_401_present": true,
+            "refresh_401": true,
+            "issue_200_after_refresh": true,
+            "delta_403_principal_mismatch": true,
+            "observation_403_principal_mismatch": true,
+            "observation_200_fresh": true,
+            "fresh_cursor": true,
+            "fresh_cursors_sha256_16": [
+              "sha256:06e5ca9fe73cfaf9"
+            ],
+            "reauth_line_delta": 1,
+            "ui_live": {
+              "ok": true,
+              "seconds": 0.653,
+              "label": "完了（COMPLETED）",
+              "label_visible": true,
+              "title_visible": true,
+              "live_label": true,
+              "uia_element_count": 66,
+              "excerpt": "task-00eeff7805964e1f835534b81e57065b  北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。\nタスクの状態: 完了（COMPLETED）\n正式な結果: 完了（COMPLETED）\ntask-00eeff7805964e1f835534b81e57065b — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。\n完了（COMPLETED）\ntask-019e673007d848018cf3dc7366258d38 — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。\n完了（COMPLETED）\n目的 — 利用可能: task-00eeff7805964e1f835534b81e57065b — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。\n結果 — 利用可能: 正式状態: 完了（COMPLETED）"
+            },
+            "stderr_extract": {
+              "file": "app-reset-auth-burst-2.stderr.sanitized.txt",
+              "bytes": 89,
+              "lines": 1,
+              "sha256": "sha256:c2b38e3d00814c4cf192f559887adaa75646b76f6174bf979a36a90a7625421b"
+            }
+          },
+          {
+            "attempt": 3,
+            "burst": {
+              "issued": 72,
+              "all_ok": true,
+              "statuses": [
+                "200"
+              ],
+              "seconds": 2.274,
+              "registry_bound": 64,
+              "stopped_on": "delta_401"
+            },
+            "trigger_401": {
+              "path": "/api/cos/desktop/deltas",
+              "status": 401
+            },
+            "trigger_401_present": true,
+            "refresh_401": true,
+            "issue_200_after_refresh": true,
+            "delta_403_principal_mismatch": true,
+            "observation_403_principal_mismatch": true,
+            "observation_200_fresh": true,
+            "fresh_cursor": true,
+            "fresh_cursors_sha256_16": [
+              "sha256:071fa89ae02a28d7"
+            ],
+            "reauth_line_delta": 1,
+            "ui_live": {
+              "ok": true,
+              "seconds": 0.671,
+              "label": "完了（COMPLETED）",
+              "label_visible": true,
+              "title_visible": true,
+              "live_label": true,
+              "uia_element_count": 66,
+              "excerpt": "task-00eeff7805964e1f835534b81e57065b  北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。\nタスクの状態: 完了（COMPLETED）\n正式な結果: 完了（COMPLETED）\ntask-00eeff7805964e1f835534b81e57065b — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。\n完了（COMPLETED）\ntask-019e673007d848018cf3dc7366258d38 — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。\n完了（COMPLETED）\n目的 — 利用可能: task-00eeff7805964e1f835534b81e57065b — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。\n結果 — 利用可能: 正式状態: 完了（COMPLETED）"
+            },
+            "stderr_extract": {
+              "file": "app-reset-auth-burst-3.stderr.sanitized.txt",
+              "bytes": 89,
+              "lines": 1,
+              "sha256": "sha256:c2b38e3d00814c4cf192f559887adaa75646b76f6174bf979a36a90a7625421b"
+            }
+          }
+        ],
+        "reauth_line_count": 3,
+        "reauth_bound": 3,
+        "reauth_min_interval_seconds": 2.0,
+        "command_requests": 0,
+        "observed_transition": "delta 401 -> refresh 401 -> issue 200 (new principal) -> retried read 403 PRINCIPAL_MISMATCH -> resume open 403 -> fresh observation 200 with a new cursor",
+        "findings": [
+          "The reissued credential belongs to a new server-managed principal, so the old grant cannot be inherited: the retried read and the resumed open fail closed with 403 before the client opens a fresh observation. This is an observed limitation of credential recovery without a Runtime restart, not a silent recovery: no stale projection is admitted and the projection is re-read from a fresh snapshot."
+        ]
+      }
+    },
+    "auth_change_exclusion_honest": {
+      "verdict": "PASS",
+      "recorded_at": "2026-11-09T11:19:56+0900",
+      "details": {
+        "burst": {
+          "issued": 64,
+          "all_ok": true,
+          "statuses": [
+            "200"
+          ],
+          "seconds": 1.604,
+          "registry_bound": 64
+        },
+        "delta_401": true,
+        "reauth_line_delta": 0,
+        "excluded_ui": {
+          "ok": true,
+          "seconds": 0.648,
+          "title_absent": true,
+          "mode_label": true,
+          "explicit_label": true,
+          "reconnect_action_visible": true,
+          "uia_element_count": 45,
+          "excerpt": "タスク情報はありません\n情報源なし / データ非公開\n接続・情報の鮮度: データは非公開 — 現在の許可がありません\nDesktop内 · 観測情報を利用できません — 再接続する"
+        },
+        "exclusion_window_seconds": 10.0,
+        "credential_requests_after_exclusion": 0,
+        "command_requests_after_exclusion": 0,
+        "reconnect_action": {
+          "invoked": true,
+          "matched_name": "Desktop内 · 観測情報を利用できません — 再接続する",
+          "button_count": null,
+          "error": null,
+          "file": "uia-reset-invoke-excluded.json"
+        },
+        "requests_after_reconnect_action": {
+          "credential": 0,
+          "delta": 0
+        },
+        "still_excluded_after_reconnect": true,
+        "stderr_extract": {
+          "file": "app-reset-auth-excluded.stderr.sanitized.txt",
+          "bytes": 0,
+          "lines": 0,
+          "sha256": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "findings": [
+          "After the per-session replacement budget is exhausted the client sends the 401 through and stops: no credential request follows and the UI renders 情報源なし / データ非公開 plus データは非公開 — 現在の許可がありません.",
+          "The intervention strip's 再接続する action re-subscribes the local publication only; it does not fabricate a new credential or projection."
+        ]
+      }
+    },
+    "post_exclusion_relaunch_recovery": {
+      "verdict": "PASS",
+      "recorded_at": "2026-11-09T11:19:57+0900",
+      "details": {
+        "close": {
+          "exited": true,
+          "exit_code": 0,
+          "pid": 1072,
+          "wm_close_sent": true,
+          "close_markers": [
+            "observation shutdown confirmed",
+            "preferences save confirmed"
+          ],
+          "forced": null
+        },
+        "relaunch": {
+          "instance": "relaunch",
+          "launch": {
+            "pid": 53232,
+            "launched_at": "2026-11-09T11:19:56+0900",
+            "endpoint_env_absent": true,
+            "token_env_absent": true,
+            "issuance_secret_present": true,
+            "discovery_override_present": true
+          },
+          "live": {
+            "ok": true,
+            "seconds": 0.693,
+            "title_visible": true,
+            "live_label": true,
+            "uia_element_count": 66,
+            "excerpt": "task-00eeff7805964e1f835534b81e57065b  北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。\nRuntime / 情報を受信中\n接続・情報の鮮度: 情報を受信中\ntask-00eeff7805964e1f835534b81e57065b — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。\ntask-019e673007d848018cf3dc7366258d38 — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。\n目的 — 利用可能: task-00eeff7805964e1f835534b81e57065b — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。"
+          },
+          "alive": true
+        },
+        "refreshes_401": 1,
+        "issues_200": 1,
+        "observations_200": 1,
+        "fresh_cursors_sha256_16": [
+          "sha256:f2be6b1d00900c78"
+        ],
+        "epoch": "945a984b09dc4bfc95980dd0ee90e457",
+        "stderr_extract": {
+          "file": "app-relaunch-relaunch-recovery.stderr.sanitized.txt",
+          "bytes": 199,
+          "lines": 2,
+          "sha256": "sha256:3fab131f9102e2030330863f6e68e68c81674e1a0fa9a8ce49417cfe882b6dd1"
+        }
+      }
+    }
+  },
+  "summary": {
+    "verdicts": {
+      "gap_closed_resync": "PASS",
+      "cursor_overflow_resync": "PASS",
+      "desktop_clean_restart": "PASS",
+      "desktop_forced_restart": "PASS",
+      "runtime_epoch_change_desktop_restart": "PASS",
+      "epoch_change_under_load": "PASS",
+      "long_observation_idle": "PASS",
+      "auth_change_bounded_reauth": "PASS",
+      "auth_change_exclusion_honest": "PASS",
+      "post_exclusion_relaunch_recovery": "PASS"
+    },
+    "passed": [
+      "gap_closed_resync",
+      "cursor_overflow_resync",
+      "desktop_clean_restart",
+      "desktop_forced_restart",
+      "runtime_epoch_change_desktop_restart",
+      "epoch_change_under_load",
+      "long_observation_idle",
+      "auth_change_bounded_reauth",
+      "auth_change_exclusion_honest",
+      "post_exclusion_relaunch_recovery"
+    ],
+    "failed": [],
+    "not_run": [],
+    "all_required_passed": true
+  },
+  "access_logs": {
+    "8135": {
+      "port": 8135,
+      "log_file": "runtime-8135.log",
+      "requests": 104,
+      "by_status": {
+        "200": 102,
+        "409": 2
+      },
+      "by_route": {
+        "/api/ready": 3,
+        "/api/cos/desktop/server": 6,
+        "/api/cos/desktop/credentials": 3,
+        "/api/cos/desktop/observation": 4,
+        "/api/cos/desktop/deltas": 84,
+        "/api/cos/desktop/snapshot": 2,
+        "/api/cos/desktop/credentials/revoke": 2
+      },
+      "deltas": 84,
+      "delta_conflicts": 2,
+      "delta_401": 0,
+      "observation_opens": 4,
+      "observation_refused": 0,
+      "credential_issues": 5,
+      "credential_refresh_refused": 0,
+      "snapshot_refreshes": 2,
+      "command_requests": 0,
+      "sanitized_log_bytes": 12411,
+      "sanitized_log_sha256": "sha256:de1dd365194accb09943a2b6f2cf71eb28c991cd80e47cda4896ce18140dfe67"
+    },
+    "8136": {
+      "port": 8136,
+      "log_file": "runtime-8136.log",
+      "requests": 1044,
+      "by_status": {
+        "200": 1022,
+        "401": 16,
+        "403": 6
+      },
+      "by_route": {
+        "/api/ready": 2,
+        "/api/cos/desktop/server": 31,
+        "/api/cos/desktop/credentials": 284,
+        "/api/cos/desktop/observation": 17,
+        "/api/cos/desktop/deltas": 703,
+        "/api/cos/desktop/credentials/refresh": 5,
+        "/api/cos/desktop/credentials/revoke": 2
+      },
+      "deltas": 703,
+      "delta_conflicts": 0,
+      "delta_401": 4,
+      "observation_opens": 8,
+      "observation_refused": 9,
+      "credential_issues": 285,
+      "credential_refresh_refused": 5,
+      "snapshot_refreshes": 0,
+      "command_requests": 0,
+      "sanitized_log_bytes": 113736,
+      "sanitized_log_sha256": "sha256:ab45060d90dc1aae7f833843bf972d83615f909c206b72b89f2835f3f2450f66"
+    }
+  },
+  "cleanup": {
+    "started_at": "2026-11-09T11:19:57+0900",
+    "desktop_processes_alive": [],
+    "runtime_8136_stop": {
+      "pid": 29824,
+      "clean": true,
+      "exit": 0,
+      "stopped_at": "2026-11-09T11:19:58+0900"
+    },
+    "runtime_8135_stop": {
+      "pid": 44460,
+      "clean": true,
+      "exit": 0,
+      "stopped_at": "2026-11-09T11:19:58+0900"
+    },
+    "credential_store_cleanup": {
+      "http://127.0.0.1:8135": {
+        "origin": "http://127.0.0.1:8135",
+        "targets": [
+          {
+            "target": "desktop-observation.cos-desktop/observation/78e18cc287a48f92d52f01f1ffb58dd3",
+            "exit": 1,
+            "output": "CMDKEY: Element not found."
+          },
+          {
+            "target": "cos-desktop/observation/78e18cc287a48f92d52f01f1ffb58dd3",
+            "exit": 1,
+            "output": "CMDKEY: Element not found."
+          }
+        ],
+        "deleted": false
+      },
+      "http://127.0.0.1:8136": {
+        "origin": "http://127.0.0.1:8136",
+        "targets": [
+          {
+            "target": "desktop-observation.cos-desktop/observation/932930c8566b7a20f54dc4d73c156ec3",
+            "exit": 0,
+            "output": "CMDKEY: Credential deleted successfully."
+          },
+          {
+            "target": "cos-desktop/observation/932930c8566b7a20f54dc4d73c156ec3",
+            "exit": 1,
+            "output": "CMDKEY: Element not found."
+          }
+        ],
+        "deleted": true
+      }
+    },
+    "ports_free": {
+      "8135": true,
+      "8136": true
+    },
+    "db_copy_after": {
+      "sha256": "sha256:336b86e51f16d94c1f1fe27089dbd158e070acbe30c3f6945b3bfa80f9891ede",
+      "bytes": 12685312,
+      "journal_rows": 0
+    },
+    "localappdata_removed": true,
+    "work_retained": "C:\\dev\\cos-desktop\\target\\rt3-matrix\\run1",
+    "work_note": "target/rt3-matrix/run1 retains the isolated DB copy, config and raw logs for this run; nothing outside target/ is created.",
+    "finished_at": "2026-11-09T11:19:58+0900"
+  },
+  "residuals": [
+    "Real-provider generation/task survival during a Desktop restart is NOT_RUN: no generation provider was invoked in this campaign (terminal tasks in the isolated DB copy; the projection stream is a test-only TASK status write in the copy).",
+    "The Desktop GUI command path was not driven, so a live command resend after a 401 is NOT_RUN; the campaign records zero command requests and relies on the client command-non-retry unit tests rather than claiming a live command probe.",
+    "GPU/media/UX acceptance is out of scope; the campaign observes projection states, UIA labels and Runtime request statuses only.",
+    "The auth-change matrix uses the Runtime credential-registry bound (issuance pressure) as the supported revocation mechanism; a real token TTL expiry is not measured."
+  ],
+  "files": {
+    "access-8135.json": "sha256:d46dbb2eefbfe88638245df747b4e922714ad9d65c1d962e0fb8ad366913bf4f",
+    "access-8136.json": "sha256:b68e45dd69fb69e47fd5541e06f4a99beb61513813f9b728f899f25f95608306",
+    "app-a0-clean-close.stderr.sanitized.txt": "sha256:ada971910ff2fd24401b33ecc802302816b0f1cd9bf972ae85d297b5597baa89",
+    "app-a0-gap.stderr.sanitized.txt": "sha256:e716f716dec52aa594b0853349440aaf05c863cf13f3f72345f6650dddddee79",
+    "app-a0-overflow.stderr.sanitized.txt": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "app-clean-clean-relaunch.stderr.sanitized.txt": "sha256:e716f716dec52aa594b0853349440aaf05c863cf13f3f72345f6650dddddee79",
+    "app-clean-forced-close.stderr.sanitized.txt": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "app-epoch-epoch-relaunch.stderr.sanitized.txt": "sha256:e70ca43e059357a4fa3ff6653fbe8d392d55d95c22788b21cbec92a1ac012164",
+    "app-epoch-epoch-under-load.stderr.sanitized.txt": "sha256:323309321641df4b2fa2d826c51ebcf71875b5e2f0af265bbe0224b19c005ceb",
+    "app-forced-forced-relaunch.stderr.sanitized.txt": "sha256:e716f716dec52aa594b0853349440aaf05c863cf13f3f72345f6650dddddee79",
+    "app-relaunch-relaunch-recovery.stderr.sanitized.txt": "sha256:567af7da71225af85cc4149ca7dca0a5730eb1f866d21dcf69a6a856b3c4fd2b",
+    "app-reset-auth-burst-1.stderr.sanitized.txt": "sha256:323309321641df4b2fa2d826c51ebcf71875b5e2f0af265bbe0224b19c005ceb",
+    "app-reset-auth-burst-2.stderr.sanitized.txt": "sha256:323309321641df4b2fa2d826c51ebcf71875b5e2f0af265bbe0224b19c005ceb",
+    "app-reset-auth-burst-3.stderr.sanitized.txt": "sha256:323309321641df4b2fa2d826c51ebcf71875b5e2f0af265bbe0224b19c005ceb",
+    "app-reset-auth-excluded.stderr.sanitized.txt": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "app-reset-long.stderr.sanitized.txt": "sha256:9af5a497ec71c7914a25f0b6a5e7fbc3984299a384a39c2dd2b144b8ced5503e",
+    "runtime-8135.log.sanitized.txt": "sha256:f44c9bd135e7085aa1b6b547f9965a378bd0f9deba380fcdb5beb79e45f23d96",
+    "runtime-8136.log.sanitized.txt": "sha256:2db680789fde4f9c034fdc9f7538b9e3adc5fbd32461a35af55dce9bc55b9cd8",
+    "uia-a0-live.json": "sha256:87e172daab4e7714699d70f2acf457ae50cfa9bcca8202c0b68099e65f582909",
+    "uia-a0-status.json": "sha256:b8797396bdf61a7d5a37ee6b46dd425abaf4cf225e9663de2d2e1373b27e5f52",
+    "uia-clean-live.json": "sha256:e661539ce0893a2df03028b42751561ec6899b3f8364eebb6ef7619693f57eb3",
+    "uia-epoch-live.json": "sha256:36287e52eb10a9792f0b99f4a746cd0b43fc358b53f4289cf4b9267ad8b8bae6",
+    "uia-epoch-status.json": "sha256:2c548811aa84658ed3c4499f31703abdf4b5585b6aab8ffca2b508e901581e01",
+    "uia-epoch-withheld.json": "sha256:2b2c03b34d5e7d3650118b8a7e812f39b41b5f4423c70a36cebc4e4c4e56e7c1",
+    "uia-forced-live.json": "sha256:2bdc69f0e72dade9bc60b1421b197a0c2a618223b0f183cc4b74cff61bb97b1c",
+    "uia-relaunch-live.json": "sha256:bda58511e859e8808bd3fe00c643aac552ad05d55bca04785191d26be7238915",
+    "uia-reset-excluded.json": "sha256:4b6bc995b3a6a1c1461404aef28ff83ceee56cdb71282340e069c7449c43636c",
+    "uia-reset-invoke-excluded.json": "sha256:17ad9ea51a6fa9768233fdb3d8a8aa58eb5762ca819fd91f0ff1adb094de67ae",
+    "uia-reset-live.json": "sha256:f35a1c1a1756056e1fd506b431aa735ea1baf4c3952ded299644537e193a1a1d",
+    "uia-reset-long-end.json": "sha256:f35a1c1a1756056e1fd506b431aa735ea1baf4c3952ded299644537e193a1a1d",
+    "uia-reset-long-start.json": "sha256:f35a1c1a1756056e1fd506b431aa735ea1baf4c3952ded299644537e193a1a1d",
+    "uia-reset-status.json": "sha256:f35a1c1a1756056e1fd506b431aa735ea1baf4c3952ded299644537e193a1a1d"
+  },
+  "leak_scan": {
+    "secrets_checked": 279,
+    "patterns": [
+      "bearer_header",
+      "desktop_secret_assignment",
+      "issued_secret_assignment"
+    ],
+    "findings": [],
+    "clean": true
+  }
+}

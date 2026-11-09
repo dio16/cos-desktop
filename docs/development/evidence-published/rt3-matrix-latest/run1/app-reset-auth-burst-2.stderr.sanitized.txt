@@ -1,0 +1,1 @@
+Runtime credential reauthorized after rejection; the session reopens a fresh observation

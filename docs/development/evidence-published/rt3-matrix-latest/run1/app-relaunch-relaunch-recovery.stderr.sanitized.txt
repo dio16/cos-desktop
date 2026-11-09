@@ -1,0 +1,2 @@
+Runtime discovered: server_identity=cos-runtime-orchestrator epoch=945a984b09dc4bfc95980dd0ee90e457 pid=51928
+Runtime credential reauthorized after rejection; the session reopens a fresh observation

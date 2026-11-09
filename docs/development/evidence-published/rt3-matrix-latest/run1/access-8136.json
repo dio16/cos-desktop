@@ -1,0 +1,28 @@
+{
+  "port": 8136,
+  "log_file": "runtime-8136.log",
+  "requests": 1044,
+  "by_status": {
+    "200": 1022,
+    "401": 16,
+    "403": 6
+  },
+  "by_route": {
+    "/api/ready": 2,
+    "/api/cos/desktop/server": 31,
+    "/api/cos/desktop/credentials": 284,
+    "/api/cos/desktop/observation": 17,
+    "/api/cos/desktop/deltas": 703,
+    "/api/cos/desktop/credentials/refresh": 5,
+    "/api/cos/desktop/credentials/revoke": 2
+  },
+  "deltas": 703,
+  "delta_conflicts": 0,
+  "delta_401": 4,
+  "observation_opens": 8,
+  "observation_refused": 9,
+  "credential_issues": 285,
+  "credential_refresh_refused": 5,
+  "snapshot_refreshes": 0,
+  "command_requests": 0
+}

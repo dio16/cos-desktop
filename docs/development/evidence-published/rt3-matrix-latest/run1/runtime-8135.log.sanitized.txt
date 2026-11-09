@@ -1,0 +1,117 @@
+
+--- start 1 2026-11-09T11:15:24+0900 ---
+INFO:     Started server process [51836]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8135 (Press CTRL+C to quit)
+INFO:     127.0.0.1:50757 - "GET /api/ready HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50761 - "GET /api/cos/desktop/server HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50762 - "POST /api/cos/desktop/credentials HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50763 - "POST /api/cos/desktop/observation HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50764 - "POST /api/cos/desktop/credentials HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50765 - "GET /api/cos/desktop/server HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50765 - "POST /api/cos/desktop/observation HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50765 - "GET /api/cos/desktop/deltas?cursor=cursor-5adcfa11e2e94e25bfda4f9f358c9e48 HTTP/1.1" 200 OK
+desktop observation rejected: RESYNC_REQUIRED: task change journal no longer covers this cursor
+INFO:     127.0.0.1:50765 - "GET /api/cos/desktop/deltas?cursor=cursor-5adcfa11e2e94e25bfda4f9f358c9e48 HTTP/1.1" 409 Conflict
+INFO:     127.0.0.1:50765 - "GET /api/cos/desktop/snapshot?scope=scope-919fbf0b8ecc4e7d86e596e27b34084e HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50765 - "GET /api/cos/desktop/deltas?cursor=cursor-ebc8d891bd1f45ac99d6d091de61fb99 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50765 - "GET /api/cos/desktop/deltas?cursor=cursor-ebc8d891bd1f45ac99d6d091de61fb99 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50765 - "GET /api/cos/desktop/deltas?cursor=cursor-ebc8d891bd1f45ac99d6d091de61fb99 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50765 - "GET /api/cos/desktop/deltas?cursor=cursor-ebc8d891bd1f45ac99d6d091de61fb99 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50765 - "GET /api/cos/desktop/deltas?cursor=cursor-ebc8d891bd1f45ac99d6d091de61fb99 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50765 - "GET /api/cos/desktop/deltas?cursor=cursor-ebc8d891bd1f45ac99d6d091de61fb99 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50765 - "GET /api/cos/desktop/deltas?cursor=cursor-ebc8d891bd1f45ac99d6d091de61fb99 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50765 - "GET /api/cos/desktop/deltas?cursor=cursor-ebc8d891bd1f45ac99d6d091de61fb99 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50765 - "GET /api/cos/desktop/deltas?cursor=cursor-ebc8d891bd1f45ac99d6d091de61fb99 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50765 - "GET /api/cos/desktop/deltas?cursor=cursor-ebc8d891bd1f45ac99d6d091de61fb99 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50765 - "GET /api/cos/desktop/deltas?cursor=cursor-ebc8d891bd1f45ac99d6d091de61fb99 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50765 - "GET /api/cos/desktop/deltas?cursor=cursor-ebc8d891bd1f45ac99d6d091de61fb99 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50765 - "GET /api/cos/desktop/deltas?cursor=cursor-ebc8d891bd1f45ac99d6d091de61fb99 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50765 - "GET /api/cos/desktop/deltas?cursor=cursor-ebc8d891bd1f45ac99d6d091de61fb99 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50765 - "GET /api/cos/desktop/deltas?cursor=cursor-ebc8d891bd1f45ac99d6d091de61fb99 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50765 - "GET /api/cos/desktop/deltas?cursor=cursor-ebc8d891bd1f45ac99d6d091de61fb99 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50765 - "GET /api/cos/desktop/deltas?cursor=cursor-ebc8d891bd1f45ac99d6d091de61fb99 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50765 - "GET /api/cos/desktop/deltas?cursor=cursor-ebc8d891bd1f45ac99d6d091de61fb99 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50765 - "GET /api/cos/desktop/deltas?cursor=cursor-ebc8d891bd1f45ac99d6d091de61fb99 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50765 - "GET /api/cos/desktop/deltas?cursor=cursor-ebc8d891bd1f45ac99d6d091de61fb99 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50765 - "GET /api/cos/desktop/deltas?cursor=cursor-ebc8d891bd1f45ac99d6d091de61fb99 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50765 - "GET /api/cos/desktop/deltas?cursor=cursor-ebc8d891bd1f45ac99d6d091de61fb99 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50765 - "GET /api/cos/desktop/deltas?cursor=cursor-ebc8d891bd1f45ac99d6d091de61fb99 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50765 - "GET /api/cos/desktop/deltas?cursor=cursor-ebc8d891bd1f45ac99d6d091de61fb99 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50765 - "GET /api/cos/desktop/deltas?cursor=cursor-ebc8d891bd1f45ac99d6d091de61fb99 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50765 - "GET /api/cos/desktop/deltas?cursor=cursor-ebc8d891bd1f45ac99d6d091de61fb99 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50765 - "GET /api/cos/desktop/deltas?cursor=cursor-ebc8d891bd1f45ac99d6d091de61fb99 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50765 - "GET /api/cos/desktop/deltas?cursor=cursor-ebc8d891bd1f45ac99d6d091de61fb99 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50765 - "GET /api/cos/desktop/deltas?cursor=cursor-ebc8d891bd1f45ac99d6d091de61fb99 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50765 - "GET /api/cos/desktop/deltas?cursor=cursor-ebc8d891bd1f45ac99d6d091de61fb99 HTTP/1.1" 200 OK
+cos desktop expired 2 stale observation cursor(s)
+desktop observation rejected: RESYNC_REQUIRED: task change journal exceeds the retention bound
+INFO:     127.0.0.1:50765 - "GET /api/cos/desktop/deltas?cursor=cursor-ebc8d891bd1f45ac99d6d091de61fb99 HTTP/1.1" 409 Conflict
+INFO:     127.0.0.1:50765 - "GET /api/cos/desktop/snapshot?scope=scope-919fbf0b8ecc4e7d86e596e27b34084e HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50765 - "GET /api/cos/desktop/deltas?cursor=cursor-d39067a1acac4c02b356093113350055 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50765 - "GET /api/cos/desktop/deltas?cursor=cursor-d39067a1acac4c02b356093113350055 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50765 - "GET /api/cos/desktop/deltas?cursor=cursor-d39067a1acac4c02b356093113350055 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50765 - "GET /api/cos/desktop/deltas?cursor=cursor-d39067a1acac4c02b356093113350055 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50765 - "GET /api/cos/desktop/deltas?cursor=cursor-d39067a1acac4c02b356093113350055 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50765 - "GET /api/cos/desktop/deltas?cursor=cursor-d39067a1acac4c02b356093113350055 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50765 - "GET /api/cos/desktop/deltas?cursor=cursor-d39067a1acac4c02b356093113350055 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50765 - "GET /api/cos/desktop/deltas?cursor=cursor-d39067a1acac4c02b356093113350055 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50765 - "GET /api/cos/desktop/deltas?cursor=cursor-d39067a1acac4c02b356093113350055 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50765 - "GET /api/cos/desktop/deltas?cursor=cursor-d39067a1acac4c02b356093113350055 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50765 - "GET /api/cos/desktop/deltas?cursor=cursor-d39067a1acac4c02b356093113350055 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50765 - "GET /api/cos/desktop/deltas?cursor=cursor-d39067a1acac4c02b356093113350055 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50765 - "GET /api/cos/desktop/deltas?cursor=cursor-d39067a1acac4c02b356093113350055 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50765 - "GET /api/cos/desktop/deltas?cursor=cursor-d39067a1acac4c02b356093113350055 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50765 - "GET /api/cos/desktop/deltas?cursor=cursor-d39067a1acac4c02b356093113350055 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50765 - "GET /api/cos/desktop/deltas?cursor=cursor-d39067a1acac4c02b356093113350055 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50765 - "GET /api/cos/desktop/deltas?cursor=cursor-d39067a1acac4c02b356093113350055 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50765 - "GET /api/cos/desktop/deltas?cursor=cursor-d39067a1acac4c02b356093113350055 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50765 - "GET /api/cos/desktop/deltas?cursor=cursor-d39067a1acac4c02b356093113350055 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50765 - "GET /api/cos/desktop/deltas?cursor=cursor-d39067a1acac4c02b356093113350055 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50765 - "GET /api/cos/desktop/deltas?cursor=cursor-d39067a1acac4c02b356093113350055 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50765 - "GET /api/cos/desktop/deltas?cursor=cursor-d39067a1acac4c02b356093113350055 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50765 - "GET /api/cos/desktop/deltas?cursor=cursor-d39067a1acac4c02b356093113350055 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50765 - "GET /api/cos/desktop/deltas?cursor=cursor-d39067a1acac4c02b356093113350055 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50765 - "GET /api/cos/desktop/deltas?cursor=cursor-d39067a1acac4c02b356093113350055 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50765 - "GET /api/cos/desktop/deltas?cursor=cursor-d39067a1acac4c02b356093113350055 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50765 - "GET /api/cos/desktop/deltas?cursor=cursor-d39067a1acac4c02b356093113350055 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50765 - "GET /api/cos/desktop/deltas?cursor=cursor-d39067a1acac4c02b356093113350055 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50765 - "GET /api/cos/desktop/deltas?cursor=cursor-d39067a1acac4c02b356093113350055 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50765 - "GET /api/cos/desktop/deltas?cursor=cursor-d39067a1acac4c02b356093113350055 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50765 - "GET /api/cos/desktop/deltas?cursor=cursor-d39067a1acac4c02b356093113350055 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50765 - "GET /api/cos/desktop/deltas?cursor=cursor-d39067a1acac4c02b356093113350055 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50765 - "GET /api/cos/desktop/deltas?cursor=cursor-d39067a1acac4c02b356093113350055 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50765 - "GET /api/cos/desktop/deltas?cursor=cursor-d39067a1acac4c02b356093113350055 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50765 - "GET /api/cos/desktop/deltas?cursor=cursor-d39067a1acac4c02b356093113350055 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50765 - "GET /api/cos/desktop/deltas?cursor=cursor-d39067a1acac4c02b356093113350055 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50765 - "GET /api/cos/desktop/deltas?cursor=cursor-d39067a1acac4c02b356093113350055 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50765 - "GET /api/cos/desktop/deltas?cursor=cursor-d39067a1acac4c02b356093113350055 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62846 - "POST /api/cos/desktop/credentials/revoke HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62851 - "GET /api/ready HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62852 - "POST /api/cos/desktop/credentials HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49782 - "GET /api/cos/desktop/server HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49782 - "POST /api/cos/desktop/observation HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49782 - "GET /api/cos/desktop/deltas?cursor=cursor-af37f3eb3dfb48e6870db2ca3b5cbb6b HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49783 - "GET /api/cos/desktop/server HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49782 - "GET /api/cos/desktop/deltas?cursor=cursor-af37f3eb3dfb48e6870db2ca3b5cbb6b HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49782 - "GET /api/cos/desktop/deltas?cursor=cursor-af37f3eb3dfb48e6870db2ca3b5cbb6b HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49782 - "GET /api/cos/desktop/deltas?cursor=cursor-af37f3eb3dfb48e6870db2ca3b5cbb6b HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49782 - "GET /api/cos/desktop/deltas?cursor=cursor-af37f3eb3dfb48e6870db2ca3b5cbb6b HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49782 - "GET /api/cos/desktop/deltas?cursor=cursor-af37f3eb3dfb48e6870db2ca3b5cbb6b HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49782 - "GET /api/cos/desktop/deltas?cursor=cursor-af37f3eb3dfb48e6870db2ca3b5cbb6b HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49790 - "GET /api/ready HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49791 - "GET /api/cos/desktop/server HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49791 - "POST /api/cos/desktop/observation HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49791 - "GET /api/cos/desktop/deltas?cursor=cursor-0b57a4847d8a49c68642f4be0b9e1832 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49791 - "GET /api/cos/desktop/deltas?cursor=cursor-0b57a4847d8a49c68642f4be0b9e1832 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49791 - "GET /api/cos/desktop/deltas?cursor=cursor-0b57a4847d8a49c68642f4be0b9e1832 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49791 - "GET /api/cos/desktop/deltas?cursor=cursor-0b57a4847d8a49c68642f4be0b9e1832 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49791 - "GET /api/cos/desktop/deltas?cursor=cursor-0b57a4847d8a49c68642f4be0b9e1832 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:49791 - "GET /api/cos/desktop/deltas?cursor=cursor-0b57a4847d8a49c68642f4be0b9e1832 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54138 - "POST /api/cos/desktop/credentials/revoke HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54139 - "GET /api/cos/desktop/server HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [51836]

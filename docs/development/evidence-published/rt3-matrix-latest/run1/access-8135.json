@@ -1,0 +1,27 @@
+{
+  "port": 8135,
+  "log_file": "runtime-8135.log",
+  "requests": 104,
+  "by_status": {
+    "200": 102,
+    "409": 2
+  },
+  "by_route": {
+    "/api/ready": 3,
+    "/api/cos/desktop/server": 6,
+    "/api/cos/desktop/credentials": 3,
+    "/api/cos/desktop/observation": 4,
+    "/api/cos/desktop/deltas": 84,
+    "/api/cos/desktop/snapshot": 2,
+    "/api/cos/desktop/credentials/revoke": 2
+  },
+  "deltas": 84,
+  "delta_conflicts": 2,
+  "delta_401": 0,
+  "observation_opens": 4,
+  "observation_refused": 0,
+  "credential_issues": 5,
+  "credential_refresh_refused": 0,
+  "snapshot_refreshes": 2,
+  "command_requests": 0
+}

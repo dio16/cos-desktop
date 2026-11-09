@@ -1,0 +1,1 @@
+{"action":"invoke","found":true,"hwnd":170593304,"title":"COS Desktop","class":"Zed::Window","width":1296,"height":839,"name_match":"再接続する","invoked":true,"matched_name":"Desktop内 · 観測情報を利用できません — 再接続する","matched_id":"","matched_control_type":"ControlType.Button","pattern":"invoke","patterns_tried":["invoke"]}

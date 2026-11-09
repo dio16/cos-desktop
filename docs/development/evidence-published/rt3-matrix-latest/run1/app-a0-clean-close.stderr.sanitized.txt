@@ -1,0 +1,3 @@
+observation shutdown confirmed
+preferences save NOT confirmed within the exit budget
+Runtime credential revoked on explicit teardown
