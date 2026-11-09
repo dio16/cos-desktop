@@ -221,6 +221,9 @@ pub enum ReplacementError {
     EmptyRegistry,
     /// The replacement client refused the transferred registry.
     TransferRejected,
+    /// The owner was closed or had already disposed the session, so no replacement
+    /// was installed.
+    Unavailable,
 }
 
 /// Version coordinates of one complete publication.
@@ -414,6 +417,13 @@ enum ObservationCommand {
         tag: IntentTag,
         reply: Reply<Result<(), CommandReadError>>,
     },
+    /// Install a freshly connected client after the previous session was lost.
+    ///
+    /// Boxed: a client is a long-lived allocation and the other arms stay small.
+    ReplaceClient {
+        client: Box<dyn DesktopClient>,
+        reply: Reply<Result<(), ReplacementError>>,
+    },
 }
 
 type SharedReply<T> = Arc<Mutex<ReplyState<T>>>;
@@ -561,6 +571,11 @@ pub struct ObservationSessionOwner {
     /// be queued without any further wake.
     pump_saturated: bool,
     shutdown_applied: bool,
+    /// The handle this owner serves.
+    ///
+    /// A reconnect installed from the mailbox must re-arm the replacement's shared
+    /// control, and the mailbox drain has no host-provided handle to do it with.
+    handle: ObservationHandle,
 }
 
 impl std::fmt::Debug for ObservationSessionOwner {
@@ -718,6 +733,54 @@ impl ObservationHandle {
         let (reply, resolver) = OwnerReply::new();
         self.enqueue(ObservationCommand::AuthenticationChanged { reply: resolver });
         reply
+    }
+
+    /// Install a freshly connected client and reopen the observation.
+    ///
+    /// This is the recovery boundary for a lost Runtime session (restart, new
+    /// epoch, revoked credential): the previous client is gone, so the caller
+    /// re-discovers the Runtime, re-authorizes and builds a new client outside the
+    /// owner. The owner withholds the old publication before the replacement is
+    /// queued, carries whatever retained command registry exists (including none)
+    /// and re-issues the last observation scope on the new client, so observing
+    /// resumes without a process restart.
+    ///
+    /// It is never a permission: the new client still has to handshake, authorize
+    /// and receive its own snapshot before anything is admitted.
+    pub fn replace_client(
+        &self,
+        client: Box<dyn DesktopClient>,
+    ) -> OwnerReply<Result<(), ReplacementError>> {
+        let _gate = self.fence.enter_command_boundary();
+        let _ = self.fence.close_visibility();
+        let (reply, resolver) = OwnerReply::new();
+        self.enqueue(ObservationCommand::ReplaceClient {
+            client,
+            reply: resolver,
+        });
+        reply
+    }
+
+    /// Whether the current publication is an observing session carrying data.
+    ///
+    /// False for every withheld/closed publication, including a terminal
+    /// `Unauthorized`/`Incompatible` session: those are exactly the states a
+    /// reconnect supervisor has to recover from.
+    pub fn observation_available(&self) -> bool {
+        let Ok(lease) = self.current() else {
+            return false;
+        };
+        let mut available = false;
+        if lease
+            .read(|publication| {
+                available = publication.connection == PublicationConnection::Observing
+                    && publication.snapshot.is_some();
+            })
+            .is_err()
+        {
+            return false;
+        }
+        available
     }
 
     /// Route a Stop request through the owner.
@@ -945,6 +1008,9 @@ fn reject_stale(command: ObservationCommand) {
         ObservationCommand::FetchHistory { reply, .. } => {
             reply.resolve(HistoryFetchReply::Superseded);
         }
+        ObservationCommand::ReplaceClient { reply, .. } => {
+            reply.resolve(Err(ReplacementError::Unavailable));
+        }
         ObservationCommand::ChangeScope { .. }
         | ObservationCommand::AuthenticationChanged { .. } => {}
     }
@@ -976,6 +1042,9 @@ fn reject(command: ObservationCommand) {
         ObservationCommand::FetchHistory { reply, .. } => {
             reply.resolve(HistoryFetchReply::Closed);
         }
+        ObservationCommand::ReplaceClient { reply, .. } => {
+            reply.resolve(Err(ReplacementError::Unavailable));
+        }
     }
 }
 
@@ -998,6 +1067,17 @@ impl ObservationSessionOwner {
         let history: HistoryAccumulator = HistoryAccumulator::default();
         let history_shared: Arc<Mutex<Arc<HistoryPublication>>> =
             Arc::new(Mutex::new(history.publication()));
+        let handle = ObservationHandle {
+            mailbox: Arc::clone(&mailbox),
+            diagnostics: Arc::clone(&diagnostics),
+            fence: Arc::clone(&fence),
+            wake: Arc::clone(&wake),
+            owner_done: Arc::clone(&owner_done),
+            generation: Arc::clone(&generation_cell),
+            shutdown: Arc::clone(&shutdown),
+            references: Arc::clone(&references),
+            history: Arc::clone(&history_shared),
+        };
         let owner = Self {
             client,
             fence: Arc::clone(&fence),
@@ -1021,17 +1101,7 @@ impl ObservationSessionOwner {
             shutdown_applied: false,
             history,
             history_shared: Arc::clone(&history_shared),
-        };
-        let handle = ObservationHandle {
-            mailbox,
-            diagnostics,
-            fence,
-            wake,
-            owner_done,
-            generation: generation_cell,
-            shutdown,
-            references,
-            history: Arc::clone(&history_shared),
+            handle: handle.clone(),
         };
         (owner, handle)
     }
@@ -1188,6 +1258,73 @@ impl ObservationSessionOwner {
         self.pump_saturated
     }
 
+    /// Replace the client after a lost session and reopen the last observation.
+    ///
+    /// Unlike [`Self::replace_client`], a reconnect is the *same* principal on a
+    /// recovered Runtime: there is no principal switch to guard, and an empty
+    /// retained registry is the normal case (nothing was ever dispatched). The
+    /// replacement therefore carries whatever registry exists and refuses only a
+    /// client that rejects that transfer.
+    fn reconnect_client(
+        &mut self,
+        mut next: Box<dyn DesktopClient>,
+    ) -> Result<(), ReplacementError> {
+        // The lost session's publication closes first: no data from it may stay
+        // readable while the replacement is installed.
+        let _ = self.fence.close_visibility();
+        self.reset_history();
+        self.last_snapshot = None;
+        self.projection_marker = None;
+        self.clear_read_diagnostic();
+        // A reconnect is itself a fresh authorization attempt, so a previous
+        // failed replacement cannot keep the owner withholding after it.
+        self.awaiting_reauthorization = false;
+        let (records, references) = {
+            let mut ledger = self.references.lock().expect("reference ledger");
+            let pending = std::mem::take(&mut ledger.pending);
+            for (id, count) in pending {
+                for _ in 0..count {
+                    self.client.release_command(&id);
+                }
+            }
+            let records = self.client.command_statuses().clone();
+            let references: BTreeMap<CommandId, usize> = ledger
+                .credits
+                .iter()
+                .filter(|(_, count)| **count > 0)
+                .map(|(id, count)| (id.clone(), *count))
+                .collect();
+            (records, references)
+        };
+        if !records.is_empty() && next.adopt_retained_registry(records, references).is_err() {
+            // The previous client's unresolved registry cannot be reproduced on
+            // the replacement: stay unavailable rather than publish without it.
+            self.awaiting_reauthorization = true;
+            self.client.disconnect();
+            let _ = self.fence.close_visibility();
+            self.publish(true);
+            return Err(ReplacementError::TransferRejected);
+        }
+        self.generation += 1;
+        self.generation_cell
+            .store(self.generation, Ordering::Release);
+        self.publication_version = 0;
+        self.projection_counter = 0;
+        self.client = next;
+        let handle = self.handle.clone();
+        self.arm_control(&handle);
+        // Re-issue the last scope on the replacement. A refused re-issue is not an
+        // install failure: the supervisor's settle window sees that no observation
+        // became available and retries with a fresh client.
+        match self.scope.clone() {
+            Some(scope) => {
+                let _ = self.begin_scope(scope);
+            }
+            None => self.publish(true),
+        }
+        Ok(())
+    }
+
     /// Mark the owner loop finished after its final step.
     pub fn finish(self, handle: &ObservationHandle) {
         self.fence.close_subscriptions();
@@ -1287,6 +1424,7 @@ impl ObservationSessionOwner {
                 | ObservationCommand::AuthenticationChanged { .. }
                 | ObservationCommand::RequestStop { .. }
                 | ObservationCommand::Retain { .. }
+                | ObservationCommand::ReplaceClient { .. }
         )
     }
 
@@ -1409,7 +1547,8 @@ impl ObservationSessionOwner {
             ObservationCommand::FetchCatalog { .. } => true,
             ObservationCommand::FetchHistory { .. } => true,
             ObservationCommand::ChangeScope { .. }
-            | ObservationCommand::AuthenticationChanged { .. } => true,
+            | ObservationCommand::AuthenticationChanged { .. }
+            | ObservationCommand::ReplaceClient { .. } => true,
         }
     }
 
@@ -1476,6 +1615,9 @@ impl ObservationSessionOwner {
                     *entry = entry.saturating_add(1);
                 }
                 reply.resolve(result);
+            }
+            ObservationCommand::ReplaceClient { client, reply } => {
+                reply.resolve(self.reconnect_client(client));
             }
         }
     }

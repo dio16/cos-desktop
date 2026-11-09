@@ -7,6 +7,7 @@ mod instance;
 mod media_executor;
 #[cfg(all(feature = "r0-s2b-instrumentation", windows))]
 mod r0_s2b;
+mod reconnect;
 mod runtime;
 mod window;
 #[cfg(all(feature = "r0-s2b-instrumentation", not(windows)))]
@@ -73,15 +74,23 @@ fn main() {
     // the per-user Runtime descriptor read, validated and used; an invalid,
     // stale or missing descriptor is an explicit unavailable state, never a
     // fixture fallback.
-    let discovery = if endpoint_env
+    let endpoint_overridden = endpoint_env
         .as_deref()
         .map(str::trim)
-        .is_some_and(|value| !value.is_empty())
-    {
+        .is_some_and(|value| !value.is_empty());
+    // Kept for the reconnect supervisor: a later attempt re-reads the same path,
+    // so a Runtime restarted under a new epoch/pid/port is picked up without a
+    // process restart.
+    let discovery_path = if endpoint_overridden {
+        None
+    } else {
+        discovery::default_path()
+    };
+    let discovery = if endpoint_overridden {
         Ok(None)
     } else {
-        match discovery::default_path() {
-            Some(path) => discovery::discover(&path).map(Some),
+        match discovery_path.as_deref() {
+            Some(path) => discovery::discover(path).map(Some),
             None => Err(discovery::DiscoveryError::PathUnavailable),
         }
     };
@@ -160,6 +169,22 @@ fn main() {
     let teardown: std::sync::Arc<std::sync::Mutex<Option<runtime::RuntimeTeardown>>> =
         std::sync::Arc::new(std::sync::Mutex::new(None));
     let teardown_for_app = std::sync::Arc::clone(&teardown);
+    // A lost Runtime session is recovered in-process by re-running discovery,
+    // authorization and the client build. Only a real Runtime plan has a
+    // reconnect target; a fixture run never reconnects to anything.
+    let reconnect: Option<std::sync::Arc<dyn app_core::RuntimeReconnect>> = match &launch {
+        runtime::LaunchPlan::Runtime(_) => {
+            Some(std::sync::Arc::new(reconnect::RuntimeReconnector::new(
+                startup.mode.clone(),
+                endpoint_env.clone(),
+                discovery_path.clone(),
+                std::sync::Arc::clone(&credential_store),
+                std::sync::Arc::clone(&teardown),
+                reconnect::RuntimeReconnector::ureq_exchange(),
+            )))
+        }
+        _ => None,
+    };
     #[cfg(all(feature = "r0-s2b-instrumentation", windows))]
     let capture = r0_s2b::Report::default();
     #[cfg(all(feature = "r0-s2b-instrumentation", windows))]
@@ -270,6 +295,7 @@ fn main() {
                     tokens,
                     env!("CARGO_PKG_VERSION"),
                     media,
+                    reconnect,
                 )
             },
             host,

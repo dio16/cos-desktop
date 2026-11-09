@@ -65,6 +65,9 @@ pub(crate) const TOKEN_ENV: &str = "COS_DESKTOP_RUNTIME_TOKEN";
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(15);
 /// Whole-request budget for one credential reauthorization exchange.
 const REAUTH_TIMEOUT: Duration = Duration::from_secs(5);
+
+/// The bounded credential-exchange budget a reconnect attempt uses.
+pub(crate) const REAUTH_BUDGET: Duration = REAUTH_TIMEOUT;
 /// Bounded accepted response body (staged bundle ceiling plus one control frame).
 const MAX_RESPONSE_BYTES: u64 = Limits::DEFAULT
     .max_bundle_bytes
@@ -118,6 +121,13 @@ pub(crate) struct RuntimeSettings {
     token: String,
     /// Only a credential this app issued or renewed may be revoked on teardown.
     revocable: bool,
+}
+
+impl RuntimeSettings {
+    /// The validated origin this attempt talks to (never a token value).
+    pub(crate) fn origin(&self) -> &str {
+        &self.endpoint
+    }
 }
 
 /// One started observation: the client the host drives and the scope to open.
@@ -523,7 +533,7 @@ pub(crate) fn observation(
 /// still only ever sent once. Reading routes are retried exactly once with the
 /// replacement credential; a second `401` is returned to the client, which tears
 /// the session down and opens a fresh observation (never a stale cursor).
-struct ReauthHttp<E: ProtocolHttp, X: CredentialExchange + Send> {
+pub(crate) struct ReauthHttp<E: ProtocolHttp, X: CredentialExchange + Send> {
     inner: E,
     store: Arc<dyn CredentialStore>,
     origin: String,
@@ -562,7 +572,7 @@ impl Default for ReauthPolicy {
 }
 
 impl<E: ProtocolHttp, X: CredentialExchange + Send> ReauthHttp<E, X> {
-    fn new(
+    pub(crate) fn new(
         inner: E,
         store: Arc<dyn CredentialStore>,
         origin: String,

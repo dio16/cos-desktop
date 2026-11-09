@@ -7,7 +7,7 @@
 
 use std::future::Future;
 use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::task::{Context, Poll, Waker};
 
 use app_core::{
@@ -591,6 +591,257 @@ fn a07_owner_replacement_transfers_the_registry_and_refuses_an_empty_one() {
         ),
         Err(ReplacementError::EmptyRegistry)
     );
+}
+
+// ---------------------------------------------------------------------------
+// A07b-A07e: in-process reconnect after the Runtime session is lost
+// ---------------------------------------------------------------------------
+
+/// Epoch of the publication's validated read context, when one is installed.
+fn published_epoch(handle: &app_core::ObservationHandle) -> Option<EpochId> {
+    let lease = handle.current().ok()?;
+    lease.read_context().map(|context| context.epoch().clone())
+}
+
+impl Live {
+    /// Install a freshly connected client through the ordinary owner mailbox.
+    fn reconnect(&mut self, client: MockCosClient) -> Result<(), ReplacementError> {
+        let reply = self.handle.replace_client(Box::new(client));
+        let mut now = self.now_ms;
+        let result = resolve(&mut self.owner, reply, &mut now);
+        self.now_ms = now;
+        result
+    }
+}
+
+/// A composition-root reconnect provider a test can drive deterministically.
+struct FixtureProvider {
+    attempts: AtomicUsize,
+    epoch: EpochId,
+    /// Control of the most recently built client, so a test can lose that session.
+    latest: std::sync::Mutex<Option<MockControl>>,
+}
+
+impl FixtureProvider {
+    fn new(epoch: &str) -> Self {
+        Self {
+            attempts: AtomicUsize::new(0),
+            epoch: EpochId::new(epoch).expect("epoch"),
+            latest: std::sync::Mutex::new(None),
+        }
+    }
+
+    fn attempts(&self) -> usize {
+        self.attempts.load(Ordering::Acquire)
+    }
+
+    fn disconnect_latest(&self) {
+        let latest = self.latest.lock().expect("latest control");
+        latest.as_ref().expect("a client was built").disconnect();
+    }
+}
+
+impl app_core::RuntimeReconnect for FixtureProvider {
+    fn connect(&self) -> Result<Box<dyn DesktopClient>, app_core::ReconnectUnavailable> {
+        self.attempts.fetch_add(1, Ordering::AcqRel);
+        let client = context_scenario("reconnected-runtime", "2", Vec::new());
+        // A restarted Runtime advertises a new epoch; the fresh client must learn it
+        // from its own handshake, never inherit the previous session's.
+        client.control().set_epoch(self.epoch.clone());
+        if let Ok(mut latest) = self.latest.lock() {
+            *latest = Some(client.control());
+        }
+        Ok(Box::new(client))
+    }
+}
+
+#[test]
+fn a07b_reconnect_installs_a_fresh_session_after_the_previous_one_was_lost() {
+    let mut live = Live::start();
+    assert!(live.handle.observation_available());
+    assert_eq!(
+        published_epoch(&live.handle),
+        Some(EpochId::new("fixture:epoch/1").expect("epoch"))
+    );
+    let generation_before = live.publication().session_generation;
+
+    // The Runtime disappears: the transcript drops the session and the client
+    // withholds every piece of the old projection.
+    live.control.disconnect();
+    live.step();
+    assert!(
+        live.no_data(),
+        "a lost session withholds the old projection"
+    );
+    assert!(
+        !live.handle.observation_available(),
+        "a lost session is not an observing publication"
+    );
+
+    // The Desktop re-discovers the Runtime and installs a fresh client under a new
+    // epoch. The empty retained registry is the normal reconnect case: nothing was
+    // ever dispatched, so no replacement is refused.
+    let fresh = context_scenario("reconnected-runtime", "2", Vec::new());
+    fresh
+        .control()
+        .set_epoch(EpochId::new("fixture:epoch/2").expect("epoch"));
+    assert_eq!(
+        live.reconnect(fresh),
+        Ok(()),
+        "an empty retained registry never blocks a reconnect"
+    );
+    assert!(live.settle(), "the reconnected session publishes again");
+    let publication = live.publication();
+    assert_eq!(
+        publication.connection,
+        PublicationConnection::Observing,
+        "the fresh client observes instead of inheriting a terminal state"
+    );
+    assert_eq!(
+        publication.session_generation,
+        generation_before + 1,
+        "the reconnect advances the owner generation"
+    );
+    assert!(
+        publication.snapshot.is_some(),
+        "the reconnected session publishes its own snapshot"
+    );
+    assert_eq!(
+        published_epoch(&live.handle),
+        Some(EpochId::new("fixture:epoch/2").expect("epoch")),
+        "the published context belongs to the new epoch, not the dead session"
+    );
+    assert!(live.handle.observation_available());
+}
+
+#[test]
+fn a07c_reconnect_carries_the_retained_command_registry_without_resending_it() {
+    let mut live = Live::start();
+    let command = live.stop();
+    assert!(live.settle_until_command(&command));
+    let dispatches_before = live.control.sent_commands();
+    assert_eq!(dispatches_before.len(), 1, "the Stop was dispatched once");
+
+    live.control.disconnect();
+    live.step();
+    assert!(live.no_data());
+
+    let fresh = context_scenario("reconnected-runtime", "2", Vec::new());
+    let fresh_control = fresh.control();
+    assert_eq!(live.reconnect(fresh), Ok(()));
+    assert!(
+        live.settle_until_command(&command),
+        "the retained command view survives the reconnect"
+    );
+    let publication = live.publication();
+    assert!(
+        publication.command_statuses.contains_key(&command),
+        "the transferred registry keeps its records"
+    );
+    assert_eq!(
+        live.control.sent_commands(),
+        dispatches_before,
+        "a reconnect never re-dispatches a command from the dead session"
+    );
+    assert!(
+        fresh_control.sent_frames() > 0,
+        "the replacement client carries the re-issued observation"
+    );
+}
+
+#[test]
+fn a07d_the_reconnect_worker_attempts_only_while_no_session_observes() {
+    let policy = app_core::ReconnectPolicy {
+        tick: std::time::Duration::from_millis(1),
+        min_delay: std::time::Duration::from_millis(1_000),
+        max_delay: std::time::Duration::from_millis(8_000),
+        settle: std::time::Duration::from_millis(5_000),
+    };
+    let mut live = Live::start();
+    let provider = Arc::new(FixtureProvider::new("fixture:epoch/2"));
+    let request = Arc::new(AtomicBool::new(false));
+    let mut worker = app_core::ReconnectWorker::new(
+        live.handle.clone(),
+        provider.clone(),
+        policy,
+        Arc::clone(&request),
+        None,
+    );
+
+    // An observing session is never reconnected, however long the worker runs.
+    assert_eq!(worker.step(0), app_core::ReconnectStep::Idle);
+    assert_eq!(worker.step(60_000), app_core::ReconnectStep::Idle);
+    assert_eq!(provider.attempts(), 0);
+
+    // The session is lost; the first attempt waits for the configured delay.
+    live.control.disconnect();
+    live.step();
+    assert!(!live.handle.observation_available());
+    assert_eq!(worker.step(60_001), app_core::ReconnectStep::Idle);
+    assert_eq!(
+        worker.step(70_000),
+        app_core::ReconnectStep::Installed,
+        "a lost session is re-discovered and a fresh client is installed"
+    );
+    assert_eq!(provider.attempts(), 1);
+
+    // The owner installs the queued replacement on its next bounded step.
+    assert!(live.settle(), "the replacement reopens the observation");
+    assert!(live.handle.observation_available());
+    assert_eq!(
+        published_epoch(&live.handle),
+        Some(EpochId::new("fixture:epoch/2").expect("epoch"))
+    );
+    assert_eq!(
+        worker.step(80_000),
+        app_core::ReconnectStep::Idle,
+        "an observing session stops further attempts"
+    );
+    assert_eq!(provider.attempts(), 1);
+}
+
+#[test]
+fn a07e_the_explicit_action_forces_a_fresh_attempt_behind_a_pending_backoff() {
+    let policy = app_core::ReconnectPolicy {
+        tick: std::time::Duration::from_millis(1),
+        min_delay: std::time::Duration::from_millis(1_000),
+        max_delay: std::time::Duration::from_millis(8_000),
+        settle: std::time::Duration::from_millis(5_000),
+    };
+    let mut live = Live::start();
+    let provider = Arc::new(FixtureProvider::new("fixture:epoch/2"));
+    let request = Arc::new(AtomicBool::new(false));
+    let mut worker = app_core::ReconnectWorker::new(
+        live.handle.clone(),
+        provider.clone(),
+        policy,
+        Arc::clone(&request),
+        None,
+    );
+
+    live.control.disconnect();
+    live.step();
+    assert_eq!(worker.step(0), app_core::ReconnectStep::Idle);
+    assert_eq!(worker.step(1_000), app_core::ReconnectStep::Installed);
+    assert_eq!(provider.attempts(), 1);
+    assert!(live.settle());
+    assert!(live.handle.observation_available());
+
+    // A second outage with a pending backoff: the explicit `再接続する` action must
+    // attempt immediately instead of reusing the dead session or waiting.
+    provider.disconnect_latest();
+    live.step();
+    assert!(!live.handle.observation_available());
+    assert_eq!(worker.step(2_000), app_core::ReconnectStep::Idle);
+    request.store(true, Ordering::Release);
+    assert_eq!(
+        worker.step(2_001),
+        app_core::ReconnectStep::Installed,
+        "the explicit action never waits for the pending backoff"
+    );
+    assert_eq!(provider.attempts(), 2);
+    assert!(live.settle());
+    assert!(live.handle.observation_available());
 }
 
 // ---------------------------------------------------------------------------

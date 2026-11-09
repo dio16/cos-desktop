@@ -112,6 +112,35 @@ impl StripSelection {
     }
 }
 
+/// Force one fresh discovery + authorization + observation attempt through the
+/// binary-supplied supervisor.
+///
+/// Returns whether a supervisor reclaimed the action. Without one (a fixture run, or a
+/// launch with no Runtime endpoint) the action stays the local re-subscription it always
+/// was and never pretends to have reconnected.
+pub(super) fn force_runtime_reconnect(supervisor: Option<&app_core::ReconnectSupervisor>) -> bool {
+    match supervisor {
+        Some(supervisor) => {
+            supervisor.request_now();
+            true
+        }
+        None => false,
+    }
+}
+
+/// The honest notice for the explicit reconnect action.
+///
+/// A forced attempt is described as an attempt in progress; it never claims a completed
+/// reconnect, because the credential, the epoch and the projection are the Runtime's to
+/// decide.
+pub(super) fn reconnect_notice(forced: bool) -> &'static str {
+    if forced {
+        "再接続を要求しました — 観測情報の再取得を試みています。"
+    } else {
+        "再接続を要求しました — 認可済み観測情報はまだありません。"
+    }
+}
+
 /// Drop per-row focus handles for identities that are no longer active, so a reappearing identity
 /// starts with a fresh, unfocused handle instead of reusing a stale one.
 pub(super) fn prune_strip_focus<T>(
@@ -547,7 +576,14 @@ impl Shell {
     /// The previous subscription task is dropped and a fresh one is armed, so a lost or closed
     /// subscription is genuinely re-established. A display-cache re-read is never a substitute;
     /// text is only revalidated to the live publication identity, exactly as render does.
+    ///
+    /// When the binary supplied a reconnect provider, the action also forces a fresh
+    /// discovery + authorization + observation attempt: re-subscribing locally to a client whose
+    /// session is terminal (a Runtime that restarted under a new epoch, or a revoked credential)
+    /// can never reopen the observation by itself. The forced attempt is queued on the reconnect
+    /// supervisor and never fabricates a credential or a projection.
     pub(super) fn reconnect_observation(&mut self, cx: &mut Context<Self>) {
+        let forced = force_runtime_reconnect(self.runtime_reconnect.as_ref());
         let Some(handle) = self.handle.clone() else {
             self.surface_notice = Some(
                 "再接続を要求しました — このウィンドウには再接続先となる認可済み観測情報がありません。"
@@ -562,8 +598,7 @@ impl Shell {
         self.rail_state.revalidate(live);
         self.request_rail_work(cx);
         if handle.current().is_err() {
-            self.surface_notice =
-                Some("再接続を要求しました — 認可済み観測情報はまだありません。".to_owned());
+            self.surface_notice = Some(reconnect_notice(forced).to_owned());
         }
         cx.notify();
     }
@@ -647,7 +682,8 @@ mod tests {
     };
 
     use super::{
-        StripSelection, prune_strip_focus, revealed_rows, scoped_strip, strip_scope_matches,
+        StripSelection, force_runtime_reconnect, prune_strip_focus, reconnect_notice,
+        revealed_rows, scoped_strip, strip_scope_matches,
     };
 
     fn stop_row(command: &str) -> Row {
@@ -995,5 +1031,29 @@ mod tests {
             scoped_strip(strip_a, Some(&task_a), Some(&task_b)).is_empty(),
             "one task's Stop row must never render under another task"
         );
+    }
+
+    #[test]
+    fn the_explicit_action_never_claims_a_reconnect_it_did_not_force() {
+        // With no supervisor the action is only the local re-subscription: the notice
+        // must not claim a fresh Runtime attempt was made.
+        assert!(!force_runtime_reconnect(None));
+        let local = reconnect_notice(false);
+        assert!(local.contains("再接続を要求しました"));
+        assert!(
+            !local.contains("再取得を試みています"),
+            "a local-only action never claims the observation is being re-acquired"
+        );
+
+        // With one, the action is described as an attempt in progress and never as a
+        // completed reconnect: the Runtime decides the credential, the epoch and the
+        // projection.
+        let forced = reconnect_notice(true);
+        assert!(forced.contains("再取得を試みています"));
+        assert!(
+            !forced.contains("再接続しました"),
+            "the action never fabricates a completed recovery"
+        );
+        assert_ne!(forced, local);
     }
 }

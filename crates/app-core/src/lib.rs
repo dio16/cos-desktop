@@ -10,6 +10,7 @@ pub mod navigation;
 pub mod observation;
 pub mod panic_report;
 pub mod preferences;
+pub mod reconnect;
 pub mod redaction;
 pub mod support_report;
 
@@ -61,6 +62,10 @@ pub use observation::{
     ObservationSessionOwner, OwnerClock, OwnerReply, PublicationConnection, PublicationError,
     PublicationNotice, PublicationReadContext, PublicationSource, ReadUnavailable,
     ReplacementError, drive,
+};
+pub use reconnect::{
+    ReconnectPolicy, ReconnectSchedule, ReconnectStep, ReconnectSupervisor, ReconnectUnavailable,
+    ReconnectWorker, RuntimeReconnect,
 };
 pub use redaction::{
     MAX_DIAGNOSTIC_LINE_BYTES, REDACTED, redact_diagnostic_text, redact_diagnostic_text_within,

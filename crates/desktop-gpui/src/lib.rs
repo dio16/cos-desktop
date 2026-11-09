@@ -744,6 +744,9 @@ pub struct Shell {
     #[cfg(feature = "r0-s2b-instrumentation")]
     probe_window: u64,
     handle: Option<ObservationHandle>,
+    /// Automatic in-process Runtime recovery, when the binary supplies discovery,
+    /// authorization and a fresh client. Dropping it stops the supervisor.
+    runtime_reconnect: Option<app_core::ReconnectSupervisor>,
     /// Desktop version injected by the binary; independent of any publication.
     desktop_version: Arc<str>,
     /// Read-only support preview state; cleared on every publication change/invalidation.
@@ -959,6 +962,7 @@ impl Shell {
         tokens: DesignTokens,
         desktop_version: &str,
         media: media_presentation::MediaBinding,
+        reconnect: Option<Arc<dyn app_core::RuntimeReconnect>>,
     ) -> Self {
         let restored = preferences
             .lock()
@@ -997,6 +1001,27 @@ impl Shell {
         let subscription = match handle.clone() {
             Some(handle) => Self::subscribe(handle, cx),
             None => cx.spawn(async move |_this, _cx| {}),
+        };
+        // Automatic in-process recovery: a Runtime that disappears and reappears at
+        // the same discovery path is re-discovered and re-observed without a Desktop
+        // restart. The supervisor only decides *when*; the binary supplies discovery,
+        // authorization and the fresh client.
+        let runtime_reconnect = match (handle.clone(), reconnect) {
+            (Some(handle), Some(provider)) => Some(app_core::ReconnectSupervisor::start(
+                handle,
+                provider,
+                app_core::ReconnectPolicy::default(),
+                Some(Arc::new(|step: app_core::ReconnectStep| match step {
+                    app_core::ReconnectStep::Installed => eprintln!(
+                        "Runtime reconnect installed; the observation reopens without a relaunch"
+                    ),
+                    app_core::ReconnectStep::Unavailable(reason) => {
+                        eprintln!("Runtime reconnect unavailable: {}", reason.label())
+                    }
+                    app_core::ReconnectStep::Idle => {}
+                })),
+            )),
+            _ => None,
         };
         let desktop_version: Arc<str> = Arc::from(desktop_version);
         let rail_worker = handle.clone().map(|handle| {
@@ -1088,6 +1113,7 @@ impl Shell {
             #[cfg(feature = "r0-s2b-instrumentation")]
             probe_window: window.window_handle().window_id().as_u64(),
             handle,
+            runtime_reconnect,
             desktop_version: Arc::clone(&desktop_version),
             artifact_viewer,
             compare_view,

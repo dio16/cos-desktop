@@ -18,6 +18,7 @@ pub(crate) fn resolve_tokens() -> Result<DesignTokens, TokenError> {
     resolve_tokens_with(DesignTokensOverride::default())
 }
 
+#[derive(Clone)]
 pub enum Mode {
     Runtime { endpoint_configured: bool },
     Fixture { path: PathBuf },
