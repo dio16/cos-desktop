@@ -1,0 +1,1264 @@
+{
+  "label": "revoke",
+  "started_at": "2026-11-09T11:05:51+0900",
+  "port": 8133,
+  "verdict": "PASS",
+  "work_dir": "C:\\dev\\cos-desktop\\target\\acc1-native\\20261109T110551-revoke",
+  "steps": {
+    "connected-revoke": {
+      "verdict": "PASS",
+      "pid": 7556,
+      "window": {
+        "found": true,
+        "title": "COS Desktop",
+        "class": "Zed::Window",
+        "width": 1296,
+        "height": 839
+      },
+      "uia": {
+        "label": "connected-revoke",
+        "at": "2026-11-09T11:06:04+0900",
+        "elements": 65,
+        "names_sha256": "sha256:fb29c80ccbda7122c69f47fcbaf3bef725f6e8bb1bc9e2fb5bdad5b03bf0e461",
+        "names": [
+          "COS Desktop 作業画面",
+          "現在のタスクと状態",
+          "task-00eeff7805964e1f835534b81e57065b  北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+          "Runtime / 情報を受信中",
+          "タスクの状態: 完了（COMPLETED）",
+          "処理段階: RUNNING",
+          "反復回数: 第0回",
+          "成果物の利用状態: 取得可能（AVAILABLE）（1件）",
+          "接続・情報の鮮度: 情報を受信中",
+          "正式な結果: 完了（COMPLETED）",
+          "停止の操作と現在の受付状況",
+          "タスクを停止（現在は操作できません）",
+          "停止要求の受付状況を確認（現在は操作できません）",
+          "この画面から停止要求は送っていません",
+          "停止要求を1回送ります。受付状況とタスクの終了結果は別に確認します。",
+          "タスク一覧",
+          "新しいタスクを作成",
+          "タスクを検索",
+          "task-00eeff7805964e1f835534b81e57065b — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+          "完了（COMPLETED）",
+          "RUNNING",
+          "0",
+          "キーボード操作対象",
+          "task-019e673007d848018cf3dc7366258d38 — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+          "完了（COMPLETED）",
+          "RUNNING",
+          "0",
+          "作業領域：成果物",
+          "成果物",
+          "表示中",
+          "Runtime が認可した成果物メディアを取得して表示します。取得できない場合は、理由を画像領域に明示します。",
+          "全体表示 (0)",
+          "物理ピクセル1:1 (1)",
+          "拡大 (+)",
+          "縮小 (-)",
+          "全画面 / 復帰 (F11)",
+          "画像を利用できません: 認可済みの画像入力がありません。実行基盤からの取得は未対応です。",
+          "画像は未表示です",
+          "画像表示。0: 全体、1: 物理等倍、+/-: 拡大縮小、矢印: 移動、F11: 全画面、Escape: 復帰",
+          "候補の詳細",
+          "詳細と説明",
+          "候補は表示されていません",
+          "このタスクの実行履歴を開く",
+          "目的 — 利用可能: task-00eeff7805964e1f835534b81e57065b — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+          "評価 — 利用不可: 候補は選択されていません。",
+          "判断の根拠 — 利用不可: 候補は選択されていません。",
+          "改善 — 利用不可: 候補は選択されていません。",
+          "結果 — 利用可能: 正式状態: 完了（COMPLETED）",
+          "診断情報を開く",
+          "反復ごとの候補一覧",
+          "反復ごとの候補一覧。閲覧中と比較対象はこの画面の選択です。正式採用は実行基盤から通知されます。",
+          "候補一覧",
+          "task-00eeff7805964e1f835534b81e57065b — 第0回 — C1 キーボード操作対象 正式採用（実行基盤から通知）",
+          "task-019e673007d848018cf3dc7366258d38 — 第0回 — C1  正式採用（実行基盤から通知）",
+          "task-0b23811426af4a86a3fed9dc67b21947 — 第0回 — C1  正式採用（実行基盤から通知）",
+          "task-0c903dc32f36402bb9f72f676bfc8d8c — 第0回 — C1  正式採用（実行基盤から通知）",
+          "task-0ddbe166cef5482495ec675999f0fc9b — 第0回 — C1  正式採用（実行基盤から通知）",
+          "task-130479815f4b49c2be5fac0c63fe3e09 — 第0回 — C1  正式採用（実行基盤から通知）",
+          "task-15b14d7e058749a9a772e9e94efa54c2 — 第0回 — C1  正式採用（実行基盤から通知）",
+          "task-1fcce881a4934cf78ce822be296b2f58 — 第0回 — C1  正式採用（実行基盤から通知）",
+          "作業画面の切り替え",
+          "成果物  Ctrl+1",
+          "候補を比較  Ctrl+2",
+          "処理の流れ  Ctrl+3"
+        ],
+        "window": {
+          "title": "COS Desktop",
+          "class": "Zed::Window",
+          "width": 1296,
+          "height": 839
+        },
+        "screenshot": {
+          "file": "C:\\dev\\cos-desktop\\target\\acc1-native\\20261109T110551-revoke\\shots\\connected-revoke.png",
+          "sha256": "sha256:5b81faa6db49e9b67e9b33fddf916a17746b7567ab5e3af74ef38be56098f123",
+          "bytes": 148002,
+          "printed": true,
+          "width": 1296,
+          "height": 839
+        }
+      },
+      "excerpt": "現在のタスクと状態\nRuntime / 情報を受信中\nタスクの状態: 完了（COMPLETED）\n接続・情報の鮮度: 情報を受信中\nタスクを停止（現在は操作できません）\n停止要求を1回送ります。受付状況とタスクの終了結果は別に確認します。\nタスク一覧\n新しいタスクを作成\nタスクを検索\nRuntime が認可した成果物メディアを取得して表示します。取得できない場合は、理由を画像領域に明示します。\nこのタスクの実行履歴を開く"
+    },
+    "brief": {
+      "at": "2026-11-09T11:06:04+0900",
+      "goal": "ACC1-NATIVE-revoke 20261109-110551 production still",
+      "direction": "cinematic mechanical desktop object, no text",
+      "actions": [
+        {
+          "action": "invoke_brief_open",
+          "result": {
+            "action": "invoke",
+            "found": true,
+            "hwnd": 16716120,
+            "title": "COS Desktop",
+            "class": "Zed::Window",
+            "width": 1296,
+            "height": 839,
+            "name_match": "新しいタスクを作成",
+            "invoked": true,
+            "matched_name": "新しいタスクを作成",
+            "matched_id": "",
+            "matched_control_type": "ControlType.Button",
+            "pattern": "invoke",
+            "patterns_tried": [
+              "invoke"
+            ],
+            "_out": "C:\\dev\\cos-desktop\\target\\acc1-native\\20261109T110551-revoke\\uia\\004-invoke.json"
+          }
+        }
+      ],
+      "brief_open": true,
+      "uia_brief": {
+        "label": "brief-open",
+        "at": "2026-11-09T11:06:07+0900",
+        "elements": 71,
+        "names_sha256": "sha256:a4e25a0f8dd8d20fd13f07d472acb6ce825d24c1a1f8b02d434162737b955452",
+        "names": [
+          "COS Desktop 作業画面",
+          "現在のタスクと状態",
+          "task-00eeff7805964e1f835534b81e57065b  北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+          "Runtime / 情報を受信中",
+          "タスクの状態: 完了（COMPLETED）",
+          "処理段階: RUNNING",
+          "反復回数: 第0回",
+          "成果物の利用状態: 取得可能（AVAILABLE）（1件）",
+          "接続・情報の鮮度: 情報を受信中",
+          "正式な結果: 完了（COMPLETED）",
+          "停止の操作と現在の受付状況",
+          "タスクを停止（現在は操作できません）",
+          "停止要求の受付状況を確認（現在は操作できません）",
+          "この画面から停止要求は送っていません",
+          "停止要求を1回送ります。受付状況とタスクの終了結果は別に確認します。",
+          "タスク一覧",
+          "新しいタスクを作成",
+          "タスクを検索",
+          "task-00eeff7805964e1f835534b81e57065b — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+          "完了（COMPLETED）",
+          "RUNNING",
+          "0",
+          "キーボード操作対象",
+          "task-019e673007d848018cf3dc7366258d38 — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+          "完了（COMPLETED）",
+          "RUNNING",
+          "0",
+          "作業領域：成果物",
+          "成果物",
+          "表示中",
+          "Runtime が認可した成果物メディアを取得して表示します。取得できない場合は、理由を画像領域に明示します。",
+          "全体表示 (0)",
+          "物理ピクセル1:1 (1)",
+          "拡大 (+)",
+          "縮小 (-)",
+          "全画面 / 復帰 (F11)",
+          "画像を利用できません: 認可済みの画像入力がありません。実行基盤からの取得は未対応です。",
+          "画像は未表示です",
+          "画像表示。0: 全体、1: 物理等倍、+/-: 拡大縮小、矢印: 移動、F11: 全画面、Escape: 復帰",
+          "候補の詳細",
+          "詳細と説明",
+          "候補は表示されていません",
+          "このタスクの実行履歴を開く",
+          "目的 — 利用可能: task-00eeff7805964e1f835534b81e57065b — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+          "評価 — 利用不可: 候補は選択されていません。",
+          "判断の根拠 — 利用不可: 候補は選択されていません。",
+          "改善 — 利用不可: 候補は選択されていません。",
+          "結果 — 利用可能: 正式状態: 完了（COMPLETED）",
+          "診断情報を開く",
+          "反復ごとの候補一覧",
+          "反復ごとの候補一覧。閲覧中と比較対象はこの画面の選択です。正式採用は実行基盤から通知されます。",
+          "候補一覧",
+          "task-00eeff7805964e1f835534b81e57065b — 第0回 — C1 キーボード操作対象 正式採用（実行基盤から通知）",
+          "task-019e673007d848018cf3dc7366258d38 — 第0回 — C1  正式採用（実行基盤から通知）",
+          "task-0b23811426af4a86a3fed9dc67b21947 — 第0回 — C1  正式採用（実行基盤から通知）",
+          "task-0c903dc32f36402bb9f72f676bfc8d8c — 第0回 — C1  正式採用（実行基盤から通知）",
+          "task-0ddbe166cef5482495ec675999f0fc9b — 第0回 — C1  正式採用（実行基盤から通知）",
+          "task-130479815f4b49c2be5fac0c63fe3e09 — 第0回 — C1  正式採用（実行基盤から通知）",
+          "task-15b14d7e058749a9a772e9e94efa54c2 — 第0回 — C1  正式採用（実行基盤から通知）",
+          "task-1fcce881a4934cf78ce822be296b2f58 — 第0回 — C1  正式採用（実行基盤から通知）",
+          "作業画面の切り替え",
+          "成果物  Ctrl+1",
+          "候補を比較  Ctrl+2",
+          "処理の流れ  Ctrl+3",
+          "クリエイティブ・ブリーフ",
+          "ブリーフを閉じる",
+          "目的",
+          "方向性",
+          "Production still (Krea2)",
+          "ブリーフを提出（無効）"
+        ],
+        "window": {
+          "title": "COS Desktop",
+          "class": "Zed::Window",
+          "width": 1296,
+          "height": 839
+        },
+        "screenshot": {
+          "file": "C:\\dev\\cos-desktop\\target\\acc1-native\\20261109T110551-revoke\\shots\\brief-open.png",
+          "sha256": "sha256:fb346171ef9cb00e43c07d048e373cf4a2a955762674a00b706c0a03579350c9",
+          "bytes": 31918,
+          "printed": true,
+          "width": 1296,
+          "height": 839
+        }
+      },
+      "field_entry": {
+        "click_goal": {
+          "action": "click",
+          "found": true,
+          "hwnd": 16716120,
+          "title": "COS Desktop",
+          "class": "Zed::Window",
+          "width": 1296,
+          "height": 839,
+          "name_match": "目的",
+          "clicked": true,
+          "matched_name": "目的",
+          "matched_id": "",
+          "matched_control_type": "ControlType.Edit",
+          "screen_bounds": [
+            1397,
+            423,
+            646,
+            30
+          ],
+          "client_x": 640,
+          "client_y": 130,
+          "mouse_down_posted": true,
+          "mouse_up_posted": true,
+          "_out": "C:\\dev\\cos-desktop\\target\\acc1-native\\20261109T110551-revoke\\uia\\008-click.json"
+        },
+        "type_goal": {
+          "action": "type",
+          "found": true,
+          "hwnd": 16716120,
+          "title": "COS Desktop",
+          "class": "Zed::Window",
+          "width": 1296,
+          "height": 839,
+          "name_match": "目的",
+          "matched": true,
+          "matched_name": "目的",
+          "matched_id": "",
+          "matched_control_type": "ControlType.Edit",
+          "set_focus_called": true,
+          "focused_name": "COS Desktop",
+          "focused_control_type": "ControlType.Window",
+          "focused": false,
+          "text_length": 51,
+          "code_units_sent": 51,
+          "posted_all": true,
+          "value_after": "ACC1-NATIVE-revoke 20261109-110551 production still",
+          "_out": "C:\\dev\\cos-desktop\\target\\acc1-native\\20261109T110551-revoke\\uia\\009-type.json"
+        },
+        "read_goal": {
+          "action": "valueread",
+          "found": true,
+          "hwnd": 16716120,
+          "title": "COS Desktop",
+          "class": "Zed::Window",
+          "width": 1296,
+          "height": 839,
+          "name_match": "目的",
+          "matched": true,
+          "matched_name": "目的",
+          "matched_id": "",
+          "matched_control_type": "ControlType.Edit",
+          "value": "ACC1-NATIVE-revoke 20261109-110551 production still",
+          "_out": "C:\\dev\\cos-desktop\\target\\acc1-native\\20261109T110551-revoke\\uia\\010-valueread.json"
+        },
+        "click_direction": {
+          "action": "click",
+          "found": true,
+          "hwnd": 16716120,
+          "title": "COS Desktop",
+          "class": "Zed::Window",
+          "width": 1296,
+          "height": 839,
+          "name_match": "方向性",
+          "clicked": true,
+          "matched_name": "方向性",
+          "matched_id": "",
+          "matched_control_type": "ControlType.Edit",
+          "screen_bounds": [
+            1397,
+            489,
+            646,
+            30
+          ],
+          "client_x": 640,
+          "client_y": 196,
+          "mouse_down_posted": true,
+          "mouse_up_posted": true,
+          "_out": "C:\\dev\\cos-desktop\\target\\acc1-native\\20261109T110551-revoke\\uia\\011-click.json"
+        },
+        "type_direction": {
+          "action": "type",
+          "found": true,
+          "hwnd": 16716120,
+          "title": "COS Desktop",
+          "class": "Zed::Window",
+          "width": 1296,
+          "height": 839,
+          "name_match": "方向性",
+          "matched": true,
+          "matched_name": "方向性",
+          "matched_id": "",
+          "matched_control_type": "ControlType.Edit",
+          "set_focus_called": true,
+          "focused_name": "COS Desktop",
+          "focused_control_type": "ControlType.Window",
+          "focused": false,
+          "text_length": 44,
+          "code_units_sent": 44,
+          "posted_all": true,
+          "value_after": "cinematic mechanical desktop object, no text",
+          "_out": "C:\\dev\\cos-desktop\\target\\acc1-native\\20261109T110551-revoke\\uia\\012-type.json"
+        },
+        "read_direction": {
+          "action": "valueread",
+          "found": true,
+          "hwnd": 16716120,
+          "title": "COS Desktop",
+          "class": "Zed::Window",
+          "width": 1296,
+          "height": 839,
+          "name_match": "方向性",
+          "matched": true,
+          "matched_name": "方向性",
+          "matched_id": "",
+          "matched_control_type": "ControlType.Edit",
+          "value": "cinematic mechanical desktop object, no text",
+          "_out": "C:\\dev\\cos-desktop\\target\\acc1-native\\20261109T110551-revoke\\uia\\013-valueread.json"
+        }
+      },
+      "goal_value_after": "ACC1-NATIVE-revoke 20261109-110551 production still",
+      "direction_value_after": "cinematic mechanical desktop object, no text",
+      "recipe": {
+        "method": "synthetic_wm_lbutton_at_uia_bounds",
+        "result": {
+          "action": "click",
+          "found": true,
+          "hwnd": 16716120,
+          "title": "COS Desktop",
+          "class": "Zed::Window",
+          "width": 1296,
+          "height": 839,
+          "name_match": "Production still (Krea2)",
+          "clicked": true,
+          "matched_name": "Production still (Krea2)",
+          "matched_id": "",
+          "matched_control_type": "ControlType.Button",
+          "screen_bounds": [
+            1397,
+            555,
+            646,
+            30
+          ],
+          "client_x": 640,
+          "client_y": 262,
+          "mouse_down_posted": true,
+          "mouse_up_posted": true,
+          "_out": "C:\\dev\\cos-desktop\\target\\acc1-native\\20261109T110551-revoke\\uia\\015-click.json"
+        }
+      },
+      "submit_enabled": true,
+      "submit_disabled_label_present": false,
+      "uia_filled": {
+        "label": "brief-filled",
+        "at": "2026-11-09T11:06:17+0900",
+        "elements": 71,
+        "names_sha256": "sha256:71d5aa8b38bb32adcb8680b413d71adb14e025f3994e7a8dafd89e2218ea7a2c",
+        "names": [
+          "COS Desktop 作業画面",
+          "現在のタスクと状態",
+          "task-00eeff7805964e1f835534b81e57065b  北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+          "Runtime / 情報を受信中",
+          "タスクの状態: 完了（COMPLETED）",
+          "処理段階: RUNNING",
+          "反復回数: 第0回",
+          "成果物の利用状態: 取得可能（AVAILABLE）（1件）",
+          "接続・情報の鮮度: 情報を受信中",
+          "正式な結果: 完了（COMPLETED）",
+          "停止の操作と現在の受付状況",
+          "タスクを停止（現在は操作できません）",
+          "停止要求の受付状況を確認（現在は操作できません）",
+          "この画面から停止要求は送っていません",
+          "停止要求を1回送ります。受付状況とタスクの終了結果は別に確認します。",
+          "タスク一覧",
+          "新しいタスクを作成",
+          "タスクを検索",
+          "task-00eeff7805964e1f835534b81e57065b — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+          "完了（COMPLETED）",
+          "RUNNING",
+          "0",
+          "キーボード操作対象",
+          "task-019e673007d848018cf3dc7366258d38 — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+          "完了（COMPLETED）",
+          "RUNNING",
+          "0",
+          "作業領域：成果物",
+          "成果物",
+          "表示中",
+          "Runtime が認可した成果物メディアを取得して表示します。取得できない場合は、理由を画像領域に明示します。",
+          "全体表示 (0)",
+          "物理ピクセル1:1 (1)",
+          "拡大 (+)",
+          "縮小 (-)",
+          "全画面 / 復帰 (F11)",
+          "画像を利用できません: 認可済みの画像入力がありません。実行基盤からの取得は未対応です。",
+          "画像は未表示です",
+          "画像表示。0: 全体、1: 物理等倍、+/-: 拡大縮小、矢印: 移動、F11: 全画面、Escape: 復帰",
+          "候補の詳細",
+          "詳細と説明",
+          "候補は表示されていません",
+          "このタスクの実行履歴を開く",
+          "目的 — 利用可能: task-00eeff7805964e1f835534b81e57065b — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+          "評価 — 利用不可: 候補は選択されていません。",
+          "判断の根拠 — 利用不可: 候補は選択されていません。",
+          "改善 — 利用不可: 候補は選択されていません。",
+          "結果 — 利用可能: 正式状態: 完了（COMPLETED）",
+          "診断情報を開く",
+          "反復ごとの候補一覧",
+          "反復ごとの候補一覧。閲覧中と比較対象はこの画面の選択です。正式採用は実行基盤から通知されます。",
+          "候補一覧",
+          "task-00eeff7805964e1f835534b81e57065b — 第0回 — C1 キーボード操作対象 正式採用（実行基盤から通知）",
+          "task-019e673007d848018cf3dc7366258d38 — 第0回 — C1  正式採用（実行基盤から通知）",
+          "task-0b23811426af4a86a3fed9dc67b21947 — 第0回 — C1  正式採用（実行基盤から通知）",
+          "task-0c903dc32f36402bb9f72f676bfc8d8c — 第0回 — C1  正式採用（実行基盤から通知）",
+          "task-0ddbe166cef5482495ec675999f0fc9b — 第0回 — C1  正式採用（実行基盤から通知）",
+          "task-130479815f4b49c2be5fac0c63fe3e09 — 第0回 — C1  正式採用（実行基盤から通知）",
+          "task-15b14d7e058749a9a772e9e94efa54c2 — 第0回 — C1  正式採用（実行基盤から通知）",
+          "task-1fcce881a4934cf78ce822be296b2f58 — 第0回 — C1  正式採用（実行基盤から通知）",
+          "作業画面の切り替え",
+          "成果物  Ctrl+1",
+          "候補を比較  Ctrl+2",
+          "処理の流れ  Ctrl+3",
+          "クリエイティブ・ブリーフ",
+          "ブリーフを閉じる",
+          "目的",
+          "方向性",
+          "Production still (Krea2)",
+          "ブリーフを提出"
+        ],
+        "window": {
+          "title": "COS Desktop",
+          "class": "Zed::Window",
+          "width": 1296,
+          "height": 839
+        },
+        "screenshot": {
+          "file": "C:\\dev\\cos-desktop\\target\\acc1-native\\20261109T110551-revoke\\shots\\brief-filled.png",
+          "sha256": "sha256:84e6d0e1f3d21dd811cfb940d8ca6de0eeac2647e1a2bc234a9648ca98b75bb9",
+          "bytes": 39599,
+          "printed": true,
+          "width": 1296,
+          "height": 839
+        }
+      },
+      "submit_method": "uia_invoke",
+      "submit": {
+        "action": "invoke",
+        "found": true,
+        "hwnd": 16716120,
+        "title": "COS Desktop",
+        "class": "Zed::Window",
+        "width": 1296,
+        "height": 839,
+        "name_match": "ブリーフを提出",
+        "invoked": true,
+        "matched_name": "ブリーフを提出",
+        "matched_id": "",
+        "matched_control_type": "ControlType.Button",
+        "pattern": "invoke",
+        "patterns_tried": [
+          "invoke"
+        ],
+        "_out": "C:\\dev\\cos-desktop\\target\\acc1-native\\20261109T110551-revoke\\uia\\019-invoke.json"
+      },
+      "task_ref": "task-02e51c3a49694b4d943b860530e8dd6b",
+      "receipt_visible": false,
+      "task_ref_source": "projection",
+      "uia_submitted": {
+        "label": "brief-submitted",
+        "at": "2026-11-09T11:06:20+0900",
+        "elements": 71,
+        "names_sha256": "sha256:9f5142b70a151c8628c88c0c75edf9d47d80d50b453ff46f216f41d459e69848",
+        "names": [
+          "COS Desktop 作業画面",
+          "現在のタスクと状態",
+          "task-00eeff7805964e1f835534b81e57065b  北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+          "Runtime / 情報を受信中",
+          "タスクの状態: 完了（COMPLETED）",
+          "処理段階: RUNNING",
+          "反復回数: 第0回",
+          "成果物の利用状態: 取得可能（AVAILABLE）（1件）",
+          "接続・情報の鮮度: 情報を受信中",
+          "正式な結果: 完了（COMPLETED）",
+          "停止の操作と現在の受付状況",
+          "タスクを停止（現在は操作できません）",
+          "停止要求の受付状況を確認（現在は操作できません）",
+          "この画面から停止要求は送っていません",
+          "停止要求を1回送ります。受付状況とタスクの終了結果は別に確認します。",
+          "タスク一覧",
+          "新しいタスクを作成",
+          "タスクを検索",
+          "task-00eeff7805964e1f835534b81e57065b — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+          "完了（COMPLETED）",
+          "RUNNING",
+          "0",
+          "キーボード操作対象",
+          "task-019e673007d848018cf3dc7366258d38 — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+          "完了（COMPLETED）",
+          "RUNNING",
+          "0",
+          "作業領域：成果物",
+          "成果物",
+          "表示中",
+          "Runtime が認可した成果物メディアを取得して表示します。取得できない場合は、理由を画像領域に明示します。",
+          "全体表示 (0)",
+          "物理ピクセル1:1 (1)",
+          "拡大 (+)",
+          "縮小 (-)",
+          "全画面 / 復帰 (F11)",
+          "画像を利用できません: 認可済みの画像入力がありません。実行基盤からの取得は未対応です。",
+          "画像は未表示です",
+          "画像表示。0: 全体、1: 物理等倍、+/-: 拡大縮小、矢印: 移動、F11: 全画面、Escape: 復帰",
+          "候補の詳細",
+          "詳細と説明",
+          "候補は表示されていません",
+          "このタスクの実行履歴を開く",
+          "目的 — 利用可能: task-00eeff7805964e1f835534b81e57065b — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+          "評価 — 利用不可: 候補は選択されていません。",
+          "判断の根拠 — 利用不可: 候補は選択されていません。",
+          "改善 — 利用不可: 候補は選択されていません。",
+          "結果 — 利用可能: 正式状態: 完了（COMPLETED）",
+          "診断情報を開く",
+          "反復ごとの候補一覧",
+          "反復ごとの候補一覧。閲覧中と比較対象はこの画面の選択です。正式採用は実行基盤から通知されます。",
+          "候補一覧",
+          "task-00eeff7805964e1f835534b81e57065b — 第0回 — C1 キーボード操作対象 正式採用（実行基盤から通知）",
+          "task-019e673007d848018cf3dc7366258d38 — 第0回 — C1  正式採用（実行基盤から通知）",
+          "task-0b23811426af4a86a3fed9dc67b21947 — 第0回 — C1  正式採用（実行基盤から通知）",
+          "task-0c903dc32f36402bb9f72f676bfc8d8c — 第0回 — C1  正式採用（実行基盤から通知）",
+          "task-0ddbe166cef5482495ec675999f0fc9b — 第0回 — C1  正式採用（実行基盤から通知）",
+          "task-130479815f4b49c2be5fac0c63fe3e09 — 第0回 — C1  正式採用（実行基盤から通知）",
+          "task-15b14d7e058749a9a772e9e94efa54c2 — 第0回 — C1  正式採用（実行基盤から通知）",
+          "task-1fcce881a4934cf78ce822be296b2f58 — 第0回 — C1  正式採用（実行基盤から通知）",
+          "作業画面の切り替え",
+          "成果物  Ctrl+1",
+          "候補を比較  Ctrl+2",
+          "処理の流れ  Ctrl+3",
+          "クリエイティブ・ブリーフ",
+          "ブリーフを閉じる",
+          "目的",
+          "方向性",
+          "Production still (Krea2)",
+          "受付票を再確認"
+        ],
+        "window": {
+          "title": "COS Desktop",
+          "class": "Zed::Window",
+          "width": 1296,
+          "height": 839
+        },
+        "screenshot": {
+          "file": "C:\\dev\\cos-desktop\\target\\acc1-native\\20261109T110551-revoke\\shots\\brief-submitted.png",
+          "sha256": "sha256:e60bb011c27505a54ebeac817b41d228393549c390d73e3402b07c7bd2575327",
+          "bytes": 46838,
+          "printed": true,
+          "width": 1296,
+          "height": 839
+        }
+      },
+      "verdict": "PASS"
+    }
+  },
+  "task": {
+    "task_ref": "task-02e51c3a49694b4d943b860530e8dd6b",
+    "projection_at_discovery": {
+      "task_status": "ASSIGNED",
+      "inner_phase": null,
+      "projection_revision": "261"
+    }
+  },
+  "states": [],
+  "projection_trace": [],
+  "resyncs": [],
+  "trace_errors": [],
+  "screenshots": {},
+  "media": {},
+  "injections": {
+    "credential_revocation": {
+      "wait_active": {
+        "matched": true,
+        "context_sha256_16": "sha256:df8c40ab76080a8a",
+        "at": "2026-11-09T11:06:33+0900",
+        "http_status": 200,
+        "task": {
+          "task_ref": "task-02e51c3a49694b4d943b860530e8dd6b",
+          "title": "ACC1-NATIVE-revoke 20261109-110551 production still",
+          "task_status": "ACTIVE",
+          "inner_phase": "RUNNING",
+          "iteration_index": 0,
+          "stop_pending": false,
+          "accepted_brief": {
+            "objective_text": "ACC1-NATIVE-revoke 20261109-110551 production still",
+            "text_prompt": "cinematic mechanical desktop object, no text",
+            "recipe_ref": {
+              "recipe_id": "recipe-cos-production-still",
+              "source_harness_version_id": "hvid_7231516f3fe04cb9e3e26f71354eaa4f16868e233e2b5d0ff41a0c2623fd6870",
+              "source_harness_digest": "sha256:3b9b1e205b2610ebae814233743a06a7e1774785c3a59b00452b5474b4745604",
+              "graph_ref": {
+                "graph_id": "graph-cos-production-001",
+                "version": 2,
+                "digest": "sha256:4f9bfd7ca021557afe5f8e505218ccfd8c7f7d5b8a4bf636693cb456af683ecf"
+              },
+              "projection_digest": "sha256:992c5753d8aeb088338ab19a1486880681caed8817db7aea1f5cd5fad2dd317c"
+            },
+            "reference_artifact_refs": [],
+            "parameter_values": [
+              {
+                "id": "prompt",
+                "value": ""
+              },
+              {
+                "id": "steps",
+                "value": 8
+              }
+            ]
+          },
+          "projection_revision": 1,
+          "epoch": "60f154f557f34dabb58a81f618510f3b"
+        }
+      },
+      "at": "2026-11-09T11:06:33+0900",
+      "uia_before": {
+        "label": "revoke-before",
+        "at": "2026-11-09T11:06:35+0900",
+        "elements": 60,
+        "names_sha256": "sha256:4eda6a99cae5b2e47e820cf55b3a6b2347325d914c751c56ac6e44ff707c770b",
+        "names": [
+          "COS Desktop 作業画面",
+          "現在のタスクと状態",
+          "task-00eeff7805964e1f835534b81e57065b  北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+          "Runtime / 情報を受信中",
+          "タスクの状態: 完了（COMPLETED）",
+          "処理段階: RUNNING",
+          "反復回数: 第0回",
+          "成果物の利用状態: 取得可能（AVAILABLE）（1件）",
+          "接続・情報の鮮度: 情報を受信中",
+          "正式な結果: 完了（COMPLETED）",
+          "停止の操作と現在の受付状況",
+          "タスクを停止（現在は操作できません）",
+          "停止要求の受付状況を確認（現在は操作できません）",
+          "この画面から停止要求は送っていません",
+          "停止要求を1回送ります。受付状況とタスクの終了結果は別に確認します。",
+          "タスク一覧",
+          "新しいタスクを作成",
+          "タスクを検索",
+          "task-02e51c3a49694b4d943b860530e8dd6b — ACC1-NATIVE-revoke 20261109-110551 production still",
+          "実行中（ACTIVE）",
+          "RUNNING",
+          "0",
+          "作業領域：成果物",
+          "成果物",
+          "表示中",
+          "Runtime が認可した成果物メディアを取得して表示します。取得できない場合は、理由を画像領域に明示します。",
+          "全体表示 (0)",
+          "物理ピクセル1:1 (1)",
+          "拡大 (+)",
+          "縮小 (-)",
+          "全画面 / 復帰 (F11)",
+          "画像を利用できません: 認可済みの画像入力がありません。実行基盤からの取得は未対応です。",
+          "画像は未表示です",
+          "画像表示。0: 全体、1: 物理等倍、+/-: 拡大縮小、矢印: 移動、F11: 全画面、Escape: 復帰",
+          "候補の詳細",
+          "詳細と説明",
+          "候補は表示されていません",
+          "このタスクの実行履歴を開く",
+          "目的 — 利用可能: task-00eeff7805964e1f835534b81e57065b — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+          "評価 — 利用不可: 候補は選択されていません。",
+          "判断の根拠 — 利用不可: 候補は選択されていません。",
+          "改善 — 利用不可: 候補は選択されていません。",
+          "結果 — 利用可能: 正式状態: 完了（COMPLETED）",
+          "診断情報を開く",
+          "反復ごとの候補一覧",
+          "反復ごとの候補一覧。閲覧中と比較対象はこの画面の選択です。正式採用は実行基盤から通知されます。",
+          "候補一覧",
+          "task-00eeff7805964e1f835534b81e57065b — 第0回 — C1 キーボード操作対象 正式採用（実行基盤から通知）",
+          "task-019e673007d848018cf3dc7366258d38 — 第0回 — C1  正式採用（実行基盤から通知）",
+          "task-0b23811426af4a86a3fed9dc67b21947 — 第0回 — C1  正式採用（実行基盤から通知）",
+          "task-0c903dc32f36402bb9f72f676bfc8d8c — 第0回 — C1  正式採用（実行基盤から通知）",
+          "task-0ddbe166cef5482495ec675999f0fc9b — 第0回 — C1  正式採用（実行基盤から通知）",
+          "task-130479815f4b49c2be5fac0c63fe3e09 — 第0回 — C1  正式採用（実行基盤から通知）",
+          "task-15b14d7e058749a9a772e9e94efa54c2 — 第0回 — C1  正式採用（実行基盤から通知）",
+          "task-1fcce881a4934cf78ce822be296b2f58 — 第0回 — C1  正式採用（実行基盤から通知）",
+          "作業画面の切り替え",
+          "成果物  Ctrl+1",
+          "候補を比較  Ctrl+2",
+          "処理の流れ  Ctrl+3"
+        ],
+        "window": {
+          "title": "COS Desktop",
+          "class": "Zed::Window",
+          "width": 1296,
+          "height": 839
+        },
+        "screenshot": {
+          "file": "C:\\dev\\cos-desktop\\target\\acc1-native\\20261109T110551-revoke\\shots\\revoke-before.png",
+          "sha256": "sha256:fd326407bda40e289a3adea02b693bdb804dc43aa8052e878cbd25a2640bf355",
+          "bytes": 146340,
+          "printed": true,
+          "width": 1296,
+          "height": 839
+        }
+      },
+      "ack": {
+        "at": "2026-11-09T11:06:35+0900",
+        "revoked_count": 2,
+        "principals": [
+          "desktop:f9f8896d9d99d5956544bb21f8e025e1",
+          "desktop:fd30e3561dd28e40bddd949de37583a4"
+        ],
+        "token_values_recorded": false
+      },
+      "trigger_accepted": true,
+      "uia_after_3s": {
+        "label": "revoke-after-3s",
+        "at": "2026-11-09T11:06:42+0900",
+        "elements": 60,
+        "names_sha256": "sha256:4eda6a99cae5b2e47e820cf55b3a6b2347325d914c751c56ac6e44ff707c770b",
+        "names": [
+          "COS Desktop 作業画面",
+          "現在のタスクと状態",
+          "task-00eeff7805964e1f835534b81e57065b  北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+          "Runtime / 情報を受信中",
+          "タスクの状態: 完了（COMPLETED）",
+          "処理段階: RUNNING",
+          "反復回数: 第0回",
+          "成果物の利用状態: 取得可能（AVAILABLE）（1件）",
+          "接続・情報の鮮度: 情報を受信中",
+          "正式な結果: 完了（COMPLETED）",
+          "停止の操作と現在の受付状況",
+          "タスクを停止（現在は操作できません）",
+          "停止要求の受付状況を確認（現在は操作できません）",
+          "この画面から停止要求は送っていません",
+          "停止要求を1回送ります。受付状況とタスクの終了結果は別に確認します。",
+          "タスク一覧",
+          "新しいタスクを作成",
+          "タスクを検索",
+          "task-02e51c3a49694b4d943b860530e8dd6b — ACC1-NATIVE-revoke 20261109-110551 production still",
+          "実行中（ACTIVE）",
+          "RUNNING",
+          "0",
+          "作業領域：成果物",
+          "成果物",
+          "表示中",
+          "Runtime が認可した成果物メディアを取得して表示します。取得できない場合は、理由を画像領域に明示します。",
+          "全体表示 (0)",
+          "物理ピクセル1:1 (1)",
+          "拡大 (+)",
+          "縮小 (-)",
+          "全画面 / 復帰 (F11)",
+          "画像を利用できません: 認可済みの画像入力がありません。実行基盤からの取得は未対応です。",
+          "画像は未表示です",
+          "画像表示。0: 全体、1: 物理等倍、+/-: 拡大縮小、矢印: 移動、F11: 全画面、Escape: 復帰",
+          "候補の詳細",
+          "詳細と説明",
+          "候補は表示されていません",
+          "このタスクの実行履歴を開く",
+          "目的 — 利用可能: task-00eeff7805964e1f835534b81e57065b — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+          "評価 — 利用不可: 候補は選択されていません。",
+          "判断の根拠 — 利用不可: 候補は選択されていません。",
+          "改善 — 利用不可: 候補は選択されていません。",
+          "結果 — 利用可能: 正式状態: 完了（COMPLETED）",
+          "診断情報を開く",
+          "反復ごとの候補一覧",
+          "反復ごとの候補一覧。閲覧中と比較対象はこの画面の選択です。正式採用は実行基盤から通知されます。",
+          "候補一覧",
+          "task-00eeff7805964e1f835534b81e57065b — 第0回 — C1 キーボード操作対象 正式採用（実行基盤から通知）",
+          "task-019e673007d848018cf3dc7366258d38 — 第0回 — C1  正式採用（実行基盤から通知）",
+          "task-0b23811426af4a86a3fed9dc67b21947 — 第0回 — C1  正式採用（実行基盤から通知）",
+          "task-0c903dc32f36402bb9f72f676bfc8d8c — 第0回 — C1  正式採用（実行基盤から通知）",
+          "task-0ddbe166cef5482495ec675999f0fc9b — 第0回 — C1  正式採用（実行基盤から通知）",
+          "task-130479815f4b49c2be5fac0c63fe3e09 — 第0回 — C1  正式採用（実行基盤から通知）",
+          "task-15b14d7e058749a9a772e9e94efa54c2 — 第0回 — C1  正式採用（実行基盤から通知）",
+          "task-1fcce881a4934cf78ce822be296b2f58 — 第0回 — C1  正式採用（実行基盤から通知）",
+          "作業画面の切り替え",
+          "成果物  Ctrl+1",
+          "候補を比較  Ctrl+2",
+          "処理の流れ  Ctrl+3"
+        ],
+        "window": {
+          "title": "COS Desktop",
+          "class": "Zed::Window",
+          "width": 1296,
+          "height": 839
+        },
+        "screenshot": {
+          "file": "C:\\dev\\cos-desktop\\target\\acc1-native\\20261109T110551-revoke\\shots\\revoke-after-3s.png",
+          "sha256": "sha256:03c4a4a736dc69089c34b3c982208aebc39be7f1bfeb40877e62fd74b8a22f90",
+          "bytes": 143238,
+          "printed": true,
+          "width": 1296,
+          "height": 839
+        }
+      },
+      "observer_reissue_http_status": 200,
+      "observer_reopen": {
+        "http_status": 200,
+        "read_revision": "6",
+        "epoch": "60f154f557f34dabb58a81f618510f3b",
+        "context_sha256_16": "sha256:01508f5ef44eb029",
+        "scope_sha256_16": "sha256:80aaaa485dcfb24f",
+        "cursor_sha256_16": "sha256:1564506167582fb3",
+        "snapshot_mutations": 263,
+        "snapshot_kind_counts": {
+          "TASK": 40,
+          "ITERATION": 38,
+          "CANDIDATE": 37,
+          "ARTIFACT": 36,
+          "EVALUATION": 37,
+          "OUTCOME": 37,
+          "GRAPH": 38
+        }
+      },
+      "reauth_log_line": true,
+      "reselect": {
+        "selected": true
+      },
+      "transitions": [
+        {
+          "at": "2026-11-09T11:07:02+0900",
+          "task_ref": "task-02e51c3a49694b4d943b860530e8dd6b",
+          "task_status": "COMPLETED",
+          "inner_phase": "RUNNING",
+          "iteration_index": 0,
+          "formal_outcome_ref": "sha256:f4239b15e900c68d3a6e000615145c58050e973b73d45ac82cec903537b4c60f",
+          "revision": "266"
+        }
+      ],
+      "final_task": {
+        "task_ref": "task-02e51c3a49694b4d943b860530e8dd6b",
+        "title": "ACC1-NATIVE-revoke 20261109-110551 production still",
+        "task_status": "COMPLETED",
+        "inner_phase": "RUNNING",
+        "iteration_index": 0,
+        "stop_pending": false,
+        "formal_outcome_ref": "sha256:f4239b15e900c68d3a6e000615145c58050e973b73d45ac82cec903537b4c60f",
+        "accepted_brief": {
+          "objective_text": "ACC1-NATIVE-revoke 20261109-110551 production still",
+          "text_prompt": "cinematic mechanical desktop object, no text",
+          "recipe_ref": {
+            "recipe_id": "recipe-cos-production-still",
+            "source_harness_version_id": "hvid_7231516f3fe04cb9e3e26f71354eaa4f16868e233e2b5d0ff41a0c2623fd6870",
+            "source_harness_digest": "sha256:3b9b1e205b2610ebae814233743a06a7e1774785c3a59b00452b5474b4745604",
+            "graph_ref": {
+              "graph_id": "graph-cos-production-001",
+              "version": 2,
+              "digest": "sha256:4f9bfd7ca021557afe5f8e505218ccfd8c7f7d5b8a4bf636693cb456af683ecf"
+            },
+            "projection_digest": "sha256:992c5753d8aeb088338ab19a1486880681caed8817db7aea1f5cd5fad2dd317c"
+          },
+          "reference_artifact_refs": [],
+          "parameter_values": [
+            {
+              "id": "prompt",
+              "value": ""
+            },
+            {
+              "id": "steps",
+              "value": 8
+            }
+          ]
+        },
+        "projection_revision": 10,
+        "epoch": "60f154f557f34dabb58a81f618510f3b"
+      },
+      "uia_terminal": {
+        "label": "revoke-terminal",
+        "at": "2026-11-09T11:07:04+0900",
+        "elements": 60,
+        "names_sha256": "sha256:590681c03df5093f1533f4ee8d119ed72dac5d8cdd8dd9b272cc334a74708df8",
+        "names": [
+          "COS Desktop 作業画面",
+          "現在のタスクと状態",
+          "task-00eeff7805964e1f835534b81e57065b  北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+          "Runtime / 情報を受信中",
+          "タスクの状態: 完了（COMPLETED）",
+          "処理段階: RUNNING",
+          "反復回数: 第0回",
+          "成果物の利用状態: 取得可能（AVAILABLE）（1件）",
+          "接続・情報の鮮度: 情報を受信中",
+          "正式な結果: 完了（COMPLETED）",
+          "停止の操作と現在の受付状況",
+          "タスクを停止（現在は操作できません）",
+          "停止要求の受付状況を確認（現在は操作できません）",
+          "この画面から停止要求は送っていません",
+          "停止要求を1回送ります。受付状況とタスクの終了結果は別に確認します。",
+          "タスク一覧",
+          "新しいタスクを作成",
+          "タスクを検索",
+          "task-02e51c3a49694b4d943b860530e8dd6b — ACC1-NATIVE-revoke 20261109-110551 production still",
+          "完了（COMPLETED）",
+          "RUNNING",
+          "0",
+          "作業領域：成果物",
+          "成果物",
+          "表示中",
+          "Runtime が認可した成果物メディアを取得して表示します。取得できない場合は、理由を画像領域に明示します。",
+          "全体表示 (0)",
+          "物理ピクセル1:1 (1)",
+          "拡大 (+)",
+          "縮小 (-)",
+          "全画面 / 復帰 (F11)",
+          "画像を利用できません: 認可済みの画像入力がありません。実行基盤からの取得は未対応です。",
+          "画像は未表示です",
+          "画像表示。0: 全体、1: 物理等倍、+/-: 拡大縮小、矢印: 移動、F11: 全画面、Escape: 復帰",
+          "候補の詳細",
+          "詳細と説明",
+          "候補は表示されていません",
+          "このタスクの実行履歴を開く",
+          "目的 — 利用可能: task-00eeff7805964e1f835534b81e57065b — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+          "評価 — 利用不可: 候補は選択されていません。",
+          "判断の根拠 — 利用不可: 候補は選択されていません。",
+          "改善 — 利用不可: 候補は選択されていません。",
+          "結果 — 利用可能: 正式状態: 完了（COMPLETED）",
+          "診断情報を開く",
+          "反復ごとの候補一覧",
+          "反復ごとの候補一覧。閲覧中と比較対象はこの画面の選択です。正式採用は実行基盤から通知されます。",
+          "候補一覧",
+          "task-00eeff7805964e1f835534b81e57065b — 第0回 — C1 キーボード操作対象 正式採用（実行基盤から通知）",
+          "task-019e673007d848018cf3dc7366258d38 — 第0回 — C1  正式採用（実行基盤から通知）",
+          "task-02e51c3a49694b4d943b860530e8dd6b — 第0回 — C1  正式採用（実行基盤から通知）",
+          "task-0b23811426af4a86a3fed9dc67b21947 — 第0回 — C1  正式採用（実行基盤から通知）",
+          "task-0c903dc32f36402bb9f72f676bfc8d8c — 第0回 — C1  正式採用（実行基盤から通知）",
+          "task-0ddbe166cef5482495ec675999f0fc9b — 第0回 — C1  正式採用（実行基盤から通知）",
+          "task-130479815f4b49c2be5fac0c63fe3e09 — 第0回 — C1  正式採用（実行基盤から通知）",
+          "task-15b14d7e058749a9a772e9e94efa54c2 — 第0回 — C1  正式採用（実行基盤から通知）",
+          "作業画面の切り替え",
+          "成果物  Ctrl+1",
+          "候補を比較  Ctrl+2",
+          "処理の流れ  Ctrl+3"
+        ],
+        "window": {
+          "title": "COS Desktop",
+          "class": "Zed::Window",
+          "width": 1296,
+          "height": 839
+        },
+        "screenshot": {
+          "file": "C:\\dev\\cos-desktop\\target\\acc1-native\\20261109T110551-revoke\\shots\\revoke-terminal.png",
+          "sha256": "sha256:6ba6a8b878481dcba16c0fdb8c336b55807048682f227e1d6fadf0f82079369e",
+          "bytes": 143310,
+          "printed": true,
+          "width": 1296,
+          "height": 839
+        }
+      },
+      "verdict": "PASS"
+    }
+  },
+  "cleanup": {
+    "desktop": {
+      "pid": 7556,
+      "wm_close_sent": true,
+      "exited": true,
+      "exit_code": 0,
+      "forced": null
+    },
+    "runtime": {
+      "pid": 40012,
+      "clean": true,
+      "exit": 0
+    },
+    "port": 8133,
+    "port_free": true,
+    "credential_store": {
+      "target": "cos-desktop/observation/14887796bad1e1416ccd52d08bf9ed4d",
+      "exit": 1,
+      "output": "CMDKEY: Element not found."
+    },
+    "discovery_present_after_stop": false
+  },
+  "residuals": [
+    "The Desktop token is not exposed by design; the isolated serving process revoked its own in-memory Desktop credential registry, which is the same 401 the product revoke route produces"
+  ],
+  "goal": "ACC1-NATIVE-revoke 20261109-110551 production still",
+  "db_copy_sha256": "sha256:f87711008a546c31caf75ed6d24c3a5c95b1d824c8b43868f13e1e852bfb3e3d",
+  "db_copy_bytes": 11493376,
+  "presets_sha256": "sha256:e1c2b553a121638bb551df1f48d21e5c996614e4821008570c066f6563baae3c",
+  "runtime": {
+    "pid": 40012,
+    "endpoint": "http://127.0.0.1:8133",
+    "server_identity": "cos-runtime-orchestrator",
+    "server_build": "orchestrator-runtime/0.1.0",
+    "epoch": "60f154f557f34dabb58a81f618510f3b",
+    "protocol": {
+      "major": 2,
+      "minor": 0
+    },
+    "schema": {
+      "major": 2,
+      "minor": 0
+    },
+    "config_path": "C:\\dev\\cos-desktop\\target\\acc1-native\\20261109T110551-revoke\\runtime-config.yaml",
+    "config_sha256": "sha256:28689515e5a0091d8119d79f2d0dc3495c5332a7004ba9e2f5327602358774fd",
+    "discovery_path": "C:\\dev\\cos-desktop\\target\\acc1-native\\20261109T110551-revoke\\runtime-discovery.json",
+    "cas_root": "C:\\dev\\cos-desktop\\target\\acc1-native\\20261109T110551-revoke\\cas",
+    "ready": {
+      "status": 200,
+      "document": {
+        "status": "ready"
+      }
+    }
+  },
+  "health": {
+    "polls": 2,
+    "transitions": [
+      {
+        "at": "2026-11-09T11:05:58+0900",
+        "http_status": 200,
+        "health": {
+          "llm": null,
+          "comfy": null
+        },
+        "loop": {
+          "running": false,
+          "theme": "",
+          "loop_id": "",
+          "run_id": "",
+          "status": "idle",
+          "reason": "",
+          "round": 0,
+          "paused": false
+        }
+      },
+      {
+        "at": "2026-11-09T11:06:01+0900",
+        "http_status": 200,
+        "health": {
+          "llm": true,
+          "comfy": true
+        },
+        "loop": {
+          "running": false,
+          "theme": "",
+          "loop_id": "",
+          "run_id": "",
+          "status": "idle",
+          "reason": "",
+          "round": 0,
+          "paused": false
+        }
+      },
+      {
+        "at": "2026-11-09T11:05:58+0900",
+        "http_status": 200,
+        "health": {
+          "llm": null,
+          "comfy": null
+        },
+        "loop": {
+          "running": false,
+          "theme": "",
+          "loop_id": "",
+          "run_id": "",
+          "status": "idle",
+          "reason": "",
+          "round": 0,
+          "paused": false
+        }
+      },
+      {
+        "at": "2026-11-09T11:06:01+0900",
+        "http_status": 200,
+        "health": {
+          "llm": true,
+          "comfy": true
+        },
+        "loop": {
+          "running": false,
+          "theme": "",
+          "loop_id": "",
+          "run_id": "",
+          "status": "idle",
+          "reason": "",
+          "round": 0,
+          "paused": false
+        }
+      }
+    ],
+    "runtime_reported": {
+      "llm": true,
+      "comfy": true
+    },
+    "generation_plane_ready": true,
+    "direct_preflight": {
+      "probe": "direct preflight (not the Runtime report)",
+      "at": "2026-11-09T11:06:01+0900",
+      "comfyui": {
+        "url": "http://127.0.0.1:8188/system_stats",
+        "http_status": 200,
+        "comfyui_version": "0.35.1",
+        "argv": [
+          "ComfyUI\\main.py",
+          "--windows-standalone-build",
+          "--lowvram",
+          "--reserve-vram",
+          "1.5",
+          "--cache-lru",
+          "10",
+          "--preview-method",
+          "taesd",
+          "--use-pytorch-cross-attention"
+        ]
+      },
+      "ollama": {
+        "url": "http://127.0.0.1:11434/api/tags",
+        "http_status": 200,
+        "model_count": 6
+      }
+    }
+  },
+  "catalog": {
+    "http_status": 200,
+    "can_submit": true,
+    "reason_codes": [],
+    "recipes": [
+      {
+        "label": "Production still (Krea2)",
+        "recipe_ref": {
+          "recipe_id": "recipe-cos-production-still",
+          "source_harness_version_id": "hvid_7231516f3fe04cb9e3e26f71354eaa4f16868e233e2b5d0ff41a0c2623fd6870",
+          "source_harness_digest": "sha256:3b9b1e205b2610ebae814233743a06a7e1774785c3a59b00452b5474b4745604",
+          "graph_ref": {
+            "graph_id": "graph-cos-production-001",
+            "graph_version": 2,
+            "graph_digest": "sha256:4f9bfd7ca021557afe5f8e505218ccfd8c7f7d5b8a4bf636693cb456af683ecf"
+          },
+          "profile_ref": null,
+          "projection_digest": "sha256:992c5753d8aeb088338ab19a1486880681caed8817db7aea1f5cd5fad2dd317c"
+        },
+        "execution_limits": {
+          "max_iterations": 2,
+          "summary": "up to 2 iterations"
+        }
+      }
+    ]
+  },
+  "observation_open": {
+    "http_status": 200,
+    "read_revision": "1",
+    "epoch": "60f154f557f34dabb58a81f618510f3b",
+    "context_sha256_16": "sha256:b02386f7f0f07f76",
+    "scope_sha256_16": "sha256:fd35ce38134947e6",
+    "cursor_sha256_16": "sha256:565aa6d311d191f4",
+    "snapshot_mutations": 260,
+    "snapshot_kind_counts": {
+      "TASK": 39,
+      "ITERATION": 37,
+      "CANDIDATE": 37,
+      "ARTIFACT": 36,
+      "EVALUATION": 37,
+      "OUTCOME": 37,
+      "GRAPH": 37
+    }
+  },
+  "credential": {
+    "principal": "desktop:f9f8896d9d99d5956544bb21f8e025e1",
+    "scopes": [
+      "read:observe",
+      "desktop:command"
+    ],
+    "expires_in": 43200,
+    "token_recorded": false
+  },
+  "finished_at": "2026-11-09T11:07:05+0900",
+  "logs": {
+    "desktop-revoke.log": {
+      "file": "logs\\revoke\\revoke-desktop-revoke.log",
+      "sha256": "sha256:bee795bc5f345975d1eb25ea7fd91bec6e7952f8119d716322119db1c7fa8607",
+      "stored_sha256": "sha256:e834d9d194a474790792627308306c8b1e23e4da7847ec21b2c8e58886f8d7c8",
+      "bytes": 354
+    },
+    "runtime.log": {
+      "file": "logs\\revoke\\revoke-runtime.log",
+      "sha256": "sha256:524bb9951e6843312a7643443b46cfb33ed07dc2846b58c5560df438b7e00211",
+      "stored_sha256": "sha256:736144c7de70cd7a9fa1b76710940ce71eb3449551fe23a84ce02de185322836",
+      "bytes": 31042
+    }
+  },
+  "screenshot_files": {
+    "brief-filled.png": {
+      "file": "shots\\revoke\\brief-filled.png",
+      "sha256": "sha256:84e6d0e1f3d21dd811cfb940d8ca6de0eeac2647e1a2bc234a9648ca98b75bb9",
+      "bytes": 39599
+    },
+    "brief-open.png": {
+      "file": "shots\\revoke\\brief-open.png",
+      "sha256": "sha256:fb346171ef9cb00e43c07d048e373cf4a2a955762674a00b706c0a03579350c9",
+      "bytes": 31918
+    },
+    "brief-submitted.png": {
+      "file": "shots\\revoke\\brief-submitted.png",
+      "sha256": "sha256:e60bb011c27505a54ebeac817b41d228393549c390d73e3402b07c7bd2575327",
+      "bytes": 46838
+    },
+    "connected-revoke.png": {
+      "file": "shots\\revoke\\connected-revoke.png",
+      "sha256": "sha256:5b81faa6db49e9b67e9b33fddf916a17746b7567ab5e3af74ef38be56098f123",
+      "bytes": 148002
+    },
+    "revoke-after-3s.png": {
+      "file": "shots\\revoke\\revoke-after-3s.png",
+      "sha256": "sha256:03c4a4a736dc69089c34b3c982208aebc39be7f1bfeb40877e62fd74b8a22f90",
+      "bytes": 143238
+    },
+    "revoke-before.png": {
+      "file": "shots\\revoke\\revoke-before.png",
+      "sha256": "sha256:fd326407bda40e289a3adea02b693bdb804dc43aa8052e878cbd25a2640bf355",
+      "bytes": 146340
+    },
+    "revoke-task-reselected.png": {
+      "file": "shots\\revoke\\revoke-task-reselected.png",
+      "sha256": "sha256:03c4a4a736dc69089c34b3c982208aebc39be7f1bfeb40877e62fd74b8a22f90",
+      "bytes": 143238
+    },
+    "revoke-task-selected.png": {
+      "file": "shots\\revoke\\revoke-task-selected.png",
+      "sha256": "sha256:fd326407bda40e289a3adea02b693bdb804dc43aa8052e878cbd25a2640bf355",
+      "bytes": 146340
+    },
+    "revoke-terminal.png": {
+      "file": "shots\\revoke\\revoke-terminal.png",
+      "sha256": "sha256:6ba6a8b878481dcba16c0fdb8c336b55807048682f227e1d6fadf0f82079369e",
+      "bytes": 143310
+    }
+  },
+  "uia_dir": "",
+  "uia_raw_retained": false
+}

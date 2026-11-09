@@ -1,0 +1,709 @@
+{
+  "label": "missing-media",
+  "started_at": "2026-11-09T11:39:09+0900",
+  "port": 8133,
+  "verdict": "NOT_RUN",
+  "work_dir": "C:\\dev\\cos-desktop\\target\\acc1-native\\20261109T113909-missing-media",
+  "steps": {
+    "connected-missing": {
+      "verdict": "PASS",
+      "pid": 45828,
+      "window": {
+        "found": true,
+        "title": "COS Desktop",
+        "class": "Zed::Window",
+        "width": 1296,
+        "height": 839
+      },
+      "uia": {
+        "label": "connected-missing",
+        "at": "2026-11-09T11:40:05+0900",
+        "elements": 65,
+        "names_sha256": "sha256:e421ebd27f0bffb47f6408de7062b81a2282e41889c8b4075a246dfd07839b82",
+        "names": [
+          "COS Desktop 作業画面",
+          "現在のタスクと状態",
+          "task-00eeff7805964e1f835534b81e57065b  北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+          "Runtime / 情報を受信中",
+          "タスクの状態: 完了（COMPLETED）",
+          "処理段階: RUNNING",
+          "反復回数: 第0回",
+          "成果物の利用状態: 取得可能（AVAILABLE）（1件）",
+          "接続・情報の鮮度: 情報を受信中",
+          "正式な結果: 完了（COMPLETED）",
+          "停止の操作と現在の受付状況",
+          "タスクを停止（現在は操作できません）",
+          "停止要求の受付状況を確認（現在は操作できません）",
+          "この画面から停止要求は送っていません",
+          "停止要求を1回送ります。受付状況とタスクの終了結果は別に確認します。",
+          "タスク一覧",
+          "新しいタスクを作成",
+          "タスクを検索",
+          "task-00eeff7805964e1f835534b81e57065b — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+          "完了（COMPLETED）",
+          "RUNNING",
+          "0",
+          "キーボード操作対象",
+          "task-019e673007d848018cf3dc7366258d38 — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+          "完了（COMPLETED）",
+          "RUNNING",
+          "0",
+          "作業領域：成果物",
+          "成果物",
+          "表示中",
+          "Runtime が認可した成果物メディアを取得して表示します。取得できない場合は、理由を画像領域に明示します。",
+          "全体表示 (0)",
+          "物理ピクセル1:1 (1)",
+          "拡大 (+)",
+          "縮小 (-)",
+          "全画面 / 復帰 (F11)",
+          "画像を利用できません: 認可済みの画像入力がありません。実行基盤からの取得は未対応です。",
+          "画像は未表示です",
+          "画像表示。0: 全体、1: 物理等倍、+/-: 拡大縮小、矢印: 移動、F11: 全画面、Escape: 復帰",
+          "候補の詳細",
+          "詳細と説明",
+          "候補は表示されていません",
+          "このタスクの実行履歴を開く",
+          "目的 — 利用可能: task-00eeff7805964e1f835534b81e57065b — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+          "評価 — 利用不可: 候補は選択されていません。",
+          "判断の根拠 — 利用不可: 候補は選択されていません。",
+          "改善 — 利用不可: 候補は選択されていません。",
+          "結果 — 利用可能: 正式状態: 完了（COMPLETED）",
+          "診断情報を開く",
+          "反復ごとの候補一覧",
+          "反復ごとの候補一覧。閲覧中と比較対象はこの画面の選択です。正式採用は実行基盤から通知されます。",
+          "候補一覧",
+          "task-00eeff7805964e1f835534b81e57065b — 第0回 — C1 キーボード操作対象 正式採用（実行基盤から通知）",
+          "task-019e673007d848018cf3dc7366258d38 — 第0回 — C1  正式採用（実行基盤から通知）",
+          "task-0b23811426af4a86a3fed9dc67b21947 — 第0回 — C1  正式採用（実行基盤から通知）",
+          "task-0c903dc32f36402bb9f72f676bfc8d8c — 第0回 — C1  正式採用（実行基盤から通知）",
+          "task-0ddbe166cef5482495ec675999f0fc9b — 第0回 — C1  正式採用（実行基盤から通知）",
+          "task-126ed65ac4374dbdae0550dbe2b120e3 — 第0回 — C1  正式採用（実行基盤から通知）",
+          "task-130479815f4b49c2be5fac0c63fe3e09 — 第0回 — C1  正式採用（実行基盤から通知）",
+          "task-15b14d7e058749a9a772e9e94efa54c2 — 第0回 — C1  正式採用（実行基盤から通知）",
+          "作業画面の切り替え",
+          "成果物  Ctrl+1",
+          "候補を比較  Ctrl+2",
+          "処理の流れ  Ctrl+3"
+        ],
+        "window": {
+          "title": "COS Desktop",
+          "class": "Zed::Window",
+          "width": 1296,
+          "height": 839
+        },
+        "screenshot": {
+          "file": "C:\\dev\\cos-desktop\\target\\acc1-native\\20261109T113909-missing-media\\shots\\connected-missing.png",
+          "sha256": "sha256:5b81faa6db49e9b67e9b33fddf916a17746b7567ab5e3af74ef38be56098f123",
+          "bytes": 148002,
+          "printed": true,
+          "width": 1296,
+          "height": 839
+        }
+      },
+      "excerpt": "現在のタスクと状態\nRuntime / 情報を受信中\nタスクの状態: 完了（COMPLETED）\n接続・情報の鮮度: 情報を受信中\nタスクを停止（現在は操作できません）\n停止要求を1回送ります。受付状況とタスクの終了結果は別に確認します。\nタスク一覧\n新しいタスクを作成\nタスクを検索\nRuntime が認可した成果物メディアを取得して表示します。取得できない場合は、理由を画像領域に明示します。\nこのタスクの実行履歴を開く"
+    }
+  },
+  "task": {
+    "task_ref": "task-126ed65ac4374dbdae0550dbe2b120e3"
+  },
+  "states": [],
+  "projection_trace": [],
+  "resyncs": [],
+  "trace_errors": [],
+  "screenshots": {},
+  "media": {},
+  "injections": {
+    "missing_media": {
+      "at": "2026-11-09T11:39:09+0900",
+      "create": {
+        "http_status": 200,
+        "command_id": "cmd-37d9f57edf2bd10a642cb870",
+        "receipt": {
+          "command_id": "cmd-37d9f57edf2bd10a642cb870",
+          "operation": "CREATE_TASK",
+          "state": "ACCEPTED",
+          "task_id": "task-126ed65ac4374dbdae0550dbe2b120e3",
+          "accepted_at": "2026-11-09T02:39:16.513959+00:00",
+          "reject_reason": null,
+          "effect_refs": [],
+          "dedupe_expires_at": null,
+          "message": null
+        }
+      },
+      "terminal": {
+        "matched": true,
+        "context_sha256_16": "sha256:c9aaed76ee30ccb3",
+        "at": "2026-11-09T11:40:02+0900",
+        "http_status": 200,
+        "task": {
+          "task_ref": "task-126ed65ac4374dbdae0550dbe2b120e3",
+          "title": "ACC1-NATIVE-missing-media 20261109-113909 production still",
+          "task_status": "COMPLETED",
+          "inner_phase": "RUNNING",
+          "iteration_index": 0,
+          "stop_pending": false,
+          "formal_outcome_ref": "sha256:6f65eb787a52b648fa01b7cbb47249d03525082673b0bde63da60759c50535f1",
+          "accepted_brief": {
+            "objective_text": "ACC1-NATIVE-missing-media 20261109-113909 production still",
+            "text_prompt": "ACC1-NATIVE-missing-media 20261109-113909 production still",
+            "recipe_ref": {
+              "recipe_id": "recipe-cos-production-still",
+              "source_harness_version_id": "hvid_7231516f3fe04cb9e3e26f71354eaa4f16868e233e2b5d0ff41a0c2623fd6870",
+              "source_harness_digest": "sha256:3b9b1e205b2610ebae814233743a06a7e1774785c3a59b00452b5474b4745604",
+              "graph_ref": {
+                "graph_id": "graph-cos-production-001",
+                "version": 2,
+                "digest": "sha256:4f9bfd7ca021557afe5f8e505218ccfd8c7f7d5b8a4bf636693cb456af683ecf"
+              },
+              "projection_digest": "sha256:992c5753d8aeb088338ab19a1486880681caed8817db7aea1f5cd5fad2dd317c"
+            },
+            "reference_artifact_refs": [],
+            "parameter_values": [
+              {
+                "id": "prompt",
+                "value": ""
+              },
+              {
+                "id": "steps",
+                "value": 8
+              }
+            ]
+          },
+          "projection_revision": 22,
+          "epoch": "7fde53a80f20459b915e1afcde9f72f7"
+        }
+      },
+      "blob_before": {
+        "path_relative_to_cas_root": "blobs\\5e\\5e9de2c58e7b1234018521526ea2e34e4c3775cdc0c038aab0636ed3db8b1ae8",
+        "bytes": 1369752,
+        "sha256": "sha256:5e9de2c58e7b1234018521526ea2e34e4c3775cdc0c038aab0636ed3db8b1ae8",
+        "digest_matches_descriptor": true
+      },
+      "descriptor_before": {
+        "http_status": 200,
+        "access_handle_present": true
+      },
+      "blob_removed": true,
+      "descriptor_after_removal": {
+        "http_status": 200
+      },
+      "fetch_after_removal": {
+        "fetched": false,
+        "reason": "blob_refused",
+        "status": 404
+      },
+      "rail_filter": {
+        "click": {
+          "action": "click",
+          "found": true,
+          "hwnd": 2560524,
+          "title": "COS Desktop",
+          "class": "Zed::Window",
+          "width": 1296,
+          "height": 839,
+          "name_match": "タスクを検索",
+          "clicked": true,
+          "matched_name": "タスクを検索",
+          "matched_id": "task-search",
+          "matched_control_type": "ControlType.Edit",
+          "screen_bounds": [
+            1096,
+            528,
+            208,
+            30
+          ],
+          "client_x": 120,
+          "client_y": 235,
+          "mouse_down_posted": true,
+          "mouse_up_posted": true,
+          "_out": "C:\\dev\\cos-desktop\\target\\acc1-native\\20261109T113909-missing-media\\uia\\005-click.json"
+        },
+        "typed": {
+          "action": "type",
+          "found": true,
+          "hwnd": 2560524,
+          "title": "COS Desktop",
+          "class": "Zed::Window",
+          "width": 1296,
+          "height": 839,
+          "name_match": "タスクを検索",
+          "matched": true,
+          "matched_name": "タスクを検索",
+          "matched_id": "task-search",
+          "matched_control_type": "ControlType.Edit",
+          "set_focus_called": true,
+          "focused_name": "COS Desktop",
+          "focused_control_type": "ControlType.Window",
+          "focused": false,
+          "text_length": 58,
+          "code_units_sent": 58,
+          "posted_all": true,
+          "value_after": "ACC1-NATIVE-missing-media 20261109-113909 production still",
+          "_out": "C:\\dev\\cos-desktop\\target\\acc1-native\\20261109T113909-missing-media\\uia\\006-type.json"
+        },
+        "visible": true,
+        "uia_sha256": "sha256:bccfee223072fd41778a6d287b259a978b209707f5d924fa8527821fd53072a6",
+        "excerpt": "task-126ed65ac4374dbdae0550dbe2b120e3 — ACC1-NATIVE-missing-media 20261109-113909 production still"
+      },
+      "selected": true,
+      "native_view": {
+        "invoke": {
+          "action": "invoke",
+          "found": true,
+          "hwnd": 2560524,
+          "title": "COS Desktop",
+          "class": "Zed::Window",
+          "width": 1296,
+          "height": 839,
+          "name_match": "task-126ed65ac4374dbdae0550dbe2b120e3 — 第0回",
+          "invoked": true,
+          "matched_name": "task-126ed65ac4374dbdae0550dbe2b120e3 — 第0回 — C1  正式採用（実行基盤から通知）",
+          "matched_id": "candidate:37:task-126ed65ac4374dbdae0550dbe2b120e348:run-cos-task-126ed65ac4374dbdae0550dbe2b120e3-i01:049:cand-cos-task-126ed65ac4374dbdae0550dbe2b120e3-i043:art-v1-b90fc9da-a05d-4cb2-b50b-257d7fa23721",
+          "matched_control_type": "ControlType.Button",
+          "pattern": "invoke",
+          "patterns_tried": [
+            "invoke"
+          ],
+          "_out": "C:\\dev\\cos-desktop\\target\\acc1-native\\20261109T113909-missing-media\\uia\\017-invoke.json"
+        },
+        "method": "visible_dock_row_invoke",
+        "state": "BLOCKED_CAPABILITY",
+        "inspector_task_match": false,
+        "media_lines": [
+          "Runtime が認可した成果物メディアを取得して表示します。取得できない場合は、理由を画像領域に明示します。",
+          "機能の利用可否情報が投影されていません（capability not projected）",
+          "画像は未表示です",
+          "画像表示。0: 全体、1: 物理等倍、+/-: 拡大縮小、矢印: 移動、F11: 全画面、Escape: 復帰",
+          "候補の詳細",
+          "閲覧中の候補（この画面での選択）: C1 — 正式採用ではありません。正式採用は実行基盤から通知されます。",
+          "評価 — 利用不可: 表示中の候補は、現在許可された情報に含まれていません。",
+          "判断の根拠 — 利用不可: 表示中の候補は、現在許可された情報に含まれていません。",
+          "改善 — 利用不可: 表示中の候補は、現在許可された情報に含まれていません。",
+          "反復ごとの候補一覧",
+          "反復ごとの候補一覧。閲覧中と比較対象はこの画面の選択です。正式採用は実行基盤から通知されます。",
+          "候補一覧",
+          "候補を比較  Ctrl+2"
+        ],
+        "uia_before": {
+          "label": "missing-artifact-before",
+          "at": "2026-11-09T11:40:16+0900",
+          "elements": 60,
+          "names_sha256": "sha256:bccfee223072fd41778a6d287b259a978b209707f5d924fa8527821fd53072a6",
+          "names": [
+            "COS Desktop 作業画面",
+            "現在のタスクと状態",
+            "task-00eeff7805964e1f835534b81e57065b  北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+            "Runtime / 情報を受信中",
+            "タスクの状態: 完了（COMPLETED）",
+            "処理段階: RUNNING",
+            "反復回数: 第0回",
+            "成果物の利用状態: 取得可能（AVAILABLE）（1件）",
+            "接続・情報の鮮度: 情報を受信中",
+            "正式な結果: 完了（COMPLETED）",
+            "停止の操作と現在の受付状況",
+            "タスクを停止（現在は操作できません）",
+            "停止要求の受付状況を確認（現在は操作できません）",
+            "この画面から停止要求は送っていません",
+            "停止要求を1回送ります。受付状況とタスクの終了結果は別に確認します。",
+            "タスク一覧",
+            "新しいタスクを作成",
+            "タスクを検索",
+            "task-126ed65ac4374dbdae0550dbe2b120e3 — ACC1-NATIVE-missing-media 20261109-113909 production still",
+            "完了（COMPLETED）",
+            "RUNNING",
+            "0",
+            "作業領域：成果物",
+            "成果物",
+            "表示中",
+            "Runtime が認可した成果物メディアを取得して表示します。取得できない場合は、理由を画像領域に明示します。",
+            "全体表示 (0)",
+            "物理ピクセル1:1 (1)",
+            "拡大 (+)",
+            "縮小 (-)",
+            "全画面 / 復帰 (F11)",
+            "画像を利用できません: 認可済みの画像入力がありません。実行基盤からの取得は未対応です。",
+            "画像は未表示です",
+            "画像表示。0: 全体、1: 物理等倍、+/-: 拡大縮小、矢印: 移動、F11: 全画面、Escape: 復帰",
+            "候補の詳細",
+            "詳細と説明",
+            "候補は表示されていません",
+            "このタスクの実行履歴を開く",
+            "目的 — 利用可能: task-00eeff7805964e1f835534b81e57065b — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+            "評価 — 利用不可: 候補は選択されていません。",
+            "判断の根拠 — 利用不可: 候補は選択されていません。",
+            "改善 — 利用不可: 候補は選択されていません。",
+            "結果 — 利用可能: 正式状態: 完了（COMPLETED）",
+            "診断情報を開く",
+            "反復ごとの候補一覧",
+            "反復ごとの候補一覧。閲覧中と比較対象はこの画面の選択です。正式採用は実行基盤から通知されます。",
+            "候補一覧",
+            "task-00eeff7805964e1f835534b81e57065b — 第0回 — C1 キーボード操作対象 正式採用（実行基盤から通知）",
+            "task-019e673007d848018cf3dc7366258d38 — 第0回 — C1  正式採用（実行基盤から通知）",
+            "task-0b23811426af4a86a3fed9dc67b21947 — 第0回 — C1  正式採用（実行基盤から通知）",
+            "task-0c903dc32f36402bb9f72f676bfc8d8c — 第0回 — C1  正式採用（実行基盤から通知）",
+            "task-0ddbe166cef5482495ec675999f0fc9b — 第0回 — C1  正式採用（実行基盤から通知）",
+            "task-126ed65ac4374dbdae0550dbe2b120e3 — 第0回 — C1  正式採用（実行基盤から通知）",
+            "task-130479815f4b49c2be5fac0c63fe3e09 — 第0回 — C1  正式採用（実行基盤から通知）",
+            "task-15b14d7e058749a9a772e9e94efa54c2 — 第0回 — C1  正式採用（実行基盤から通知）",
+            "作業画面の切り替え",
+            "成果物  Ctrl+1",
+            "候補を比較  Ctrl+2",
+            "処理の流れ  Ctrl+3"
+          ],
+          "window": {
+            "title": "COS Desktop",
+            "class": "Zed::Window",
+            "width": 1296,
+            "height": 839
+          },
+          "screenshot": {
+            "file": "C:\\dev\\cos-desktop\\target\\acc1-native\\20261109T113909-missing-media\\shots\\missing-artifact-before.png",
+            "sha256": "sha256:6e9bd6ca078e0b1e7dd47e85c5966fbde74728f0fb01f52346dfafa6230d5123",
+            "bytes": 143662,
+            "printed": true,
+            "width": 1296,
+            "height": 839
+          }
+        },
+        "uia_after": {
+          "label": "missing-artifact",
+          "at": "2026-11-09T11:40:19+0900",
+          "elements": 60,
+          "names_sha256": "sha256:9c4de5412636ad8b9633306aa2f9c5d6518f553978a88bb882cbcc152b3b6c25",
+          "names": [
+            "COS Desktop 作業画面",
+            "現在のタスクと状態",
+            "task-00eeff7805964e1f835534b81e57065b  北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+            "Runtime / 情報を受信中",
+            "タスクの状態: 完了（COMPLETED）",
+            "処理段階: RUNNING",
+            "反復回数: 第0回",
+            "成果物の利用状態: 取得可能（AVAILABLE）（1件）",
+            "接続・情報の鮮度: 情報を受信中",
+            "正式な結果: 完了（COMPLETED）",
+            "停止の操作と現在の受付状況",
+            "タスクを停止（現在は操作できません）",
+            "停止要求の受付状況を確認（現在は操作できません）",
+            "この画面から停止要求は送っていません",
+            "停止要求を1回送ります。受付状況とタスクの終了結果は別に確認します。",
+            "タスク一覧",
+            "新しいタスクを作成",
+            "タスクを検索",
+            "task-126ed65ac4374dbdae0550dbe2b120e3 — ACC1-NATIVE-missing-media 20261109-113909 production still",
+            "完了（COMPLETED）",
+            "RUNNING",
+            "0",
+            "作業領域：成果物",
+            "成果物",
+            "表示中",
+            "Runtime が認可した成果物メディアを取得して表示します。取得できない場合は、理由を画像領域に明示します。",
+            "全体表示 (0)",
+            "物理ピクセル1:1 (1)",
+            "拡大 (+)",
+            "縮小 (-)",
+            "全画面 / 復帰 (F11)",
+            "機能の利用可否情報が投影されていません（capability not projected）",
+            "画像は未表示です",
+            "画像表示。0: 全体、1: 物理等倍、+/-: 拡大縮小、矢印: 移動、F11: 全画面、Escape: 復帰",
+            "候補の詳細",
+            "詳細と説明",
+            "閲覧中の候補（この画面での選択）: C1 — 正式採用ではありません。正式採用は実行基盤から通知されます。",
+            "このタスクの実行履歴を開く",
+            "目的 — 利用可能: task-00eeff7805964e1f835534b81e57065b — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+            "評価 — 利用不可: 表示中の候補は、現在許可された情報に含まれていません。",
+            "判断の根拠 — 利用不可: 表示中の候補は、現在許可された情報に含まれていません。",
+            "改善 — 利用不可: 表示中の候補は、現在許可された情報に含まれていません。",
+            "結果 — 利用可能: 正式状態: 完了（COMPLETED）",
+            "診断情報を開く",
+            "反復ごとの候補一覧",
+            "反復ごとの候補一覧。閲覧中と比較対象はこの画面の選択です。正式採用は実行基盤から通知されます。",
+            "候補一覧",
+            "task-00eeff7805964e1f835534b81e57065b — 第0回 — C1  正式採用（実行基盤から通知）",
+            "task-019e673007d848018cf3dc7366258d38 — 第0回 — C1  正式採用（実行基盤から通知）",
+            "task-0b23811426af4a86a3fed9dc67b21947 — 第0回 — C1  正式採用（実行基盤から通知）",
+            "task-0c903dc32f36402bb9f72f676bfc8d8c — 第0回 — C1  正式採用（実行基盤から通知）",
+            "task-0ddbe166cef5482495ec675999f0fc9b — 第0回 — C1  正式採用（実行基盤から通知）",
+            "task-126ed65ac4374dbdae0550dbe2b120e3 — 第0回 — C1 閲覧中・キーボード操作対象 正式採用（実行基盤から通知）",
+            "task-130479815f4b49c2be5fac0c63fe3e09 — 第0回 — C1  正式採用（実行基盤から通知）",
+            "task-15b14d7e058749a9a772e9e94efa54c2 — 第0回 — C1  正式採用（実行基盤から通知）",
+            "作業画面の切り替え",
+            "成果物  Ctrl+1",
+            "候補を比較  Ctrl+2",
+            "処理の流れ  Ctrl+3"
+          ],
+          "window": {
+            "title": "COS Desktop",
+            "class": "Zed::Window",
+            "width": 1296,
+            "height": 839
+          },
+          "screenshot": {
+            "file": "C:\\dev\\cos-desktop\\target\\acc1-native\\20261109T113909-missing-media\\shots\\missing-artifact.png",
+            "sha256": "sha256:d489b2fa7a12bade0aa4af2e3ec587787bb9406a721664079fd01f6bf8491fc4",
+            "bytes": 149918,
+            "printed": true,
+            "width": 1296,
+            "height": 839
+          }
+        }
+      },
+      "verdict": "NOT_RUN",
+      "reason": "the native media path refuses before the descriptor/blob fetch because the observation carries no CAPABILITIES projection (機能の利用可否情報が投影されていません); removing the CAS blob is therefore not observable through the native surface, so the missing-media state is NOT_RUN, not fabricated"
+    }
+  },
+  "cleanup": {
+    "desktop": {
+      "pid": 45828,
+      "wm_close_sent": true,
+      "exited": true,
+      "exit_code": 0,
+      "forced": null
+    },
+    "runtime": {
+      "pid": 38224,
+      "clean": true,
+      "exit": 0
+    },
+    "port": 8133,
+    "port_free": true,
+    "credential_store": {
+      "target": "cos-desktop/observation/14887796bad1e1416ccd52d08bf9ed4d",
+      "exit": 1,
+      "output": "CMDKEY: Element not found."
+    },
+    "discovery_present_after_stop": false
+  },
+  "residuals": [
+    "the removed blob is the only missing-media variant exercised; a corrupt-blob (digest mismatch) variant is not measured in this run"
+  ],
+  "goal": "ACC1-NATIVE-missing-media 20261109-113909 production still",
+  "db_copy_sha256": "sha256:f87711008a546c31caf75ed6d24c3a5c95b1d824c8b43868f13e1e852bfb3e3d",
+  "db_copy_bytes": 11493376,
+  "presets_sha256": "sha256:e1c2b553a121638bb551df1f48d21e5c996614e4821008570c066f6563baae3c",
+  "runtime": {
+    "pid": 38224,
+    "endpoint": "http://127.0.0.1:8133",
+    "server_identity": "cos-runtime-orchestrator",
+    "server_build": "orchestrator-runtime/0.1.0",
+    "epoch": "7fde53a80f20459b915e1afcde9f72f7",
+    "protocol": {
+      "major": 2,
+      "minor": 0
+    },
+    "schema": {
+      "major": 2,
+      "minor": 0
+    },
+    "config_path": "C:\\dev\\cos-desktop\\target\\acc1-native\\20261109T113909-missing-media\\runtime-config.yaml",
+    "config_sha256": "sha256:df08cf0e031a736e8eed75ad5c3d5fa1543242e549d6fb21aeeb48ed773e4994",
+    "discovery_path": "C:\\dev\\cos-desktop\\target\\acc1-native\\20261109T113909-missing-media\\runtime-discovery.json",
+    "cas_root": "C:\\dev\\cos-desktop\\target\\acc1-native\\20261109T113909-missing-media\\cas",
+    "ready": {
+      "status": 200,
+      "document": {
+        "status": "ready"
+      }
+    }
+  },
+  "health": {
+    "polls": 2,
+    "transitions": [
+      {
+        "at": "2026-11-09T11:39:13+0900",
+        "http_status": 200,
+        "health": {
+          "llm": null,
+          "comfy": null
+        },
+        "loop": {
+          "running": false,
+          "theme": "",
+          "loop_id": "",
+          "run_id": "",
+          "status": "idle",
+          "reason": "",
+          "round": 0,
+          "paused": false
+        }
+      },
+      {
+        "at": "2026-11-09T11:39:16+0900",
+        "http_status": 200,
+        "health": {
+          "llm": true,
+          "comfy": true
+        },
+        "loop": {
+          "running": false,
+          "theme": "",
+          "loop_id": "",
+          "run_id": "",
+          "status": "idle",
+          "reason": "",
+          "round": 0,
+          "paused": false
+        }
+      },
+      {
+        "at": "2026-11-09T11:39:13+0900",
+        "http_status": 200,
+        "health": {
+          "llm": null,
+          "comfy": null
+        },
+        "loop": {
+          "running": false,
+          "theme": "",
+          "loop_id": "",
+          "run_id": "",
+          "status": "idle",
+          "reason": "",
+          "round": 0,
+          "paused": false
+        }
+      },
+      {
+        "at": "2026-11-09T11:39:16+0900",
+        "http_status": 200,
+        "health": {
+          "llm": true,
+          "comfy": true
+        },
+        "loop": {
+          "running": false,
+          "theme": "",
+          "loop_id": "",
+          "run_id": "",
+          "status": "idle",
+          "reason": "",
+          "round": 0,
+          "paused": false
+        }
+      }
+    ],
+    "runtime_reported": {
+      "llm": true,
+      "comfy": true
+    },
+    "generation_plane_ready": true,
+    "direct_preflight": {
+      "probe": "direct preflight (not the Runtime report)",
+      "at": "2026-11-09T11:39:16+0900",
+      "comfyui": {
+        "url": "http://127.0.0.1:8188/system_stats",
+        "http_status": 200,
+        "comfyui_version": "0.35.1",
+        "argv": [
+          "ComfyUI\\main.py",
+          "--windows-standalone-build",
+          "--lowvram",
+          "--reserve-vram",
+          "1.5",
+          "--cache-lru",
+          "10",
+          "--preview-method",
+          "taesd",
+          "--use-pytorch-cross-attention"
+        ]
+      },
+      "ollama": {
+        "url": "http://127.0.0.1:11434/api/tags",
+        "http_status": 200,
+        "model_count": 6
+      }
+    }
+  },
+  "catalog": {
+    "http_status": 200,
+    "can_submit": true,
+    "reason_codes": [],
+    "recipes": [
+      {
+        "label": "Production still (Krea2)",
+        "recipe_ref": {
+          "recipe_id": "recipe-cos-production-still",
+          "source_harness_version_id": "hvid_7231516f3fe04cb9e3e26f71354eaa4f16868e233e2b5d0ff41a0c2623fd6870",
+          "source_harness_digest": "sha256:3b9b1e205b2610ebae814233743a06a7e1774785c3a59b00452b5474b4745604",
+          "graph_ref": {
+            "graph_id": "graph-cos-production-001",
+            "graph_version": 2,
+            "graph_digest": "sha256:4f9bfd7ca021557afe5f8e505218ccfd8c7f7d5b8a4bf636693cb456af683ecf"
+          },
+          "profile_ref": null,
+          "projection_digest": "sha256:992c5753d8aeb088338ab19a1486880681caed8817db7aea1f5cd5fad2dd317c"
+        },
+        "execution_limits": {
+          "max_iterations": 2,
+          "summary": "up to 2 iterations"
+        }
+      }
+    ]
+  },
+  "observation_open": {
+    "http_status": 200,
+    "read_revision": "1",
+    "epoch": "7fde53a80f20459b915e1afcde9f72f7",
+    "context_sha256_16": "sha256:0263d86bcf72ef89",
+    "scope_sha256_16": "sha256:53b383dc26d66f78",
+    "cursor_sha256_16": "sha256:47a7a1b84958c6e0",
+    "snapshot_mutations": 260,
+    "snapshot_kind_counts": {
+      "TASK": 39,
+      "ITERATION": 37,
+      "CANDIDATE": 37,
+      "ARTIFACT": 36,
+      "EVALUATION": 37,
+      "OUTCOME": 37,
+      "GRAPH": 37
+    }
+  },
+  "credential": {
+    "principal": "desktop:7f8990acb7a2870acaf12fb52c6983fd",
+    "scopes": [
+      "read:observe",
+      "desktop:command"
+    ],
+    "expires_in": 43200,
+    "token_recorded": false
+  },
+  "finished_at": "2026-11-09T11:40:21+0900",
+  "logs": {
+    "desktop-missing.log": {
+      "file": "logs\\missing-media\\missing-media-desktop-missing.log",
+      "sha256": "sha256:e6e4c05c33d3bd4e25221d6e7fd521d0aaedc24c7d74525eb9c287037f08df0c",
+      "stored_sha256": "sha256:09b54d8258668917ad9806a4fd50b7f6410d65661e34e979e0713189bf852f22",
+      "bytes": 265
+    },
+    "runtime.log": {
+      "file": "logs\\missing-media\\missing-media-runtime.log",
+      "sha256": "sha256:906987644be688ac3565896f9d31111969f2e97d1123eb6ca821ab1ce9e81148",
+      "stored_sha256": "sha256:67fe3fbe54d3101f40d79aa2823ee8f6091bcd825385b41af3645a1fb7840c8f",
+      "bytes": 11509
+    }
+  },
+  "screenshot_files": {
+    "connected-missing.png": {
+      "file": "shots\\missing-media\\connected-missing.png",
+      "sha256": "sha256:5b81faa6db49e9b67e9b33fddf916a17746b7567ab5e3af74ef38be56098f123",
+      "bytes": 148002
+    },
+    "missing-artifact-before.png": {
+      "file": "shots\\missing-media\\missing-artifact-before.png",
+      "sha256": "sha256:6e9bd6ca078e0b1e7dd47e85c5966fbde74728f0fb01f52346dfafa6230d5123",
+      "bytes": 143662
+    },
+    "missing-artifact.png": {
+      "file": "shots\\missing-media\\missing-artifact.png",
+      "sha256": "sha256:d489b2fa7a12bade0aa4af2e3ec587787bb9406a721664079fd01f6bf8491fc4",
+      "bytes": 149918
+    },
+    "missing-task-selected.png": {
+      "file": "shots\\missing-media\\missing-task-selected.png",
+      "sha256": "sha256:6e9bd6ca078e0b1e7dd47e85c5966fbde74728f0fb01f52346dfafa6230d5123",
+      "bytes": 143662
+    }
+  },
+  "uia_dir": "",
+  "uia_raw_retained": false
+}

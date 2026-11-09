@@ -1,0 +1,26 @@
+{
+  "at": "2026-11-09T11:51:40+0900",
+  "scope": "post-run cleanup after the four MP-ACC1 native scenarios",
+  "listeners": {
+    "8132": false,
+    "8133": false,
+    "8188": false
+  },
+  "comfyui": {
+    "started_for_this_attempt_by_operator": true,
+    "start_command": "powershell -ExecutionPolicy Bypass -File C:/AI/orchestrator/scripts/start_services.ps1",
+    "stop_command": "taskkill /PID 28056 /T /F",
+    "stopped_pid": 28056,
+    "prior_state_restored_stopped": true
+  },
+  "leftover_processes": {
+    "cos-desktop": 0,
+    "worker-session-runner": 0,
+    "isolated_runtime": 0
+  },
+  "ollama": {
+    "untouched": true,
+    "reason": "Ollama was already running with 6 models and was never started, stopped or reconfigured by this harness"
+  },
+  "note": "The harness itself records its own two Runtime processes exiting cleanly (exit 0), port_free true, discovery descriptor removed, and the Windows credential-store entry deleted for each isolated endpoint. This file adds the operator-level ComfyUI restore and the final three-port check."
+}

@@ -1,15 +1,19 @@
 # Live integration window probe (ASCII-only: Windows PowerShell 5.1 reads .ps1 as ANSI).
 # Actions: dump (window + bounded UIA name/id list), shot (PrintWindow PNG; never
 # CopyFromScreen and never foregrounds), close (post WM_CLOSE), invoke (invoke one
-# descendant whose accessible name contains -NameMatch, through its UIA pattern; no
-# mouse input and no foregrounding).
-# The caller supplies -ProcessId and -Out; the JSON result is written to -Out.
+# descendant BUTTON whose accessible name contains -NameMatch, through its UIA pattern),
+# activate (same pattern search over any control type: Invoke, SelectionItem, Legacy),
+# focus (move accessibility focus to one descendant by name), type (focus one descendant
+# and post WM_CHAR code units to the top-level window; no mouse input and no foreground)
+# and valueread (read the element's UIA Value). The caller supplies -ProcessId and -Out;
+# the JSON result is written to -Out.
 param(
     [Parameter(Mandatory = $true)][int]$ProcessId,
-    [Parameter(Mandatory = $true)][ValidateSet('dump', 'shot', 'close', 'invoke')][string]$Action,
+    [Parameter(Mandatory = $true)][ValidateSet('dump', 'shot', 'close', 'invoke', 'activate', 'focus', 'type', 'valueread', 'click', 'key', 'hwheel')][string]$Action,
     [Parameter(Mandatory = $true)][string]$Out,
     [string]$ImageOut = '',
-    [string]$NameMatch = ''
+    [string]$NameMatch = '',
+    [string]$Text = ''
 )
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName UIAutomationClient
@@ -31,6 +35,8 @@ public static class WProbe {
     [DllImport("user32.dll")] public static extern bool PostMessage(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
     [DllImport("user32.dll")] public static extern bool RedrawWindow(IntPtr hWnd, IntPtr rect, IntPtr region, uint flags);
     [StructLayout(LayoutKind.Sequential)] public struct RECT { public int Left; public int Top; public int Right; public int Bottom; }
+    [StructLayout(LayoutKind.Sequential)] public struct POINT { public int X; public int Y; }
+    [DllImport("user32.dll")] public static extern bool ScreenToClient(IntPtr hWnd, ref POINT point);
     public static IntPtr Found = IntPtr.Zero;
     public static uint TargetPid = 0;
     private static bool Callback(IntPtr hWnd, IntPtr lParam) {
@@ -56,6 +62,22 @@ public static class WProbe {
     }
 }
 "@
+
+# Exact accessible-name match first, then the first contains match. A stable
+# helper keeps every action on the same resolution rule.
+function Find-Descendant([System.Windows.Automation.AutomationElement]$root, [string]$match) {
+    $all = $root.FindAll([System.Windows.Automation.TreeScope]::Descendants, [System.Windows.Automation.Condition]::TrueCondition)
+    $partial = $null
+    for ($i = 0; $i -lt $all.Count; $i++) {
+        $item = $all.Item($i)
+        try { $name = $item.Current.Name } catch { continue }
+        if (-not $name) { continue }
+        if ($name -eq $match) { return $item }
+        if ($null -eq $partial -and $name.Contains($match)) { $partial = $item }
+    }
+    return $partial
+}
+
 $result = [ordered]@{ action = $Action; found = $false }
 $hwnd = [WProbe]::FindByPid([uint32]$ProcessId)
 if ($hwnd -eq [IntPtr]::Zero) {
@@ -129,13 +151,18 @@ if ($hwnd -eq [IntPtr]::Zero) {
                     [System.Windows.Automation.ControlType]::Button)
                 $buttons = $element.FindAll([System.Windows.Automation.TreeScope]::Descendants, $condition)
                 $matched = $null
-                $matchedName = ''
+                $partial = $null
                 for ($i = 0; $i -lt $buttons.Count; $i++) {
                     $item = $buttons.Item($i)
-                    try {
-                        $name = $item.Current.Name
-                    } catch { continue }
-                    if ($name -and $name.Contains($NameMatch)) { $matched = $item; $matchedName = $name; break }
+                    try { $name = $item.Current.Name } catch { continue }
+                    if (-not $name) { continue }
+                    if ($name -eq $NameMatch) { $matched = $item; break }
+                    if ($null -eq $partial -and $name.Contains($NameMatch)) { $partial = $item }
+                }
+                if ($null -eq $matched) { $matched = $partial }
+                $matchedName = ''
+                if ($null -ne $matched) {
+                    try { $matchedName = $matched.Current.Name } catch { $matchedName = '' }
                 }
                 if ($matched -eq $null) {
                     $result['error'] = 'match_not_found'
@@ -161,17 +188,205 @@ if ($hwnd -eq [IntPtr]::Zero) {
                             $result['pattern'] = 'selection_item'
                         } else {
                             $tried.Add('legacy_default_action')
-                            $legacy = $null
-                            if ($matched.TryGetCurrentPattern([System.Windows.Automation.LegacyIAccessiblePattern]::Pattern, [ref]$legacy)) {
-                                ([System.Windows.Automation.LegacyIAccessiblePattern]$legacy).DoDefaultAction()
-                                $invoked = $true
-                                $result['pattern'] = 'legacy_default_action'
-                            }
+                            $result['legacy_note'] = 'LegacyIAccessiblePattern is not used by this probe build'
                         }
                     }
                     $result['patterns_tried'] = $tried.ToArray()
                     $result['invoked'] = $invoked
                     if (-not $invoked) { $result['error'] = 'no_action_pattern' }
+                }
+            } catch {
+                $result['error'] = 'uia_failed: ' + $_.Exception.Message
+            }
+        }
+    } elseif ($Action -eq 'activate' -or $Action -eq 'focus' -or $Action -eq 'type' -or $Action -eq 'valueread') {
+        $result['name_match'] = $NameMatch
+        $result['matched'] = $false
+        if (-not $NameMatch) {
+            $result['error'] = 'missing_name_match'
+        } else {
+            try {
+                $element = [System.Windows.Automation.AutomationElement]::FromHandle($hwnd)
+                $matched = Find-Descendant $element $NameMatch
+                $matchedName = ''
+                if ($null -ne $matched) {
+                    try { $matchedName = $matched.Current.Name } catch { $matchedName = '' }
+                }
+                if ($null -eq $matched) {
+                    $result['error'] = 'match_not_found'
+                    $result['element_count'] = $element.FindAll([System.Windows.Automation.TreeScope]::Descendants, [System.Windows.Automation.Condition]::TrueCondition).Count
+                } else {
+                    $result['matched'] = $true
+                    $result['matched_name'] = $matchedName
+                    try { $result['matched_id'] = $matched.Current.AutomationId } catch {}
+                    try { $result['matched_control_type'] = $matched.Current.ControlType.ProgrammaticName } catch {}
+                    if ($Action -eq 'valueread') {
+                        $valuePattern = $null
+                        if ($matched.TryGetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern, [ref]$valuePattern)) {
+                            try { $result['value'] = ([System.Windows.Automation.ValuePattern]$valuePattern).Current.Value } catch {
+                                $result['error'] = 'value_read_failed: ' + $_.Exception.Message
+                            }
+                        } else {
+                            $result['error'] = 'value_pattern_unavailable'
+                        }
+                    } elseif ($Action -eq 'focus' -or $Action -eq 'type') {
+                        try {
+                            $matched.SetFocus()
+                            $result['set_focus_called'] = $true
+                        } catch {
+                            $result['set_focus_called'] = $false
+                            $result['focus_error'] = $_.Exception.Message
+                        }
+                        Start-Sleep -Milliseconds 250
+                        try {
+                            $focused = [System.Windows.Automation.AutomationElement]::FocusedElement
+                            if ($null -ne $focused) {
+                                $result['focused_name'] = $focused.Current.Name
+                                try { $result['focused_control_type'] = $focused.Current.ControlType.ProgrammaticName } catch {}
+                            }
+                        } catch {}
+                        $result['focused'] = ($result['focused_name'] -eq $matchedName)
+                        if ($Action -eq 'type') {
+                            $result['text_length'] = $Text.Length
+                            $result['code_units_sent'] = 0
+                            if (-not $Text) {
+                                $result['error'] = 'missing_text'
+                            } else {
+                                $sent = 0
+                                foreach ($character in $Text.ToCharArray()) {
+                                    $code = [int][char]$character
+                                    if ([WProbe]::PostMessage($hwnd, 0x0102, [IntPtr]$code, [IntPtr]1)) {
+                                        $sent++
+                                    }
+                                    Start-Sleep -Milliseconds 15
+                                }
+                                $result['code_units_sent'] = $sent
+                                $result['posted_all'] = ($sent -eq $Text.Length)
+                                Start-Sleep -Milliseconds 250
+                            }
+                        }
+                    } else {
+                        $tried = New-Object System.Collections.Generic.List[string]
+                        $invoked = $false
+                        $pattern = $null
+                        $tried.Add('invoke')
+                        if ($matched.TryGetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern, [ref]$pattern)) {
+                            ([System.Windows.Automation.InvokePattern]$pattern).Invoke()
+                            $invoked = $true
+                            $result['pattern'] = 'invoke'
+                        } else {
+                            $tried.Add('selection_item')
+                            $selection = $null
+                            if ($matched.TryGetCurrentPattern([System.Windows.Automation.SelectionItemPattern]::Pattern, [ref]$selection)) {
+                                ([System.Windows.Automation.SelectionItemPattern]$selection).Select()
+                                $invoked = $true
+                                $result['pattern'] = 'selection_item'
+                            } else {
+                                $tried.Add('legacy_default_action')
+                                $result['legacy_note'] = 'LegacyIAccessiblePattern is not used by this probe build'
+                            }
+                        }
+                        $result['patterns_tried'] = $tried.ToArray()
+                        $result['invoked'] = $invoked
+                        if (-not $invoked) { $result['error'] = 'no_action_pattern' }
+                    }
+                    if ($Action -eq 'focus' -or $Action -eq 'type') {
+                        $valuePattern = $null
+                        try {
+                            if ($matched.TryGetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern, [ref]$valuePattern)) {
+                                $result['value_after'] = ([System.Windows.Automation.ValuePattern]$valuePattern).Current.Value
+                            }
+                        } catch {}
+                    }
+                }
+            } catch {
+                $result['error'] = 'uia_failed: ' + $_.Exception.Message
+            }
+        }
+    } elseif ($Action -eq 'click') {
+        $result['name_match'] = $NameMatch
+        $result['clicked'] = $false
+        if (-not $NameMatch) {
+            $result['error'] = 'missing_name_match'
+        } else {
+            try {
+                $element = [System.Windows.Automation.AutomationElement]::FromHandle($hwnd)
+                $matched = Find-Descendant $element $NameMatch
+                if ($null -eq $matched) {
+                    $result['error'] = 'match_not_found'
+                } else {
+                    $result['matched_name'] = $matched.Current.Name
+                    try { $result['matched_id'] = $matched.Current.AutomationId } catch {}
+                    try { $result['matched_control_type'] = $matched.Current.ControlType.ProgrammaticName } catch {}
+                    $rect = $matched.Current.BoundingRectangle
+                    $result['screen_bounds'] = @([int]$rect.Left, [int]$rect.Top, [int]$rect.Width, [int]$rect.Height)
+                    $point = New-Object WProbe+POINT
+                    $point.X = [int]($rect.Left + ($rect.Width / 2))
+                    $point.Y = [int]($rect.Top + ($rect.Height / 2))
+                    if ([WProbe]::ScreenToClient($hwnd, [ref]$point)) {
+                        $result['client_x'] = $point.X
+                        $result['client_y'] = $point.Y
+                        $lparam = ((($point.Y -band 0xFFFF) -shl 16) -bor ($point.X -band 0xFFFF))
+                        [void][WProbe]::PostMessage($hwnd, 0x0200, [IntPtr]::Zero, [IntPtr]$lparam)
+                        Start-Sleep -Milliseconds 40
+                        $down = [WProbe]::PostMessage($hwnd, 0x0201, [IntPtr]1, [IntPtr]$lparam)
+                        Start-Sleep -Milliseconds 60
+                        $up = [WProbe]::PostMessage($hwnd, 0x0202, [IntPtr]::Zero, [IntPtr]$lparam)
+                        $result['mouse_down_posted'] = [bool]$down
+                        $result['mouse_up_posted'] = [bool]$up
+                        $result['clicked'] = ([bool]$down -and [bool]$up)
+                    } else {
+                        $result['error'] = 'screen_to_client_failed'
+                    }
+                }
+            } catch {
+                $result['error'] = 'uia_failed: ' + $_.Exception.Message
+            }
+        }
+    } elseif ($Action -eq 'key') {
+        $result['key'] = $Text
+        $map = @{ 'end' = 0x23; 'home' = 0x24; 'left' = 0x25; 'up' = 0x26;
+                  'right' = 0x27; 'down' = 0x28; 'enter' = 0x0D; 'space' = 0x20;
+                  'escape' = 0x1B; 'tab' = 0x09; 'pagedown' = 0x22; 'pageup' = 0x21 }
+        $vk = $map[$Text.ToLower()]
+        if ($null -eq $vk) {
+            $result['error'] = 'unsupported_key'
+        } else {
+            $down = [WProbe]::PostMessage($hwnd, 0x0100, [IntPtr]$vk, [IntPtr]1)
+            Start-Sleep -Milliseconds 80
+            $up = [WProbe]::PostMessage($hwnd, 0x0101, [IntPtr]$vk, [IntPtr]0xC0000001)
+            $result['key_down_posted'] = [bool]$down
+            $result['key_up_posted'] = [bool]$up
+            $result['posted'] = ([bool]$down -and [bool]$up)
+            Start-Sleep -Milliseconds 200
+        }
+    } elseif ($Action -eq 'hwheel') {
+        # Horizontal wheel at the anchor element's centre (screen coords in
+        # WM_MOUSEHWHEEL). Text is the signed wheel delta; -120 scrolls right
+        # in GPUI's handler (it negates the high word).
+        $result['name_match'] = $NameMatch
+        $result['wheel_delta'] = $Text
+        $result['posted'] = $false
+        if (-not $NameMatch -or -not $Text) {
+            $result['error'] = 'missing_name_match_or_delta'
+        } else {
+            try {
+                $element = [System.Windows.Automation.AutomationElement]::FromHandle($hwnd)
+                $matched = Find-Descendant $element $NameMatch
+                if ($null -eq $matched) {
+                    $result['error'] = 'match_not_found'
+                } else {
+                    $rect = $matched.Current.BoundingRectangle
+                    $x = [int]($rect.Left + ($rect.Width / 2))
+                    $y = [int]($rect.Top + ($rect.Height / 2))
+                    $delta = [int]$Text
+                    $hi = $delta -band 0xFFFF
+                    $wp = [int64]$hi * 65536
+                    $lparam = (((($y -band 0xFFFF) -shl 16) -bor ($x -band 0xFFFF)))
+                    $posted = [WProbe]::PostMessage($hwnd, 0x020E, [IntPtr]$wp, [IntPtr]$lparam)
+                    $result['posted'] = [bool]$posted
+                    $result['screen_x'] = $x
+                    $result['screen_y'] = $y
                 }
             } catch {
                 $result['error'] = 'uia_failed: ' + $_.Exception.Message
