@@ -1,0 +1,85 @@
+{
+  "label": "live-active",
+  "note": "ACTIVE seeded in the isolated copy (no dispatch/generation)",
+  "task": {
+    "projection": "TASK",
+    "task_ref": "task-80c8632b4bb843bf93189a9cdb79df19",
+    "title": "北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+    "task_status": "ACTIVE",
+    "inner_phase": "REFINE",
+    "iteration_index": 1,
+    "iteration_ref": "run-rc11-db79df19-i1:1",
+    "formal_outcome_ref": "sha256:7fca6329f65941af1ae7ee747019addd6c1fb068800e87b39f5c8e31af2a7263",
+    "capabilities_ref": "sha256:1b8f8227a1e686066b3f52b0f449539dd918a774139564d6510dd2accfa1cbdf",
+    "projection_revision": "9"
+  },
+  "capabilities": {
+    "projection": "CAPABILITIES",
+    "capabilities_ref": "sha256:1b8f8227a1e686066b3f52b0f449539dd918a774139564d6510dd2accfa1cbdf",
+    "scope": {
+      "kind": "TASK",
+      "task_id": "task-80c8632b4bb843bf93189a9cdb79df19"
+    },
+    "commands": [
+      {
+        "operation": "STOP_TASK",
+        "support": "SUPPORTED"
+      },
+      {
+        "operation": "REUSE_TASK",
+        "support": "UNSUPPORTED",
+        "reason": "REUSE_TASK is not supported by this Runtime"
+      }
+    ],
+    "media": [
+      {
+        "representation": "ORIGINAL",
+        "support": "SUPPORTED"
+      },
+      {
+        "representation": "THUMBNAIL",
+        "support": "SUPPORTED"
+      },
+      {
+        "representation": "PREVIEW",
+        "support": "UNSUPPORTED",
+        "reason": "PREVIEW transcode is not supported by this Runtime"
+      },
+      {
+        "representation": "METADATA",
+        "support": "UNSUPPORTED",
+        "reason": "METADATA byte route is not supported by this Runtime"
+      }
+    ],
+    "features": [
+      {
+        "feature": "img-gen-rc11",
+        "support": "SUPPORTED"
+      }
+    ],
+    "constraints": [
+      {
+        "name": "auth.mode",
+        "value": "none"
+      },
+      {
+        "name": "cost_budget",
+        "value": "10"
+      },
+      {
+        "name": "estimated_runtime_s",
+        "value": "30"
+      },
+      {
+        "name": "estimated_vram_mb",
+        "value": "1024"
+      },
+      {
+        "name": "timeout_s",
+        "value": "120"
+      }
+    ],
+    "availability": "SUPPORTED",
+    "projection_revision": "10"
+  }
+}

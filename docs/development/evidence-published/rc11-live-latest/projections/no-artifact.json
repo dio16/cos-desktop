@@ -1,0 +1,87 @@
+{
+  "label": "no-artifact",
+  "note": "existing input-only task with a seeded capability set and no artifact",
+  "task": {
+    "projection": "TASK",
+    "task_ref": "task-e70275e23f784dbda3f49eaf9332b442",
+    "title": "A high school Transgender girl in Scandinavia. She’s completely high on going wild.The entire body, including the face,…",
+    "task_status": "CANCELLED",
+    "inner_phase": "REFINE",
+    "iteration_index": 0,
+    "iteration_ref": "run-rc11-9332b442-i0:0",
+    "capabilities_ref": "sha256:fb8a6a4a41c7f2cd9e9aef5f2a6e685991b5ed0090b43c6db0620e2e169d2985",
+    "projection_revision": "12"
+  },
+  "capabilities": {
+    "projection": "CAPABILITIES",
+    "capabilities_ref": "sha256:fb8a6a4a41c7f2cd9e9aef5f2a6e685991b5ed0090b43c6db0620e2e169d2985",
+    "scope": {
+      "kind": "TASK",
+      "task_id": "task-e70275e23f784dbda3f49eaf9332b442"
+    },
+    "commands": [
+      {
+        "operation": "STOP_TASK",
+        "support": "UNAVAILABLE",
+        "reason": "task is terminal; STOP_TASK has no live state to act on"
+      },
+      {
+        "operation": "REUSE_TASK",
+        "support": "UNSUPPORTED",
+        "reason": "REUSE_TASK is not supported by this Runtime"
+      }
+    ],
+    "media": [
+      {
+        "representation": "ORIGINAL",
+        "support": "UNAVAILABLE",
+        "reason": "no available artifact is projected for this task"
+      },
+      {
+        "representation": "THUMBNAIL",
+        "support": "UNAVAILABLE",
+        "reason": "no available image artifact is projected for this task"
+      },
+      {
+        "representation": "PREVIEW",
+        "support": "UNSUPPORTED",
+        "reason": "PREVIEW transcode is not supported by this Runtime"
+      },
+      {
+        "representation": "METADATA",
+        "support": "UNSUPPORTED",
+        "reason": "METADATA byte route is not supported by this Runtime"
+      }
+    ],
+    "features": [
+      {
+        "feature": "img-gen-rc11-none",
+        "support": "SUPPORTED"
+      }
+    ],
+    "constraints": [
+      {
+        "name": "auth.mode",
+        "value": "none"
+      },
+      {
+        "name": "cost_budget",
+        "value": "10"
+      },
+      {
+        "name": "estimated_runtime_s",
+        "value": "30"
+      },
+      {
+        "name": "estimated_vram_mb",
+        "value": "1024"
+      },
+      {
+        "name": "timeout_s",
+        "value": "120"
+      }
+    ],
+    "availability": "SUPPORTED",
+    "projection_revision": "14"
+  }
+}

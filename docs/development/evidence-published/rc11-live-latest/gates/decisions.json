@@ -1,0 +1,343 @@
+{
+  "artifact_probe": "art-v1-33c104b4-3a33-445d-ab1d-421591b31541",
+  "schema": "rc11-gate-decisions.v1",
+  "source": "app_core::capability over captured live CAPABILITIES/TASK projections",
+  "states": [
+    {
+      "availability": "SUPPORTED",
+      "capabilities_ref": "sha256:1b8f8227a1e686066b3f52b0f449539dd918a774139564d6510dd2accfa1cbdf",
+      "commands": [
+        {
+          "operation": "STOP_TASK",
+          "reason": "task is terminal; STOP_TASK has no live state to act on",
+          "support": "UNAVAILABLE"
+        },
+        {
+          "operation": "REUSE_TASK",
+          "reason": "REUSE_TASK is not supported by this Runtime",
+          "support": "UNSUPPORTED"
+        }
+      ],
+      "gates": {
+        "create_server_scope": {
+          "code": "capability_not_projected",
+          "enabled": false,
+          "reason": "機能の利用可否情報が投影されていません（capability not projected）"
+        },
+        "media_metadata": {
+          "code": "capability_unsupported",
+          "enabled": false,
+          "reason": "METADATA byte route is not supported by this Runtime"
+        },
+        "media_original": {
+          "code": "supported",
+          "enabled": true,
+          "reason": "利用可能（SUPPORTED）"
+        },
+        "media_preview": {
+          "code": "capability_unsupported",
+          "enabled": false,
+          "reason": "PREVIEW transcode is not supported by this Runtime"
+        },
+        "media_thumbnail": {
+          "code": "supported",
+          "enabled": true,
+          "reason": "利用可能（SUPPORTED）"
+        },
+        "reuse": {
+          "code": "capability_unsupported",
+          "enabled": false,
+          "reason": "REUSE_TASK is not supported by this Runtime"
+        },
+        "stop": {
+          "code": "capability_unavailable",
+          "enabled": false,
+          "reason": "task is terminal; STOP_TASK has no live state to act on"
+        }
+      },
+      "has_capabilities_projection": true,
+      "label": "terminal-image",
+      "media": [
+        {
+          "reason": null,
+          "representation": "ORIGINAL",
+          "support": "SUPPORTED"
+        },
+        {
+          "reason": null,
+          "representation": "THUMBNAIL",
+          "support": "SUPPORTED"
+        },
+        {
+          "reason": "PREVIEW transcode is not supported by this Runtime",
+          "representation": "PREVIEW",
+          "support": "UNSUPPORTED"
+        },
+        {
+          "reason": "METADATA byte route is not supported by this Runtime",
+          "representation": "METADATA",
+          "support": "UNSUPPORTED"
+        }
+      ],
+      "projection_revision": "8",
+      "reason": null,
+      "scope": {
+        "kind": "TASK",
+        "task_id": "task-80c8632b4bb843bf93189a9cdb79df19"
+      },
+      "task_id": "task-80c8632b4bb843bf93189a9cdb79df19"
+    },
+    {
+      "availability": "SUPPORTED",
+      "capabilities_ref": "sha256:1b8f8227a1e686066b3f52b0f449539dd918a774139564d6510dd2accfa1cbdf",
+      "commands": [
+        {
+          "operation": "STOP_TASK",
+          "reason": null,
+          "support": "SUPPORTED"
+        },
+        {
+          "operation": "REUSE_TASK",
+          "reason": "REUSE_TASK is not supported by this Runtime",
+          "support": "UNSUPPORTED"
+        }
+      ],
+      "gates": {
+        "create_server_scope": {
+          "code": "capability_not_projected",
+          "enabled": false,
+          "reason": "機能の利用可否情報が投影されていません（capability not projected）"
+        },
+        "media_metadata": {
+          "code": "capability_unsupported",
+          "enabled": false,
+          "reason": "METADATA byte route is not supported by this Runtime"
+        },
+        "media_original": {
+          "code": "supported",
+          "enabled": true,
+          "reason": "利用可能（SUPPORTED）"
+        },
+        "media_preview": {
+          "code": "capability_unsupported",
+          "enabled": false,
+          "reason": "PREVIEW transcode is not supported by this Runtime"
+        },
+        "media_thumbnail": {
+          "code": "supported",
+          "enabled": true,
+          "reason": "利用可能（SUPPORTED）"
+        },
+        "reuse": {
+          "code": "capability_unsupported",
+          "enabled": false,
+          "reason": "REUSE_TASK is not supported by this Runtime"
+        },
+        "stop": {
+          "code": "supported",
+          "enabled": true,
+          "reason": "利用可能（SUPPORTED）"
+        }
+      },
+      "has_capabilities_projection": true,
+      "label": "live-active",
+      "media": [
+        {
+          "reason": null,
+          "representation": "ORIGINAL",
+          "support": "SUPPORTED"
+        },
+        {
+          "reason": null,
+          "representation": "THUMBNAIL",
+          "support": "SUPPORTED"
+        },
+        {
+          "reason": "PREVIEW transcode is not supported by this Runtime",
+          "representation": "PREVIEW",
+          "support": "UNSUPPORTED"
+        },
+        {
+          "reason": "METADATA byte route is not supported by this Runtime",
+          "representation": "METADATA",
+          "support": "UNSUPPORTED"
+        }
+      ],
+      "projection_revision": "10",
+      "reason": null,
+      "scope": {
+        "kind": "TASK",
+        "task_id": "task-80c8632b4bb843bf93189a9cdb79df19"
+      },
+      "task_id": "task-80c8632b4bb843bf93189a9cdb79df19"
+    },
+    {
+      "availability": "SUPPORTED",
+      "capabilities_ref": "sha256:1b8f8227a1e686066b3f52b0f449539dd918a774139564d6510dd2accfa1cbdf",
+      "commands": [
+        {
+          "operation": "STOP_TASK",
+          "reason": "a STOP_TASK command is already accepted for this task",
+          "support": "UNAVAILABLE"
+        },
+        {
+          "operation": "REUSE_TASK",
+          "reason": "REUSE_TASK is not supported by this Runtime",
+          "support": "UNSUPPORTED"
+        }
+      ],
+      "gates": {
+        "create_server_scope": {
+          "code": "capability_not_projected",
+          "enabled": false,
+          "reason": "機能の利用可否情報が投影されていません（capability not projected）"
+        },
+        "media_metadata": {
+          "code": "capability_unsupported",
+          "enabled": false,
+          "reason": "METADATA byte route is not supported by this Runtime"
+        },
+        "media_original": {
+          "code": "supported",
+          "enabled": true,
+          "reason": "利用可能（SUPPORTED）"
+        },
+        "media_preview": {
+          "code": "capability_unsupported",
+          "enabled": false,
+          "reason": "PREVIEW transcode is not supported by this Runtime"
+        },
+        "media_thumbnail": {
+          "code": "supported",
+          "enabled": true,
+          "reason": "利用可能（SUPPORTED）"
+        },
+        "reuse": {
+          "code": "capability_unsupported",
+          "enabled": false,
+          "reason": "REUSE_TASK is not supported by this Runtime"
+        },
+        "stop": {
+          "code": "capability_unavailable",
+          "enabled": false,
+          "reason": "a STOP_TASK command is already accepted for this task"
+        }
+      },
+      "has_capabilities_projection": true,
+      "label": "stop-pending",
+      "media": [
+        {
+          "reason": null,
+          "representation": "ORIGINAL",
+          "support": "SUPPORTED"
+        },
+        {
+          "reason": null,
+          "representation": "THUMBNAIL",
+          "support": "SUPPORTED"
+        },
+        {
+          "reason": "PREVIEW transcode is not supported by this Runtime",
+          "representation": "PREVIEW",
+          "support": "UNSUPPORTED"
+        },
+        {
+          "reason": "METADATA byte route is not supported by this Runtime",
+          "representation": "METADATA",
+          "support": "UNSUPPORTED"
+        }
+      ],
+      "projection_revision": "11",
+      "reason": null,
+      "scope": {
+        "kind": "TASK",
+        "task_id": "task-80c8632b4bb843bf93189a9cdb79df19"
+      },
+      "task_id": "task-80c8632b4bb843bf93189a9cdb79df19"
+    },
+    {
+      "availability": "SUPPORTED",
+      "capabilities_ref": "sha256:fb8a6a4a41c7f2cd9e9aef5f2a6e685991b5ed0090b43c6db0620e2e169d2985",
+      "commands": [
+        {
+          "operation": "STOP_TASK",
+          "reason": "task is terminal; STOP_TASK has no live state to act on",
+          "support": "UNAVAILABLE"
+        },
+        {
+          "operation": "REUSE_TASK",
+          "reason": "REUSE_TASK is not supported by this Runtime",
+          "support": "UNSUPPORTED"
+        }
+      ],
+      "gates": {
+        "create_server_scope": {
+          "code": "capability_not_projected",
+          "enabled": false,
+          "reason": "機能の利用可否情報が投影されていません（capability not projected）"
+        },
+        "media_metadata": {
+          "code": "capability_unsupported",
+          "enabled": false,
+          "reason": "METADATA byte route is not supported by this Runtime"
+        },
+        "media_original": {
+          "code": "capability_unavailable",
+          "enabled": false,
+          "reason": "no available artifact is projected for this task"
+        },
+        "media_preview": {
+          "code": "capability_unsupported",
+          "enabled": false,
+          "reason": "PREVIEW transcode is not supported by this Runtime"
+        },
+        "media_thumbnail": {
+          "code": "capability_unavailable",
+          "enabled": false,
+          "reason": "no available image artifact is projected for this task"
+        },
+        "reuse": {
+          "code": "capability_unsupported",
+          "enabled": false,
+          "reason": "REUSE_TASK is not supported by this Runtime"
+        },
+        "stop": {
+          "code": "capability_unavailable",
+          "enabled": false,
+          "reason": "task is terminal; STOP_TASK has no live state to act on"
+        }
+      },
+      "has_capabilities_projection": true,
+      "label": "no-artifact",
+      "media": [
+        {
+          "reason": "no available artifact is projected for this task",
+          "representation": "ORIGINAL",
+          "support": "UNAVAILABLE"
+        },
+        {
+          "reason": "no available image artifact is projected for this task",
+          "representation": "THUMBNAIL",
+          "support": "UNAVAILABLE"
+        },
+        {
+          "reason": "PREVIEW transcode is not supported by this Runtime",
+          "representation": "PREVIEW",
+          "support": "UNSUPPORTED"
+        },
+        {
+          "reason": "METADATA byte route is not supported by this Runtime",
+          "representation": "METADATA",
+          "support": "UNSUPPORTED"
+        }
+      ],
+      "projection_revision": "14",
+      "reason": null,
+      "scope": {
+        "kind": "TASK",
+        "task_id": "task-e70275e23f784dbda3f49eaf9332b442"
+      },
+      "task_id": "task-e70275e23f784dbda3f49eaf9332b442"
+    }
+  ]
+}
