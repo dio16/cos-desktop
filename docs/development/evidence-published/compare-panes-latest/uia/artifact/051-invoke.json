@@ -1,0 +1,1 @@
+{"action":"invoke","found":true,"hwnd":23923014,"title":"COS Desktop","class":"Zed::Window","width":1296,"height":839,"name_match":"履歴を閉じる","invoked":true,"matched_name":"履歴を閉じる","matched_id":"","matched_control_type":"ControlType.Button","pattern":"invoke","patterns_tried":["invoke"]}

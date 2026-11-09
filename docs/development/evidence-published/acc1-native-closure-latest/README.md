@@ -259,6 +259,12 @@ above.
 - Evidence group disclosure with available groups (only the explicit
   `利用不可` state is projected for this candidate).
 - Compare A/B image display (panes report `画像は未表示です` in this window).
+  **Follow-up 2026-11-10:** this was a product defect in the production Compare
+  media wiring, not a media-availability state; [compare-panes-latest](../compare-panes-latest/README.md)
+  fixes it at `3e381ca` and observes one compare pane displaying the same
+  digest-verified admitted preview as the artifact viewer (port 8134, fresh
+  DB/CAS copy). Showing both panes simultaneously still needs a two-candidate
+  task, which this closure DB does not contain.
 - Start / Next Iteration (DD-25 command semantics remain blocked).
 - Screen-reader/IME/High-Contrast/DPI acceptance, and original-resolution (1:1)
   display (the app labels the displayed class a low-resolution preview).
