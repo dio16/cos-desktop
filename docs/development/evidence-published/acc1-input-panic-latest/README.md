@@ -82,12 +82,13 @@ returns no value because the process is already gone.
 | `fixed-click-first/` | `1a99d737…6234` | NO_PANIC | `0` after clean `WM_CLOSE` | — |
 | `fixed-focus-only/` | `1a99d737…6234` | NO_PANIC | `0` after clean `WM_CLOSE` | — |
 
-`prefix/desktop.log` (verbatim):
+`prefix/desktop.log.sanitized.txt` (committed copy of the product log; the lane's raw `*.log` is
+gitignored, so the committed evidence is this text with LF line endings. The committed
+`prefix/run.json` is the lane's **13:04** re-run; the earlier 12:57 run produced the same abort):
 
 ```text
---- launch 1 2026-11-09T12:57:10+0900 ---
-Runtime discovered: server_identity=cos-runtime-orchestrator epoch=… pid=…
-Runtime credential reauthorized after rejection; the session reopens a fresh observation
+--- launch 1 2026-11-09T13:04:41+0900 ---
+Runtime discovered: server_identity=cos-runtime-orchestrator epoch=9475f6f77dba443f8886f7b300d51ebe pid=26544
 thread caused non-unwinding panic. aborting.
 ```
 
@@ -221,7 +222,7 @@ was created.
 
 | Path | Content |
 |---|---|
-| `prefix/run.json`, `prefix/desktop.log`, `prefix/crash-reports/` | pre-fix run: abort, exit code, stderr, crash reports |
+| `prefix/run.json`, `prefix/desktop.log.sanitized.txt`, `prefix/crash-reports/` | pre-fix run: abort, exit code, stderr, crash reports |
 | `prefix/shots/`, `prefix/uia/` | pre-fix window states (`connected`, `brief-open`, `direction-filled`) and UIA dumps |
 | `fixed/run.json`, `fixed/shots/`, `fixed/uia/` | fixed run on the same sequence: both fields independent, no panic |
 | `fixed-click-first/`, `fixed-focus-only/` | fixed controls for the ACC1 harness path and the UIA-focus-only path |
