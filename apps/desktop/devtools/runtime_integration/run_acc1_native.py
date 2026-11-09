@@ -1623,7 +1623,8 @@ def native_surface_interactions(ctx: Ctx, task_ref: str, goal: str) -> dict:
             line for line in names if "候補を比較" in line][:4]
         compare["pair_required_label"] = any(
             "候補を2つ選ぶ必要があります" in line for line in names)
-        rows = [line for line in names if "第0回" in line]
+        rows = [line for line in names
+                if " — 第" in line and "反復回数" not in line]
         compare["dock_rows_visible"] = len(rows)
         compare["dock_rows_sample"] = rows[:6]
         own_row = next((line for line in rows if task_ref in line), "")
@@ -1654,11 +1655,41 @@ def native_surface_interactions(ctx: Ctx, task_ref: str, goal: str) -> dict:
         names = list(dump.get("names") or [])
         compare["switch_method"] = method
         compare["switch_result"] = switched
+        # A pane shows admitted media or its own explicit reason; the pending sentence
+        # alone would record a transient state as the result.
+        deadline = time.monotonic() + 90.0
+        pane_state = "PENDING"
+        displayed: list[str] = []
+        reasons: list[str] = []
+        pending: list[str] = []
+        while time.monotonic() < deadline:
+            dump = ui.dump()
+            names = list(dump.get("names") or [])
+            displayed = [line for line in names if MEDIA_DISPLAYED_MARKER in line]
+            reasons = [line for line in names if MEDIA_UNAVAILABLE_MARKER in line]
+            pending = [line for line in names if "まだ表示されていません" in line]
+            if displayed or (reasons and not pending):
+                pane_state = "DISPLAYED" if displayed else "REFUSED"
+                break
+            time.sleep(1.5)
+        compare["pane_state"] = pane_state
+        compare["pane_displayed_lines"] = displayed[:6]
+        compare["pane_reason_lines"] = reasons[:6]
+        compare["pane_pending_lines"] = pending[:6]
         compare["pair_lines"] = [line for line in names
                                  if "比較" in line or "A側" in line or "B側" in line][:20]
         compare["image_lines"] = [line for line in names
-                                  if "画像" in line or "メディア" in line][:10]
+                                  if "画像" in line or "メディア" in line][:12]
         compare["uia"] = uia_snapshot(ui, "compare-surface")
+        swap = ui.invoke("A/Bを交換")
+        time.sleep(2.5)
+        swapped_names = list(ui.dump().get("names") or [])
+        compare["swap"] = {
+            "result": swap,
+            "image_lines": [line for line in swapped_names
+                            if "画像" in line or "メディア" in line][:12],
+        }
+        compare["swap_uia"] = uia_snapshot(ui, "compare-swapped")
         pair_visible = any("比較対象" in line or "A側" in line or "B側" in line
                            for line in names)
         compare["verdict"] = "PASS" if pair_visible else "PARTIAL"
@@ -2637,6 +2668,7 @@ def copy_run_evidence(run: dict, evidence_dir: Path) -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
+    global PORT_MAIN, DESKTOP_EXE
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--scenario", action="append",
                         choices=("golden", "receipt", "stop", "revoke", "missing-media",
@@ -2650,14 +2682,17 @@ def main(argv: list[str] | None = None) -> int:
                         help="reuse this measured run's isolated DB copy and CAS")
     parser.add_argument("--task-ref", default="",
                         help="task identity inside the reused DB for artifact/stop variants")
+    parser.add_argument("--port", type=int, default=PORT_MAIN,
+                        help="isolated Runtime main port (default 8132)")
     parser.add_argument("--no-build", action="store_true")
     args = parser.parse_args(argv)
     if args.scenario and set(args.scenario) & {"artifact", "missing-media-reload",
                                                "stop-active"}:
         if not args.source_run or not args.task_ref:
             raise SystemExit("--source-run and --task-ref are required for the reuse variants")
+    global_port = int(args.port)
+    PORT_MAIN = global_port
     if args.desktop_exe:
-        global DESKTOP_EXE
         DESKTOP_EXE = Path(args.desktop_exe).resolve()
     args.evidence_dir = Path(args.evidence_dir).resolve()
     args.evidence_dir.mkdir(parents=True, exist_ok=True)
@@ -2671,7 +2706,7 @@ def main(argv: list[str] | None = None) -> int:
         "contract": "DC-MP-ACC1", "started_at": now_iso(), "verdict": "NOT_RUN",
         "harness": {
             "command": "python apps/desktop/devtools/runtime_integration/run_acc1_native.py",
-            "scenarios": scenarios, "ports": {PORT_MAIN: "golden", PORT_INJECT: "injections"},
+            "scenarios": scenarios, "ports": {PORT_MAIN: "main", PORT_INJECT: "injections"},
             "work_root": str(WORK_ROOT), "desktop_binary_launched": True,
             "observation": "native window (UIA + PrintWindow) plus a harness read:observe client",
             "evidence_dir": str(args.evidence_dir),

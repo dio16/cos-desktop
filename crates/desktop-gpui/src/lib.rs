@@ -27,6 +27,7 @@ use ui_model::{DerivationCache, DisplayCache, Workbench, presentation::CompareSi
 mod accessibility;
 mod brief_surface;
 pub mod budget;
+mod compare_media;
 pub mod compare_view;
 pub mod contrast;
 mod dock;
@@ -771,6 +772,11 @@ pub struct Shell {
     media_loaded: Option<MediaLoadKey>,
     /// Cancellation of the in-flight media resolution.
     media_cancel: MediaFetchCancellation,
+    /// Per-side identity of the Compare panes' media resolutions.
+    ///
+    /// Compare owns no canonical state: each side addresses the artifact the
+    /// publication projects for the pair candidate it currently shows.
+    compare_media: compare_media::CompareMediaState,
     /// Derived display text with its publication identity, revalidated on render.
     cache: DisplayCache,
     error: Option<String>,
@@ -1041,8 +1047,18 @@ impl Shell {
                         .as_mut()
                         .is_some_and(|workbench| workbench.presentation.swap_compare())
                     {
+                        // A resolution already in flight was started for the other side's
+                        // label; cancel it before the frames change hands.
+                        this.compare_media.swap();
                         this.compare_view
                             .update(cx, |view, cx| view.swap_resources(window, cx));
+                        let frames = this.compare_view.read(cx).frames(cx);
+                        for (index, frame) in frames.iter().enumerate() {
+                            if frame.is_none() {
+                                this.compare_media.forget_side(index);
+                            }
+                        }
+                        this.sync_compare_media(cx);
                     }
                 }
                 compare_view::CompareEvent::Change(side) => {
@@ -1078,6 +1094,7 @@ impl Shell {
             media,
             media_loaded: None,
             media_cancel: MediaFetchCancellation::default(),
+            compare_media: compare_media::CompareMediaState::default(),
             support_state: SupportPreviewState::default(),
             support_focus: cx.focus_handle().tab_stop(true),
             diagnostics_focus: cx.focus_handle().tab_stop(true),
@@ -1447,6 +1464,7 @@ impl Shell {
                         let task = this.cache.text().task.clone();
                         this.apply_restored_presentation(&candidates, task.as_ref(), cx);
                         this.sync_artifact_media(cx);
+                        this.sync_compare_media(cx);
                         this.synchronize_stop_context();
                         let count = this
                             .rail_state
@@ -2100,6 +2118,9 @@ impl Shell {
                 if surface == Surface::Artifact {
                     self.sync_artifact_media(cx);
                 }
+                if surface == Surface::Compare {
+                    self.sync_compare_media(cx);
+                }
                 cx.notify();
                 #[cfg(feature = "r0-s2b-instrumentation")]
                 r0_probe::record(self.probe_window, r0_probe::EventKind::Notify);
@@ -2321,6 +2342,7 @@ impl Shell {
             return;
         };
         if self.rail_state.select(task, live) {
+            self.compare_media.forget_all();
             self.compare_view.update(cx, |view, cx| view.close(cx));
             // Invalidate the previous task's strip state at the switch boundary itself, before the
             // new derivation completes: its rows, details, focus handles and dismissal origin must
@@ -2545,6 +2567,169 @@ impl Shell {
         }
     }
 
+    /// Resolve the picture of each held Compare side through the same media boundary.
+    ///
+    /// The compare surface stores no canonical state: both sides are the local pair the
+    /// dock completed, so each pane addresses the artifact the publication projects for
+    /// its own candidate and is gated by that candidate's capability projection. A side
+    /// whose candidate or artifact is absent, or whose representation is withheld, gets
+    /// an explicit sentence instead of a picture. Nothing here fabricates bytes, retries
+    /// without a new identity, or touches the formal selection.
+    fn sync_compare_media(&mut self, cx: &mut Context<Self>) {
+        let compare_surface = self
+            .workbench
+            .as_ref()
+            .is_some_and(|workbench| workbench.core.navigation.surface() == Surface::Compare);
+        if !compare_surface {
+            // The panes keep whatever they already show; nothing is fetched for a
+            // surface the user is not looking at.
+            return;
+        }
+        let Some(pair) = self
+            .workbench
+            .as_ref()
+            .and_then(|workbench| workbench.presentation.compare_pair())
+            .cloned()
+        else {
+            self.compare_media.forget_all();
+            return;
+        };
+        if !matches!(&self.media, media_presentation::MediaBinding::Runtime(_)) {
+            // No Runtime media boundary exists for this session, so neither pane can
+            // resolve anything: say that instead of leaving a pending sentence under a
+            // pair that will never be fetched.
+            let notice = media_presentation::media_binding_statement(&self.media);
+            for side in [CompareSide::A, CompareSide::B] {
+                self.compare_view
+                    .update(cx, |view, cx| view.unavailable(side, notice.into(), cx));
+            }
+            self.compare_media.forget_all();
+            return;
+        }
+        let Some(handle) = self.handle.clone() else {
+            return;
+        };
+        let Ok(lease) = handle.current() else {
+            self.compare_media.forget_all();
+            return;
+        };
+        let Some(context) = lease.read_context() else {
+            self.compare_media.forget_all();
+            return;
+        };
+        let (repository, audience) = match &self.media {
+            media_presentation::MediaBinding::Runtime(runtime) => {
+                (runtime.repository(), runtime.audience().to_owned())
+            }
+            _ => return,
+        };
+        let session = MediaSessionContext::new(
+            context.server_identity().clone(),
+            audience.clone(),
+            context.epoch().clone(),
+            context.context_id().as_str().to_owned(),
+        );
+        for (index, candidate) in pair.iter().enumerate() {
+            let side = if index == 0 {
+                CompareSide::A
+            } else {
+                CompareSide::B
+            };
+            let candidate = candidate.0.clone();
+            let mut read = None;
+            if lease
+                .read(|publication| {
+                    let projected = publication
+                        .snapshot
+                        .as_ref()
+                        .is_some_and(|snapshot| snapshot.candidates.contains_key(&candidate));
+                    let artifact = publication.artifact_of_candidate(&candidate).cloned();
+                    let capability =
+                        app_core::capability::for_task(publication, &candidate.task_id);
+                    (projected, artifact, capability)
+                })
+                .map(|tagged| {
+                    tagged
+                        .consume(|value| {
+                            read = Some((value.0, value.1.clone(), value.2.clone()));
+                        })
+                        .is_err()
+                })
+                .unwrap_or(true)
+            {
+                self.compare_media.forget_side(index);
+                continue;
+            }
+            let Some((projected, artifact, capability)) = read else {
+                self.compare_media.forget_side(index);
+                continue;
+            };
+            match compare_media::side_media(
+                projected,
+                artifact.as_ref(),
+                &capability,
+                session.clone(),
+            ) {
+                compare_media::CompareSideMedia::NotProjected => {
+                    self.compare_media.forget_side(index);
+                    self.compare_view.update(cx, |view, cx| {
+                        view.unavailable(
+                            side,
+                            "画像を利用できません: 比較対象の候補は、現在閲覧できる情報に含まれていません。"
+                                .into(),
+                            cx,
+                        );
+                    });
+                }
+                compare_media::CompareSideMedia::MissingArtifact => {
+                    self.compare_media.forget_side(index);
+                    let reason: SharedString =
+                        media_presentation::media_state_text(MediaAvailability::Missing).into();
+                    self.compare_view
+                        .update(cx, |view, cx| view.unavailable(side, reason, cx));
+                }
+                compare_media::CompareSideMedia::Refused(reason) => {
+                    self.compare_media.forget_side(index);
+                    let reason: SharedString = SharedString::from(reason.to_string());
+                    self.compare_view
+                        .update(cx, |view, cx| view.unavailable(side, reason, cx));
+                }
+                compare_media::CompareSideMedia::Ready(ready) => {
+                    let compare_media::CompareSideReady {
+                        selection,
+                        capability,
+                    } = *ready;
+                    let key = MediaLoadKey {
+                        server_identity: context.server_identity().clone(),
+                        epoch: context.epoch().clone(),
+                        context_id: context.context_id().clone(),
+                        audience: audience.clone(),
+                        artifact_ref: selection.artifact_ref().clone(),
+                        artifact_digest: selection.artifact_digest().clone(),
+                        representation: RepresentationKind::Original,
+                        capability,
+                    };
+                    let settled = self.compare_view.read(cx).has_frame(side, cx);
+                    if self.compare_media.addressed(index) == Some(&key)
+                        && (settled || self.compare_media.already_dispatched(index, &key))
+                    {
+                        continue;
+                    }
+                    let cancel = self.compare_media.renew(index, key);
+                    let source = match &self.media {
+                        media_presentation::MediaBinding::Runtime(runtime) => {
+                            runtime.source(context.server_identity(), &audience)
+                        }
+                        _ => return,
+                    };
+                    self.compare_view.update(cx, |view, cx| {
+                        view.resolve_media(side, repository.clone(), source, selection, cancel, cx);
+                    });
+                }
+            }
+        }
+    }
+
     /// View one candidate by scoped identity and move the dock cursor there.
     ///
     /// Viewed stays a local presentation value: this never edits canonical
@@ -2612,6 +2797,13 @@ impl Shell {
                     }
                 }
             });
+            // The replaced side addresses a new artifact identity; its previous resolution
+            // belongs to a label that is no longer shown.
+            for (index, replaced) in replaced.into_iter().enumerate() {
+                if replaced {
+                    self.compare_media.forget_side(index);
+                }
+            }
         }
         self.dock_active = Some(identity);
         self.dock_focus.focus(window, cx);
@@ -2634,6 +2826,7 @@ impl Shell {
         }
         self.surface_notice = event.notice;
         self.sync_artifact_media(cx);
+        self.sync_compare_media(cx);
         cx.notify();
     }
 
@@ -2650,6 +2843,7 @@ impl Shell {
 
     /// Close Compare: return to the artifact surface with the viewed candidate (D-7).
     fn close_compare(&mut self, cx: &mut Context<Self>) {
+        self.compare_media.forget_all();
         self.compare_view.update(cx, |view, cx| view.close(cx));
         let event = match &mut self.workbench {
             Some(workbench) => dock::close(&mut workbench.presentation),

@@ -5,6 +5,7 @@ use crate::{
     image_viewer::{ImageViewer, ViewerEvent, ViewerMode, ViewerObservation},
     view_transform::{Point, ViewCamera},
 };
+use app_core::{MediaFetchCancellation, MediaRepository, MediaSelection, MediaSource};
 use gpui::{
     AccessibleAction, App, AppContext, Context, Entity, EventEmitter, FocusHandle, GpuDeviceState,
     InteractiveElement, IntoElement, KeyBinding, ParentElement, Render, Role, SharedString,
@@ -322,6 +323,35 @@ impl CompareView {
         self.pane_serial[side.index()] = self.pane_serial[side.index()].saturating_add(1);
         self.side_reason[side.index()] = Some(reason.clone());
         self.panes[side.index()].update(cx, |pane, cx| pane.unavailable(reason, cx));
+    }
+
+    /// Resolve one side against the injected media boundary.
+    ///
+    /// The pane owns attachment and ordering; this entry point only invalidates the
+    /// generated-input work an earlier identity may still be running, so a stale local
+    /// frame can never appear under the new candidate's label.
+    pub fn resolve_media(
+        &mut self,
+        side: CompareSide,
+        repository: std::sync::Arc<std::sync::Mutex<MediaRepository>>,
+        source: Box<dyn MediaSource + Send>,
+        selection: MediaSelection,
+        cancellation: MediaFetchCancellation,
+        cx: &mut Context<Self>,
+    ) {
+        let index = side.index();
+        self.side_cancel[index].cancel();
+        self.side_cancel[index] = Cancellation::default();
+        self.pane_serial[index] = self.pane_serial[index].saturating_add(1);
+        self.side_reason[index] = None;
+        self.panes[index].update(cx, |pane, cx| {
+            pane.resolve_media(repository, source, selection, cancellation, cx);
+        });
+    }
+
+    /// Whether this side currently holds a presented frame.
+    pub fn has_frame(&self, side: CompareSide, cx: &App) -> bool {
+        self.panes[side.index()].read(cx).prepared().is_some()
     }
 
     /// Swap resources, not entities/cameras/focus. Both Arc owners survive the two attachments.
