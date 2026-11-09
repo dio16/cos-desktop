@@ -162,12 +162,20 @@ as the correctness guard.
 
 | Command | Result |
 |---|---|
-| `cargo test -p desktop-gpui --locked ime_tests` | 12 passed (7 pre-existing + 5 new) |
 | `cargo fmt --all -- --check` | clean |
+| `cargo metadata --locked --no-deps --format-version 1` | clean |
 | `cargo clippy --locked --workspace --all-targets -- -D warnings` | clean |
-| `cargo test --locked --workspace` | clean |
+| `cargo test --locked --workspace` | pass — every suite, including `desktop-gpui` (268 passed, 5 ignored); see the environment caveat below |
 | `cargo build --locked --workspace` | clean |
-| `python -B scripts/check_dependency_rules.py --self-test` / `python -B scripts/check_dependency_rules.py` | pass |
+| `python -B scripts/check_dependency_rules.py --self-test` | 19 tests OK |
+| `python -B scripts/check_dependency_rules.py` | allowlist edges verified |
+| `cargo test -p desktop-gpui --locked ime_tests` | 12 passed (7 pre-existing + 5 new) |
+
+Environment caveat (not a regression): the first workspace test run failed only in `app-core`
+`preferences`/`support_report` tests that create directories under the user `%TEMP%`, with
+`OS error 5 (PermissionDenied)`. Re-running with `TEMP`/`TMP` redirected into `target/tmp` passes
+every suite. No `app-core` code is touched by this change; the restriction belongs to this
+execution environment.
 
 New regression tests in `crates/desktop-gpui/src/lib.rs` (`mod ime_tests`):
 
