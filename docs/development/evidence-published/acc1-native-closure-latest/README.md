@@ -193,7 +193,7 @@ repairing the third-party install was not attempted in this bounded task.
 
 ## Leak scan
 
-`session.json` → `leak_check`: **284 files checked**, patterns `mh1.…`,
+`session.json` → `leak_check`: **287 files checked**, patterns `mh1.…`,
 `Bearer <token>`, 48-hex secret-like values → **0 findings**. Media handles in
 records and the reconstructed access log are replaced with
 `<redacted-media-handle>`; no token, context id, cursor or per-run secret is
@@ -213,12 +213,18 @@ is not listening on 8188 (prior stopped state). Ollama was untouched.
 - `session.json` — the merged campaign session (verdicts, provenance, leak scan,
   cleanup); `record-artifact.json`, `record-stop-active.json`,
   `record-missing-media-reload.json`, `record-golden-generation.json`.
+  `session-partial.json` is an early abandoned partial session (verdict
+  `NOT_RUN`) kept for traceability and is **not** part of the measured result.
 - `golden-generation/` — reconstructed generation record material: the task's
-  isolated DB access log (sanitized), Desktop logs, and the retained
-  UIA/PrintWindow screenshots with their SHA-256 values.
+  isolated DB access log (sanitized), the **commit-sanitized copies** of the
+  Desktop logs (`desktop-main.log.sanitized.txt`,
+  `desktop-relaunch.log.sanitized.txt`; the raw `*.log` files are gitignored and
+  retained outside the repository), and the retained UIA/PrintWindow
+  screenshots with their SHA-256 values.
 - `logs/<run>/`, `uia/<run>/`, `shots/<run>/`, `artifact.png` — per-run
-  sanitized logs and native evidence. `manifest.json` pins every file's size and
-  SHA-256.
+  sanitized logs and native evidence. `manifest.json` pins the committed files'
+  size and SHA-256, **except** its own self-entry (stale by construction) and
+  the gitignored raw logs, which are not in the repository.
 
 `record-golden-generation.json` is marked `reconstructed`: the original record
 written by the generation run was cleared before this campaign's evidence

@@ -1,0 +1,6 @@
+
+--- launch 1 2026-11-09T23:34:28+0900 ---
+Runtime discovered: server_identity=cos-runtime-orchestrator epoch=419e40cfe45e4ea297ee63bde0fb9550 pid=9880
+observation shutdown confirmed
+preferences save confirmed
+Runtime credential revoked on explicit teardown
