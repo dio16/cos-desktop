@@ -227,6 +227,7 @@ was created.
 | `fixed/run.json`, `fixed/shots/`, `fixed/uia/` | fixed run on the same sequence: both fields independent, no panic |
 | `fixed-click-first/`, `fixed-focus-only/` | fixed controls for the ACC1 harness path and the UIA-focus-only path |
 | `postfix/`, `postfix-click-first/` | verifier-takeover re-measurement (13:08–13:12): the abort path and the ACC1-harness control, both NO_PANIC |
+| `rebuilt/direction-then-goal/`, `rebuilt/click-first/` | source-bound fresh release rebuild (sha256 `99d41079…`): abort path and ACC1-harness control, both NO_PANIC |
 
 ## Verifier takeover addendum (2026-11-09)
 
@@ -253,3 +254,29 @@ was created.
 - **Environment residual:** the release artifact at `target/release/cos-desktop.exe` cannot be
   replaced in this workspace while its ACL/delete-lock persists. A final release gate must build
   into a fresh target directory (or have the lock removed); debug builds and tests are unaffected.
+
+## Source-bound release rebuild (verifier, 2026-11-09)
+
+The takeover commit `92002e4` sources were built into a **fresh** target directory; the locked
+`target/release` was never touched:
+
+```text
+CARGO_TARGET_DIR=target/final-release cargo build --locked --release -p cos-desktop
+→ exit 0, 4m01s
+→ target/final-release/release/cos-desktop.exe: 21,110,272 B, sha256 99d41079…7792
+```
+
+That source-bound binary was re-run through the same isolated Runtime (port 8132, discovery-only,
+per-run secrets) and the same harness:
+
+| Run | Binary (sha256) | Result | Exit code |
+|---|---|---|---|
+| `rebuilt/direction-then-goal/` | `99d41079…7792`, 21,110,272 B | **NO_PANIC** | `0` after clean `WM_CLOSE` |
+| `rebuilt/click-first/` | `99d41079…7792` | **NO_PANIC** | `0` after clean `WM_CLOSE` |
+
+Both runs typed the same sequence (`abcdefghij` into Creative Direction, UIA `SetFocus` on Goal
+without a click, `ACC1PANIC` into Goal), stopped the app cleanly (exit 0), stopped the Runtime
+(exit 0) and left port 8132 free. Release builds are not byte-reproducible: this rebuild and the
+earlier fixed binary `1a99d737…6234` are the same size (21,110,272 B) and show the same behaviour
+but are different bytes, so the hash is recorded per build and only behaviour is claimed across
+builds.
