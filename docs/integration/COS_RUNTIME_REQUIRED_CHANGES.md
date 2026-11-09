@@ -165,6 +165,7 @@ Current Runtime frontend lanes exclude pause/resume, clear-history and operator/
 - **Desktop dependency:** `app-core`/UI feature gating; unknown capability defaults disabled.
 - **Priority:** P1.
 - **Bootstrap vs real integration:** Bootstrap fixtures may interpolate capabilities; real gating requires the runtime projection.
+- **Implementation status (Observed 2026-11-09):** the Runtime now composes a CAPABILITIES projection when a capability snapshot set exists (Phase B), with `capabilities_ref`, task scope, availability, features/constraints and the revocation pointer projecting `UNAVAILABLE` with its reason; the Desktop derives stop/media/create gates only from that projection and fails closed on absent/dangling/ambiguous/scope-mismatch/unknown values. A live isolated-DB measurement with an authoritative Rust-validated snapshot set confirms the grant/revocation/denial path and the no-false-enabled behavior. **Remaining Runtime gap:** the producer hardcodes `commands: []` and `media: []` (`orchestrator_app/cos_desktop_protocol.py:1358-1401`) and the authoritative snapshot entries model capability names/resources rather than command/media support, so a live **supported command/media grant** cannot be projected; the Desktop correctly keeps those gates disabled as unknown. Closing it is a Runtime capability-domain/contract extension (record command/media support authoritatively), not a client inference or a fabricated projection.
 
 ## RC-12 — Graph/Plan inspection read surface
 

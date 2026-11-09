@@ -44,7 +44,7 @@ The earlier protocol-level records ([`acc1-latest`](../acc1-latest/session.json)
 | Brief UI open | **PASS** | UIA `Invoke` on the “新しいタスクを作成” button opened the `クリエイティブ・ブリーフ` dialog. |
 | Goal / Direction entry | **PASS (with method caveat)** | The UIA `Edit` elements were clicked (synthetic `WM_LBUTTONDOWN/UP` inside their UIA bounds) and text was posted as `WM_CHAR`. Readback: 目的 `ACC1-NATIVE-golden 20261109-114416 production still`, 方向性 `cinematic mechanical desktop object, no text`. A pure UIA-focus-then-type path was **not used** (see harness note below). |
 | Recipe selection | **PASS (method caveat)** | The catalog recipe row exposes `ControlType.Button` but **no Invoke/Selection pattern**; selection used a synthetic `WM_LBUTTONDOWN/UP` at its UIA bounding rectangle. Submit became enabled afterwards. |
-| Brief submit | **PASS (receipt caveat)** | UIA `Invoke` on “ブリーフを提出”; the Runtime accepted the command (200). The **accepted receipt was never painted** (`受付タスク` absent); the task was resolved through the live TASK projection, which is recorded honestly (`task_ref_source = live TASK projection (receipt not painted)`). |
+| Brief submit | **UI defect — receipt never painted** | UIA `Invoke` on “ブリーフを提出” was accepted by the Runtime (200), but the **accepted receipt was never painted** (`受付タスク` absent); this is recorded as a UI defect/next-fix, not as submission success, and the task was resolved through the live TASK projection (`task_ref_source = live TASK projection (receipt not painted)`). |
 | Golden task → terminal | **PASS** | Task `task-95a19eb4364e4d9d8a444e882469da9f`; live trace `ACTIVE/RUNNING` revision 263 → `COMPLETED/RUNNING` revision 266 with `formal_outcome_ref sha256:995a842e…21d34`; outcome projection `COMPLETED` / `SUCCESS_ACCEPT` (revision 271). `ASSIGNED` was not captured between the 1 s polls. |
 | Desktop restart mid-generation | **PASS** | `WM_CLOSE` at `ACTIVE` (pid 53240, exit 0, no force); Runtime stayed ready and the task stayed `ACTIVE`; relaunch (pid 48992) discovered the Runtime, connected and displayed the task (`task_visible_after_relaunch=true`). Same serving epoch throughout; **no** epoch-change refusal and no Runtime restart. |
 | Projection continuity | **PARTIAL** | Two recoverable `409 RESYNC_REQUIRED` answers on the harness read:observe client, each followed by a 200 observation reopen and continued state; `trace_errors=0`, `runtime_log_epoch_conflict=false`. |
@@ -141,8 +141,11 @@ During harness development, a **UIA-focus-only** text-entry attempt (SetFocus on
 then `WM_CHAR`, without the synthetic click) aborted the release binary with
 `thread caused non-unwinding panic. aborting.` after several characters. The committed
 harness therefore clicks the field (which updates the app's shared input selection) before
-posting characters. This is reported as an observation for accessibility follow-up, not as a
-measured acceptance step; the throwaway spike is not retained as evidence.
+posting characters. This is a **product robustness defect, not a harness artifact**: a
+keyboard-only/screen-reader user can reach the focus+input path, so it is tracked separately
+with its own exact reproduction. The click-first path is only a harness workaround for this
+evidence run; it is not an acceptance substitute, and the native keyboard/IME/accessibility
+path stays `NOT_MEASURED` until the panic is fixed and re-exercised.
 
 ## Reproduction
 

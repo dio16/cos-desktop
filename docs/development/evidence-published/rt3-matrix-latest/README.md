@@ -3,8 +3,10 @@
 Scope: the one-run matrix campaign in `session.json` / `run1/` that extends the
 two-run RT3/RT8 baseline ([rt3-rt8-latest](../rt3-rt8-latest/README.md)) to every
 DC-MP-RT3 scenario against an isolated Runtime and the release Desktop binary.
-Ten scenarios ran and all ten passed; no product code was changed and nothing was
-pushed.
+Ten scenarios ran: nine recovery/continuity checks passed, and the tenth
+(`auth_change_exclusion_honest`) passed as the **expected honest exclusion** — the
+"10/10" result is not ten recoveries and does not claim fabricated success. No
+product code was changed and nothing was pushed.
 
 ## Command and environment
 
