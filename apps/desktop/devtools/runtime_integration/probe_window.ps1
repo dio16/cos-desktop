@@ -9,7 +9,7 @@
 # the JSON result is written to -Out.
 param(
     [Parameter(Mandatory = $true)][int]$ProcessId,
-    [Parameter(Mandatory = $true)][ValidateSet('dump', 'tree', 'shot', 'close', 'invoke', 'activate', 'focus', 'type', 'valueread', 'click', 'key', 'hwheel', 'ime', 'dpi', 'foreground', 'sendinput', 'sequence')][string]$Action,
+    [Parameter(Mandatory = $true)][ValidateSet('dump', 'tree', 'shot', 'close', 'invoke', 'activate', 'focus', 'type', 'valueread', 'click', 'key', 'hwheel', 'ime', 'dpi', 'foreground', 'raise', 'sendinput', 'sequence')][string]$Action,
     [Parameter(Mandatory = $true)][string]$Out,
     [string]$ImageOut = '',
     [string]$NameMatch = '',
@@ -90,6 +90,22 @@ public static class WProbe {
         return sent;
     }
     public static int InputSize() { return Marshal.SizeOf(typeof(INPUT)); }
+    // Raise/foreground without SetFocus: the activation path a real user takes
+    // (the OS sends WM_SETFOCUS to the app), so an AX audit does not override
+    // the application's own focused control with the top-level HWND.
+    public static bool RaiseWindow(IntPtr hWnd) {
+        uint pid;
+        uint foregroundThread = GetWindowThreadProcessId(GetForegroundWindow(), out pid);
+        uint currentThread = GetCurrentThreadId();
+        bool attached = false;
+        if (foregroundThread != 0 && foregroundThread != currentThread) {
+            attached = AttachThreadInput(currentThread, foregroundThread, true);
+        }
+        bool raised = BringWindowToTop(hWnd);
+        bool foreground = SetForegroundWindow(hWnd);
+        if (attached) { AttachThreadInput(currentThread, foregroundThread, false); }
+        return foreground && raised;
+    }
     public static bool FocusWindow(IntPtr hWnd) {
         uint pid;
         uint foregroundThread = GetWindowThreadProcessId(GetForegroundWindow(), out pid);
@@ -573,6 +589,16 @@ if ($hwnd -eq [IntPtr]::Zero) {
         $rect = New-Object WProbe+RECT
         [void][WProbe]::GetWindowRect($hwnd, [ref]$rect)
         $result['window_rect_physical'] = @($rect.Left, $rect.Top, ($rect.Right - $rect.Left), ($rect.Bottom - $rect.Top))
+    } elseif ($Action -eq 'raise') {
+        # Activation without SetFocus: the path a person's click produces. The
+        # application keeps its own focused control instead of having the
+        # top-level HWND forced on it by the measuring process.
+        $result['foreground_before'] = [int64][WProbe]::GetForegroundWindow()
+        $result['raise'] = [bool][WProbe]::RaiseWindow($hwnd)
+        Start-Sleep -Milliseconds 400
+        $result['foreground_after'] = [int64][WProbe]::GetForegroundWindow()
+        $result['target'] = [int64]$hwnd
+        $result['is_foreground'] = ([int64][WProbe]::GetForegroundWindow() -eq [int64]$hwnd)
     } elseif ($Action -eq 'foreground') {
         # Raise and focus the window so SendInput can deliver real keystrokes.
         # This is a measurement step (posted messages cannot carry a trustworthy
@@ -641,12 +667,22 @@ if ($hwnd -eq [IntPtr]::Zero) {
             $trimmed = $step.Trim()
             if (-not $trimmed) { continue }
             $entry = @{ step = $trimmed }
+            # Wall-clock boundaries so an external UIA focus-event listener can
+            # attribute each recorded event to the input step that caused it.
+            $entry.start_utc = [DateTime]::UtcNow.ToString('yyyy-MM-ddTHH:mm:ss.fffZ')
             $focused = [System.Windows.Automation.AutomationElement]::FocusedElement
             if ($null -ne $focused) {
                 try { $entry.focus_before = $focused.Current.Name } catch { $entry.focus_before = '' }
             }
             if ($trimmed -eq 'fg') {
                 $entry.raise_and_focus = [bool][WProbe]::FocusWindow($hwnd)
+                Start-Sleep -Milliseconds 400
+                $entry.is_foreground = ([int64][WProbe]::GetForegroundWindow() -eq [int64]$hwnd)
+            } elseif ($trimmed -eq 'fg2') {
+                # Activation without SetFocus: keeps the application's own
+                # focused control intact, which is what a person's click on the
+                # window produces.
+                $entry.raise = [bool][WProbe]::RaiseWindow($hwnd)
                 Start-Sleep -Milliseconds 400
                 $entry.is_foreground = ([int64][WProbe]::GetForegroundWindow() -eq [int64]$hwnd)
             } elseif ($trimmed.StartsWith('focus:')) {
@@ -754,7 +790,9 @@ if ($hwnd -eq [IntPtr]::Zero) {
             if ($null -ne $after) {
                 try { $entry.focus_after = $after.Current.Name } catch { $entry.focus_after = '' }
                 try { $entry.focus_after_type = $after.Current.ControlType.ProgrammaticName } catch {}
+                try { $rid = $after.GetRuntimeId(); if ($null -ne $rid) { $entry.focus_after_rid = ($rid -join '.') } } catch {}
             }
+            $entry.end_utc = [DateTime]::UtcNow.ToString('yyyy-MM-ddTHH:mm:ss.fffZ')
             $log.Add([pscustomobject]$entry)
         }
         $result['steps'] = $log.ToArray()

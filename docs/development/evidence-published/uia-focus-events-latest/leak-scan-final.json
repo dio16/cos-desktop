@@ -1,0 +1,9 @@
+{
+  "scope": "assembled evidence directory including runs/setfocus-path",
+  "tool": "run_acc1_native.leak_scan",
+  "secrets_checked": 0,
+  "note": "the per-run secrets are not retained; the scan still checks the bearer-token and media-handle patterns",
+  "files_checked": 43,
+  "findings": [],
+  "clean": true
+}

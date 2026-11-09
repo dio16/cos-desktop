@@ -35,8 +35,12 @@ the raw probe output; nothing in this directory is derived from a fixture or a m
   accessibility tools **are** present
   (`C:/Program Files (x86)/Windows Kits/10/bin/10.0.19041.0/x64/{inspect,accevent}.exe`) but
   `accevent.exe` refuses to run without elevation (`os error 740`) and this session cannot
-  elevate. Therefore **no UIA event stream and no screen-reader pronouncement exist**; every
-  statement below is an out-of-process UIA API answer from the probe, never a spoken result.
+  elevate. Therefore **no UIA event stream and no screen-reader pronouncement exist** in this
+  audit; every statement below is an out-of-process UIA API answer from the probe, never a
+  spoken result. **Follow-up (2026-11-10):** a same-integrity UIA *client* (not `accevent.exe`)
+  captured the focus-event stream without elevation and refuted F1 — see
+  [`uia-focus-events-latest`](../uia-focus-events-latest/README.md). The screen-reader
+  pronouncement remains unmeasured.
 
 ## What was measured
 
@@ -54,9 +58,9 @@ Records: `session.json` (main pass), `session-pass2.json` (foregrounded pass),
 | 5 | Artifact viewer | canvas `Group` named `画像表示。0: 全体、1: 物理等倍、+/-: 拡大縮小、矢印: 移動、F11: 全画面、Escape: 復帰`, focusable; zoom `Button`s `全体表示 (0)`, `物理ピクセル1:1 (1)`, `拡大 (+)`, `縮小 (-)`, `全画面 / 復帰 (F11)` are not focusable. No candidate/artifact is projected in this DB state (`候補は表示されていません`), so the painted image is `NOT_MEASURED` | `session.json` `surfaces.artifact_viewer` |
 | 6 | History surface | opens from the inspector button (UIA `invoke`), adds `ControlType.Window` `実行履歴`, `履歴を閉じる`, `List` named `実行履歴。1件。上下キーで移動、Enterで開きます。`, one `ListItem` whose name carries run/plan/record identities, `これより古い履歴はありません` | `uia/084-s7-history-tree.json`, `shots/009-shot-history.png` |
 | 7 | Command palette | real `Ctrl+K` opens `ControlType.Window` `コマンドパレット` with `Edit` `コマンド検索` and `List` `コマンド` (11 rows). Disabled rows carry `利用不可: <reason>` in the accessible name (`評価`/`判断の根拠`: no candidate; `タスクを停止`: `機能の利用可否情報が投影されていません（capability not projected）`; `停止結果を確認`: no stop request). `Escape` closes it (foregrounded pass: 79 nodes in `uia/030`/`uia/031`, 65 after Escape in `uia/039`/`uia/040`; the posted-key `session.json` pass reports a 65-node palette surface) | `uia/030-p2-palette-tree.json`, `uia/039-p2-after-palette-tree.json`, `shots/006-shot-palette.png` |
-| 8 | Focus/Tab order | `NOT_MEASURED` — all 12 posted-Tab probes report no focused element (`keyboard[tab-1..12].focused_after.focused = {}`); the visible/tree order of candidate stops is 1 `タスクを停止（現在は操作できません）` → 2 `停止要求の受付状況を確認（現在は操作できません）` → 3 `タスクを検索` → 4 rail `ListItem` → 5 `画像表示…` Group → 6 `診断情報を開く` → 7 `成果物  Ctrl+1` → 8 `候補を比較  Ctrl+2`, but this is tree order, not a measured focus sequence (F1) | `session.json` `keyboard[tab-1..12]` |
-| 9 | Shift+Tab order | `NOT_MEASURED` — posted `WM_KEYDOWN` does not update the async key state, so `SendInput` was required and the window foregrounded; in that state the provider reported no focused element (see finding F1) and no UIA event monitor is available (`accevent.exe` needs elevation). The binding itself is source-verified at `crates/desktop-gpui/src/lib.rs:177` | `session-pass2.json`, `session-pass3.json` |
-| 10 | Dialog dismissal | `Escape` closes the Brief (72 → 65 nodes in `session.json`), History (71 in `uia/024` → 65 in `uia/027`, foregrounded pass) and the palette (79 in `uia/030`/`uia/031` → 65 in `uia/039`/`uia/040`). `Ctrl+H` opens History (65 → 71) and `Ctrl+N` opens the Brief (65 → 72); both dismiss with `Escape`. The focused element after dismissal is not observable (`focused_after.focused = {}`), so dialog focus restoration is `NOT_MEASURED` (F1) | `session.json` `keyboard[brief-escape]`, `uia/024`, `uia/027`, `uia/030`, `uia/039`, `session-shortcuts.json` |
+| 8 | Focus/Tab order | **measured (follow-up)** — the UIA focus-event harness recorded the real order from `COS Desktop 作業画面`: 1 `タスクを停止（現在は操作できません）` → 2 `停止要求の受付状況を確認（現在は操作できません）` → 3 `タスクを検索` → 4 rail `ListItem` → 5 `画像表示…` Group → 6 `診断情報を開く` → 7 `成果物  Ctrl+1` → 8 `候補を比較  Ctrl+2` → 9 `処理の流れ  Ctrl+3` → 10 `目的 — 利用可能: task-…` → 11 `評価 — 利用不可: …` → 12 `判断の根拠 — 利用不可: …`, each stop a `UIA_AutomationFocusChangedEventId` event; it matches the tree order above and extends it by four stops. This audit's posted-Tab probes reported no focused element because posted keys never activated the window and the probe's `SetFocus` path suppressed provider focus (F1, refuted below) | `uia-focus-events-latest/session.json` `steps.tab_order`, `uia-focus-events-latest/desktop-focus-events.jsonl` |
+| 9 | Shift+Tab order | **measured (follow-up)** — four real Shift+Tab presses from `判断の根拠` reversed the order (`評価` → `目的` → `処理の流れ  Ctrl+3` → `候補を比較  Ctrl+2`), recorded as focus events. The earlier pass needed `SendInput` (posted `WM_KEYDOWN` does not update the async key state) and saw no focused element (F1); the binding is source-verified at `crates/desktop-gpui/src/lib.rs:177` | `uia-focus-events-latest/session.json` `steps.shift_tab` |
+| 10 | Dialog dismissal | `Escape` closes the Brief (72 → 65 nodes in `session.json`), History (71 in `uia/024` → 65 in `uia/027`, foregrounded pass) and the palette (79 in `uia/030`/`uia/031` → 65 in `uia/039`/`uia/040`). `Ctrl+H` opens History (65 → 71) and `Ctrl+N` opens the Brief (65 → 72); both dismiss with `Escape`. **Focus restoration is measured by the follow-up:** `Escape` from the Brief and from the palette raises a focus event restoring `COS Desktop 作業画面` (Pane); `Ctrl+N` focuses `目的` and Tab moves to `方向性` then `ブリーフを提出（無効）` | `session.json` `keyboard[brief-escape]`, `uia/024`, `uia/027`, `uia/030`, `uia/039`, `session-shortcuts.json`, `uia-focus-events-latest/session.json` `steps.brief`/`steps.palette` |
 | 11 | Enter/Space activation | `NOT_MEASURED` for the focused-control path: the inspector button `このタスクの実行履歴を開く` refuses UIA focus (`Target element cannot receive focus.`, `IsKeyboardFocusable=false`), so `Enter` could not be delivered to it and no other control exposes both focus and an `Activate` handler in this state. The binding exists (`lib.rs:178-179`, `Activate` with exclusion contexts) | `session-pass3.json` `enter_history` |
 | 12 | DPI facts | `GetAwarenessFromDpiAwarenessContext` = **2** (per-monitor aware); window DPI **96**; nearest monitor effective DPI **96×96**; 2 monitors; physical window rect **1296×839** equals the DIP rect, i.e. one 100 % scale | `session.json` `dpi` |
 | 13 | Second / mixed display scale | `NOT_MEASURED` — no scaled monitor exists on this host and changing the system scale needs a sign-out/session change. A synthetic `WM_DPICHANGED` is deliberately **not** posted: its suggested rectangle is an `lParam` pointer that cannot be marshalled into another process, so an invalid pointer would fault the app | `session.json` `dpi` (`NOT_MEASURED` reason) |
@@ -68,15 +72,21 @@ Records: `session.json` (main pass), `session-pass2.json` (foregrounded pass),
 Rank: `BLOCKING` fails an acceptance line; `ACTIONABLE NON-BLOCKING` needs an owner decision
 but no repair in this test-only task; `NIT` is recorded and does not gate.
 
-- **F1 (ACTIONABLE NON-BLOCKING, DC-MP-AX1 focus quality).** Two independent focus signals
-  disagree: per-element `HasKeyboardFocus` is reported in tree dumps but goes absent from the
-  9th Tab stop onward, and with the window foregrounded `AutomationElement.FocusedElement`
-  returns the top-level window in every state (Brief, palette, rail). No UIA event stream can
-  be captured here (`accevent.exe` requires elevation). A screen reader following UIA focus
-  events therefore has **no measured** way to learn the focused control; either the provider
-  does not publish focus for non-button nodes or the probe path is not equivalent to an AT
-  client. Repair needs an AT observation (`accevent.exe` with elevation or NVDA), not a
-  fixture test. Evidence: `session.json` `keyboard[tab-9..12]`, `session-pass3.json`.
+- **F1 (RESOLVED BY MEASUREMENT — was ACTIONABLE NON-BLOCKING, DC-MP-AX1 focus quality).**
+  The follow-up UIA client event stream shows the provider **does** publish focus: 27
+  `UIA_AutomationFocusChangedEventId` (20005) events and 26 `FocusedElement` polls in one run,
+  19 runtime ids for 18 distinct accessible names, the full Tab order, the reverse Shift+Tab
+  order, and dialog focus restoration. The two earlier signals were properties of the probe path: it foregrounded with
+  `SetFocus` on the top-level HWND and never produced a real deactivate/reactivate cycle, so
+  GPUI's accessibility host-focus state (updated from `WM_ACTIVATE`) stayed false, the provider
+  raised no events, and `AutomationElement.FocusedElement` fell back to the top-level window.
+  A same-integrity UIA client therefore **can** learn the focused control without elevation.
+  Residual (narrow, unproven product question): in this environment a window that was already
+  active with no following deactivate/reactivate cycle raised no focus events for the whole
+  session; whether a real AT client attaching to an already-focused app hits the same condition
+  was not measured. Evidence:
+  `uia-focus-events-latest/session.json`, `uia-focus-events-latest/runs/setfocus-path/` (the
+  F1-reproducing negative control).
 - **F2 (NIT, keyboard reachability of visible affordances).** `新しいタスクを作成` and
   `このタスクの実行履歴を開く` are `ControlType.Button` with `IsKeyboardFocusable=false`, and
   the artifact zoom buttons likewise. Their actions are keyboard-reachable through `Ctrl+N`,
@@ -99,10 +109,11 @@ but no repair in this test-only task; `NIT` is recorded and does not gate.
 ## `NOT_MEASURED` list (with reasons)
 
 1. Screen-reader pronouncement and NVDA output — NVDA is not installed; no AT session exists.
-2. UIA event stream (`UIA_AutomationFocusChangedEventId` and friends) — `accevent.exe` is
-   present but requires elevation (`os error 740`), which this session cannot request.
-3. Shift+Tab order — needs the event stream or a real AT client (see F1); posted keys cannot
-   carry a modifier chord faithfully.
+2. ~~UIA event stream~~ — **closed by the follow-up**: a same-integrity UIA client subscribes to
+   `UIA_AutomationFocusChangedEventId` without elevation and receives every focus change
+   (`uia-focus-events-latest`). `accevent.exe` itself was not used.
+3. ~~Shift+Tab order~~ — **closed by the follow-up**: measured as the reverse of the Tab order
+   with real `SendInput` (4 stops).
 4. Enter/Space activation of a focused control — the only candidate control refuses UIA focus.
 5. Japanese IME composition/commit/cancel — `ImmGetContext` returns NULL; no IME context, no
    real IME session.
@@ -124,6 +135,7 @@ PY=<python>  # any Python 3; the host `python.exe` is a Windows Store stub
 "$PY" apps/desktop/devtools/runtime_integration/run_ax_ime_dpi.py --pass3      # sequences
 "$PY" apps/desktop/devtools/runtime_integration/run_ax_ime_dpi.py --shots      # screenshots
 "$PY" apps/desktop/devtools/runtime_integration/run_ax_ime_dpi.py --shortcuts  # Ctrl+H/N
+"$PY" apps/desktop/devtools/runtime_integration/run_ax_focus_events.py  # focus events (F1)
 ```
 
 Each session creates its own isolated Runtime copy under `target/acc1-native/<stamp>-ax-audit`,

@@ -1,0 +1,63 @@
+{
+  "csc": {
+    "path": "C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\csc.exe",
+    "bytes": 2569576,
+    "sha256": "sha256:eca02e6b15cde93009a59a3d129d5a77fb5008f2e1cf62cf573b6737c747ecc3",
+    "file_version": "14.8.10001.0 built by: bd501acdc000004"
+  },
+  "references": {
+    "UIAutomationClient": {
+      "path": "C:\\Windows\\Microsoft.NET\\assembly\\GAC_MSIL\\UIAutomationClient\\v4.0_4.0.0.0__31bf3856ad364e35\\UIAutomationClient.dll",
+      "sha256": "sha256:1b773ab910b09ac7887b7ee1264731cefe76d6255ce958e96fcf681380fb6c2d"
+    },
+    "UIAutomationTypes": {
+      "path": "C:\\Windows\\Microsoft.NET\\assembly\\GAC_MSIL\\UIAutomationTypes\\v4.0_4.0.0.0__31bf3856ad364e35\\UIAutomationTypes.dll",
+      "sha256": "sha256:09564fbe057201e221b5cc1534a3d9fe666e91e00602900c80dc20c926d850f6"
+    },
+    "WindowsBase": {
+      "path": "C:\\Windows\\Microsoft.NET\\assembly\\GAC_MSIL\\WindowsBase\\v4.0_4.0.0.0__31bf3856ad364e35\\WindowsBase.dll",
+      "sha256": "sha256:76a95e403af455d74febc5741b3e5add6fe90ff6545c76a62cfd6b5574b320e2"
+    }
+  },
+  "listener": {
+    "source": "apps\\desktop\\devtools\\runtime_integration\\uia_focus_listener.cs",
+    "source_sha256": "sha256:eab9823cbcc4a0c18e0dd9df41ed1b167f5157e1595557e8784dd08c94195af4",
+    "exe": "C:\\dev\\cos-desktop\\target\\ax-focus-build\\20261110T051143\\uia_focus_listener.exe",
+    "exe_bytes": 18432,
+    "exe_sha256": "sha256:8b6649f781981d326b2f22526d6a8637a96e0570263cb2f3a1b5e06e0fd376a8"
+  },
+  "control": {
+    "source": "apps\\desktop\\devtools\\runtime_integration\\uia_focus_control.cs",
+    "source_sha256": "sha256:a2b07e4ed830ab7cc94a781e3154d832c4770aba1194131328aac59143f202e7",
+    "exe": "C:\\dev\\cos-desktop\\target\\ax-focus-build\\20261110T051143\\uia_focus_control.exe",
+    "exe_bytes": 5632,
+    "exe_sha256": "sha256:28f7e77e38ff9e72b215b75a6778ae614a83f9a693f786b4943840ead370afce"
+  },
+  "commands": [
+    {
+      "command": [
+        "C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\csc.exe",
+        "-nologo",
+        "-out:C:\\dev\\cos-desktop\\target\\ax-focus-build\\20261110T051143\\uia_focus_listener.exe",
+        "C:\\dev\\cos-desktop\\apps\\desktop\\devtools\\runtime_integration\\uia_focus_listener.cs",
+        "-r:C:\\Windows\\Microsoft.NET\\assembly\\GAC_MSIL\\UIAutomationClient\\v4.0_4.0.0.0__31bf3856ad364e35\\UIAutomationClient.dll",
+        "-r:C:\\Windows\\Microsoft.NET\\assembly\\GAC_MSIL\\UIAutomationTypes\\v4.0_4.0.0.0__31bf3856ad364e35\\UIAutomationTypes.dll",
+        "-r:C:\\Windows\\Microsoft.NET\\assembly\\GAC_MSIL\\WindowsBase\\v4.0_4.0.0.0__31bf3856ad364e35\\WindowsBase.dll"
+      ],
+      "exit": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "C:\\Windows\\Microsoft.NET\\Framework64\\v4.0.30319\\csc.exe",
+        "-nologo",
+        "-out:C:\\dev\\cos-desktop\\target\\ax-focus-build\\20261110T051143\\uia_focus_control.exe",
+        "C:\\dev\\cos-desktop\\apps\\desktop\\devtools\\runtime_integration\\uia_focus_control.cs"
+      ],
+      "exit": 0,
+      "stdout": "",
+      "stderr": ""
+    }
+  ]
+}
