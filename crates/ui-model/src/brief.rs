@@ -608,8 +608,24 @@ impl BriefForm {
     }
 
     /// Apply an accepted receipt.
+    ///
+    /// Acceptance is definitive for its command: a later answer may fill in a
+    /// task reference the first receipt lacked, but it never downgrades the
+    /// painted acceptance. The task reference stays receipt data; the model
+    /// still owns no observed task row.
     pub fn on_accepted(&mut self, command_id: &CommandId, task_id: Option<TaskId>) -> bool {
         if !self.matches_pending(command_id) {
+            return false;
+        }
+        if let BriefState::Accepted {
+            task_id: accepted_task,
+            ..
+        } = &mut self.state
+        {
+            if accepted_task.is_none() && task_id.is_some() {
+                *accepted_task = task_id;
+                return true;
+            }
             return false;
         }
         self.state = BriefState::Accepted {
@@ -632,8 +648,17 @@ impl BriefForm {
     }
 
     /// Apply a lost/unknown outcome; the identical payload may be retried.
+    ///
+    /// An accepted receipt is definitive: a late unknown answer for the same
+    /// command never replaces the painted acceptance.
     pub fn on_unknown(&mut self, command_id: &CommandId) -> bool {
         if !self.matches_pending(command_id) {
+            return false;
+        }
+        if matches!(
+            &self.state,
+            BriefState::Accepted { command_id: accepted, .. } if accepted == command_id
+        ) {
             return false;
         }
         self.state = BriefState::Unknown {
@@ -1380,6 +1405,73 @@ mod tests {
         assert_eq!(stale.goal(), "goal");
         stale.refresh_catalog(sample_catalog());
         assert!(matches!(stale.state(), BriefState::Editing));
+    }
+
+    #[test]
+    fn an_accepted_receipt_paints_its_task_ref_and_is_never_downgraded() {
+        let mut form = form_with_recipe();
+        assert!(form.set_goal("goal"));
+        let submission = form.request_submit().expect("submit");
+        assert!(form.on_sent(&submission.command_id));
+        assert_eq!(form.state_label(), "送信済み — 受付票を確認してください");
+
+        let task = TaskId::new("task-receipt-1").expect("task");
+        assert!(form.on_accepted(&submission.command_id, Some(task.clone())));
+        assert_eq!(
+            form.state(),
+            &BriefState::Accepted {
+                command_id: submission.command_id.clone(),
+                task_id: Some(task),
+            }
+        );
+        assert_eq!(form.state_label(), "受付済み — 観測待ち");
+        assert!(
+            !form.state_label().contains("完了") && !form.state_label().contains("観測済み"),
+            "an accepted receipt is not an observed or completed task"
+        );
+        assert!(!form.is_editable());
+
+        // A late unknown answer for the same command must not replace the
+        // acceptance the Runtime already returned.
+        assert!(
+            !form.on_unknown(&submission.command_id),
+            "unknown cannot downgrade an accepted receipt"
+        );
+        assert_eq!(form.state_label(), "受付済み — 観測待ち");
+    }
+
+    #[test]
+    fn an_accepted_receipt_fills_a_missing_task_ref_but_never_clears_it() {
+        let mut form = form_with_recipe();
+        assert!(form.set_goal("goal"));
+        let submission = form.request_submit().expect("submit");
+        assert!(form.on_accepted(&submission.command_id, None));
+        assert!(matches!(
+            form.state(),
+            BriefState::Accepted { task_id: None, .. }
+        ));
+
+        let task = TaskId::new("task-receipt-2").expect("task");
+        assert!(form.on_accepted(&submission.command_id, Some(task.clone())));
+        assert!(matches!(
+            form.state(),
+            BriefState::Accepted {
+                task_id: Some(accepted),
+                ..
+            } if accepted == &task
+        ));
+
+        assert!(
+            !form.on_accepted(&submission.command_id, None),
+            "a later receipt without a task ref never clears the accepted ref"
+        );
+        assert!(matches!(
+            form.state(),
+            BriefState::Accepted {
+                task_id: Some(accepted),
+                ..
+            } if accepted == &task
+        ));
     }
 
     #[test]

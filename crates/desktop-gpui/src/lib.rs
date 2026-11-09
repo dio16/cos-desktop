@@ -1281,6 +1281,11 @@ impl Shell {
                     this.support_state.invalidate();
                     this.rail_state.revalidate(Some(notice));
                     this.request_rail_work(cx);
+                    // The Brief accepted receipt arrives after submit on this
+                    // same publication stream; apply it so the accepted state
+                    // (and its canonical task ref) is painted without a poll or
+                    // a locally invented task row.
+                    this.brief_apply_published_receipt();
                     cx.notify();
                 });
             }

@@ -659,7 +659,7 @@ class Ctx:
             "cleanup": {}, "residuals": [], "_secrets": [],
         }
 
-    def start_runtime(self) -> dict:
+    def start_runtime(self, *, wait_generation: bool = True) -> dict:
         base.copy_database(SOURCE_DB, self.db_copy)
         shutil.copyfile(SOURCE_PRESETS, self.presets)
         self.record["db_copy_sha256"] = sha256_file(self.db_copy)
@@ -675,21 +675,24 @@ class Ctx:
             "ready": start["ready"],
         }
         statuses: list[dict] = []
-        deadline = time.monotonic() + 240.0
+        deadline = time.monotonic() + (240.0 if wait_generation else 0.0)
         health: dict = {}
-        while time.monotonic() < deadline:
+        while True:
             response = self.runtime.status()
             document = response.get("document") or {}
             health = document.get("health") or {}
             statuses.append({"at": now_iso(), "http_status": response["status"],
                              "health": health, "loop": document.get("loop")})
-            if health.get("llm") is True and health.get("comfy") is True:
+            if not wait_generation or (health.get("llm") is True and health.get("comfy") is True):
+                break
+            if time.monotonic() >= deadline:
                 break
             time.sleep(3.0)
         self.record["health"] = {
             "polls": len(statuses), "transitions": statuses[:2] + statuses[-2:],
             "runtime_reported": health,
             "generation_plane_ready": health.get("llm") is True and health.get("comfy") is True,
+            "generation_plane_required": wait_generation,
             "direct_preflight": acc1.probe_generation_plane(),
         }
         credential = self.runtime.issue_credential()
@@ -743,7 +746,8 @@ class Ctx:
             raise RuntimeError("the native window did not render the connected task rail")
         return self.record["steps"][f"connected-{label}"]
 
-    def create_via_brief(self, goal: str, direction: str) -> dict:
+    def create_via_brief(self, goal: str, direction: str, *,
+                         receipt_only: bool = False) -> dict:
         assert self.app is not None and self.app.ui is not None
         ui = self.app.ui
         step: dict = {"at": now_iso(), "goal": goal, "direction": direction, "actions": []}
@@ -793,7 +797,8 @@ class Ctx:
         task_ref = ""
         source = ""
         receipt_seen = False
-        deadline = time.monotonic() + 90.0
+        receipt_at = ""
+        deadline = time.monotonic() + (30.0 if receipt_only else 90.0)
         next_projection = 0.0
         while time.monotonic() < deadline and not task_ref:
             dump = ui.dump()
@@ -803,8 +808,9 @@ class Ctx:
                 task_ref = match.group(1)
                 source = "receipt"
                 receipt_seen = True
+                receipt_at = now_iso()
                 break
-            if time.monotonic() >= next_projection:
+            if not receipt_only and time.monotonic() >= next_projection:
                 task_ref = self.projection_task_ref(goal)
                 if task_ref:
                     source = "projection"
@@ -813,8 +819,13 @@ class Ctx:
             time.sleep(0.75)
         step["task_ref"] = task_ref
         step["receipt_visible"] = receipt_seen
+        step["receipt_at"] = receipt_at
         step["task_ref_source"] = source
         step["uia_submitted"] = uia_snapshot(ui, "brief-submitted")
+        if receipt_seen:
+            # Capture the accepted-receipt surface itself before anything else
+            # moves: UIA names plus a PrintWindow screenshot.
+            step["uia_receipt"] = uia_snapshot(ui, "receipt-accepted")
         step["verdict"] = "PASS" if task_ref else "PARTIAL"
         if not task_ref:
             step["error"] = ("neither an accepted receipt nor a live TASK projection"
@@ -1260,6 +1271,69 @@ def scenario_golden(args: argparse.Namespace) -> dict:
             record.get("steps", {}).get("task_selected_terminal", {}).get("uia", {}).get("screenshot"))
 
 
+def scenario_receipt(args: argparse.Namespace) -> dict:
+    """Bounded receipt-only native run: stop once the accepted receipt is painted.
+
+    The MP-ACC1 native lane (§19.318) recorded that an accepted Runtime receipt
+    was never painted by the Brief surface. This run submits the same native
+    Brief and waits only for the accepted-receipt surface (`受付タスク` plus the
+    state label), capturing UIA and a screenshot before generation completes.
+    It deliberately does not wait for a terminal task, so the generation plane is
+    not required.
+    """
+    ctx = Ctx("receipt", PORT_MAIN)
+    record = ctx.record
+    goal = f"{GOAL_PREFIX}-receipt {time.strftime('%Y%m%d-%H%M%S')} production still"
+    direction = "cinematic mechanical desktop object, no text"
+    record["goal"] = goal
+    record["_secrets"] = list(ctx.collect)
+    record["generation_plane_required"] = False
+    try:
+        ctx.start_runtime(wait_generation=False)
+        ctx.launch_desktop("receipt")
+        brief = ctx.create_via_brief(goal, direction, receipt_only=True)
+        task_ref = brief.get("task_ref", "")
+        receipt_visible = brief.get("receipt_visible") is True
+        record["task"]["task_ref"] = task_ref
+        record["task"]["task_ref_source"] = (
+            "Brief receipt (受付タスク)" if receipt_visible else "receipt not painted")
+        record["task"]["receipt_visible"] = receipt_visible
+        record["task"]["receipt_at"] = brief.get("receipt_at", "")
+        if receipt_visible:
+            # The task itself must still resolve only through observation.
+            projected = ctx.find_task_ref_in_projection(goal)
+            record["task"]["projection_task_ref"] = projected
+            record["task"]["receipt_matches_projection"] = projected == task_ref
+            record["projection_trace"] = ctx.trace.transactions
+            record["resyncs"] = ctx.trace.resyncs
+            record["trace_errors"] = ctx.trace.errors
+            record["residuals"].append(
+                "generation was not awaited: the run stopped once the accepted receipt"
+                " was painted, so terminal/artifact surfaces are NOT_MEASURED here")
+            record["verdict"] = (
+                "PASS" if (projected == task_ref and task_ref) else "PARTIAL")
+            if record["verdict"] != "PASS":
+                record["residuals"].append(
+                    "the painted receipt task ref did not match the observed TASK projection")
+        else:
+            record["verdict"] = "FAIL"
+            record["residuals"].append(
+                "the accepted receipt was not painted after submit (no 受付タスク surface)")
+            record["residuals"].append(
+                "generation was not awaited: the run stopped after the receipt timeout")
+        return record
+    finally:
+        ctx.cleanup()
+        record["_secrets"] = list(ctx.collect)
+        record["finished_at"] = now_iso()
+        record["screenshots"]["connected"] = (
+            record.get("steps", {}).get("connected-receipt", {}).get("uia", {}).get("screenshot"))
+        record["screenshots"]["brief_filled"] = (
+            record.get("steps", {}).get("brief", {}).get("uia_filled", {}).get("screenshot"))
+        record["screenshots"]["receipt"] = (
+            record.get("steps", {}).get("brief", {}).get("uia_receipt", {}).get("screenshot"))
+
+
 def scenario_stop(args: argparse.Namespace) -> dict:
     ctx = Ctx("stop", PORT_INJECT)
     record = ctx.record
@@ -1629,12 +1703,17 @@ def copy_run_evidence(run: dict, evidence_dir: Path) -> None:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--scenario", action="append",
-                        choices=("golden", "stop", "revoke", "missing-media"),
+                        choices=("golden", "receipt", "stop", "revoke", "missing-media"),
                         help="scenario to run (repeatable; default: golden)")
     parser.add_argument("--evidence-dir", default=str(EVIDENCE_DIR))
+    parser.add_argument("--desktop-exe", default="",
+                        help="bounded variant: launch this release binary instead of target/release")
     parser.add_argument("--timeout", type=float, default=900.0)
     parser.add_argument("--no-build", action="store_true")
     args = parser.parse_args(argv)
+    if args.desktop_exe:
+        global DESKTOP_EXE
+        DESKTOP_EXE = Path(args.desktop_exe).resolve()
     args.evidence_dir = Path(args.evidence_dir).resolve()
     args.evidence_dir.mkdir(parents=True, exist_ok=True)
     (args.evidence_dir / "logs").mkdir(parents=True, exist_ok=True)
@@ -1654,6 +1733,8 @@ def main(argv: list[str] | None = None) -> int:
         },
         "desktop": {
             "root": str(ROOT), "head": base.git_value(ROOT, "rev-parse", "HEAD"),
+            "binary_launched": str(DESKTOP_EXE),
+            "binary_sha256": sha256_file(DESKTOP_EXE) if DESKTOP_EXE.is_file() else "missing",
             "build": {} if args.no_build else build_desktop(),
         },
         "runtime_source": {
@@ -1682,6 +1763,8 @@ def main(argv: list[str] | None = None) -> int:
         try:
             if name == "golden":
                 run = scenario_golden(args)
+            elif name == "receipt":
+                run = scenario_receipt(args)
             elif name == "stop":
                 run = scenario_stop(args)
             elif name == "revoke":

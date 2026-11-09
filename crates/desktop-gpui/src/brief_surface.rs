@@ -145,8 +145,12 @@ fn classify_receipt(
 ) -> ReceiptObservation {
     if let Some(error) = read_error {
         return match error {
-            app_core::CommandReadError::AuthorizationUnavailable
-            | app_core::CommandReadError::AuthorizationDenied => ReceiptObservation::Denied,
+            // `AuthorizationUnavailable` means the binding has no answer yet
+            // (the owner may still be awaiting verification), not a denial:
+            // classifying it as denied would claim a rejection the Runtime
+            // never made. The accepted receipt can still arrive later.
+            app_core::CommandReadError::AuthorizationUnavailable => ReceiptObservation::Pending,
+            app_core::CommandReadError::AuthorizationDenied => ReceiptObservation::Denied,
             _ => ReceiptObservation::Unknown,
         };
     }
@@ -178,6 +182,51 @@ fn classify_receipt(
         | app_core::CommandPresentation::AwaitingResponse => ReceiptObservation::Pending,
         app_core::CommandPresentation::OutcomeUnconfirmed => ReceiptObservation::Unknown,
         app_core::CommandPresentation::Failed => ReceiptObservation::Failed,
+    }
+}
+
+/// Receipt-only lines painted under the Brief state label once accepted.
+///
+/// The canonical task reference is shown only when the accepted receipt carried
+/// one; the read-only notice is the only other line. No task row is implied or
+/// synthesized here — the task itself appears only through observation.
+fn accepted_receipt_lines(state: &BriefState) -> Vec<String> {
+    let BriefState::Accepted { task_id, .. } = state else {
+        return Vec::new();
+    };
+    let mut lines = Vec::with_capacity(2);
+    if let Some(task_id) = task_id {
+        lines.push(format!("受付タスク: {task_id}"));
+    }
+    lines.push("受付済みのため編集できません".to_owned());
+    lines
+}
+
+/// Classify the receipt view the observation publication already carries.
+///
+/// The submit path admits the command before the Runtime receipt exists, so the
+/// immediate read can only answer "pending". The accepted receipt arrives later
+/// on the observation subscription; applying it from the published view is what
+/// paints the accepted state. An absent command entry is not a "not retained"
+/// answer and never changes the form.
+fn published_receipt_observation(
+    state: &BriefState,
+    command_id: &desktop_protocol::CommandId,
+    view: Option<&app_core::CommandReadView>,
+) -> Option<ReceiptObservation> {
+    match state {
+        BriefState::Sent {
+            command_id: current,
+        }
+        | BriefState::Unknown {
+            command_id: current,
+        } if current == command_id => {}
+        _ => return None,
+    }
+    let observation = classify_receipt(None, Some(view?));
+    match observation {
+        ReceiptObservation::Pending | ReceiptObservation::ReceiptMissing => None,
+        decided => Some(decided),
     }
 }
 
@@ -381,6 +430,47 @@ impl Shell {
         cx.notify();
     }
 
+    /// Apply the command receipt carried by the current complete publication.
+    ///
+    /// The submit path admits the command before the Runtime receipt exists, so
+    /// the immediate read can only answer "pending". The accepted receipt is
+    /// published later on the observation subscription; applying it from that
+    /// same publication is what paints the accepted state (and the canonical
+    /// task reference when the receipt carries one). The task itself still
+    /// appears only through observation; no task row is created here.
+    ///
+    /// Returns whether the form changed.
+    pub(super) fn brief_apply_published_receipt(&mut self) -> bool {
+        if !self.brief_open {
+            return false;
+        }
+        let Some(command_id) = self.brief_command.clone() else {
+            return false;
+        };
+        let Some(handle) = self.handle.clone() else {
+            return false;
+        };
+        let Ok(lease) = handle.current() else {
+            return false;
+        };
+        let mut view = None;
+        if lease
+            .read(|publication| {
+                view = publication.command_statuses.get(&command_id).cloned();
+            })
+            .is_err()
+        {
+            return false;
+        }
+        let Some(observation) =
+            published_receipt_observation(self.brief_form.state(), &command_id, view.as_ref())
+        else {
+            return false;
+        };
+        self.apply_receipt_observation(&command_id, observation);
+        true
+    }
+
     /// Apply one classified receipt observation without conflating local
     /// pending, unknown, denial or server rejection.
     fn apply_receipt_observation(
@@ -388,6 +478,15 @@ impl Shell {
         command_id: &desktop_protocol::CommandId,
         observation: ReceiptObservation,
     ) {
+        // An accepted receipt is definitive for its command. A late pending,
+        // unknown, denied or canonical-effect answer must not replace (or
+        // annotate) the painted acceptance; a newer accepted answer may still
+        // fill a task reference the first one lacked.
+        if matches!(self.brief_form.state(), BriefState::Accepted { .. })
+            && !matches!(observation, ReceiptObservation::Accepted { .. })
+        {
+            return;
+        }
         match observation {
             ReceiptObservation::Denied => {
                 self.brief_notice =
@@ -713,19 +812,35 @@ impl Shell {
 
         children.push(
             div()
+                .id("brief-state")
+                .role(Role::Label)
+                .aria_label(self.brief_form.state_label())
+                .aria_value(self.brief_form.state_label())
                 .text_color(muted)
                 .child(SharedString::from(self.brief_form.state_label()))
                 .into_any_element(),
         );
-        if let BriefState::Accepted {
-            task_id: Some(task_id),
-            ..
-        } = self.brief_form.state()
+        // The accepted receipt is a state label, not a task row: the canonical
+        // task reference (when the receipt carries one) is exposed as text so
+        // UIA and screen readers can read the accepted surface.
+        for (index, line) in accepted_receipt_lines(self.brief_form.state())
+            .into_iter()
+            .enumerate()
         {
+            let color = if line.starts_with("受付タスク: ") {
+                text_color
+            } else {
+                muted
+            };
+            let accessible = SharedString::from(line);
             children.push(
                 div()
-                    .text_color(text_color)
-                    .child(SharedString::from(format!("受付タスク: {task_id}")))
+                    .id(SharedString::from(format!("brief-receipt-{index}")))
+                    .role(Role::Label)
+                    .aria_label(accessible.clone())
+                    .aria_value(accessible.clone())
+                    .text_color(color)
+                    .child(accessible)
                     .into_any_element(),
             );
         }
@@ -734,14 +849,6 @@ impl Shell {
             state,
             BriefState::Submitting { .. } | BriefState::Sent { .. }
         );
-        if matches!(state, BriefState::Accepted { .. }) {
-            children.push(
-                div()
-                    .text_color(muted)
-                    .child("受付済みのため編集できません")
-                    .into_any_element(),
-            );
-        }
         if matches!(state, BriefState::StaleRecipe) {
             children.push(
                 div()
@@ -1021,6 +1128,14 @@ mod receipt_taxonomy_tests {
             ReceiptObservation::Denied
         );
         assert_eq!(
+            classify_receipt(
+                Some(&app_core::CommandReadError::AuthorizationUnavailable),
+                None
+            ),
+            ReceiptObservation::Pending,
+            "a read still awaiting verification is pending, never a denial"
+        );
+        assert_eq!(
             classify_receipt(None, None),
             ReceiptObservation::NotRetained
         );
@@ -1090,6 +1205,93 @@ mod receipt_taxonomy_tests {
                 reason: Some(desktop_protocol::RejectReason::ValidationFailed),
                 message: Some("safe detail".to_owned()),
             }
+        );
+    }
+
+    #[test]
+    fn accepted_receipt_lines_paint_the_task_ref_only_when_the_receipt_carries_it() {
+        let command_id = desktop_protocol::CommandId::generate();
+        let task = desktop_protocol::TaskId::new("task-0123456789abcdef0123456789abcdef")
+            .expect("task id");
+        let accepted = BriefState::Accepted {
+            command_id: command_id.clone(),
+            task_id: Some(task.clone()),
+        };
+        assert_eq!(
+            accepted_receipt_lines(&accepted),
+            vec![
+                format!("受付タスク: {task}"),
+                "受付済みのため編集できません".to_owned(),
+            ]
+        );
+
+        // A receipt without a task reference is still painted as accepted, but
+        // it never invents a task row or a canonical task identity.
+        let accepted_without_ref = BriefState::Accepted {
+            command_id: command_id.clone(),
+            task_id: None,
+        };
+        let lines = accepted_receipt_lines(&accepted_without_ref);
+        assert_eq!(lines, vec!["受付済みのため編集できません".to_owned()]);
+        assert!(
+            !lines.iter().any(|line| line.contains("受付タスク")),
+            "an absent task ref never renders a fabricated row"
+        );
+
+        assert!(accepted_receipt_lines(&BriefState::Sent { command_id }).is_empty());
+    }
+
+    #[test]
+    fn a_published_accepted_receipt_is_applied_to_the_sent_brief() {
+        let command_id = desktop_protocol::CommandId::generate();
+        let task = desktop_protocol::TaskId::new("task-fedcba9876543210fedcba9876543210")
+            .expect("task id");
+        let mut accepted = view(CommandPresentation::ReceiptAvailable);
+        let mut receipt = receipt(desktop_protocol::ReceiptState::Accepted, None);
+        receipt.task_id = Some(task.clone());
+        accepted.receipt = Some(receipt);
+
+        // The submit-time read is pending; the publication later carries the
+        // accepted receipt and its canonical task reference.
+        let sent = BriefState::Sent {
+            command_id: command_id.clone(),
+        };
+        assert_eq!(
+            published_receipt_observation(&sent, &command_id, Some(&accepted)),
+            Some(ReceiptObservation::Accepted {
+                task_id: Some(task)
+            })
+        );
+        assert_eq!(
+            published_receipt_observation(&sent, &command_id, None),
+            None,
+            "an absent published entry is not a not-retained answer"
+        );
+        assert_eq!(
+            published_receipt_observation(
+                &sent,
+                &command_id,
+                Some(&view(CommandPresentation::AwaitingResponse))
+            ),
+            None,
+            "a still-pending answer changes nothing"
+        );
+
+        // Once accepted, the same publication is not re-applied.
+        let accepted_state = BriefState::Accepted {
+            command_id: command_id.clone(),
+            task_id: None,
+        };
+        assert_eq!(
+            published_receipt_observation(&accepted_state, &command_id, Some(&accepted)),
+            None
+        );
+
+        // An answer for another command never touches this submission.
+        let other = desktop_protocol::CommandId::generate();
+        assert_eq!(
+            published_receipt_observation(&sent, &other, Some(&accepted)),
+            None
         );
     }
 
