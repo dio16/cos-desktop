@@ -119,6 +119,73 @@ impl Live {
             .map_err(|_| app_core::CommandReadError::Superseded)?;
         Ok(view.expect("authorized read exposes a value under its tag"))
     }
+
+    /// Replace the authenticated client with a fresh session while the form and
+    /// its handles stay alive: the observation session restarts, the retained
+    /// command registry is transferred, and the new session must re-observe.
+    fn restart_session(&mut self) {
+        let mut scenario = FixtureScenario::from_json(FIXTURE).expect("fixture parses");
+        scenario.commands.insert(
+            "CREATE_TASK".to_owned(),
+            CommandPolicy {
+                default: CommandDefault::Silent,
+            },
+        );
+        let next = MockCosClient::from_scenario(scenario).expect("scenario builds");
+        self.owner
+            .replace_client(Box::new(next), &self.handle)
+            .expect("the retained registry transfers");
+        self.reauthorize();
+    }
+
+    /// Re-authorize the current client; a revocation changes the decisions the
+    /// next grant carries for already-retained commands.
+    fn reauthorize(&mut self) {
+        let reply = self.handle.authentication_changed();
+        let mut now = self.now_ms;
+        let _ = resolve(&mut self.owner, reply, &mut now);
+        self.now_ms = now;
+        assert!(self.settle(), "the re-authorized session republishes");
+    }
+
+    /// Submit one create intent and deliver its accepted receipt on the
+    /// observation session.
+    fn submit_and_accept(&mut self, command_id: &CommandId, goal: &str, task: &TaskId) {
+        let envelope = create_envelope(goal, command_id.clone());
+        let reply = self.handle.request_create_task(envelope);
+        let mut now = self.now_ms;
+        let submitted = resolve(&mut self.owner, reply, &mut now);
+        self.now_ms = now;
+        assert_eq!(submitted.expect("admitted"), *command_id);
+
+        let stamp = self.control.active_stamp().expect("active read binding");
+        self.control
+            .inject_message(ServerMessage::Receipt(AuthorizedCommandReceipt {
+                stamp,
+                permission: CommandReadDecision {
+                    command_id: command_id.clone(),
+                    readable: true,
+                },
+                receipt: CommandReceipt {
+                    command_id: command_id.clone(),
+                    operation: CommandOperation::CreateTask,
+                    state: ReceiptState::Accepted,
+                    task_id: Some(task.clone()),
+                    accepted_at: None,
+                    reject_reason: None,
+                    effect_refs: Vec::new(),
+                    dedupe_expires_at: None,
+                    message: Some("accepted: validated intent recorded".to_owned()),
+                },
+            }));
+        for _ in 0..16 {
+            self.step();
+            if self.publication().command_statuses.contains_key(command_id) {
+                return;
+            }
+        }
+        panic!("the accepted receipt reaches the publication");
+    }
 }
 
 fn recipe_ref() -> RecipeRef {
@@ -260,4 +327,184 @@ fn a_silent_create_command_is_published_as_pending_never_as_accepted() {
         "an admitted command is not a canonical task row"
     );
     assert!(publication.last_error.is_none());
+}
+
+#[test]
+fn a_restarted_observation_session_cannot_downgrade_the_accepted_receipt() {
+    // A review NIT: after the Runtime accepted the create command, the
+    // observation session may restart while the same Brief form stays open. The
+    // restarted session re-observes the transferred intent; it must present the
+    // same accepted receipt (or nothing), never a pending/rejected/failed answer
+    // that would downgrade the acceptance the Runtime already returned.
+    let mut live = Live::start();
+    let command_id = CommandId::fixture("command/nav2-brief-restart");
+    let task = TaskId::new("task-0123456789abcdef0123456789abcdef").expect("task id");
+    live.submit_and_accept(&command_id, "NAV2 restart", &task);
+    let snapshot_before = live.publication().snapshot;
+
+    let accepted_before = live
+        .publication()
+        .command_statuses
+        .get(&command_id)
+        .cloned()
+        .expect("accepted receipt published");
+    assert_eq!(
+        accepted_before.presentation,
+        CommandPresentation::ReceiptAvailable
+    );
+    assert_eq!(
+        accepted_before
+            .receipt
+            .as_ref()
+            .map(|receipt| &receipt.state),
+        Some(&ReceiptState::Accepted)
+    );
+
+    live.restart_session();
+
+    let after = live.publication();
+    match after.command_statuses.get(&command_id) {
+        Some(view) => {
+            assert_eq!(
+                view.presentation,
+                CommandPresentation::ReceiptAvailable,
+                "the restarted session never re-presents the accepted intent as pending"
+            );
+            let receipt = view
+                .receipt
+                .as_ref()
+                .expect("the receipt survives the restart");
+            assert_eq!(
+                receipt.state,
+                ReceiptState::Accepted,
+                "an accepted receipt is terminal across the session restart"
+            );
+            assert_eq!(
+                receipt.task_id.as_ref(),
+                Some(&task),
+                "the accepted task reference is preserved, never rewritten"
+            );
+        }
+        None => panic!(
+            "the restarted session must disclose the transferred accepted receipt (or the \
+             publication stays withheld); it must not silently drop it here: {:?}",
+            after
+                .command_statuses
+                .keys()
+                .map(|id| id.as_str().to_owned())
+                .collect::<Vec<_>>()
+        ),
+    }
+    assert_eq!(
+        after.snapshot, snapshot_before,
+        "the receipt is not a canonical task row, before or after the restart"
+    );
+    assert!(
+        after.last_error.is_none(),
+        "a session restart raises no command diagnostic: {:?}",
+        after.last_error
+    );
+
+    // The authorized read keeps answering the same accepted receipt.
+    match live.read(command_id.clone()).expect("authorized read") {
+        CommandRead::Found(view) => {
+            assert_eq!(view.presentation, CommandPresentation::ReceiptAvailable);
+            let receipt = view.receipt.expect("receipt body");
+            assert_eq!(receipt.state, ReceiptState::Accepted);
+            assert_eq!(receipt.task_id.as_ref(), Some(&task));
+        }
+        CommandRead::NotRetained => panic!("the restarted session lost the retained acceptance"),
+    }
+}
+
+#[test]
+fn a_revoked_credential_answers_pending_or_denied_never_a_downgrade() {
+    // A review NIT: a credential revocation after the acceptance answers
+    // `AuthorizationDenied` (or withholds the publication) for the retained
+    // command. Both answers are honest disclosures of missing authorization;
+    // neither may be published as a pending/rejected/failed command state and
+    // neither may invent a canonical task row.
+    let mut live = Live::start();
+    let command_id = CommandId::fixture("command/nav2-brief-revoked");
+    let task = TaskId::new("task-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa").expect("task id");
+    live.submit_and_accept(&command_id, "NAV2 revocation", &task);
+    let snapshot_before = live.publication().snapshot;
+
+    // The grant stops carrying a positive decision for this retained command.
+    live.control.deny_command(command_id.as_str().to_owned());
+    live.reauthorize();
+
+    let after = live.publication();
+    if let Some(view) = after.command_statuses.get(&command_id) {
+        assert_eq!(
+            view.presentation,
+            CommandPresentation::ReceiptAvailable,
+            "a revoked read discloses no fabricated pending state"
+        );
+        assert_eq!(
+            view.receipt.as_ref().map(|receipt| &receipt.state),
+            Some(&ReceiptState::Accepted),
+            "revocation never rewrites an accepted receipt into a rejection"
+        );
+        panic!("the revoked decision must withhold the retained command, not disclose it");
+    }
+    assert!(
+        !after.command_statuses.values().any(|view| matches!(
+            view.presentation,
+            CommandPresentation::Failed | CommandPresentation::Unsupported
+        )),
+        "a revoked credential is not a command failure"
+    );
+    assert_eq!(
+        after.snapshot, snapshot_before,
+        "revocation never fabricates a canonical task row"
+    );
+
+    // The read answers a typed denial, never a false "not retained".
+    match live.read(command_id.clone()) {
+        Err(app_core::CommandReadError::AuthorizationDenied) => {}
+        Err(other) => panic!("a revoked decision is a public denial, got {other:?}"),
+        Ok(CommandRead::NotRetained) => {
+            panic!("a retained command must not answer as not retained under revocation")
+        }
+        Ok(CommandRead::Found(view)) => panic!(
+            "a revoked credential disclosed {:?} for the retained command",
+            view.presentation
+        ),
+    }
+}
+
+#[test]
+fn a_revoked_receipt_is_restored_after_reauthorization_without_a_local_downgrade() {
+    // The same form survives a revocation and a later re-authorization: the
+    // accepted receipt is disclosed again by the new grant. This is the
+    // "reconnect after revocation" path the Brief adapter re-reads, and it must
+    // not depend on a locally fabricated state.
+    let mut live = Live::start();
+    let command_id = CommandId::fixture("command/nav2-brief-restored");
+    let task = TaskId::new("task-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb").expect("task id");
+    live.submit_and_accept(&command_id, "NAV2 restore", &task);
+    live.control.deny_command(command_id.as_str().to_owned());
+    live.reauthorize();
+    assert!(
+        !live
+            .publication()
+            .command_statuses
+            .contains_key(&command_id),
+        "the revoked decision withholds the command first"
+    );
+
+    // A fresh client replaces the revoked session: the transferred registry is
+    // re-decided by the new authenticated session.
+    live.restart_session();
+    let after = live.publication();
+    let view = after
+        .command_statuses
+        .get(&command_id)
+        .expect("the re-authorized session discloses the accepted receipt again");
+    assert_eq!(view.presentation, CommandPresentation::ReceiptAvailable);
+    let receipt = view.receipt.as_ref().expect("receipt body");
+    assert_eq!(receipt.state, ReceiptState::Accepted);
+    assert_eq!(receipt.task_id.as_ref(), Some(&task));
+    assert!(after.last_error.is_none());
 }

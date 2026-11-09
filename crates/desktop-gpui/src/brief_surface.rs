@@ -215,6 +215,20 @@ fn published_receipt_observation(
     view: Option<&app_core::CommandReadView>,
 ) -> Option<ReceiptObservation> {
     match state {
+        // The acceptance is terminal, but a task reference the first receipt
+        // lacked may still be completed by a later accepted answer. No other
+        // answer (pending, denied, absent, unknown) reaches an accepted form.
+        BriefState::Accepted {
+            command_id: current,
+            task_id: None,
+        } if current == command_id => {
+            let observation = classify_receipt(None, Some(view?));
+            return matches!(
+                observation,
+                ReceiptObservation::Accepted { task_id: Some(_) }
+            )
+            .then_some(observation);
+        }
         BriefState::Sent {
             command_id: current,
         }
@@ -1277,20 +1291,149 @@ mod receipt_taxonomy_tests {
             "a still-pending answer changes nothing"
         );
 
-        // Once accepted, the same publication is not re-applied.
-        let accepted_state = BriefState::Accepted {
+        // Once accepted, the same publication is only usable to complete a
+        // missing task reference; an already painted reference is never
+        // re-applied (the receipt view is captured again from the same value).
+        let accepted_without_ref = BriefState::Accepted {
             command_id: command_id.clone(),
             task_id: None,
         };
         assert_eq!(
+            published_receipt_observation(&accepted_without_ref, &command_id, Some(&accepted)),
+            Some(ReceiptObservation::Accepted {
+                task_id: accepted
+                    .receipt
+                    .as_ref()
+                    .and_then(|receipt| receipt.task_id.clone())
+            }),
+            "a later accepted answer completes only the missing task reference"
+        );
+        let accepted_state = BriefState::Accepted {
+            command_id: command_id.clone(),
+            task_id: accepted
+                .receipt
+                .as_ref()
+                .and_then(|receipt| receipt.task_id.clone()),
+        };
+        assert_eq!(
             published_receipt_observation(&accepted_state, &command_id, Some(&accepted)),
-            None
+            None,
+            "an accepted form that already carries the reference is not re-applied"
         );
 
         // An answer for another command never touches this submission.
         let other = desktop_protocol::CommandId::generate();
         assert_eq!(
             published_receipt_observation(&sent, &other, Some(&accepted)),
+            None
+        );
+    }
+
+    #[test]
+    fn a_restarted_publication_cannot_downgrade_an_accepted_receipt() {
+        let command_id = desktop_protocol::CommandId::generate();
+        let task = desktop_protocol::TaskId::new("task-accepted-terminal").expect("task id");
+        let accepted = BriefState::Accepted {
+            command_id: command_id.clone(),
+            task_id: Some(task),
+        };
+
+        // After a reconnect the same publication may answer pending, carry no
+        // entry for the command, or (on a revoked credential) be withheld
+        // entirely. None of those answers is a downgrade signal for a form that
+        // already carries the accepted receipt.
+        assert_eq!(
+            published_receipt_observation(
+                &accepted,
+                &command_id,
+                Some(&view(CommandPresentation::AwaitingResponse))
+            ),
+            None,
+            "a re-delivered pending answer never reaches an accepted form"
+        );
+        assert_eq!(
+            published_receipt_observation(
+                &accepted,
+                &command_id,
+                Some(&view(CommandPresentation::Prepared))
+            ),
+            None
+        );
+        assert_eq!(
+            published_receipt_observation(&accepted, &command_id, None),
+            None,
+            "a withheld (revoked) publication exposes no command entry"
+        );
+        assert_eq!(
+            published_receipt_observation(
+                &accepted,
+                &command_id,
+                Some(&view(CommandPresentation::OutcomeUnconfirmed))
+            ),
+            None,
+            "a re-delivered unknown answer never reaches an accepted form"
+        );
+
+        // A replayed accepted receipt never rewrites an already painted ref.
+        let mut replayed = view(CommandPresentation::ReceiptAvailable);
+        let mut replayed_receipt = receipt(desktop_protocol::ReceiptState::Accepted, None);
+        replayed_receipt.task_id = Some(desktop_protocol::TaskId::new("task-other").expect("task"));
+        replayed.receipt = Some(replayed_receipt);
+        assert_eq!(
+            published_receipt_observation(&accepted, &command_id, Some(&replayed)),
+            None,
+            "an accepted receipt with a reference is never rewritten"
+        );
+    }
+
+    #[test]
+    fn a_later_accepted_answer_completes_only_a_missing_task_reference() {
+        let command_id = desktop_protocol::CommandId::generate();
+        let task = desktop_protocol::TaskId::new("task-late-ref").expect("task id");
+        let accepted_without_ref = BriefState::Accepted {
+            command_id: command_id.clone(),
+            task_id: None,
+        };
+        let mut accepted = view(CommandPresentation::ReceiptAvailable);
+        let mut accepted_receipt = receipt(desktop_protocol::ReceiptState::Accepted, None);
+        accepted_receipt.task_id = Some(task.clone());
+        accepted.receipt = Some(accepted_receipt);
+
+        assert_eq!(
+            published_receipt_observation(&accepted_without_ref, &command_id, Some(&accepted)),
+            Some(ReceiptObservation::Accepted {
+                task_id: Some(task)
+            }),
+            "the acceptance stays terminal and only its missing reference is completed"
+        );
+
+        // Pending, a ref-less acceptance, a canonical-effect observation or an
+        // absent entry complete nothing.
+        assert_eq!(
+            published_receipt_observation(
+                &accepted_without_ref,
+                &command_id,
+                Some(&view(CommandPresentation::AwaitingResponse))
+            ),
+            None
+        );
+        let mut ref_less = view(CommandPresentation::ReceiptAvailable);
+        ref_less.receipt = Some(receipt(desktop_protocol::ReceiptState::Accepted, None));
+        assert_eq!(
+            published_receipt_observation(&accepted_without_ref, &command_id, Some(&ref_less)),
+            None,
+            "an acceptance without a reference completes nothing"
+        );
+        assert_eq!(
+            published_receipt_observation(
+                &accepted_without_ref,
+                &command_id,
+                Some(&view(CommandPresentation::CanonicalEffectObserved))
+            ),
+            None
+        );
+        assert_eq!(
+            published_receipt_observation(&accepted_without_ref, &command_id, None),
             None
         );
     }

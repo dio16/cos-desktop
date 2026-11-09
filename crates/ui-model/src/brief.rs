@@ -636,8 +636,11 @@ impl BriefForm {
     }
 
     /// Apply a definitive rejection (definitive codes never auto-retry).
+    ///
+    /// An accepted receipt is definitive: a late rejection for the same command
+    /// never replaces the painted acceptance.
     pub fn on_rejected(&mut self, command_id: &CommandId, code: impl Into<String>) -> bool {
-        if !self.matches_pending(command_id) {
+        if !self.matches_pending(command_id) || self.is_accepted(command_id) {
             return false;
         }
         self.state = BriefState::Rejected {
@@ -655,10 +658,7 @@ impl BriefForm {
         if !self.matches_pending(command_id) {
             return false;
         }
-        if matches!(
-            &self.state,
-            BriefState::Accepted { command_id: accepted, .. } if accepted == command_id
-        ) {
+        if self.is_accepted(command_id) {
             return false;
         }
         self.state = BriefState::Unknown {
@@ -684,6 +684,14 @@ impl BriefForm {
         matches!(
             &self.pending,
             Some((pending, _)) if pending == command_id
+        )
+    }
+
+    /// Whether the reached acceptance belongs to this exact command.
+    fn is_accepted(&self, command_id: &CommandId) -> bool {
+        matches!(
+            &self.state,
+            BriefState::Accepted { command_id: accepted, .. } if accepted == command_id
         )
     }
 
@@ -1472,6 +1480,45 @@ mod tests {
                 ..
             } if accepted == &task
         ));
+    }
+
+    #[test]
+    fn an_accepted_receipt_stays_terminal_across_a_reconnected_session() {
+        // The observation session may disconnect, be re-authorized or restart
+        // while the same form stays open. Every answer that can be re-delivered
+        // for the same command (pending, an unreadable/denied read, unknown, a
+        // definitive rejection, a stale recipe, a lost local intent, or a second
+        // acceptance without a task reference) must leave the painted acceptance
+        // intact; only a missing task reference may still be completed.
+        let mut form = form_with_recipe();
+        assert!(form.set_goal("goal"));
+        let submission = form.request_submit().expect("submit");
+        assert!(form.on_sent(&submission.command_id));
+        let task = TaskId::new("task-terminal-1").expect("task");
+        assert!(form.on_accepted(&submission.command_id, Some(task.clone())));
+        let accepted = BriefState::Accepted {
+            command_id: submission.command_id.clone(),
+            task_id: Some(task),
+        };
+
+        assert!(!form.on_rejected(&submission.command_id, "INTERNAL_ERROR"));
+        assert!(!form.on_unknown(&submission.command_id));
+        assert!(!form.on_not_sent());
+        assert!(!form.on_stale_recipe());
+        assert!(!form.on_accepted(&submission.command_id, None));
+
+        // An answer for another command never touches this receipt.
+        let other = CommandId::generate();
+        assert!(!form.on_rejected(&other, "VALIDATION_FAILED"));
+        assert!(!form.on_unknown(&other));
+
+        assert_eq!(
+            form.state(),
+            &accepted,
+            "the accepted receipt stays terminal for the session lifetime"
+        );
+        assert_eq!(form.state_label(), "受付済み — 観測待ち");
+        assert!(!form.is_editable(), "the accepted Brief stays read-only");
     }
 
     #[test]
