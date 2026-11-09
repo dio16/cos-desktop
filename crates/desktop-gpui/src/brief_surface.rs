@@ -223,7 +223,7 @@ impl Shell {
         self.brief_notice = None;
         self.brief_command = None;
         self.brief_catalog_epoch = None;
-        self.brief_input_selection = 0..0;
+        self.brief_reset_field_inputs();
         self.brief_goal_focus.focus(window, cx);
         self.load_brief_catalog(cx);
         cx.notify();
@@ -606,10 +606,7 @@ impl Shell {
                     .border_color(rgb(colors.border))
                     .text_color(text_color)
                     .on_click(cx.listener(|this, _, window, cx| {
-                        this.brief_goal_focus.focus(window, cx);
-                        let end = this.brief_form.goal().len();
-                        this.brief_input_selection = end..end;
-                        cx.notify();
+                        this.brief_focus_field(BriefCompositionField::Goal, window, cx);
                     }))
                     .child(goal_display)
                     .child(div().absolute().size_full().child(BriefInputRegistration {
@@ -640,10 +637,7 @@ impl Shell {
                     .border_color(rgb(colors.border))
                     .text_color(text_color)
                     .on_click(cx.listener(|this, _, window, cx| {
-                        this.brief_direction_focus.focus(window, cx);
-                        let end = this.brief_form.direction().len();
-                        this.brief_input_selection = end..end;
-                        cx.notify();
+                        this.brief_focus_field(BriefCompositionField::Direction, window, cx);
                     }))
                     .child(SharedString::from(direction))
                     .child(div().absolute().size_full().child(BriefInputRegistration {

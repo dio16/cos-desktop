@@ -1,0 +1,3 @@
+Desktop version: 0.1.0
+Crash category: unknown
+Retained events: unknown (the diagnostic ring was not read)

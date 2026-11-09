@@ -804,8 +804,12 @@ pub struct Shell {
     brief_goal_focus: FocusHandle,
     brief_direction_focus: FocusHandle,
     brief_focus: FocusHandle,
-    brief_input_selection: Range<usize>,
-    brief_marked_range: Option<Range<usize>>,
+    /// IME caret/marked state per Brief text field. The Goal and the Creative
+    /// Direction never share a caret: routing by the focused field alone left a
+    /// selection from the other field behind, and the next character sliced
+    /// outside that field's text (ACC1 native abort).
+    brief_goal_input: BriefFieldInput,
+    brief_direction_input: BriefFieldInput,
     /// NAV3 History surface: bounded publication view, keyboard cursor and the
     /// local-view reopen notice (never a canonical selection or command).
     history_open: bool,
@@ -1120,8 +1124,8 @@ impl Shell {
             brief_goal_focus: cx.focus_handle().tab_index(40).tab_stop(true),
             brief_direction_focus: cx.focus_handle().tab_index(41).tab_stop(true),
             brief_focus: cx.focus_handle().tab_index(39).tab_stop(true),
-            brief_input_selection: 0..0,
-            brief_marked_range: None,
+            brief_goal_input: BriefFieldInput::default(),
+            brief_direction_input: BriefFieldInput::default(),
             history_open: false,
             history_focus: cx.focus_handle().tab_stop(true),
             history_list_focus: cx.focus_handle().tab_index(40).tab_stop(true),
@@ -3102,10 +3106,36 @@ fn ime_byte_range(
     marked_range: Option<Range<usize>>,
     selection: &Range<usize>,
 ) -> Range<usize> {
-    utf16_range
+    let range = utf16_range
         .map(|range| byte_offset(current, range.start)..byte_offset(current, range.end))
         .or_else(|| marked_range.clone())
-        .unwrap_or_else(|| selection.clone())
+        .unwrap_or_else(|| selection.clone());
+    clamp_byte_range(current, range)
+}
+
+/// Clamp a byte range to `text`.
+///
+/// Every range on the IME path is a *byte* range that can outlive the text it was
+/// measured against: a caret can be left behind by a focus change or by an edit
+/// the form refused. Slicing with such a range panics inside the window
+/// procedure, where Rust cannot unwind (the process aborts), so both ends are
+/// snapped to a character boundary and bounded by the current text first.
+fn clamp_byte_range(text: &str, range: Range<usize>) -> Range<usize> {
+    let start = floor_char_boundary(text, range.start);
+    let end = floor_char_boundary(text, range.end).max(start);
+    start..end
+}
+
+/// Greatest character boundary of `text` that is not past `offset`.
+fn floor_char_boundary(text: &str, offset: usize) -> usize {
+    if offset >= text.len() {
+        return text.len();
+    }
+    let mut boundary = offset;
+    while boundary > 0 && !text.is_char_boundary(boundary) {
+        boundary -= 1;
+    }
+    boundary
 }
 
 /// Splice `new_text` over a byte range, returning the new text and caret byte offset.
@@ -3121,11 +3151,78 @@ fn ime_splice(current: &str, range: &Range<usize>, new_text: &str) -> (String, u
 
 /// Which Brief text field receives composition while the surface is open.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum BriefCompositionField {
+pub(crate) enum BriefCompositionField {
     /// Goal / objective_text.
     Goal,
     /// Creative Direction / text_prompt.
     Direction,
+}
+
+/// IME caret and marked range for one Brief text field.
+///
+/// The Goal and the Creative Direction keep separate state. Sharing one slot
+/// while routing by the focused field let a caret from the other field survive a
+/// focus change, and the next character then sliced outside this field's text.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct BriefFieldInput {
+    /// Byte range of the caret inside this field's text.
+    pub(crate) selection: Range<usize>,
+    /// Marked (composing) byte range inside this field's text.
+    pub(crate) marked: Option<Range<usize>>,
+}
+
+impl Default for BriefFieldInput {
+    fn default() -> Self {
+        Self {
+            selection: 0..0,
+            marked: None,
+        }
+    }
+}
+
+impl Shell {
+    fn brief_field_input(&self, field: BriefCompositionField) -> &BriefFieldInput {
+        match field {
+            BriefCompositionField::Goal => &self.brief_goal_input,
+            BriefCompositionField::Direction => &self.brief_direction_input,
+        }
+    }
+
+    fn brief_field_input_mut(&mut self, field: BriefCompositionField) -> &mut BriefFieldInput {
+        match field {
+            BriefCompositionField::Goal => &mut self.brief_goal_input,
+            BriefCompositionField::Direction => &mut self.brief_direction_input,
+        }
+    }
+
+    /// Focus one Brief text field and put its caret at the end of that field's
+    /// own text. The click handlers and the open surface both use this, so
+    /// neither can leave the other field's caret behind.
+    pub(crate) fn brief_focus_field(
+        &mut self,
+        field: BriefCompositionField,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        match field {
+            BriefCompositionField::Goal => self.brief_goal_focus.focus(window, cx),
+            BriefCompositionField::Direction => self.brief_direction_focus.focus(window, cx),
+        }
+        let end = match field {
+            BriefCompositionField::Goal => self.brief_form.goal().len(),
+            BriefCompositionField::Direction => self.brief_form.direction().len(),
+        };
+        let input = self.brief_field_input_mut(field);
+        input.selection = end..end;
+        input.marked = None;
+        cx.notify();
+    }
+
+    /// Drop both Brief fields' caret/marked state (a fresh form).
+    pub(crate) fn brief_reset_field_inputs(&mut self) {
+        self.brief_goal_input = BriefFieldInput::default();
+        self.brief_direction_input = BriefFieldInput::default();
+    }
 }
 
 /// Route IME composition into the Brief, and never into the rail, whenever the
@@ -3214,7 +3311,8 @@ impl EntityInputHandler for Shell {
                 BriefCompositionField::Goal => self.brief_form.goal().to_owned(),
                 BriefCompositionField::Direction => self.brief_form.direction().to_owned(),
             };
-            (text, self.brief_input_selection.clone())
+            let selection = self.brief_field_input(field).selection.clone();
+            (text, selection)
         } else if self.palette_focus.is_focused(window) {
             (
                 self.palette_query.clone(),
@@ -3244,7 +3342,8 @@ impl EntityInputHandler for Shell {
             self.brief_goal_focus.is_focused(window),
             self.brief_direction_focus.is_focused(window),
         ) {
-            let range = self.brief_marked_range.as_ref()?;
+            let input = self.brief_field_input(field);
+            let range = input.marked.as_ref()?;
             let text = match field {
                 BriefCompositionField::Goal => self.brief_form.goal(),
                 BriefCompositionField::Direction => self.brief_form.direction(),
@@ -3264,12 +3363,12 @@ impl EntityInputHandler for Shell {
     }
 
     fn unmark_text(&mut self, window: &mut Window, _cx: &mut Context<Self>) {
-        if let Some(_field) = brief_composition_field(
+        if let Some(field) = brief_composition_field(
             self.brief_open,
             self.brief_goal_focus.is_focused(window),
             self.brief_direction_focus.is_focused(window),
         ) {
-            self.brief_marked_range = None;
+            self.brief_field_input_mut(field).marked = None;
         } else if self.palette_focus.is_focused(window) {
             self.palette_marked_range = None;
         } else if self.flow_input_focus.is_focused(window) {
@@ -3295,24 +3394,26 @@ impl EntityInputHandler for Shell {
                 BriefCompositionField::Goal => self.brief_form.goal().to_owned(),
                 BriefCompositionField::Direction => self.brief_form.direction().to_owned(),
             };
+            let input = self.brief_field_input(field);
             let range = ime_byte_range(
                 &current,
                 range_utf16,
-                self.brief_marked_range.clone(),
-                &self.brief_input_selection,
+                input.marked.clone(),
+                &input.selection,
             );
             let (replacement, cursor) = ime_splice(&current, &range, new_text);
-            match field {
-                BriefCompositionField::Goal => {
-                    self.brief_form.set_goal(replacement);
-                }
-                BriefCompositionField::Direction => {
-                    self.brief_form.set_direction(replacement);
-                }
+            let applied = match field {
+                BriefCompositionField::Goal => self.brief_form.set_goal(replacement),
+                BriefCompositionField::Direction => self.brief_form.set_direction(replacement),
+            };
+            // A refused edit (the form is submitting/accepted) must not advance the
+            // caret: the text did not move, so the caret cannot either.
+            if applied {
+                let input = self.brief_field_input_mut(field);
+                input.marked = None;
+                input.selection = cursor..cursor;
+                cx.notify();
             }
-            self.brief_marked_range = None;
-            self.brief_input_selection = cursor..cursor;
-            cx.notify();
             return;
         }
         if self.palette_focus.is_focused(window) {
@@ -3376,11 +3477,8 @@ impl EntityInputHandler for Shell {
                 BriefCompositionField::Goal => self.brief_form.goal().to_owned(),
                 BriefCompositionField::Direction => self.brief_form.direction().to_owned(),
             };
-            (
-                current,
-                self.brief_marked_range.clone(),
-                self.brief_input_selection.clone(),
-            )
+            let input = self.brief_field_input(field);
+            (current, input.marked.clone(), input.selection.clone())
         } else if palette {
             (
                 self.palette_query.clone(),
@@ -3412,16 +3510,18 @@ impl EntityInputHandler for Shell {
             })
             .unwrap_or_else(|| caret..caret);
         if let Some(field) = brief_field {
-            match field {
-                BriefCompositionField::Goal => {
-                    self.brief_form.set_goal(replacement);
-                }
-                BriefCompositionField::Direction => {
-                    self.brief_form.set_direction(replacement);
-                }
+            let applied = match field {
+                BriefCompositionField::Goal => self.brief_form.set_goal(replacement),
+                BriefCompositionField::Direction => self.brief_form.set_direction(replacement),
+            };
+            // Only the field that accepted the composition owns the new caret and
+            // marked range; a refused edit leaves both untouched.
+            if applied {
+                let input = self.brief_field_input_mut(field);
+                input.marked = new_marked;
+                input.selection = new_selection;
+                cx.notify();
             }
-            self.brief_marked_range = new_marked;
-            self.brief_input_selection = new_selection;
         } else if palette {
             self.palette_set_query(&replacement, cx);
             self.palette_marked_range = new_marked;
@@ -6761,6 +6861,71 @@ mod ime_tests {
         let (text, caret) = ime_splice(current, &range, "語");
         assert_eq!(text, "a画語");
         assert_eq!(caret, 7);
+    }
+
+    #[test]
+    fn a_caret_left_by_the_other_brief_field_is_clamped_not_sliced() {
+        // ACC1 native abort: ten characters went into the Creative Direction and
+        // its caret stayed at 10; giving the still-empty Goal UIA focus (no click,
+        // so no caret reset) and typing took that caret against the Goal text and
+        // `ime_splice` sliced past the end inside the window procedure.
+        let empty_goal = "";
+        let range = ime_byte_range(empty_goal, None, None, &(10..10));
+        assert_eq!(range, 0..0);
+        let (text, caret) = ime_splice(empty_goal, &range, "A");
+        assert_eq!((text.as_str(), caret), ("A", 1));
+    }
+
+    #[test]
+    fn a_marked_range_outside_the_text_is_clamped() {
+        // A focus change or a refused edit can leave a marked range behind; a
+        // composition event must still splice inside the current text.
+        let range = ime_byte_range("ab", None, Some(0..9), &(0..0));
+        assert_eq!(&"ab"[range.clone()], "ab");
+        let (text, caret) = ime_splice("ab", &range, "X");
+        assert_eq!((text.as_str(), caret), ("X", 1));
+
+        let range = ime_byte_range("", None, Some(4..6), &(0..0));
+        assert_eq!(range, 0..0);
+        let (text, caret) = ime_splice("", &range, "画");
+        assert_eq!((text.as_str(), caret), ("画", 3));
+    }
+
+    #[test]
+    fn a_caret_past_the_text_stays_inside_after_a_refused_edit() {
+        // The form refuses edits while submitting or once accepted. Refusing the
+        // edit must not move the caret, and a stale caret must never slice.
+        let current = "abc";
+        let range = ime_byte_range(current, None, None, &(9..9));
+        assert_eq!(range, 3..3);
+        let (text, caret) = ime_splice(current, &range, "d");
+        assert_eq!((text.as_str(), caret), ("abcd", 4));
+    }
+
+    #[test]
+    #[allow(clippy::reversed_empty_ranges)] // the reversed range is the subject of the test
+    fn a_reversed_composition_range_is_normalized() {
+        let range = ime_byte_range("abc", Some(3..1), None, &(0..0));
+        assert!(range.start <= range.end && range.end <= "abc".len());
+        let (text, caret) = ime_splice("abc", &range, "X");
+        assert_eq!((text.as_str(), caret), ("abcX", 4));
+    }
+
+    #[test]
+    fn the_brief_fields_keep_separate_carets() {
+        // SOURCE_WIRING_VERIFIED: one caret slot per Brief field, clamped before
+        // any slice. Native re-run of the ACC1 direction-then-goal sequence is the
+        // behavioral evidence (evidence-published/acc1-input-panic-latest).
+        let source = include_str!("lib.rs");
+        assert!(source.contains("brief_goal_input: BriefFieldInput"));
+        assert!(source.contains("brief_direction_input: BriefFieldInput"));
+        assert!(source.contains("fn clamp_byte_range"));
+        let start = source.find("fn ime_byte_range(").expect("ime_byte_range");
+        let end = source.find("fn ime_splice(").expect("ime_splice");
+        assert!(source[start..end].contains("clamp_byte_range(current, range)"));
+        let surface = include_str!("brief_surface.rs");
+        assert!(surface.contains("this.brief_focus_field(BriefCompositionField::Goal"));
+        assert!(surface.contains("this.brief_focus_field(BriefCompositionField::Direction"));
     }
 }
 
