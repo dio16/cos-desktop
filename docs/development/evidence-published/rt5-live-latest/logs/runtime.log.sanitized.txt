@@ -1,0 +1,20 @@
+
+--- start 2026-11-09T10:27:28+0900 ---
+INFO:     Started server process [3144]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8134 (Press CTRL+C to quit)
+INFO:     127.0.0.1:62274 - "GET /api/ready HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62278 - "GET /api/cos/desktop/server HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62279 - "POST /api/cos/desktop/credentials HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62280 - "POST /api/cos/desktop/observation HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53595 - "POST /api/cos/desktop/observation HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61169 - "POST /api/cos/desktop/observation HTTP/1.1" 200 OK
+desktop observation rejected: RESYNC_REQUIRED: unknown-owner journal row cannot be replayed
+INFO:     127.0.0.1:61179 - "GET /api/cos/desktop/deltas?cursor=<redacted> HTTP/1.1" 409 Conflict
+INFO:     127.0.0.1:61184 - "POST /api/cos/desktop/observation HTTP/1.1" 200 OK
+INFO:     127.0.0.1:61188 - "POST /api/cos/desktop/observation HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [3144]

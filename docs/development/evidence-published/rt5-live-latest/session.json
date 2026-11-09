@@ -1,0 +1,946 @@
+{
+  "measurement": "MP-RT5 live capability grant/revocation measurement",
+  "date": "2026-11-09T10:27:28+0900",
+  "verdict": "LIMITED",
+  "verdict_reason": "authoritative seeded grant, latest-set selection, revocation and the Desktop gate decisions were live-measured; the Runtime CAPABILITIES producer emits no command/media support entries, so a supported STOP/media grant is NOT_MEASURED",
+  "harness": {
+    "command": "C:/AI/orchestrator/.venv/Scripts/python.exe apps/desktop/devtools/runtime_integration/run_rt5.py",
+    "port": 8134,
+    "endpoint": "http://127.0.0.1:8134",
+    "work_dir": "C:\\dev\\cos-desktop\\target\\rt5\\20261109T102728",
+    "desktop_binary_launched": false,
+    "observation": "protocol-level Desktop observation capture (not the GUI)",
+    "gate_harness": "crates/app-core/tests/rt5_live_capability_gates.rs (ignored test, real app_core::capability code over captured live payloads)",
+    "scope": "one existing task scoped by task_ids"
+  },
+  "desktop": {
+    "root": "C:\\dev\\cos-desktop",
+    "head": "fa069b8fb41ec77cb23a7e81304f9f6044362e64",
+    "head_tree": "e888651fe6ec7bfd904bb16e19c110ac61e64c1d",
+    "dirty_tracked": [
+      "M apps/desktop/devtools/runtime_integration/probe_window.ps1",
+      " M docs/architecture/DESKTOP_DESIGN_CONTRACTS.md",
+      " M docs/development/IMPLEMENTATION_MASTER_PLAN.md",
+      " M docs/integration/COS_RUNTIME_REQUIRED_CHANGES.md",
+      "?? apps/desktop/devtools/runtime_integration/isolated_runtime_control.py",
+      "?? apps/desktop/devtools/runtime_integration/run_acc1_native.py",
+      "?? apps/desktop/devtools/runtime_integration/run_rt3_matrix.py",
+      "?? apps/desktop/devtools/runtime_integration/run_rt5.py",
+      "?? crates/app-core/tests/rt5_live_capability_gates.rs",
+      "?? docs/development/evidence-published/rt3-matrix-latest/"
+    ],
+    "harness_files": {
+      "apps/desktop/devtools/runtime_integration/run_rt5.py": "sha256:c087530e58f6516fcefcd2d4d4d29725f646a010180699eff040f5fa6a7adb57",
+      "crates/app-core/tests/rt5_live_capability_gates.rs": "sha256:b99521f08ceb6fd9aec037707379da9ac24287c3a503f8ae3bf1e9f617f157c4"
+    }
+  },
+  "source_state": {
+    "source_db": "C:\\AI\\orchestrator\\db\\generation.sqlite",
+    "source_db_sha256": "sha256:fbfe3ababb9f53dfb1c373774ce99bdfed813d7b64ad743164fa6adfbc0c56f6",
+    "db_copy": "C:\\dev\\cos-desktop\\target\\rt5\\20261109T102728\\generation.sqlite",
+    "db_copy_sha256_before_seeding": "sha256:f87711008a546c31caf75ed6d24c3a5c95b1d824c8b43868f13e1e852bfb3e3d",
+    "db_copy_bytes": 11493376,
+    "presets_copy": "C:\\dev\\cos-desktop\\target\\rt5\\20261109T102728\\cos_presets.json",
+    "presets_sha256": "sha256:e1c2b553a121638bb551df1f48d21e5c996614e4821008570c066f6563baae3c",
+    "db_copy_sha256_after_seeding": "sha256:71295d3796eb587307030345b1b9b8505d42b5672ff935b5729b2e1cc9aa61b1"
+  },
+  "runtime": {
+    "pid": 50700,
+    "server_identity": "cos-runtime-orchestrator",
+    "server_build": "orchestrator-runtime/0.1.0",
+    "epoch": "a749e863d2e049e192502028670325ff",
+    "endpoint": "http://127.0.0.1:8134",
+    "endpoint_sha256_16": "sha256:8e7bc6781bf5520f",
+    "epoch_sha256_16": "sha256:97df69d81420b4b0",
+    "protocol": {
+      "major": 2,
+      "minor": 0
+    },
+    "schema": {
+      "major": 2,
+      "minor": 0
+    },
+    "config_path": "C:\\dev\\cos-desktop\\target\\rt5\\20261109T102728\\runtime-config.yaml",
+    "config_sha256": "sha256:19907ce208950c567a0f2b6578c36e868d11f5d93ef0dd93199cf7b95c988273",
+    "discovery_path": "C:\\dev\\cos-desktop\\target\\rt5\\20261109T102728\\runtime-discovery.json",
+    "discovery_published_after_start": true,
+    "discovery_sha256": "sha256:9f3700e28136c53aa2c89064fab6b14cb3332635143c1e40bb51ce013d9db491",
+    "cas_root": "C:\\dev\\cos-desktop\\target\\rt5\\20261109T102728\\cas",
+    "log_dir": "C:\\dev\\cos-desktop\\target\\rt5\\20261109T102728\\runtime-logs",
+    "runtime_head": "d6e0ba202f4068860c85208f9ea6e3b3b681bfcb",
+    "runtime_dirty_tracked": [
+      "M orchestrator/docs/guides/development-loop.md",
+      " M orchestrator/orchestrator_app/dev_caller.py",
+      " M orchestrator/tests/test_dev_caller.py",
+      " M orchestrator/tests/test_dev_caller_e2e.py",
+      "?? orchestrator/devplan/plan-draft.json",
+      "?? orchestrator/devplan/plan-prepare.json",
+      "?? orchestrator/devplan/prepare-out.json"
+    ],
+    "stop": {
+      "pid": 50700,
+      "clean": true,
+      "exit": 0
+    },
+    "discovery_removed_after_stop": true
+  },
+  "task": {
+    "task_id": "task-80c8632b4bb843bf93189a9cdb79df19",
+    "task_status": "COMPLETED",
+    "latest_run_id": "run-cos-task-80c8632b4bb843bf93189a9cdb79df19-i0",
+    "latest_iteration": 0,
+    "max_iteration": 0,
+    "artifact_id": "art-v1-33c104b4-3a33-445d-ab1d-421591b31541"
+  },
+  "seed_sets": [
+    {
+      "run_id": "run-rt5-db79df19-i1",
+      "capability_id": "img-gen-v1",
+      "implementation_version": "1.0.0",
+      "descriptor_digest": "sha256:3d8f42c3586fa407bf2ba1fe1c3c0c8590d760274b2c129fcbd93127c3105c7e",
+      "descriptor_digest_recomputed_ok": true,
+      "snapshot_set_digest": "sha256:8271c47e4ebce20f94bbe11d253be68d98d1c197b953480d47b38f85204c6217",
+      "store_status": "stored"
+    },
+    {
+      "run_id": "run-rt5-db79df19-i2",
+      "capability_id": "img-gen-v2",
+      "implementation_version": "1.1.0",
+      "descriptor_digest": "sha256:df883ec1d80d2afedc840cd249e210473a4edc3599aedf867bc5df235cc7a1a2",
+      "descriptor_digest_recomputed_ok": true,
+      "snapshot_set_digest": "sha256:1bc7e1c7107364906d33c9924fa514f5bc66515a7651cdd9ab1390a2c6a9fde8",
+      "store_status": "stored"
+    },
+    {
+      "run_id": "run-rt5-db79df19-i3",
+      "capability_id": "img-gen-v3",
+      "implementation_version": "1.2.0",
+      "descriptor_digest": "sha256:5f3940479d8d30b6c41f22c3314b02730bc04ca72a707a95760278e251f099a6",
+      "descriptor_digest_recomputed_ok": true,
+      "snapshot_set_digest": "sha256:1450d1ee85daaf9de0c67c809de6652ceffa2d7bb7294645e49fff967ae2ed8b",
+      "store_status": "stored"
+    }
+  ],
+  "revocation": {
+    "receipt_digest": "sha256:5d93097f4d15744bbbe42bd770efea1e3ce1cb551bb9f324e8612655bf2d9dc1",
+    "pointer_revision": 1,
+    "status": "stored"
+  },
+  "states": [
+    {
+      "label": "unseeded",
+      "note": "production-derived copy has no capability_snapshot_sets row for this task",
+      "observed_at": "2026-11-09T10:27:32+0900",
+      "observation": {
+        "http_status": 200,
+        "read_revision": "1",
+        "epoch": "a749e863d2e049e192502028670325ff",
+        "server_id": "cos-runtime-orchestrator",
+        "context_sha256_16": "sha256:695c9f0196c16e0b",
+        "scope_sha256_16": "sha256:6c2f094ccfcbd13f",
+        "cursor_sha256_16": "sha256:1a5f19a5ad637071",
+        "snapshot_id": "snapshot-ef7b8350690949a5a5fb4ae4baf32879",
+        "snapshot_mutations": 7,
+        "snapshot_kind_counts": {
+          "TASK": 1,
+          "ITERATION": 1,
+          "CANDIDATE": 1,
+          "ARTIFACT": 1,
+          "EVALUATION": 1,
+          "OUTCOME": 1,
+          "GRAPH": 1
+        },
+        "snapshot_expected": {
+          "artifacts": 1,
+          "candidates": 1,
+          "capabilities": 0,
+          "evaluations": 1,
+          "graphs": 1,
+          "iterations": 1,
+          "outcomes": 1,
+          "tasks": 1
+        },
+        "snapshot_integrity_digest": "sha256:7cce89bb4fe15166ad6f478f3dcfe0f5a3acccef5a17aeadeec70aa15ee2c1a6"
+      },
+      "projection_file": "projections\\unseeded.json",
+      "projection_file_sha256": "sha256:8773d7acffc7b85c86095d349414389bf3aa5b1483f107aa7fa867d93734b124",
+      "capabilities_ref": null,
+      "task_capabilities_ref": null,
+      "availability": null,
+      "reason": null,
+      "scope": null,
+      "projection_revision": null,
+      "commands": null,
+      "media": null,
+      "features": null,
+      "constraints": null,
+      "expect": {
+        "stop": {
+          "enabled": false,
+          "code": "capability_not_projected"
+        },
+        "media": {
+          "enabled": false,
+          "code": "capability_not_projected"
+        },
+        "create": {
+          "enabled": false,
+          "code": "capability_not_projected"
+        },
+        "features": {}
+      }
+    },
+    {
+      "label": "grant-s1",
+      "note": "one Rust-validated authoritative capability snapshot set on a new run",
+      "observed_at": "2026-11-09T10:27:49+0900",
+      "observation": {
+        "http_status": 200,
+        "read_revision": "2",
+        "epoch": "a749e863d2e049e192502028670325ff",
+        "server_id": "cos-runtime-orchestrator",
+        "context_sha256_16": "sha256:5ec92ac371be123c",
+        "scope_sha256_16": "sha256:67324330e8576821",
+        "cursor_sha256_16": "sha256:7499a735896274d6",
+        "snapshot_id": "snapshot-ef913c6c5fcc42f1971e791fad90b4f0",
+        "snapshot_mutations": 8,
+        "snapshot_kind_counts": {
+          "TASK": 1,
+          "ITERATION": 2,
+          "CANDIDATE": 1,
+          "ARTIFACT": 1,
+          "EVALUATION": 1,
+          "OUTCOME": 1,
+          "CAPABILITIES": 1
+        },
+        "snapshot_expected": {
+          "artifacts": 1,
+          "candidates": 1,
+          "capabilities": 1,
+          "evaluations": 1,
+          "graphs": 0,
+          "iterations": 2,
+          "outcomes": 1,
+          "tasks": 1
+        },
+        "snapshot_integrity_digest": "sha256:9fbc915dc9e6986c30a5b2b62e0e2beb40e895a931625d8e2837619f8b633616"
+      },
+      "projection_file": "projections\\grant-s1.json",
+      "projection_file_sha256": "sha256:2346a1c4839b7dd973cc7fd792bcf65d4c6579ca731ecb1b101face0e8ea1622",
+      "capabilities_ref": "sha256:8271c47e4ebce20f94bbe11d253be68d98d1c197b953480d47b38f85204c6217",
+      "task_capabilities_ref": "sha256:8271c47e4ebce20f94bbe11d253be68d98d1c197b953480d47b38f85204c6217",
+      "availability": "SUPPORTED",
+      "reason": null,
+      "scope": {
+        "kind": "TASK",
+        "task_id": "task-80c8632b4bb843bf93189a9cdb79df19"
+      },
+      "projection_revision": "10",
+      "commands": [],
+      "media": [],
+      "features": [
+        {
+          "feature": "img-gen-v1",
+          "support": "SUPPORTED"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "auth.mode",
+          "value": "none"
+        },
+        {
+          "name": "cost_budget",
+          "value": "10"
+        },
+        {
+          "name": "estimated_runtime_s",
+          "value": "30"
+        },
+        {
+          "name": "estimated_vram_mb",
+          "value": "1024"
+        },
+        {
+          "name": "timeout_s",
+          "value": "120"
+        }
+      ],
+      "expect": {
+        "stop": {
+          "enabled": false,
+          "code": "capability_unknown"
+        },
+        "media": {
+          "enabled": false,
+          "code": "capability_unknown"
+        },
+        "create": {
+          "enabled": false,
+          "code": "capability_not_projected"
+        },
+        "features": {
+          "img-gen-v1": {
+            "enabled": true,
+            "code": "supported"
+          }
+        }
+      }
+    },
+    {
+      "label": "grant-s2-latest-set",
+      "note": "a newer run carries a second set; the observer must select the latest set",
+      "observed_at": "2026-11-09T10:27:49+0900",
+      "observation": {
+        "http_status": 200,
+        "read_revision": "3",
+        "epoch": "a749e863d2e049e192502028670325ff",
+        "server_id": "cos-runtime-orchestrator",
+        "context_sha256_16": "sha256:7ce294e101876c68",
+        "scope_sha256_16": "sha256:30b75c8d9e6d48f9",
+        "cursor_sha256_16": "sha256:00a2cd94104094b9",
+        "snapshot_id": "snapshot-cd8d38d144f34040b43be958cab1c0d8",
+        "snapshot_mutations": 9,
+        "snapshot_kind_counts": {
+          "TASK": 1,
+          "ITERATION": 3,
+          "CANDIDATE": 1,
+          "ARTIFACT": 1,
+          "EVALUATION": 1,
+          "OUTCOME": 1,
+          "CAPABILITIES": 1
+        },
+        "snapshot_expected": {
+          "artifacts": 1,
+          "candidates": 1,
+          "capabilities": 1,
+          "evaluations": 1,
+          "graphs": 0,
+          "iterations": 3,
+          "outcomes": 1,
+          "tasks": 1
+        },
+        "snapshot_integrity_digest": "sha256:90075acebdeec4d1e91e521173fbe781d51b8bae7b6b9d9a9bef5d321247ecdc"
+      },
+      "projection_file": "projections\\grant-s2-latest-set.json",
+      "projection_file_sha256": "sha256:552da22c2cdf783db3d6deb020ed5dd37ea55d7cc55cd84cd055c8e60a9ec725",
+      "capabilities_ref": "sha256:1bc7e1c7107364906d33c9924fa514f5bc66515a7651cdd9ab1390a2c6a9fde8",
+      "task_capabilities_ref": "sha256:1bc7e1c7107364906d33c9924fa514f5bc66515a7651cdd9ab1390a2c6a9fde8",
+      "availability": "SUPPORTED",
+      "reason": null,
+      "scope": {
+        "kind": "TASK",
+        "task_id": "task-80c8632b4bb843bf93189a9cdb79df19"
+      },
+      "projection_revision": "13",
+      "commands": [],
+      "media": [],
+      "features": [
+        {
+          "feature": "img-gen-v2",
+          "support": "SUPPORTED"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "auth.mode",
+          "value": "none"
+        },
+        {
+          "name": "cost_budget",
+          "value": "10"
+        },
+        {
+          "name": "estimated_runtime_s",
+          "value": "30"
+        },
+        {
+          "name": "estimated_vram_mb",
+          "value": "1024"
+        },
+        {
+          "name": "timeout_s",
+          "value": "120"
+        }
+      ],
+      "expect": {
+        "stop": {
+          "enabled": false,
+          "code": "capability_unknown"
+        },
+        "media": {
+          "enabled": false,
+          "code": "capability_unknown"
+        },
+        "create": {
+          "enabled": false,
+          "code": "capability_not_projected"
+        },
+        "features": {
+          "img-gen-v2": {
+            "enabled": true,
+            "code": "supported"
+          }
+        }
+      }
+    },
+    {
+      "label": "revoked",
+      "note": "revocation pointer active; the projection is UNAVAILABLE with its reason",
+      "observed_at": "2026-11-09T10:27:49+0900",
+      "observation": {
+        "http_status": 200,
+        "read_revision": "4",
+        "epoch": "a749e863d2e049e192502028670325ff",
+        "server_id": "cos-runtime-orchestrator",
+        "context_sha256_16": "sha256:3ac8193ed5b95042",
+        "scope_sha256_16": "sha256:9ba6cf7a4c1ea0c9",
+        "cursor_sha256_16": "sha256:8514f34bfb025ee6",
+        "snapshot_id": "snapshot-4c3a34fa94584383af73cebb6dd78106",
+        "snapshot_mutations": 9,
+        "snapshot_kind_counts": {
+          "TASK": 1,
+          "ITERATION": 3,
+          "CANDIDATE": 1,
+          "ARTIFACT": 1,
+          "EVALUATION": 1,
+          "OUTCOME": 1,
+          "CAPABILITIES": 1
+        },
+        "snapshot_expected": {
+          "artifacts": 1,
+          "candidates": 1,
+          "capabilities": 1,
+          "evaluations": 1,
+          "graphs": 0,
+          "iterations": 3,
+          "outcomes": 1,
+          "tasks": 1
+        },
+        "snapshot_integrity_digest": "sha256:59ca51efe14518c4316a361f910b0b65d46cbe9eaaf66a0e406c37d41e5f2a07"
+      },
+      "projection_file": "projections\\revoked.json",
+      "projection_file_sha256": "sha256:5ecbf238021c9582d209272c3e493aafd35ff7a9a4c4ceea94594a2b1c5aa43b",
+      "capabilities_ref": "sha256:1bc7e1c7107364906d33c9924fa514f5bc66515a7651cdd9ab1390a2c6a9fde8",
+      "task_capabilities_ref": "sha256:1bc7e1c7107364906d33c9924fa514f5bc66515a7651cdd9ab1390a2c6a9fde8",
+      "availability": "UNAVAILABLE",
+      "reason": "capability revocation is active",
+      "scope": {
+        "kind": "TASK",
+        "task_id": "task-80c8632b4bb843bf93189a9cdb79df19"
+      },
+      "projection_revision": "14",
+      "commands": [],
+      "media": [],
+      "features": [
+        {
+          "feature": "img-gen-v2",
+          "support": "SUPPORTED"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "auth.mode",
+          "value": "none"
+        },
+        {
+          "name": "cost_budget",
+          "value": "10"
+        },
+        {
+          "name": "estimated_runtime_s",
+          "value": "30"
+        },
+        {
+          "name": "estimated_vram_mb",
+          "value": "1024"
+        },
+        {
+          "name": "timeout_s",
+          "value": "120"
+        }
+      ],
+      "expect": {
+        "stop": {
+          "enabled": false,
+          "code": "capability_unavailable",
+          "reason": "capability revocation is active"
+        },
+        "media": {
+          "enabled": false,
+          "code": "capability_unavailable",
+          "reason": "capability revocation is active"
+        },
+        "create": {
+          "enabled": false,
+          "code": "capability_not_projected"
+        },
+        "features": {
+          "img-gen-v2": {
+            "enabled": false,
+            "code": "capability_unavailable",
+            "reason": "capability revocation is active"
+          }
+        }
+      }
+    },
+    {
+      "label": "revoked-new-set-s3",
+      "note": "a new set published under an active revocation stays disabled with its reason",
+      "observed_at": "2026-11-09T10:27:50+0900",
+      "observation": {
+        "http_status": 200,
+        "read_revision": "5",
+        "epoch": "a749e863d2e049e192502028670325ff",
+        "server_id": "cos-runtime-orchestrator",
+        "context_sha256_16": "sha256:4ea4233cd67bd36d",
+        "scope_sha256_16": "sha256:28dfe33b3461afa7",
+        "cursor_sha256_16": "sha256:56a784f9152a4dea",
+        "snapshot_id": "snapshot-3417cd7c010e4ec4b1203a78c4945293",
+        "snapshot_mutations": 10,
+        "snapshot_kind_counts": {
+          "TASK": 1,
+          "ITERATION": 4,
+          "CANDIDATE": 1,
+          "ARTIFACT": 1,
+          "EVALUATION": 1,
+          "OUTCOME": 1,
+          "CAPABILITIES": 1
+        },
+        "snapshot_expected": {
+          "artifacts": 1,
+          "candidates": 1,
+          "capabilities": 1,
+          "evaluations": 1,
+          "graphs": 0,
+          "iterations": 4,
+          "outcomes": 1,
+          "tasks": 1
+        },
+        "snapshot_integrity_digest": "sha256:2fd736fc3255f410827f567f49c56936a59d8b4ef9d58276c0a77d9cf7d092f3"
+      },
+      "projection_file": "projections\\revoked-new-set-s3.json",
+      "projection_file_sha256": "sha256:961b40544d89409eba23c8ce36d41cfa3e16d4a1f512d292ba7c55cf5e982fb6",
+      "capabilities_ref": "sha256:1450d1ee85daaf9de0c67c809de6652ceffa2d7bb7294645e49fff967ae2ed8b",
+      "task_capabilities_ref": "sha256:1450d1ee85daaf9de0c67c809de6652ceffa2d7bb7294645e49fff967ae2ed8b",
+      "availability": "UNAVAILABLE",
+      "reason": "capability revocation is active",
+      "scope": {
+        "kind": "TASK",
+        "task_id": "task-80c8632b4bb843bf93189a9cdb79df19"
+      },
+      "projection_revision": "17",
+      "commands": [],
+      "media": [],
+      "features": [
+        {
+          "feature": "img-gen-v3",
+          "support": "SUPPORTED"
+        }
+      ],
+      "constraints": [
+        {
+          "name": "auth.mode",
+          "value": "none"
+        },
+        {
+          "name": "cost_budget",
+          "value": "10"
+        },
+        {
+          "name": "estimated_runtime_s",
+          "value": "30"
+        },
+        {
+          "name": "estimated_vram_mb",
+          "value": "1024"
+        },
+        {
+          "name": "timeout_s",
+          "value": "120"
+        }
+      ],
+      "expect": {
+        "stop": {
+          "enabled": false,
+          "code": "capability_unavailable",
+          "reason": "capability revocation is active"
+        },
+        "media": {
+          "enabled": false,
+          "code": "capability_unavailable",
+          "reason": "capability revocation is active"
+        },
+        "create": {
+          "enabled": false,
+          "code": "capability_not_projected"
+        },
+        "features": {
+          "img-gen-v3": {
+            "enabled": false,
+            "code": "capability_unavailable",
+            "reason": "capability revocation is active"
+          }
+        }
+      }
+    }
+  ],
+  "revision_checks": {
+    "revisions_in_order": [
+      "10",
+      "13",
+      "14",
+      "17"
+    ],
+    "identities_in_order": [
+      "sha256:8271c47e4ebce20f94bbe11d253be68d98d1c197b953480d47b38f85204c6217",
+      "sha256:1bc7e1c7107364906d33c9924fa514f5bc66515a7651cdd9ab1390a2c6a9fde8",
+      "sha256:1bc7e1c7107364906d33c9924fa514f5bc66515a7651cdd9ab1390a2c6a9fde8",
+      "sha256:1450d1ee85daaf9de0c67c809de6652ceffa2d7bb7294645e49fff967ae2ed8b"
+    ],
+    "grant_identity_changed_with_new_set": true,
+    "revision_changed_after_revocation": true,
+    "revision_changed_with_new_set": true
+  },
+  "delta_checks": {
+    "revocation": {
+      "http_status": 409,
+      "code": "RESYNC_REQUIRED",
+      "reason": null
+    }
+  },
+  "gates": {
+    "capture_sha256": "sha256:c490726c602865c795603d955e1a0414a526e8145b77407181e203b8e9042a15",
+    "exit_code": 0,
+    "cross_check": "match",
+    "decisions": {
+      "artifact_probe": "art-v1-33c104b4-3a33-445d-ab1d-421591b31541",
+      "schema": "rt5-gate-decisions.v1",
+      "source": "app_core::capability over captured live CAPABILITIES/TASK projections",
+      "states": [
+        {
+          "availability": null,
+          "capabilities_ref": null,
+          "commands": 0,
+          "constraints": [],
+          "features": [],
+          "gates": {
+            "create_server_scope": {
+              "code": "capability_not_projected",
+              "enabled": false,
+              "reason": "機能の利用可否情報が投影されていません（capability not projected）"
+            },
+            "features": [],
+            "media": {
+              "code": "capability_not_projected",
+              "enabled": false,
+              "reason": "機能の利用可否情報が投影されていません（capability not projected）"
+            },
+            "stop": {
+              "code": "capability_not_projected",
+              "enabled": false,
+              "reason": "機能の利用可否情報が投影されていません（capability not projected）"
+            }
+          },
+          "has_capabilities_projection": false,
+          "label": "unseeded",
+          "media": 0,
+          "projection_revision": null,
+          "reason": null,
+          "scope": null
+        },
+        {
+          "availability": "SUPPORTED",
+          "capabilities_ref": "sha256:8271c47e4ebce20f94bbe11d253be68d98d1c197b953480d47b38f85204c6217",
+          "commands": 0,
+          "constraints": [
+            {
+              "name": "auth.mode",
+              "value": "none"
+            },
+            {
+              "name": "cost_budget",
+              "value": "10"
+            },
+            {
+              "name": "estimated_runtime_s",
+              "value": "30"
+            },
+            {
+              "name": "estimated_vram_mb",
+              "value": "1024"
+            },
+            {
+              "name": "timeout_s",
+              "value": "120"
+            }
+          ],
+          "features": [
+            {
+              "feature": "img-gen-v1",
+              "support": "SUPPORTED"
+            }
+          ],
+          "gates": {
+            "create_server_scope": {
+              "code": "capability_not_projected",
+              "enabled": false,
+              "reason": "機能の利用可否情報が投影されていません（capability not projected）"
+            },
+            "features": [
+              {
+                "code": "supported",
+                "enabled": true,
+                "feature": "img-gen-v1",
+                "projected_support": "SUPPORTED",
+                "reason": "利用可能（SUPPORTED）"
+              }
+            ],
+            "media": {
+              "code": "capability_unknown",
+              "enabled": false,
+              "reason": "この表現（ORIGINAL）の利用可否は投影されていません"
+            },
+            "stop": {
+              "code": "capability_unknown",
+              "enabled": false,
+              "reason": "この操作（STOP_TASK）の利用可否は投影されていません"
+            }
+          },
+          "has_capabilities_projection": true,
+          "label": "grant-s1",
+          "media": 0,
+          "projection_revision": "10",
+          "reason": null,
+          "scope": {
+            "kind": "TASK",
+            "task_id": "task-80c8632b4bb843bf93189a9cdb79df19"
+          }
+        },
+        {
+          "availability": "SUPPORTED",
+          "capabilities_ref": "sha256:1bc7e1c7107364906d33c9924fa514f5bc66515a7651cdd9ab1390a2c6a9fde8",
+          "commands": 0,
+          "constraints": [
+            {
+              "name": "auth.mode",
+              "value": "none"
+            },
+            {
+              "name": "cost_budget",
+              "value": "10"
+            },
+            {
+              "name": "estimated_runtime_s",
+              "value": "30"
+            },
+            {
+              "name": "estimated_vram_mb",
+              "value": "1024"
+            },
+            {
+              "name": "timeout_s",
+              "value": "120"
+            }
+          ],
+          "features": [
+            {
+              "feature": "img-gen-v2",
+              "support": "SUPPORTED"
+            }
+          ],
+          "gates": {
+            "create_server_scope": {
+              "code": "capability_not_projected",
+              "enabled": false,
+              "reason": "機能の利用可否情報が投影されていません（capability not projected）"
+            },
+            "features": [
+              {
+                "code": "supported",
+                "enabled": true,
+                "feature": "img-gen-v2",
+                "projected_support": "SUPPORTED",
+                "reason": "利用可能（SUPPORTED）"
+              }
+            ],
+            "media": {
+              "code": "capability_unknown",
+              "enabled": false,
+              "reason": "この表現（ORIGINAL）の利用可否は投影されていません"
+            },
+            "stop": {
+              "code": "capability_unknown",
+              "enabled": false,
+              "reason": "この操作（STOP_TASK）の利用可否は投影されていません"
+            }
+          },
+          "has_capabilities_projection": true,
+          "label": "grant-s2-latest-set",
+          "media": 0,
+          "projection_revision": "13",
+          "reason": null,
+          "scope": {
+            "kind": "TASK",
+            "task_id": "task-80c8632b4bb843bf93189a9cdb79df19"
+          }
+        },
+        {
+          "availability": "UNAVAILABLE",
+          "capabilities_ref": "sha256:1bc7e1c7107364906d33c9924fa514f5bc66515a7651cdd9ab1390a2c6a9fde8",
+          "commands": 0,
+          "constraints": [
+            {
+              "name": "auth.mode",
+              "value": "none"
+            },
+            {
+              "name": "cost_budget",
+              "value": "10"
+            },
+            {
+              "name": "estimated_runtime_s",
+              "value": "30"
+            },
+            {
+              "name": "estimated_vram_mb",
+              "value": "1024"
+            },
+            {
+              "name": "timeout_s",
+              "value": "120"
+            }
+          ],
+          "features": [
+            {
+              "feature": "img-gen-v2",
+              "support": "SUPPORTED"
+            }
+          ],
+          "gates": {
+            "create_server_scope": {
+              "code": "capability_not_projected",
+              "enabled": false,
+              "reason": "機能の利用可否情報が投影されていません（capability not projected）"
+            },
+            "features": [
+              {
+                "code": "capability_unavailable",
+                "enabled": false,
+                "feature": "img-gen-v2",
+                "projected_support": "SUPPORTED",
+                "reason": "capability revocation is active"
+              }
+            ],
+            "media": {
+              "code": "capability_unavailable",
+              "enabled": false,
+              "reason": "capability revocation is active"
+            },
+            "stop": {
+              "code": "capability_unavailable",
+              "enabled": false,
+              "reason": "capability revocation is active"
+            }
+          },
+          "has_capabilities_projection": true,
+          "label": "revoked",
+          "media": 0,
+          "projection_revision": "14",
+          "reason": "capability revocation is active",
+          "scope": {
+            "kind": "TASK",
+            "task_id": "task-80c8632b4bb843bf93189a9cdb79df19"
+          }
+        },
+        {
+          "availability": "UNAVAILABLE",
+          "capabilities_ref": "sha256:1450d1ee85daaf9de0c67c809de6652ceffa2d7bb7294645e49fff967ae2ed8b",
+          "commands": 0,
+          "constraints": [
+            {
+              "name": "auth.mode",
+              "value": "none"
+            },
+            {
+              "name": "cost_budget",
+              "value": "10"
+            },
+            {
+              "name": "estimated_runtime_s",
+              "value": "30"
+            },
+            {
+              "name": "estimated_vram_mb",
+              "value": "1024"
+            },
+            {
+              "name": "timeout_s",
+              "value": "120"
+            }
+          ],
+          "features": [
+            {
+              "feature": "img-gen-v3",
+              "support": "SUPPORTED"
+            }
+          ],
+          "gates": {
+            "create_server_scope": {
+              "code": "capability_not_projected",
+              "enabled": false,
+              "reason": "機能の利用可否情報が投影されていません（capability not projected）"
+            },
+            "features": [
+              {
+                "code": "capability_unavailable",
+                "enabled": false,
+                "feature": "img-gen-v3",
+                "projected_support": "SUPPORTED",
+                "reason": "capability revocation is active"
+              }
+            ],
+            "media": {
+              "code": "capability_unavailable",
+              "enabled": false,
+              "reason": "capability revocation is active"
+            },
+            "stop": {
+              "code": "capability_unavailable",
+              "enabled": false,
+              "reason": "capability revocation is active"
+            }
+          },
+          "has_capabilities_projection": true,
+          "label": "revoked-new-set-s3",
+          "media": 0,
+          "projection_revision": "17",
+          "reason": "capability revocation is active",
+          "scope": {
+            "kind": "TASK",
+            "task_id": "task-80c8632b4bb843bf93189a9cdb79df19"
+          }
+        }
+      ],
+      "task_id": "task-80c8632b4bb843bf93189a9cdb79df19"
+    }
+  },
+  "not_measured": [
+    "a supported STOP_TASK command entry (the Runtime producer hardcodes commands: [])",
+    "a supported ORIGINAL media entry (the Runtime producer hardcodes media: [])",
+    "a server-scope CAPABILITIES projection (the Runtime emits TASK scope only)",
+    "grant issuance/revocation by a real external authority (the receipt is harness-seeded and Runtime-Rust-validated)",
+    "GPUI media gate ordering before descriptor/byte fetch with a live enabled projection (unit-tested only; no enabled live media entry exists)"
+  ],
+  "residuals": [
+    "Runtime CAPABILITIES projection producer gap: commands/media are never populated, and the feature name reads a non-schema capability_name (authoritative snapshots therefore project their capability_id).",
+    "The measured enabled state is the feature gate only; STOP/media/create gates are measured in the disabled direction (unknown/unavailable)."
+  ],
+  "leak_check": {
+    "files_scanned": 8,
+    "secrets_checked": 19,
+    "findings": [],
+    "clean": true
+  },
+  "errors": []
+}

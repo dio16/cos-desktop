@@ -1,0 +1,311 @@
+{
+  "artifact_probe": "art-v1-33c104b4-3a33-445d-ab1d-421591b31541",
+  "schema": "rt5-gate-decisions.v1",
+  "source": "app_core::capability over captured live CAPABILITIES/TASK projections",
+  "states": [
+    {
+      "availability": null,
+      "capabilities_ref": null,
+      "commands": 0,
+      "constraints": [],
+      "features": [],
+      "gates": {
+        "create_server_scope": {
+          "code": "capability_not_projected",
+          "enabled": false,
+          "reason": "機能の利用可否情報が投影されていません（capability not projected）"
+        },
+        "features": [],
+        "media": {
+          "code": "capability_not_projected",
+          "enabled": false,
+          "reason": "機能の利用可否情報が投影されていません（capability not projected）"
+        },
+        "stop": {
+          "code": "capability_not_projected",
+          "enabled": false,
+          "reason": "機能の利用可否情報が投影されていません（capability not projected）"
+        }
+      },
+      "has_capabilities_projection": false,
+      "label": "unseeded",
+      "media": 0,
+      "projection_revision": null,
+      "reason": null,
+      "scope": null
+    },
+    {
+      "availability": "SUPPORTED",
+      "capabilities_ref": "sha256:8271c47e4ebce20f94bbe11d253be68d98d1c197b953480d47b38f85204c6217",
+      "commands": 0,
+      "constraints": [
+        {
+          "name": "auth.mode",
+          "value": "none"
+        },
+        {
+          "name": "cost_budget",
+          "value": "10"
+        },
+        {
+          "name": "estimated_runtime_s",
+          "value": "30"
+        },
+        {
+          "name": "estimated_vram_mb",
+          "value": "1024"
+        },
+        {
+          "name": "timeout_s",
+          "value": "120"
+        }
+      ],
+      "features": [
+        {
+          "feature": "img-gen-v1",
+          "support": "SUPPORTED"
+        }
+      ],
+      "gates": {
+        "create_server_scope": {
+          "code": "capability_not_projected",
+          "enabled": false,
+          "reason": "機能の利用可否情報が投影されていません（capability not projected）"
+        },
+        "features": [
+          {
+            "code": "supported",
+            "enabled": true,
+            "feature": "img-gen-v1",
+            "projected_support": "SUPPORTED",
+            "reason": "利用可能（SUPPORTED）"
+          }
+        ],
+        "media": {
+          "code": "capability_unknown",
+          "enabled": false,
+          "reason": "この表現（ORIGINAL）の利用可否は投影されていません"
+        },
+        "stop": {
+          "code": "capability_unknown",
+          "enabled": false,
+          "reason": "この操作（STOP_TASK）の利用可否は投影されていません"
+        }
+      },
+      "has_capabilities_projection": true,
+      "label": "grant-s1",
+      "media": 0,
+      "projection_revision": "10",
+      "reason": null,
+      "scope": {
+        "kind": "TASK",
+        "task_id": "task-80c8632b4bb843bf93189a9cdb79df19"
+      }
+    },
+    {
+      "availability": "SUPPORTED",
+      "capabilities_ref": "sha256:1bc7e1c7107364906d33c9924fa514f5bc66515a7651cdd9ab1390a2c6a9fde8",
+      "commands": 0,
+      "constraints": [
+        {
+          "name": "auth.mode",
+          "value": "none"
+        },
+        {
+          "name": "cost_budget",
+          "value": "10"
+        },
+        {
+          "name": "estimated_runtime_s",
+          "value": "30"
+        },
+        {
+          "name": "estimated_vram_mb",
+          "value": "1024"
+        },
+        {
+          "name": "timeout_s",
+          "value": "120"
+        }
+      ],
+      "features": [
+        {
+          "feature": "img-gen-v2",
+          "support": "SUPPORTED"
+        }
+      ],
+      "gates": {
+        "create_server_scope": {
+          "code": "capability_not_projected",
+          "enabled": false,
+          "reason": "機能の利用可否情報が投影されていません（capability not projected）"
+        },
+        "features": [
+          {
+            "code": "supported",
+            "enabled": true,
+            "feature": "img-gen-v2",
+            "projected_support": "SUPPORTED",
+            "reason": "利用可能（SUPPORTED）"
+          }
+        ],
+        "media": {
+          "code": "capability_unknown",
+          "enabled": false,
+          "reason": "この表現（ORIGINAL）の利用可否は投影されていません"
+        },
+        "stop": {
+          "code": "capability_unknown",
+          "enabled": false,
+          "reason": "この操作（STOP_TASK）の利用可否は投影されていません"
+        }
+      },
+      "has_capabilities_projection": true,
+      "label": "grant-s2-latest-set",
+      "media": 0,
+      "projection_revision": "13",
+      "reason": null,
+      "scope": {
+        "kind": "TASK",
+        "task_id": "task-80c8632b4bb843bf93189a9cdb79df19"
+      }
+    },
+    {
+      "availability": "UNAVAILABLE",
+      "capabilities_ref": "sha256:1bc7e1c7107364906d33c9924fa514f5bc66515a7651cdd9ab1390a2c6a9fde8",
+      "commands": 0,
+      "constraints": [
+        {
+          "name": "auth.mode",
+          "value": "none"
+        },
+        {
+          "name": "cost_budget",
+          "value": "10"
+        },
+        {
+          "name": "estimated_runtime_s",
+          "value": "30"
+        },
+        {
+          "name": "estimated_vram_mb",
+          "value": "1024"
+        },
+        {
+          "name": "timeout_s",
+          "value": "120"
+        }
+      ],
+      "features": [
+        {
+          "feature": "img-gen-v2",
+          "support": "SUPPORTED"
+        }
+      ],
+      "gates": {
+        "create_server_scope": {
+          "code": "capability_not_projected",
+          "enabled": false,
+          "reason": "機能の利用可否情報が投影されていません（capability not projected）"
+        },
+        "features": [
+          {
+            "code": "capability_unavailable",
+            "enabled": false,
+            "feature": "img-gen-v2",
+            "projected_support": "SUPPORTED",
+            "reason": "capability revocation is active"
+          }
+        ],
+        "media": {
+          "code": "capability_unavailable",
+          "enabled": false,
+          "reason": "capability revocation is active"
+        },
+        "stop": {
+          "code": "capability_unavailable",
+          "enabled": false,
+          "reason": "capability revocation is active"
+        }
+      },
+      "has_capabilities_projection": true,
+      "label": "revoked",
+      "media": 0,
+      "projection_revision": "14",
+      "reason": "capability revocation is active",
+      "scope": {
+        "kind": "TASK",
+        "task_id": "task-80c8632b4bb843bf93189a9cdb79df19"
+      }
+    },
+    {
+      "availability": "UNAVAILABLE",
+      "capabilities_ref": "sha256:1450d1ee85daaf9de0c67c809de6652ceffa2d7bb7294645e49fff967ae2ed8b",
+      "commands": 0,
+      "constraints": [
+        {
+          "name": "auth.mode",
+          "value": "none"
+        },
+        {
+          "name": "cost_budget",
+          "value": "10"
+        },
+        {
+          "name": "estimated_runtime_s",
+          "value": "30"
+        },
+        {
+          "name": "estimated_vram_mb",
+          "value": "1024"
+        },
+        {
+          "name": "timeout_s",
+          "value": "120"
+        }
+      ],
+      "features": [
+        {
+          "feature": "img-gen-v3",
+          "support": "SUPPORTED"
+        }
+      ],
+      "gates": {
+        "create_server_scope": {
+          "code": "capability_not_projected",
+          "enabled": false,
+          "reason": "機能の利用可否情報が投影されていません（capability not projected）"
+        },
+        "features": [
+          {
+            "code": "capability_unavailable",
+            "enabled": false,
+            "feature": "img-gen-v3",
+            "projected_support": "SUPPORTED",
+            "reason": "capability revocation is active"
+          }
+        ],
+        "media": {
+          "code": "capability_unavailable",
+          "enabled": false,
+          "reason": "capability revocation is active"
+        },
+        "stop": {
+          "code": "capability_unavailable",
+          "enabled": false,
+          "reason": "capability revocation is active"
+        }
+      },
+      "has_capabilities_projection": true,
+      "label": "revoked-new-set-s3",
+      "media": 0,
+      "projection_revision": "17",
+      "reason": "capability revocation is active",
+      "scope": {
+        "kind": "TASK",
+        "task_id": "task-80c8632b4bb843bf93189a9cdb79df19"
+      }
+    }
+  ],
+  "task_id": "task-80c8632b4bb843bf93189a9cdb79df19"
+}

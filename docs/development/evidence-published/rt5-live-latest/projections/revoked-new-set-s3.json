@@ -1,0 +1,57 @@
+{
+  "label": "revoked-new-set-s3",
+  "note": "a new set published under an active revocation stays disabled with its reason",
+  "task": {
+    "projection": "TASK",
+    "task_ref": "task-80c8632b4bb843bf93189a9cdb79df19",
+    "title": "北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+    "task_status": "COMPLETED",
+    "inner_phase": "REFINE",
+    "iteration_index": 3,
+    "iteration_ref": "run-rt5-db79df19-i3:3",
+    "formal_outcome_ref": "sha256:7fca6329f65941af1ae7ee747019addd6c1fb068800e87b39f5c8e31af2a7263",
+    "capabilities_ref": "sha256:1450d1ee85daaf9de0c67c809de6652ceffa2d7bb7294645e49fff967ae2ed8b",
+    "projection_revision": "15"
+  },
+  "capabilities": {
+    "projection": "CAPABILITIES",
+    "capabilities_ref": "sha256:1450d1ee85daaf9de0c67c809de6652ceffa2d7bb7294645e49fff967ae2ed8b",
+    "scope": {
+      "kind": "TASK",
+      "task_id": "task-80c8632b4bb843bf93189a9cdb79df19"
+    },
+    "commands": [],
+    "media": [],
+    "features": [
+      {
+        "feature": "img-gen-v3",
+        "support": "SUPPORTED"
+      }
+    ],
+    "constraints": [
+      {
+        "name": "auth.mode",
+        "value": "none"
+      },
+      {
+        "name": "cost_budget",
+        "value": "10"
+      },
+      {
+        "name": "estimated_runtime_s",
+        "value": "30"
+      },
+      {
+        "name": "estimated_vram_mb",
+        "value": "1024"
+      },
+      {
+        "name": "timeout_s",
+        "value": "120"
+      }
+    ],
+    "availability": "UNAVAILABLE",
+    "reason": "capability revocation is active",
+    "projection_revision": "17"
+  }
+}

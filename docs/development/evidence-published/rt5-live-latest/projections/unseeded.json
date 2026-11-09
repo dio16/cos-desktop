@@ -1,0 +1,16 @@
+{
+  "label": "unseeded",
+  "note": "production-derived copy has no capability_snapshot_sets row for this task",
+  "task": {
+    "projection": "TASK",
+    "task_ref": "task-80c8632b4bb843bf93189a9cdb79df19",
+    "title": "北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+    "task_status": "COMPLETED",
+    "inner_phase": "RUNNING",
+    "iteration_index": 0,
+    "iteration_ref": "run-cos-task-80c8632b4bb843bf93189a9cdb79df19-i0:0",
+    "formal_outcome_ref": "sha256:7fca6329f65941af1ae7ee747019addd6c1fb068800e87b39f5c8e31af2a7263",
+    "projection_revision": "1"
+  },
+  "capabilities": null
+}
