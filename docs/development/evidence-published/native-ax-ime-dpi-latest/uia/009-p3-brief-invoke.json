@@ -1,0 +1,1 @@
+{"action":"invoke","found":true,"hwnd":5047618,"title":"COS Desktop","class":"Zed::Window","width":1296,"height":839,"name_match":"新しいタスクを作成","invoked":true,"matched_name":"新しいタスクを作成","matched_id":"","matched_control_type":"ControlType.Button","pattern":"invoke","patterns_tried":["invoke"]}

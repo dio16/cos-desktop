@@ -1,0 +1,412 @@
+{
+  "measurement": "Native accessibility / IME / DPI audit (measured vs NOT_MEASURED)",
+  "task": "MP-AX1/MP-AX2 audit follow-up",
+  "started_at": "2026-11-10T02:16:43+0900",
+  "harness": {
+    "command": "python apps/desktop/devtools/runtime_integration/run_ax_ime_dpi.py",
+    "port": 8155,
+    "probe": "C:\\dev\\cos-desktop\\apps\\desktop\\devtools\\runtime_integration\\probe_window.ps1",
+    "observation": "native window UIA tree + PrintWindow screenshots",
+    "not_measured_environment": "NVDA, Inspect.exe and the Windows SDK accessibility tools are not installed on this host, so screen-reader pronouncement is NOT_MEASURED"
+  },
+  "environment": {
+    "os": "10.0.26300",
+    "desktop_root": "C:\\dev\\cos-desktop",
+    "head": "c1d97a4f028fed099c2e86f4150a7cc043029603",
+    "binary": "C:\\dev\\cos-desktop\\target\\release\\cos-desktop.exe",
+    "binary_sha256": "sha256:c889fdf0d114b96e6da0b9a4303be1c7cd93c0d29bf5e993dea34b262ca5f205"
+  },
+  "surfaces": {},
+  "keyboard": [],
+  "ime": {},
+  "dpi": {},
+  "not_measured": [],
+  "residuals": [],
+  "leak_check": {
+    "files_checked": 169,
+    "secrets_checked": 2,
+    "findings": [],
+    "clean": true
+  },
+  "runtime": {
+    "work_dir": "C:\\dev\\cos-desktop\\target\\acc1-native\\20261110T021643-ax-audit",
+    "start": {
+      "pid": 49700,
+      "endpoint": "http://127.0.0.1:8155",
+      "server_identity": "cos-runtime-orchestrator",
+      "server_build": "orchestrator-runtime/0.1.0",
+      "epoch": "436a0919970d4d35a134359789f3ae18",
+      "protocol": {
+        "major": 2,
+        "minor": 0
+      },
+      "schema": {
+        "major": 2,
+        "minor": 0
+      },
+      "config_path": "C:\\dev\\cos-desktop\\target\\acc1-native\\20261110T021643-ax-audit\\runtime-config.yaml",
+      "config_sha256": "sha256:456e3faf5c4ef59c5abab2591b864a582134662219e55513098366a3eeb7d389",
+      "discovery_path": "C:\\dev\\cos-desktop\\target\\acc1-native\\20261110T021643-ax-audit\\runtime-discovery.json",
+      "cas_root": "C:\\dev\\cos-desktop\\target\\acc1-native\\20261110T021643-ax-audit\\cas",
+      "ready": {
+        "status": 200,
+        "document": {
+          "status": "ready"
+        }
+      }
+    }
+  },
+  "window": {
+    "verdict": "PASS",
+    "pid": 44092,
+    "window": {
+      "found": true,
+      "title": "COS Desktop",
+      "class": "Zed::Window",
+      "width": 1296,
+      "height": 839
+    },
+    "uia": {
+      "label": "connected-ax",
+      "at": "2026-11-10T02:16:52+0900",
+      "elements": 65,
+      "names_sha256": "sha256:fb29c80ccbda7122c69f47fcbaf3bef725f6e8bb1bc9e2fb5bdad5b03bf0e461",
+      "names": [
+        "COS Desktop 作業画面",
+        "現在のタスクと状態",
+        "task-00eeff7805964e1f835534b81e57065b  北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+        "Runtime / 情報を受信中",
+        "タスクの状態: 完了（COMPLETED）",
+        "処理段階: RUNNING",
+        "反復回数: 第0回",
+        "成果物の利用状態: 取得可能（AVAILABLE）（1件）",
+        "接続・情報の鮮度: 情報を受信中",
+        "正式な結果: 完了（COMPLETED）",
+        "停止の操作と現在の受付状況",
+        "タスクを停止（現在は操作できません）",
+        "停止要求の受付状況を確認（現在は操作できません）",
+        "この画面から停止要求は送っていません",
+        "停止要求を1回送ります。受付状況とタスクの終了結果は別に確認します。",
+        "タスク一覧",
+        "新しいタスクを作成",
+        "タスクを検索",
+        "task-00eeff7805964e1f835534b81e57065b — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+        "完了（COMPLETED）",
+        "RUNNING",
+        "0",
+        "キーボード操作対象",
+        "task-019e673007d848018cf3dc7366258d38 — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+        "完了（COMPLETED）",
+        "RUNNING",
+        "0",
+        "作業領域：成果物",
+        "成果物",
+        "表示中",
+        "Runtime が認可した成果物メディアを取得して表示します。取得できない場合は、理由を画像領域に明示します。",
+        "全体表示 (0)",
+        "物理ピクセル1:1 (1)",
+        "拡大 (+)",
+        "縮小 (-)",
+        "全画面 / 復帰 (F11)",
+        "画像を利用できません: 認可済みの画像入力がありません。実行基盤からの取得は未対応です。",
+        "画像は未表示です",
+        "画像表示。0: 全体、1: 物理等倍、+/-: 拡大縮小、矢印: 移動、F11: 全画面、Escape: 復帰",
+        "候補の詳細",
+        "詳細と説明",
+        "候補は表示されていません",
+        "このタスクの実行履歴を開く",
+        "目的 — 利用可能: task-00eeff7805964e1f835534b81e57065b — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+        "評価 — 利用不可: 候補は選択されていません。",
+        "判断の根拠 — 利用不可: 候補は選択されていません。",
+        "改善 — 利用不可: 候補は選択されていません。",
+        "結果 — 利用可能: 正式状態: 完了（COMPLETED）",
+        "診断情報を開く",
+        "反復ごとの候補一覧",
+        "反復ごとの候補一覧。閲覧中と比較対象はこの画面の選択です。正式採用は実行基盤から通知されます。",
+        "候補一覧",
+        "task-00eeff7805964e1f835534b81e57065b — 第0回 — C1 キーボード操作対象 正式採用（実行基盤から通知）",
+        "task-019e673007d848018cf3dc7366258d38 — 第0回 — C1  正式採用（実行基盤から通知）",
+        "task-0b23811426af4a86a3fed9dc67b21947 — 第0回 — C1  正式採用（実行基盤から通知）",
+        "task-0c903dc32f36402bb9f72f676bfc8d8c — 第0回 — C1  正式採用（実行基盤から通知）",
+        "task-0ddbe166cef5482495ec675999f0fc9b — 第0回 — C1  正式採用（実行基盤から通知）",
+        "task-130479815f4b49c2be5fac0c63fe3e09 — 第0回 — C1  正式採用（実行基盤から通知）",
+        "task-15b14d7e058749a9a772e9e94efa54c2 — 第0回 — C1  正式採用（実行基盤から通知）",
+        "task-1fcce881a4934cf78ce822be296b2f58 — 第0回 — C1  正式採用（実行基盤から通知）",
+        "作業画面の切り替え",
+        "成果物  Ctrl+1",
+        "候補を比較  Ctrl+2",
+        "処理の流れ  Ctrl+3"
+      ],
+      "window": {
+        "title": "COS Desktop",
+        "class": "Zed::Window",
+        "width": 1296,
+        "height": 839
+      },
+      "screenshot": {
+        "file": "C:\\dev\\cos-desktop\\target\\acc1-native\\20261110T021643-ax-audit\\shots\\connected-ax.png",
+        "sha256": "sha256:5b81faa6db49e9b67e9b33fddf916a17746b7567ab5e3af74ef38be56098f123",
+        "bytes": 148002,
+        "printed": true,
+        "width": 1296,
+        "height": 839
+      }
+    },
+    "excerpt": "現在のタスクと状態\nRuntime / 情報を受信中\nタスクの状態: 完了（COMPLETED）\n接続・情報の鮮度: 情報を受信中\nタスクを停止（現在は操作できません）\n停止要求を1回送ります。受付状況とタスクの終了結果は別に確認します。\nタスク一覧\n新しいタスクを作成\nタスクを検索\nRuntime が認可した成果物メディアを取得して表示します。取得できない場合は、理由を画像領域に明示します。\nこのタスクの実行履歴を開く"
+  },
+  "shots": {
+    "main": {
+      "action": "shot",
+      "found": true,
+      "hwnd": 73470442,
+      "title": "COS Desktop",
+      "class": "Zed::Window",
+      "width": 1296,
+      "height": 839,
+      "ok": true,
+      "printwindow": true,
+      "image": "C:\\dev\\cos-desktop\\docs\\development\\evidence-published\\native-ax-ime-dpi-latest\\shots\\001-shot-main.png",
+      "_out": "uia\\001-shot-main-shot.json",
+      "_image": "shots\\001-shot-main.png",
+      "_image_sha256": "sha256:5b81faa6db49e9b67e9b33fddf916a17746b7567ab5e3af74ef38be56098f123",
+      "_image_bytes": 148002
+    },
+    "brief_open": {
+      "action": "invoke",
+      "found": true,
+      "hwnd": 73470442,
+      "title": "COS Desktop",
+      "class": "Zed::Window",
+      "width": 1296,
+      "height": 839,
+      "name_match": "新しいタスクを作成",
+      "invoked": true,
+      "matched_name": "新しいタスクを作成",
+      "matched_id": "",
+      "matched_control_type": "ControlType.Button",
+      "pattern": "invoke",
+      "patterns_tried": [
+        "invoke"
+      ],
+      "_out": "uia\\002-shot-brief-invoke.json"
+    },
+    "brief": {
+      "action": "shot",
+      "found": true,
+      "hwnd": 73470442,
+      "title": "COS Desktop",
+      "class": "Zed::Window",
+      "width": 1296,
+      "height": 839,
+      "ok": true,
+      "printwindow": true,
+      "image": "C:\\dev\\cos-desktop\\docs\\development\\evidence-published\\native-ax-ime-dpi-latest\\shots\\003-shot-brief.png",
+      "_out": "uia\\003-shot-brief-shot.json",
+      "_image": "shots\\003-shot-brief.png",
+      "_image_sha256": "sha256:65773457aadeaca78cec1b6d2a55449b87d8bb531cf1090fb36c57bf75367267",
+      "_image_bytes": 32094
+    },
+    "brief_close": {
+      "action": "sequence",
+      "found": true,
+      "hwnd": 73470442,
+      "title": "COS Desktop",
+      "class": "Zed::Window",
+      "width": 1296,
+      "height": 839,
+      "steps": [
+        {
+          "raise_and_focus": true,
+          "step": "fg",
+          "focus_after": "COS Desktop",
+          "focus_before": "COS Desktop",
+          "is_foreground": true,
+          "focus_after_type": "ControlType.Window"
+        },
+        {
+          "sendinput_error": 0,
+          "step": "escape",
+          "focus_after": "COS Desktop",
+          "inputs_sent": 2,
+          "focus_before": "COS Desktop",
+          "focus_after_type": "ControlType.Window"
+        }
+      ],
+      "step_count": 2,
+      "_out": "uia\\004-shot-brief-sequence.json"
+    },
+    "palette_open": {
+      "action": "sequence",
+      "found": true,
+      "hwnd": 73470442,
+      "title": "COS Desktop",
+      "class": "Zed::Window",
+      "width": 1296,
+      "height": 839,
+      "steps": [
+        {
+          "raise_and_focus": true,
+          "step": "fg",
+          "focus_after": "COS Desktop",
+          "focus_before": "COS Desktop",
+          "is_foreground": true,
+          "focus_after_type": "ControlType.Window"
+        },
+        {
+          "sendinput_error": 0,
+          "step": "ctrl+k",
+          "focus_after": "COS Desktop",
+          "inputs_sent": 4,
+          "focus_before": "COS Desktop",
+          "focus_after_type": "ControlType.Window"
+        }
+      ],
+      "step_count": 2,
+      "_out": "uia\\005-shot-palette-sequence.json"
+    },
+    "palette": {
+      "action": "shot",
+      "found": true,
+      "hwnd": 73470442,
+      "title": "COS Desktop",
+      "class": "Zed::Window",
+      "width": 1296,
+      "height": 839,
+      "ok": true,
+      "printwindow": true,
+      "image": "C:\\dev\\cos-desktop\\docs\\development\\evidence-published\\native-ax-ime-dpi-latest\\shots\\006-shot-palette.png",
+      "_out": "uia\\006-shot-palette-shot.json",
+      "_image": "shots\\006-shot-palette.png",
+      "_image_sha256": "sha256:effc221eb7f41d97f32b7b51084caa0bb2d396718179aff08f21dd28ca2d1cf1",
+      "_image_bytes": 154833
+    },
+    "palette_close": {
+      "action": "sequence",
+      "found": true,
+      "hwnd": 73470442,
+      "title": "COS Desktop",
+      "class": "Zed::Window",
+      "width": 1296,
+      "height": 839,
+      "steps": [
+        {
+          "raise_and_focus": true,
+          "step": "fg",
+          "focus_after": "COS Desktop",
+          "focus_before": "COS Desktop",
+          "is_foreground": true,
+          "focus_after_type": "ControlType.Window"
+        },
+        {
+          "sendinput_error": 0,
+          "step": "escape",
+          "focus_after": "COS Desktop",
+          "inputs_sent": 2,
+          "focus_before": "COS Desktop",
+          "focus_after_type": "ControlType.Window"
+        }
+      ],
+      "step_count": 2,
+      "_out": "uia\\007-shot-palette-sequence.json"
+    },
+    "history_open": {
+      "action": "invoke",
+      "found": true,
+      "hwnd": 73470442,
+      "title": "COS Desktop",
+      "class": "Zed::Window",
+      "width": 1296,
+      "height": 839,
+      "name_match": "このタスクの実行履歴を開く",
+      "invoked": true,
+      "matched_name": "このタスクの実行履歴を開く",
+      "matched_id": "",
+      "matched_control_type": "ControlType.Button",
+      "pattern": "invoke",
+      "patterns_tried": [
+        "invoke"
+      ],
+      "_out": "uia\\008-shot-history-invoke.json"
+    },
+    "history": {
+      "action": "shot",
+      "found": true,
+      "hwnd": 73470442,
+      "title": "COS Desktop",
+      "class": "Zed::Window",
+      "width": 1296,
+      "height": 839,
+      "ok": true,
+      "printwindow": true,
+      "image": "C:\\dev\\cos-desktop\\docs\\development\\evidence-published\\native-ax-ime-dpi-latest\\shots\\009-shot-history.png",
+      "_out": "uia\\009-shot-history-shot.json",
+      "_image": "shots\\009-shot-history.png",
+      "_image_sha256": "sha256:2449694d7c07082c889bc46356ea0acb6f1a8d8e8ca1808aea3f2b71533f2267",
+      "_image_bytes": 34297
+    },
+    "history_close": {
+      "action": "sequence",
+      "found": true,
+      "hwnd": 73470442,
+      "title": "COS Desktop",
+      "class": "Zed::Window",
+      "width": 1296,
+      "height": 839,
+      "steps": [
+        {
+          "raise_and_focus": true,
+          "step": "fg",
+          "focus_after": "COS Desktop",
+          "focus_before": "COS Desktop",
+          "is_foreground": true,
+          "focus_after_type": "ControlType.Window"
+        },
+        {
+          "sendinput_error": 0,
+          "step": "escape",
+          "focus_after": "COS Desktop",
+          "inputs_sent": 2,
+          "focus_before": "COS Desktop",
+          "focus_after_type": "ControlType.Window"
+        }
+      ],
+      "step_count": 2,
+      "_out": "uia\\010-shot-history-sequence.json"
+    },
+    "main_after": {
+      "action": "shot",
+      "found": true,
+      "hwnd": 73470442,
+      "title": "COS Desktop",
+      "class": "Zed::Window",
+      "width": 1296,
+      "height": 839,
+      "ok": true,
+      "printwindow": true,
+      "image": "C:\\dev\\cos-desktop\\docs\\development\\evidence-published\\native-ax-ime-dpi-latest\\shots\\011-shot-main-after.png",
+      "_out": "uia\\011-shot-main-after-shot.json",
+      "_image": "shots\\011-shot-main-after.png",
+      "_image_sha256": "sha256:f85eff64d4697c1090765682f48522a472bc749a8c947ae4c72b5917a5692460",
+      "_image_bytes": 150870
+    }
+  },
+  "finished_at": "2026-11-10T02:17:10+0900",
+  "cleanup": {
+    "desktop": {
+      "pid": 44092,
+      "wm_close_sent": true,
+      "exited": true,
+      "exit_code": 0,
+      "forced": null
+    },
+    "runtime": {
+      "pid": 49700,
+      "clean": true,
+      "exit": 0
+    },
+    "ports": {
+      "8155": false,
+      "8188": false
+    }
+  }
+}
