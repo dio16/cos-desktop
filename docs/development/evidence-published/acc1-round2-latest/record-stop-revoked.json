@@ -1,0 +1,2059 @@
+{
+  "capability_seed": {
+    "at": "2026-11-10T05:39:06+0900",
+    "authorization": {
+      "authorized_effects": [
+        "compute",
+        "local_write"
+      ],
+      "authorized_permissions": [
+        "artifact.write"
+      ],
+      "capability_id": "img-gen-v1",
+      "known_implementation_versions": [
+        "1.0.0"
+      ]
+    },
+    "db_copy": "C:\\dev\\cos-desktop\\target\\acc1-native\\20261110T053811-stop-revoked\\generation.sqlite",
+    "observed": {
+      "at": "2026-11-10T05:39:11+0900",
+      "capabilities": {
+        "availability": "SUPPORTED",
+        "capabilities_ref": "sha256:90372a05fcd900145680e5a45f5b423c8b77a9f3bbdfebb9c728f1b39f4fa40f",
+        "commands": [
+          {
+            "operation": "STOP_TASK",
+            "support": "SUPPORTED"
+          },
+          {
+            "operation": "REUSE_TASK",
+            "reason": "REUSE_TASK is not supported by this Runtime",
+            "support": "UNSUPPORTED"
+          }
+        ],
+        "constraints": [
+          {
+            "name": "auth.mode",
+            "value": "none"
+          },
+          {
+            "name": "cost_budget",
+            "value": "10"
+          },
+          {
+            "name": "estimated_runtime_s",
+            "value": "30"
+          },
+          {
+            "name": "estimated_vram_mb",
+            "value": "1024"
+          },
+          {
+            "name": "timeout_s",
+            "value": "120"
+          }
+        ],
+        "features": [
+          {
+            "feature": "img-gen-v1",
+            "support": "SUPPORTED"
+          }
+        ],
+        "media": [
+          {
+            "reason": "no available artifact is projected for this task",
+            "representation": "ORIGINAL",
+            "support": "UNAVAILABLE"
+          },
+          {
+            "reason": "no available image artifact is projected for this task",
+            "representation": "THUMBNAIL",
+            "support": "UNAVAILABLE"
+          },
+          {
+            "reason": "PREVIEW transcode is not supported by this Runtime",
+            "representation": "PREVIEW",
+            "support": "UNSUPPORTED"
+          },
+          {
+            "reason": "METADATA byte route is not supported by this Runtime",
+            "representation": "METADATA",
+            "support": "UNSUPPORTED"
+          }
+        ],
+        "projection": "CAPABILITIES",
+        "projection_revision": "267",
+        "scope": {
+          "kind": "TASK",
+          "task_id": "task-43660b72f284446e9a7795d4eead59ad"
+        }
+      },
+      "capabilities_ref_matches_task": true,
+      "http_status": 200,
+      "task_capabilities_ref": "sha256:90372a05fcd900145680e5a45f5b423c8b77a9f3bbdfebb9c728f1b39f4fa40f"
+    },
+    "projection_visible": true,
+    "run_id": "run-cos-task-43660b72f284446e9a7795d4eead59ad-i0",
+    "run_source": "drain-created-run",
+    "seeded": true,
+    "seeded_at": "2026-11-10T05:39:09+0900",
+    "snapshot": {
+      "auth_requirement": {
+        "mode": "none"
+      },
+      "capability_id": "img-gen-v1",
+      "config_schema_digest": "sha256:29b7ad0b273640a23ce48531bf47f04fe827f3cbd9671f2af174153a3ded602f",
+      "descriptor_digest": "sha256:3d8f42c3586fa407bf2ba1fe1c3c0c8590d760274b2c129fcbd93127c3105c7e",
+      "effects": [
+        "compute",
+        "local_write"
+      ],
+      "executable_or_package_digest": "sha256:8bd941aa5baa891237f85c093cf9b2c0bc8b3931438aa5a59eb43e466465f1f7",
+      "implementation_digest": "sha256:0473866c1ece27e15825b79fff5f162c9b6e43daca71f310b109165c82c4fbb1",
+      "implementation_version": "1.0.0",
+      "input_schema_digest": "sha256:cbce494647b133f173d4dbc3ed68f9083af85cbd70318cfe97e676a953146583",
+      "output_schema_digest": "sha256:757caa9f6ad9935085c0858b335d7ffc730aaf35b9514711376daddf3f0920ce",
+      "permissions": [
+        "artifact.write"
+      ],
+      "resource": {
+        "cost_budget": 10,
+        "estimated_runtime_s": 30,
+        "estimated_vram_mb": 1024,
+        "timeout_s": 120
+      },
+      "schema_version": 1,
+      "source": "local"
+    },
+    "store_result": {
+      "frozen": true,
+      "new_snapshots": [
+        "img-gen-v1"
+      ],
+      "run_id": "run-cos-task-43660b72f284446e9a7795d4eead59ad-i0",
+      "snapshot_set_digest": "sha256:90372a05fcd900145680e5a45f5b423c8b77a9f3bbdfebb9c728f1b39f4fa40f",
+      "status": "stored",
+      "unchanged_snapshots": []
+    },
+    "task_ref": "task-43660b72f284446e9a7795d4eead59ad",
+    "task_status_at_seed": "ACTIVE"
+  },
+  "catalog": {
+    "can_submit": true,
+    "http_status": 200,
+    "reason_codes": [],
+    "recipes": [
+      {
+        "execution_limits": {
+          "max_iterations": 2,
+          "summary": "up to 2 iterations"
+        },
+        "label": "Production still (Krea2)",
+        "recipe_ref": {
+          "graph_ref": {
+            "graph_digest": "sha256:4f9bfd7ca021557afe5f8e505218ccfd8c7f7d5b8a4bf636693cb456af683ecf",
+            "graph_id": "graph-cos-production-001",
+            "graph_version": 2
+          },
+          "profile_ref": null,
+          "projection_digest": "sha256:992c5753d8aeb088338ab19a1486880681caed8817db7aea1f5cd5fad2dd317c",
+          "recipe_id": "recipe-cos-production-still",
+          "source_harness_digest": "sha256:3b9b1e205b2610ebae814233743a06a7e1774785c3a59b00452b5474b4745604",
+          "source_harness_version_id": "hvid_7231516f3fe04cb9e3e26f71354eaa4f16868e233e2b5d0ff41a0c2623fd6870"
+        }
+      }
+    ]
+  },
+  "cleanup": {
+    "credential_store": {
+      "deleted": false,
+      "origin": "http://127.0.0.1:8133",
+      "targets": [
+        {
+          "exit": 1,
+          "output": "CMDKEY: Element not found.",
+          "result": "not_found",
+          "target": "desktop-observation.cos-desktop/observation/14887796bad1e1416ccd52d08bf9ed4d"
+        },
+        {
+          "exit": 1,
+          "output": "CMDKEY: Element not found.",
+          "result": "not_found",
+          "target": "cos-desktop/observation/14887796bad1e1416ccd52d08bf9ed4d"
+        }
+      ]
+    },
+    "desktop": {
+      "exit_code": 0,
+      "exited": true,
+      "forced": null,
+      "pid": 52752,
+      "wm_close_sent": true
+    },
+    "discovery_present_after_stop": false,
+    "leftover_workers_after": [],
+    "leftover_workers_before": [],
+    "leftover_workers_terminated": [],
+    "port": 8133,
+    "port_free": true,
+    "runtime": {
+      "clean": true,
+      "exit": 0,
+      "pid": 57280
+    }
+  },
+  "credential": {
+    "expires_in": 43200,
+    "principal": "desktop:517d83a5f2067cf0ca0e5542b3cfee77",
+    "scopes": [
+      "read:observe",
+      "desktop:command"
+    ],
+    "token_recorded": false
+  },
+  "db_copy_bytes": 11493376,
+  "db_copy_sha256": "sha256:f87711008a546c31caf75ed6d24c3a5c95b1d824c8b43868f13e1e852bfb3e3d",
+  "finished_at": "2026-11-10T05:39:41+0900",
+  "goal": "ACC1-NATIVE-STOP401 20261110-053811 production still",
+  "health": {
+    "direct_preflight": {
+      "at": "2026-11-10T05:38:22+0900",
+      "comfyui": {
+        "argv": [
+          "ComfyUI\\main.py",
+          "--windows-standalone-build",
+          "--lowvram",
+          "--reserve-vram",
+          "1.5",
+          "--cache-lru",
+          "10",
+          "--preview-method",
+          "taesd",
+          "--use-pytorch-cross-attention"
+        ],
+        "comfyui_version": "0.44.0",
+        "http_status": 200,
+        "url": "http://127.0.0.1:8188/system_stats"
+      },
+      "ollama": {
+        "http_status": 200,
+        "model_count": 6,
+        "url": "http://127.0.0.1:11434/api/tags"
+      },
+      "probe": "direct preflight (not the Runtime report)"
+    },
+    "generation_plane_ready": true,
+    "generation_plane_required": true,
+    "polls": 3,
+    "runtime_reported": {
+      "comfy": true,
+      "llm": true
+    },
+    "transitions": [
+      {
+        "at": "2026-11-10T05:38:16+0900",
+        "health": {
+          "comfy": null,
+          "llm": null
+        },
+        "http_status": 200,
+        "loop": {
+          "loop_id": "",
+          "paused": false,
+          "reason": "",
+          "round": 0,
+          "run_id": "",
+          "running": false,
+          "status": "idle",
+          "theme": ""
+        }
+      },
+      {
+        "at": "2026-11-10T05:38:19+0900",
+        "health": {
+          "comfy": null,
+          "llm": null
+        },
+        "http_status": 200,
+        "loop": {
+          "loop_id": "",
+          "paused": false,
+          "reason": "",
+          "round": 0,
+          "run_id": "",
+          "running": false,
+          "status": "idle",
+          "theme": ""
+        }
+      },
+      {
+        "at": "2026-11-10T05:38:19+0900",
+        "health": {
+          "comfy": null,
+          "llm": null
+        },
+        "http_status": 200,
+        "loop": {
+          "loop_id": "",
+          "paused": false,
+          "reason": "",
+          "round": 0,
+          "run_id": "",
+          "running": false,
+          "status": "idle",
+          "theme": ""
+        }
+      },
+      {
+        "at": "2026-11-10T05:38:22+0900",
+        "health": {
+          "comfy": true,
+          "llm": true
+        },
+        "http_status": 200,
+        "loop": {
+          "loop_id": "",
+          "paused": false,
+          "reason": "",
+          "round": 0,
+          "run_id": "",
+          "running": false,
+          "status": "idle",
+          "theme": ""
+        }
+      }
+    ]
+  },
+  "injections": {
+    "app_log_final": [
+      "Runtime credential reauthorized after rejection; the session reopens a fresh observation"
+    ],
+    "app_log_window": [
+      "Runtime credential reauthorized after rejection; the session reopens a fresh observation"
+    ],
+    "assertions": {
+      "accepted_stop_row_exists": false,
+      "command_path_401_observed": false,
+      "command_status_lookup_observed": true,
+      "credential_refresh_401_observed": true,
+      "fabricated_acceptance": false,
+      "observation_401_observed": true,
+      "stop_command_request_observed": true,
+      "stop_command_statuses": [
+        "200",
+        "403"
+      ],
+      "ui_claimed_accepted": false,
+      "ui_claimed_failure_or_unknown": false
+    },
+    "command": {
+      "at": "2026-11-10T05:39:29+0900",
+      "method": "synthetic_wm_lbutton_at_uia_bounds",
+      "result": {
+        "_out": "C:\\dev\\cos-desktop\\target\\acc1-native\\20261110T053811-stop-revoked\\uia\\039-click.json",
+        "action": "click",
+        "class": "Zed::Window",
+        "clicked": true,
+        "client_x": 72,
+        "client_y": 103,
+        "found": true,
+        "height": 839,
+        "hwnd": 2691980,
+        "matched_control_type": "ControlType.Button",
+        "matched_id": "",
+        "matched_name": "タスクを停止",
+        "mouse_down_posted": true,
+        "mouse_up_posted": true,
+        "name_match": "タスクを停止",
+        "screen_bounds": [
+          1100,
+          392,
+          105,
+          38
+        ],
+        "title": "COS Desktop",
+        "width": 1296
+      }
+    },
+    "credential_revocation": {
+      "ack": {
+        "at": "2026-11-10T05:39:23+0900",
+        "principals": [
+          "desktop:23dbac62eb321f0db74717638e3f072b",
+          "desktop:517d83a5f2067cf0ca0e5542b3cfee77"
+        ],
+        "revoked_count": 2,
+        "token_values_recorded": false
+      },
+      "acknowledged": true,
+      "at": "2026-11-10T05:39:23+0900",
+      "trigger": "isolated control channel"
+    },
+    "db_after_command": {
+      "outcome": {
+        "canonical_digest": "sha256:5229d551c1760155d802b34cabc04f6f3f337c677bdf072a992cb717f4e1e100",
+        "created_at": "2026-11-09T20:39:36.021972+00:00",
+        "outcome": "COMPLETED",
+        "stop_reason": "SUCCESS_ACCEPT",
+        "task_id": "task-43660b72f284446e9a7795d4eead59ad"
+      },
+      "provider_receipts": [
+        {
+          "attempt_id": "attempt-cos-task-43660b72f284446e9a7795d4eead59ad-i0",
+          "created_at": "2026-11-09 20:38:53",
+          "node_id": "n-krea2",
+          "provider_receipt_id": "e9cee893-8954-425c-a410-1474ca4d41f0",
+          "receipt_id": 38,
+          "run_id": "run-cos-task-43660b72f284446e9a7795d4eead59ad-i0"
+        }
+      ],
+      "readable": true,
+      "runs": [
+        {
+          "created_at": "2026-11-09T20:38:51.928314+00:00",
+          "iteration": 0,
+          "phase": "RUNNING",
+          "run_id": "run-cos-task-43660b72f284446e9a7795d4eead59ad-i0"
+        }
+      ],
+      "stop_commands": [],
+      "task": {
+        "created_at": "2026-11-09T20:38:46.804216+00:00",
+        "status": "COMPLETED",
+        "task_id": "task-43660b72f284446e9a7795d4eead59ad"
+      }
+    },
+    "db_final": {
+      "outcome": {
+        "canonical_digest": "sha256:5229d551c1760155d802b34cabc04f6f3f337c677bdf072a992cb717f4e1e100",
+        "created_at": "2026-11-09T20:39:36.021972+00:00",
+        "outcome": "COMPLETED",
+        "stop_reason": "SUCCESS_ACCEPT",
+        "task_id": "task-43660b72f284446e9a7795d4eead59ad"
+      },
+      "provider_receipts": [
+        {
+          "attempt_id": "attempt-cos-task-43660b72f284446e9a7795d4eead59ad-i0",
+          "created_at": "2026-11-09 20:38:53",
+          "node_id": "n-krea2",
+          "provider_receipt_id": "e9cee893-8954-425c-a410-1474ca4d41f0",
+          "receipt_id": 38,
+          "run_id": "run-cos-task-43660b72f284446e9a7795d4eead59ad-i0"
+        }
+      ],
+      "readable": true,
+      "runs": [
+        {
+          "created_at": "2026-11-09T20:38:51.928314+00:00",
+          "iteration": 0,
+          "phase": "RUNNING",
+          "run_id": "run-cos-task-43660b72f284446e9a7795d4eead59ad-i0"
+        }
+      ],
+      "stop_commands": [],
+      "task": {
+        "created_at": "2026-11-09T20:38:46.804216+00:00",
+        "status": "COMPLETED",
+        "task_id": "task-43660b72f284446e9a7795d4eead59ad"
+      }
+    },
+    "final_task": {
+      "capabilities_ref": "sha256:90372a05fcd900145680e5a45f5b423c8b77a9f3bbdfebb9c728f1b39f4fa40f",
+      "inner_phase": "RUNNING",
+      "iteration_index": 0,
+      "projection_revision": 3,
+      "task_ref": "task-43660b72f284446e9a7795d4eead59ad",
+      "task_status": "COMPLETED"
+    },
+    "observer_reissue": {
+      "http_status": 200,
+      "token_recorded": false
+    },
+    "observer_reopen": {
+      "context_sha256_16": "sha256:0ad802735b013166",
+      "cursor_sha256_16": "sha256:34babcb203de7d0e",
+      "epoch": "8bec4a47af1247b292c9ba11f376f6eb",
+      "http_status": 200,
+      "read_revision": "7",
+      "scope_sha256_16": "sha256:ab7e719cd78d930c",
+      "snapshot_kind_counts": {
+        "ARTIFACT": 37,
+        "CANDIDATE": 38,
+        "CAPABILITIES": 1,
+        "EVALUATION": 38,
+        "GRAPH": 38,
+        "ITERATION": 38,
+        "OUTCOME": 38,
+        "TASK": 40
+      },
+      "snapshot_mutations": 268
+    },
+    "reauth_log_line": "Runtime credential reauthorized after rejection; the session reopens a fresh observation",
+    "serving_http_final": [
+      "INFO:     Started server process [52004]",
+      "INFO:     127.0.0.1:51663 - \"POST /api/cos/desktop/credentials HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:51666 - \"POST /api/cos/desktop/observation HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:64625 - \"POST /api/cos/desktop/credentials HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"POST /api/cos/desktop/observation HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-d466f99b77a242908f2b3947e14bdd81 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-d466f99b77a242908f2b3947e14bdd81 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-d466f99b77a242908f2b3947e14bdd81 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-d466f99b77a242908f2b3947e14bdd81 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-d466f99b77a242908f2b3947e14bdd81 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-d466f99b77a242908f2b3947e14bdd81 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-d466f99b77a242908f2b3947e14bdd81 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-d466f99b77a242908f2b3947e14bdd81 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-d466f99b77a242908f2b3947e14bdd81 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-d466f99b77a242908f2b3947e14bdd81 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-d466f99b77a242908f2b3947e14bdd81 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-d466f99b77a242908f2b3947e14bdd81 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-d466f99b77a242908f2b3947e14bdd81 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-d466f99b77a242908f2b3947e14bdd81 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-d466f99b77a242908f2b3947e14bdd81 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-d466f99b77a242908f2b3947e14bdd81 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-d466f99b77a242908f2b3947e14bdd81 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-d466f99b77a242908f2b3947e14bdd81 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-d466f99b77a242908f2b3947e14bdd81 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-d466f99b77a242908f2b3947e14bdd81 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-d466f99b77a242908f2b3947e14bdd81 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-d466f99b77a242908f2b3947e14bdd81 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-d466f99b77a242908f2b3947e14bdd81 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-d466f99b77a242908f2b3947e14bdd81 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-d466f99b77a242908f2b3947e14bdd81 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-d466f99b77a242908f2b3947e14bdd81 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-d466f99b77a242908f2b3947e14bdd81 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-d466f99b77a242908f2b3947e14bdd81 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-d466f99b77a242908f2b3947e14bdd81 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-d466f99b77a242908f2b3947e14bdd81 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-d466f99b77a242908f2b3947e14bdd81 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-d466f99b77a242908f2b3947e14bdd81 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-d466f99b77a242908f2b3947e14bdd81 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-d466f99b77a242908f2b3947e14bdd81 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-d466f99b77a242908f2b3947e14bdd81 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-d466f99b77a242908f2b3947e14bdd81 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-d466f99b77a242908f2b3947e14bdd81 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-d466f99b77a242908f2b3947e14bdd81 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-d466f99b77a242908f2b3947e14bdd81 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-d466f99b77a242908f2b3947e14bdd81 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-d466f99b77a242908f2b3947e14bdd81 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-d466f99b77a242908f2b3947e14bdd81 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-d466f99b77a242908f2b3947e14bdd81 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-d466f99b77a242908f2b3947e14bdd81 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-d466f99b77a242908f2b3947e14bdd81 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-d466f99b77a242908f2b3947e14bdd81 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-d466f99b77a242908f2b3947e14bdd81 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-d466f99b77a242908f2b3947e14bdd81 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-d466f99b77a242908f2b3947e14bdd81 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-d466f99b77a242908f2b3947e14bdd81 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-d466f99b77a242908f2b3947e14bdd81 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-d466f99b77a242908f2b3947e14bdd81 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-d466f99b77a242908f2b3947e14bdd81 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-d466f99b77a242908f2b3947e14bdd81 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-d466f99b77a242908f2b3947e14bdd81 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-d466f99b77a242908f2b3947e14bdd81 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-d466f99b77a242908f2b3947e14bdd81 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-d466f99b77a242908f2b3947e14bdd81 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-d466f99b77a242908f2b3947e14bdd81 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-d466f99b77a242908f2b3947e14bdd81 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-d466f99b77a242908f2b3947e14bdd81 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-d466f99b77a242908f2b3947e14bdd81 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-d466f99b77a242908f2b3947e14bdd81 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"POST /api/cos/desktop/commands HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"POST /api/cos/desktop/commands/lookup HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-d466f99b77a242908f2b3947e14bdd81 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-46b3d7070e6349b38d219020c02dbd4e HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-46b3d7070e6349b38d219020c02dbd4e HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-46b3d7070e6349b38d219020c02dbd4e HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-46b3d7070e6349b38d219020c02dbd4e HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-46b3d7070e6349b38d219020c02dbd4e HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-46b3d7070e6349b38d219020c02dbd4e HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-46b3d7070e6349b38d219020c02dbd4e HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-46b3d7070e6349b38d219020c02dbd4e HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-46b3d7070e6349b38d219020c02dbd4e HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-46b3d7070e6349b38d219020c02dbd4e HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-36a3b6311de04adaa10958af2cf6595d HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-36a3b6311de04adaa10958af2cf6595d HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-bbd07aa46fc64df1be8ca5c8e758187b HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-bbd07aa46fc64df1be8ca5c8e758187b HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-bbd07aa46fc64df1be8ca5c8e758187b HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-bbd07aa46fc64df1be8ca5c8e758187b HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-bbd07aa46fc64df1be8ca5c8e758187b HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-bbd07aa46fc64df1be8ca5c8e758187b HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-bbd07aa46fc64df1be8ca5c8e758187b HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-bbd07aa46fc64df1be8ca5c8e758187b HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-bbd07aa46fc64df1be8ca5c8e758187b HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-bbd07aa46fc64df1be8ca5c8e758187b HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-bbd07aa46fc64df1be8ca5c8e758187b HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-bbd07aa46fc64df1be8ca5c8e758187b HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-bbd07aa46fc64df1be8ca5c8e758187b HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-bbd07aa46fc64df1be8ca5c8e758187b HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-bbd07aa46fc64df1be8ca5c8e758187b HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-bbd07aa46fc64df1be8ca5c8e758187b HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-bbd07aa46fc64df1be8ca5c8e758187b HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-bbd07aa46fc64df1be8ca5c8e758187b HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-bbd07aa46fc64df1be8ca5c8e758187b HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-bbd07aa46fc64df1be8ca5c8e758187b HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-bbd07aa46fc64df1be8ca5c8e758187b HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-bbd07aa46fc64df1be8ca5c8e758187b HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-bbd07aa46fc64df1be8ca5c8e758187b HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-bbd07aa46fc64df1be8ca5c8e758187b HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-bbd07aa46fc64df1be8ca5c8e758187b HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-bbd07aa46fc64df1be8ca5c8e758187b HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-bbd07aa46fc64df1be8ca5c8e758187b HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-bbd07aa46fc64df1be8ca5c8e758187b HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-bbd07aa46fc64df1be8ca5c8e758187b HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-bbd07aa46fc64df1be8ca5c8e758187b HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-bbd07aa46fc64df1be8ca5c8e758187b HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-bbd07aa46fc64df1be8ca5c8e758187b HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-bbd07aa46fc64df1be8ca5c8e758187b HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-bbd07aa46fc64df1be8ca5c8e758187b HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:59854 - \"POST /api/cos/desktop/observation HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-bbd07aa46fc64df1be8ca5c8e758187b HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-bbd07aa46fc64df1be8ca5c8e758187b HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-bbd07aa46fc64df1be8ca5c8e758187b HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-bbd07aa46fc64df1be8ca5c8e758187b HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-bbd07aa46fc64df1be8ca5c8e758187b HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-bbd07aa46fc64df1be8ca5c8e758187b HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-bbd07aa46fc64df1be8ca5c8e758187b HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:55460 - \"POST /api/cos/desktop/observation HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-bbd07aa46fc64df1be8ca5c8e758187b HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:64071 - \"POST /api/cos/desktop/observation HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-680f9fb60cad4928855df1f4afe90229 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-680f9fb60cad4928855df1f4afe90229 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-680f9fb60cad4928855df1f4afe90229 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-680f9fb60cad4928855df1f4afe90229 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-680f9fb60cad4928855df1f4afe90229 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-680f9fb60cad4928855df1f4afe90229 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-680f9fb60cad4928855df1f4afe90229 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-680f9fb60cad4928855df1f4afe90229 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-680f9fb60cad4928855df1f4afe90229 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-680f9fb60cad4928855df1f4afe90229 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-680f9fb60cad4928855df1f4afe90229 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-680f9fb60cad4928855df1f4afe90229 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-680f9fb60cad4928855df1f4afe90229 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-680f9fb60cad4928855df1f4afe90229 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-680f9fb60cad4928855df1f4afe90229 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-680f9fb60cad4928855df1f4afe90229 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-680f9fb60cad4928855df1f4afe90229 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-680f9fb60cad4928855df1f4afe90229 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-680f9fb60cad4928855df1f4afe90229 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-680f9fb60cad4928855df1f4afe90229 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-680f9fb60cad4928855df1f4afe90229 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-680f9fb60cad4928855df1f4afe90229 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-680f9fb60cad4928855df1f4afe90229 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-680f9fb60cad4928855df1f4afe90229 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-680f9fb60cad4928855df1f4afe90229 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-680f9fb60cad4928855df1f4afe90229 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-680f9fb60cad4928855df1f4afe90229 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-680f9fb60cad4928855df1f4afe90229 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-680f9fb60cad4928855df1f4afe90229 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-680f9fb60cad4928855df1f4afe90229 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-680f9fb60cad4928855df1f4afe90229 HTTP/1.1\" 401 Unauthorized",
+      "INFO:     127.0.0.1:53412 - \"POST /api/cos/desktop/credentials/refresh HTTP/1.1\" 401 Unauthorized",
+      "INFO:     127.0.0.1:53413 - \"POST /api/cos/desktop/credentials HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-680f9fb60cad4928855df1f4afe90229 HTTP/1.1\" 403 Forbidden",
+      "INFO:     127.0.0.1:62254 - \"POST /api/cos/desktop/observation HTTP/1.1\" 403 Forbidden",
+      "INFO:     127.0.0.1:62254 - \"POST /api/cos/desktop/observation HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-d0ec831a5be443e89dd2cd9af7061c93 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"POST /api/cos/desktop/commands/lookup HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-d0ec831a5be443e89dd2cd9af7061c93 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-d0ec831a5be443e89dd2cd9af7061c93 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-d0ec831a5be443e89dd2cd9af7061c93 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-d0ec831a5be443e89dd2cd9af7061c93 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-d0ec831a5be443e89dd2cd9af7061c93 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-d0ec831a5be443e89dd2cd9af7061c93 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-d0ec831a5be443e89dd2cd9af7061c93 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"POST /api/cos/desktop/commands HTTP/1.1\" 403 Forbidden",
+      "INFO:     127.0.0.1:54141 - \"POST /api/cos/desktop/credentials HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:54142 - \"POST /api/cos/desktop/observation HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:54143 - \"GET /api/cos/desktop/deltas?cursor=cursor-c831e730e1c241c990e7149e080e5829 HTTP/1.1\" 200 OK"
+    ],
+    "serving_http_window": [
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-680f9fb60cad4928855df1f4afe90229 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-680f9fb60cad4928855df1f4afe90229 HTTP/1.1\" 401 Unauthorized",
+      "INFO:     127.0.0.1:53412 - \"POST /api/cos/desktop/credentials/refresh HTTP/1.1\" 401 Unauthorized",
+      "INFO:     127.0.0.1:53413 - \"POST /api/cos/desktop/credentials HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-680f9fb60cad4928855df1f4afe90229 HTTP/1.1\" 403 Forbidden",
+      "INFO:     127.0.0.1:62254 - \"POST /api/cos/desktop/observation HTTP/1.1\" 403 Forbidden",
+      "INFO:     127.0.0.1:62254 - \"POST /api/cos/desktop/observation HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-d0ec831a5be443e89dd2cd9af7061c93 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"POST /api/cos/desktop/commands/lookup HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-d0ec831a5be443e89dd2cd9af7061c93 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-d0ec831a5be443e89dd2cd9af7061c93 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-d0ec831a5be443e89dd2cd9af7061c93 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-d0ec831a5be443e89dd2cd9af7061c93 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-d0ec831a5be443e89dd2cd9af7061c93 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-d0ec831a5be443e89dd2cd9af7061c93 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"GET /api/cos/desktop/deltas?cursor=cursor-d0ec831a5be443e89dd2cd9af7061c93 HTTP/1.1\" 200 OK",
+      "INFO:     127.0.0.1:62254 - \"POST /api/cos/desktop/commands HTTP/1.1\" 403 Forbidden"
+    ],
+    "stop_button_before_revoke": {
+      "enabled": true,
+      "labels": [
+        "停止の操作と現在の受付状況",
+        "タスクを停止",
+        "停止要求の受付状況を確認（現在は操作できません）",
+        "この画面から停止要求は送っていません",
+        "停止要求を1回送ります。受付状況とタスクの終了結果は別に確認します。"
+      ]
+    },
+    "stop_supported_projection": {
+      "at": "2026-11-10T05:39:11+0900",
+      "availability": "SUPPORTED",
+      "capabilities_ref": "sha256:90372a05fcd900145680e5a45f5b423c8b77a9f3bbdfebb9c728f1b39f4fa40f",
+      "entries": [
+        {
+          "operation": "STOP_TASK",
+          "support": "SUPPORTED"
+        },
+        {
+          "operation": "REUSE_TASK",
+          "reason": "REUSE_TASK is not supported by this Runtime",
+          "support": "UNSUPPORTED"
+        }
+      ],
+      "entry": {
+        "operation": "STOP_TASK",
+        "support": "SUPPORTED"
+      },
+      "http_status": 200,
+      "matched": true
+    },
+    "stop_surface_lines": [
+      "タスクの状態: 利用できません — 許可情報を取得できません",
+      "処理段階: 利用できません — 許可情報を取得できません",
+      "反復回数: 利用できません — 許可情報を取得できません",
+      "成果物の利用状態: 利用できません — 許可情報を取得できません",
+      "接続・情報の鮮度: データは非公開 — 現在の許可がありません",
+      "正式な結果: 利用できません — 許可情報を取得できません",
+      "停止の操作と現在の受付状況",
+      "タスクを停止（現在は操作できません）",
+      "停止要求の受付状況を確認（現在は操作できません）",
+      "停止要求の状況を確認できません",
+      "Desktop内 · 観測情報を利用できません — 再接続する"
+    ],
+    "task_before_revoke": {
+      "http_status": 200,
+      "task": {
+        "capabilities_ref": "sha256:90372a05fcd900145680e5a45f5b423c8b77a9f3bbdfebb9c728f1b39f4fa40f",
+        "inner_phase": "RUNNING",
+        "iteration_index": 0,
+        "projection_revision": 2,
+        "task_ref": "task-43660b72f284446e9a7795d4eead59ad",
+        "task_status": "ACTIVE"
+      }
+    },
+    "transitions": [],
+    "uia_before_revoke": {
+      "at": "2026-11-10T05:39:22+0900",
+      "elements": 62,
+      "label": "stop401-before",
+      "names": [
+        "COS Desktop 作業画面",
+        "現在のタスクと状態",
+        "task-43660b72f284446e9a7795d4eead59ad  ACC1-NATIVE-STOP401 20261110-053811 production still",
+        "Runtime / 情報を受信中",
+        "タスクの状態: 実行中（ACTIVE）",
+        "処理段階: RUNNING",
+        "反復回数: 第0回",
+        "成果物の利用状態: 不明 — 対象タスクに成果物の参照がありません",
+        "接続・情報の鮮度: 情報を受信中",
+        "正式な結果: 不明 — 正式な結果の情報を受け取れていません",
+        "停止の操作と現在の受付状況",
+        "タスクを停止",
+        "停止要求の受付状況を確認（現在は操作できません）",
+        "この画面から停止要求は送っていません",
+        "停止要求を1回送ります。受付状況とタスクの終了結果は別に確認します。",
+        "タスク一覧",
+        "新しいタスクを作成",
+        "タスクを検索",
+        "task-43660b72f284446e9a7795d4eead59ad — ACC1-NATIVE-STOP401 20261110-053811 production still",
+        "実行中（ACTIVE）",
+        "RUNNING",
+        "0",
+        "選択中",
+        "キーボード操作対象",
+        "作業領域：成果物",
+        "成果物",
+        "表示中",
+        "Runtime が認可した成果物メディアを取得して表示します。取得できない場合は、理由を画像領域に明示します。",
+        "全体表示 (0)",
+        "物理ピクセル1:1 (1)",
+        "拡大 (+)",
+        "縮小 (-)",
+        "全画面 / 復帰 (F11)",
+        "画像を利用できません: 認可済みの画像入力がありません。実行基盤からの取得は未対応です。",
+        "画像は未表示です",
+        "画像表示。0: 全体、1: 物理等倍、+/-: 拡大縮小、矢印: 移動、F11: 全画面、Escape: 復帰",
+        "候補の詳細",
+        "詳細と説明",
+        "候補は表示されていません",
+        "このタスクの実行履歴を開く",
+        "目的 — 利用可能: task-43660b72f284446e9a7795d4eead59ad — ACC1-NATIVE-STOP401 20261110-053811 production still",
+        "評価 — 利用不可: 候補は選択されていません。",
+        "判断の根拠 — 利用不可: 候補は選択されていません。",
+        "改善 — 利用不可: 候補は選択されていません。",
+        "結果 — 利用不可: このタスクの正式な結果は、受信した情報に含まれていません。",
+        "診断情報を開く",
+        "反復ごとの候補一覧",
+        "反復ごとの候補一覧。閲覧中と比較対象はこの画面の選択です。正式採用は実行基盤から通知されます。",
+        "候補一覧",
+        "task-00eeff7805964e1f835534b81e57065b — 第0回 — C1 キーボード操作対象 正式採用（実行基盤から通知）",
+        "task-019e673007d848018cf3dc7366258d38 — 第0回 — C1  正式採用（実行基盤から通知）",
+        "task-0b23811426af4a86a3fed9dc67b21947 — 第0回 — C1  正式採用（実行基盤から通知）",
+        "task-0c903dc32f36402bb9f72f676bfc8d8c — 第0回 — C1  正式採用（実行基盤から通知）",
+        "task-0ddbe166cef5482495ec675999f0fc9b — 第0回 — C1  正式採用（実行基盤から通知）",
+        "task-130479815f4b49c2be5fac0c63fe3e09 — 第0回 — C1  正式採用（実行基盤から通知）",
+        "task-15b14d7e058749a9a772e9e94efa54c2 — 第0回 — C1  正式採用（実行基盤から通知）",
+        "task-1fcce881a4934cf78ce822be296b2f58 — 第0回 — C1  正式採用（実行基盤から通知）",
+        "作業画面の切り替え",
+        "成果物  Ctrl+1",
+        "候補を比較  Ctrl+2",
+        "処理の流れ  Ctrl+3"
+      ],
+      "names_sha256": "sha256:c048cbad6c4f7144f0d7f06e63268b9477bc8e53882fb399b97e2465a94c7769",
+      "screenshot": {
+        "bytes": 146793,
+        "file": "C:\\dev\\cos-desktop\\target\\acc1-native\\20261110T053811-stop-revoked\\shots\\stop401-before.png",
+        "height": 839,
+        "printed": true,
+        "sha256": "sha256:6116bd2b5ab5eaa104060d902032db394a5a3b2170d0fff7e3fe049f28886f0c",
+        "width": 1296
+      },
+      "window": {
+        "class": "Zed::Window",
+        "height": 839,
+        "title": "COS Desktop",
+        "width": 1296
+      }
+    },
+    "uia_command_result": {
+      "at": "2026-11-10T05:39:36+0900",
+      "elements": 45,
+      "label": "stop401-command-result",
+      "names": [
+        "COS Desktop 作業画面",
+        "現在のタスクと状態",
+        "タスク情報はありません",
+        "情報源なし / データ非公開",
+        "タスクの状態: 利用できません — 許可情報を取得できません",
+        "処理段階: 利用できません — 許可情報を取得できません",
+        "反復回数: 利用できません — 許可情報を取得できません",
+        "成果物の利用状態: 利用できません — 許可情報を取得できません",
+        "接続・情報の鮮度: データは非公開 — 現在の許可がありません",
+        "正式な結果: 利用できません — 許可情報を取得できません",
+        "停止の操作と現在の受付状況",
+        "タスクを停止（現在は操作できません）",
+        "停止要求の受付状況を確認（現在は操作できません）",
+        "停止要求の状況を確認できません",
+        "現在表示できる情報がないため、以前の要求の状況は表示しません。",
+        "タスク一覧",
+        "新しいタスクを作成",
+        "タスクを検索",
+        "作業領域：成果物",
+        "成果物",
+        "表示中",
+        "介入通知 — Desktop内の状態のみ",
+        "Desktop内 · 観測情報を利用できません — 再接続する",
+        "Runtime が認可した成果物メディアを取得して表示します。取得できない場合は、理由を画像領域に明示します。",
+        "全体表示 (0)",
+        "物理ピクセル1:1 (1)",
+        "拡大 (+)",
+        "縮小 (-)",
+        "全画面 / 復帰 (F11)",
+        "画像を利用できません: 認可済みの画像入力がありません。実行基盤からの取得は未対応です。",
+        "画像は未表示です",
+        "画像表示。0: 全体、1: 物理等倍、+/-: 拡大縮小、矢印: 移動、F11: 全画面、Escape: 復帰",
+        "候補の詳細",
+        "詳細と説明",
+        "利用不可 — 現在閲覧できる情報がありません",
+        "診断情報を開く",
+        "反復ごとの候補一覧",
+        "反復ごとの候補一覧。閲覧中と比較対象はこの画面の選択です。正式採用は実行基盤から通知されます。",
+        "候補一覧",
+        "閲覧が認可された最新の情報を待っているため、候補を表示していません",
+        "作業画面の切り替え",
+        "成果物  Ctrl+1",
+        "候補を比較 — 候補を2つ選ぶ必要があります",
+        "処理の流れ  Ctrl+3"
+      ],
+      "names_sha256": "sha256:5cf52e4f77f79b8e8e1dbf9fa630accc930e2f7c3563c8210b3f659b5a0dde07",
+      "screenshot": {
+        "bytes": 136022,
+        "file": "C:\\dev\\cos-desktop\\target\\acc1-native\\20261110T053811-stop-revoked\\shots\\stop401-command-result.png",
+        "height": 839,
+        "printed": true,
+        "sha256": "sha256:663a171b011f4b8111ec470a5fabe961e7e8b781750b690eaa76602983bc12d1",
+        "width": 1296
+      },
+      "window": {
+        "class": "Zed::Window",
+        "height": 839,
+        "title": "COS Desktop",
+        "width": 1296
+      }
+    },
+    "uia_terminal": {
+      "at": "2026-11-10T05:39:38+0900",
+      "elements": 45,
+      "label": "stop401-terminal",
+      "names": [
+        "COS Desktop 作業画面",
+        "現在のタスクと状態",
+        "タスク情報はありません",
+        "情報源なし / データ非公開",
+        "タスクの状態: 利用できません — 許可情報を取得できません",
+        "処理段階: 利用できません — 許可情報を取得できません",
+        "反復回数: 利用できません — 許可情報を取得できません",
+        "成果物の利用状態: 利用できません — 許可情報を取得できません",
+        "接続・情報の鮮度: データは非公開 — 現在の許可がありません",
+        "正式な結果: 利用できません — 許可情報を取得できません",
+        "停止の操作と現在の受付状況",
+        "タスクを停止（現在は操作できません）",
+        "停止要求の受付状況を確認（現在は操作できません）",
+        "停止要求の状況を確認できません",
+        "現在表示できる情報がないため、以前の要求の状況は表示しません。",
+        "タスク一覧",
+        "新しいタスクを作成",
+        "タスクを検索",
+        "作業領域：成果物",
+        "成果物",
+        "表示中",
+        "介入通知 — Desktop内の状態のみ",
+        "Desktop内 · 観測情報を利用できません — 再接続する",
+        "Runtime が認可した成果物メディアを取得して表示します。取得できない場合は、理由を画像領域に明示します。",
+        "全体表示 (0)",
+        "物理ピクセル1:1 (1)",
+        "拡大 (+)",
+        "縮小 (-)",
+        "全画面 / 復帰 (F11)",
+        "画像を利用できません: 認可済みの画像入力がありません。実行基盤からの取得は未対応です。",
+        "画像は未表示です",
+        "画像表示。0: 全体、1: 物理等倍、+/-: 拡大縮小、矢印: 移動、F11: 全画面、Escape: 復帰",
+        "候補の詳細",
+        "詳細と説明",
+        "利用不可 — 現在閲覧できる情報がありません",
+        "診断情報を開く",
+        "反復ごとの候補一覧",
+        "反復ごとの候補一覧。閲覧中と比較対象はこの画面の選択です。正式採用は実行基盤から通知されます。",
+        "候補一覧",
+        "閲覧が認可された最新の情報を待っているため、候補を表示していません",
+        "作業画面の切り替え",
+        "成果物  Ctrl+1",
+        "候補を比較 — 候補を2つ選ぶ必要があります",
+        "処理の流れ  Ctrl+3"
+      ],
+      "names_sha256": "sha256:5cf52e4f77f79b8e8e1dbf9fa630accc930e2f7c3563c8210b3f659b5a0dde07",
+      "screenshot": {
+        "bytes": 136022,
+        "file": "C:\\dev\\cos-desktop\\target\\acc1-native\\20261110T053811-stop-revoked\\shots\\stop401-terminal.png",
+        "height": 839,
+        "printed": true,
+        "sha256": "sha256:b9c7d6227bc99b38074f0d4fb18090436438ba51def663ad3964b773bcf7742b",
+        "width": 1296
+      },
+      "window": {
+        "class": "Zed::Window",
+        "height": 839,
+        "title": "COS Desktop",
+        "width": 1296
+      }
+    },
+    "wait_active": {
+      "at": "2026-11-10T05:39:06+0900",
+      "context_sha256_16": "sha256:7c610a6104ebe8a4",
+      "http_status": 200,
+      "matched": true,
+      "task": {
+        "accepted_brief": {
+          "objective_text": "ACC1-NATIVE-STOP401 20261110-053811 production still",
+          "parameter_values": [
+            {
+              "id": "prompt",
+              "value": ""
+            },
+            {
+              "id": "steps",
+              "value": 8
+            }
+          ],
+          "recipe_ref": {
+            "graph_ref": {
+              "digest": "sha256:4f9bfd7ca021557afe5f8e505218ccfd8c7f7d5b8a4bf636693cb456af683ecf",
+              "graph_id": "graph-cos-production-001",
+              "version": 2
+            },
+            "projection_digest": "sha256:992c5753d8aeb088338ab19a1486880681caed8817db7aea1f5cd5fad2dd317c",
+            "recipe_id": "recipe-cos-production-still",
+            "source_harness_digest": "sha256:3b9b1e205b2610ebae814233743a06a7e1774785c3a59b00452b5474b4745604",
+            "source_harness_version_id": "hvid_7231516f3fe04cb9e3e26f71354eaa4f16868e233e2b5d0ff41a0c2623fd6870"
+          },
+          "reference_artifact_refs": [],
+          "text_prompt": "cinematic mechanical desktop object, no text"
+        },
+        "epoch": "8bec4a47af1247b292c9ba11f376f6eb",
+        "inner_phase": "RUNNING",
+        "iteration_index": 0,
+        "projection_revision": 1,
+        "stop_pending": false,
+        "task_ref": "task-43660b72f284446e9a7795d4eead59ad",
+        "task_status": "ACTIVE",
+        "title": "ACC1-NATIVE-STOP401 20261110-053811 production still"
+      }
+    }
+  },
+  "label": "stop-revoked",
+  "logs": {
+    "desktop-stop-revoked.log": {
+      "bytes": 355,
+      "file": "logs\\stop-revoked\\stop-revoked-desktop-stop-revoked.log",
+      "sha256": "sha256:d341881bea97ac158c29911031e79959d39cc8ff9a697bcfaad4ec1245be7ecd",
+      "stored_sha256": "sha256:519773ed1631947aa6d66a392fb95f3aeefefffc9d5cc901d454722d2787ebd8"
+    },
+    "runtime.log": {
+      "bytes": 22620,
+      "file": "logs\\stop-revoked\\stop-revoked-runtime.log",
+      "sha256": "sha256:dabb4f57ed6e94a4d46cdd29118f13dbcf7c49edf49b544de1a60b42f08cc594",
+      "stored_sha256": "sha256:627fb78e0f4d9baed5a3d9ebe98b55224a8d53b92746afd5cb2449ccbbc65d35"
+    }
+  },
+  "media": {},
+  "observation_open": {
+    "context_sha256_16": "sha256:f6948460dbc85b34",
+    "cursor_sha256_16": "sha256:aad2c09dc96b4b08",
+    "epoch": "8bec4a47af1247b292c9ba11f376f6eb",
+    "http_status": 200,
+    "read_revision": "1",
+    "scope_sha256_16": "sha256:05ecd896518d2c09",
+    "snapshot_kind_counts": {
+      "ARTIFACT": 36,
+      "CANDIDATE": 37,
+      "EVALUATION": 37,
+      "GRAPH": 37,
+      "ITERATION": 37,
+      "OUTCOME": 37,
+      "TASK": 39
+    },
+    "snapshot_mutations": 260
+  },
+  "port": 8133,
+  "preflight": {
+    "at": "2026-11-10T05:38:23+0900",
+    "comfyui": {
+      "argv": [
+        "ComfyUI\\main.py",
+        "--windows-standalone-build",
+        "--lowvram",
+        "--reserve-vram",
+        "1.5",
+        "--cache-lru",
+        "10",
+        "--preview-method",
+        "taesd",
+        "--use-pytorch-cross-attention"
+      ],
+      "comfyui_version": "0.44.0",
+      "http_status": 200,
+      "url": "http://127.0.0.1:8188/system_stats"
+    },
+    "ollama": {
+      "http_status": 200,
+      "model_count": 6,
+      "url": "http://127.0.0.1:11434/api/tags"
+    },
+    "probe": "direct preflight (not the Runtime report)"
+  },
+  "presets_sha256": "sha256:e1c2b553a121638bb551df1f48d21e5c996614e4821008570c066f6563baae3c",
+  "projection_trace": [],
+  "residuals": [
+    "the command outcome is recorded, but the expected 401-plus-honest-surface combination was not observed"
+  ],
+  "resyncs": [],
+  "runtime": {
+    "cas_root": "C:\\dev\\cos-desktop\\target\\acc1-native\\20261110T053811-stop-revoked\\cas",
+    "config_path": "C:\\dev\\cos-desktop\\target\\acc1-native\\20261110T053811-stop-revoked\\runtime-config.yaml",
+    "config_sha256": "sha256:50a74c868c636d2712d1632e2f24281ebc6116e342a7d3c4666d5c2ff65ff1de",
+    "discovery_path": "C:\\dev\\cos-desktop\\target\\acc1-native\\20261110T053811-stop-revoked\\runtime-discovery.json",
+    "endpoint": "http://127.0.0.1:8133",
+    "epoch": "8bec4a47af1247b292c9ba11f376f6eb",
+    "pid": 57280,
+    "protocol": {
+      "major": 2,
+      "minor": 0
+    },
+    "ready": {
+      "document": {
+        "status": "ready"
+      },
+      "status": 200
+    },
+    "schema": {
+      "major": 2,
+      "minor": 0
+    },
+    "server_build": "orchestrator-runtime/0.1.0",
+    "server_identity": "cos-runtime-orchestrator"
+  },
+  "screenshot_files": {
+    "brief-filled.png": {
+      "bytes": 39849,
+      "file": "shots\\stop-revoked\\brief-filled.png",
+      "sha256": "sha256:9bbd5c47de4a7f26ca20ef011903e4db7a889121176c454b6198681220e5fe89"
+    },
+    "brief-open.png": {
+      "bytes": 32094,
+      "file": "shots\\stop-revoked\\brief-open.png",
+      "sha256": "sha256:65773457aadeaca78cec1b6d2a55449b87d8bb531cf1090fb36c57bf75367267"
+    },
+    "brief-submitted.png": {
+      "bytes": 48593,
+      "file": "shots\\stop-revoked\\brief-submitted.png",
+      "sha256": "sha256:763e8e07986c8d4b6d003c4ad884e28ff0151100dad24af3dbd75311056315da"
+    },
+    "connected-stop-revoked.png": {
+      "bytes": 148002,
+      "file": "shots\\stop-revoked\\connected-stop-revoked.png",
+      "sha256": "sha256:5b81faa6db49e9b67e9b33fddf916a17746b7567ab5e3af74ef38be56098f123"
+    },
+    "receipt-accepted.png": {
+      "bytes": 48593,
+      "file": "shots\\stop-revoked\\receipt-accepted.png",
+      "sha256": "sha256:763e8e07986c8d4b6d003c4ad884e28ff0151100dad24af3dbd75311056315da"
+    },
+    "stop-revoked-selected.png": {
+      "bytes": 145293,
+      "file": "shots\\stop-revoked\\stop-revoked-selected.png",
+      "sha256": "sha256:499cc839b6181a7036934a79a801a8ae296545cc2c41764578bf084d4476b171"
+    },
+    "stop401-before.png": {
+      "bytes": 146793,
+      "file": "shots\\stop-revoked\\stop401-before.png",
+      "sha256": "sha256:6116bd2b5ab5eaa104060d902032db394a5a3b2170d0fff7e3fe049f28886f0c"
+    },
+    "stop401-command-result.png": {
+      "bytes": 136022,
+      "file": "shots\\stop-revoked\\stop401-command-result.png",
+      "sha256": "sha256:663a171b011f4b8111ec470a5fabe961e7e8b781750b690eaa76602983bc12d1"
+    },
+    "stop401-terminal.png": {
+      "bytes": 136022,
+      "file": "shots\\stop-revoked\\stop401-terminal.png",
+      "sha256": "sha256:b9c7d6227bc99b38074f0d4fb18090436438ba51def663ad3964b773bcf7742b"
+    }
+  },
+  "screenshots": {},
+  "started_at": "2026-11-10T05:38:11+0900",
+  "states": [],
+  "steps": {
+    "brief": {
+      "actions": [
+        {
+          "action": "invoke_brief_open",
+          "result": {
+            "_out": "C:\\dev\\cos-desktop\\target\\acc1-native\\20261110T053811-stop-revoked\\uia\\004-invoke.json",
+            "action": "invoke",
+            "class": "Zed::Window",
+            "found": true,
+            "height": 839,
+            "hwnd": 2691980,
+            "invoked": true,
+            "matched_control_type": "ControlType.Button",
+            "matched_id": "",
+            "matched_name": "新しいタスクを作成",
+            "name_match": "新しいタスクを作成",
+            "pattern": "invoke",
+            "patterns_tried": [
+              "invoke"
+            ],
+            "title": "COS Desktop",
+            "width": 1296
+          }
+        }
+      ],
+      "at": "2026-11-10T05:38:28+0900",
+      "attempts": [
+        {
+          "attempt": 1,
+          "brief_open": true,
+          "error": null,
+          "submit_enabled": true,
+          "task_ref": "task-43660b72f284446e9a7795d4eead59ad",
+          "verdict": "PASS"
+        }
+      ],
+      "brief_open": true,
+      "direction": "cinematic mechanical desktop object, no text",
+      "direction_value_after": "cinematic mechanical desktop object, no text",
+      "field_entry": {
+        "click_direction": {
+          "_out": "C:\\dev\\cos-desktop\\target\\acc1-native\\20261110T053811-stop-revoked\\uia\\011-click.json",
+          "action": "click",
+          "class": "Zed::Window",
+          "clicked": true,
+          "client_x": 640,
+          "client_y": 196,
+          "found": true,
+          "height": 839,
+          "hwnd": 2691980,
+          "matched_control_type": "ControlType.Edit",
+          "matched_id": "",
+          "matched_name": "方向性",
+          "mouse_down_posted": true,
+          "mouse_up_posted": true,
+          "name_match": "方向性",
+          "screen_bounds": [
+            1397,
+            489,
+            646,
+            30
+          ],
+          "title": "COS Desktop",
+          "width": 1296
+        },
+        "click_goal": {
+          "_out": "C:\\dev\\cos-desktop\\target\\acc1-native\\20261110T053811-stop-revoked\\uia\\008-click.json",
+          "action": "click",
+          "class": "Zed::Window",
+          "clicked": true,
+          "client_x": 640,
+          "client_y": 130,
+          "found": true,
+          "height": 839,
+          "hwnd": 2691980,
+          "matched_control_type": "ControlType.Edit",
+          "matched_id": "",
+          "matched_name": "目的",
+          "mouse_down_posted": true,
+          "mouse_up_posted": true,
+          "name_match": "目的",
+          "screen_bounds": [
+            1397,
+            423,
+            646,
+            30
+          ],
+          "title": "COS Desktop",
+          "width": 1296
+        },
+        "read_direction": {
+          "_out": "C:\\dev\\cos-desktop\\target\\acc1-native\\20261110T053811-stop-revoked\\uia\\013-valueread.json",
+          "action": "valueread",
+          "class": "Zed::Window",
+          "found": true,
+          "height": 839,
+          "hwnd": 2691980,
+          "matched": true,
+          "matched_control_type": "ControlType.Edit",
+          "matched_id": "",
+          "matched_name": "方向性",
+          "name_match": "方向性",
+          "title": "COS Desktop",
+          "value": "cinematic mechanical desktop object, no text",
+          "width": 1296
+        },
+        "read_goal": {
+          "_out": "C:\\dev\\cos-desktop\\target\\acc1-native\\20261110T053811-stop-revoked\\uia\\010-valueread.json",
+          "action": "valueread",
+          "class": "Zed::Window",
+          "found": true,
+          "height": 839,
+          "hwnd": 2691980,
+          "matched": true,
+          "matched_control_type": "ControlType.Edit",
+          "matched_id": "",
+          "matched_name": "目的",
+          "name_match": "目的",
+          "title": "COS Desktop",
+          "value": "ACC1-NATIVE-STOP401 20261110-053811 production still",
+          "width": 1296
+        },
+        "type_direction": {
+          "_out": "C:\\dev\\cos-desktop\\target\\acc1-native\\20261110T053811-stop-revoked\\uia\\012-type.json",
+          "action": "type",
+          "class": "Zed::Window",
+          "code_units_sent": 44,
+          "focused": false,
+          "focused_control_type": "ControlType.Window",
+          "focused_name": "COS Desktop",
+          "found": true,
+          "height": 839,
+          "hwnd": 2691980,
+          "matched": true,
+          "matched_control_type": "ControlType.Edit",
+          "matched_id": "",
+          "matched_name": "方向性",
+          "name_match": "方向性",
+          "posted_all": true,
+          "set_focus_called": true,
+          "text_length": 44,
+          "title": "COS Desktop",
+          "value_after": "cinematic mechanical desktop object, no text",
+          "width": 1296
+        },
+        "type_goal": {
+          "_out": "C:\\dev\\cos-desktop\\target\\acc1-native\\20261110T053811-stop-revoked\\uia\\009-type.json",
+          "action": "type",
+          "class": "Zed::Window",
+          "code_units_sent": 52,
+          "focused": false,
+          "focused_control_type": "ControlType.Window",
+          "focused_name": "COS Desktop",
+          "found": true,
+          "height": 839,
+          "hwnd": 2691980,
+          "matched": true,
+          "matched_control_type": "ControlType.Edit",
+          "matched_id": "",
+          "matched_name": "目的",
+          "name_match": "目的",
+          "posted_all": true,
+          "set_focus_called": true,
+          "text_length": 52,
+          "title": "COS Desktop",
+          "value_after": "ACC1-NATIVE-STOP401 20261110-053811 production still",
+          "width": 1296
+        }
+      },
+      "goal": "ACC1-NATIVE-STOP401 20261110-053811 production still",
+      "goal_value_after": "ACC1-NATIVE-STOP401 20261110-053811 production still",
+      "receipt_at": "2026-11-10T05:38:47+0900",
+      "receipt_visible": true,
+      "recipe": {
+        "method": "synthetic_wm_lbutton_at_uia_bounds",
+        "result": {
+          "_out": "C:\\dev\\cos-desktop\\target\\acc1-native\\20261110T053811-stop-revoked\\uia\\015-click.json",
+          "action": "click",
+          "class": "Zed::Window",
+          "clicked": true,
+          "client_x": 640,
+          "client_y": 262,
+          "found": true,
+          "height": 839,
+          "hwnd": 2691980,
+          "matched_control_type": "ControlType.Button",
+          "matched_id": "",
+          "matched_name": "Production still (Krea2)",
+          "mouse_down_posted": true,
+          "mouse_up_posted": true,
+          "name_match": "Production still (Krea2)",
+          "screen_bounds": [
+            1397,
+            555,
+            646,
+            30
+          ],
+          "title": "COS Desktop",
+          "width": 1296
+        }
+      },
+      "submit": {
+        "_out": "C:\\dev\\cos-desktop\\target\\acc1-native\\20261110T053811-stop-revoked\\uia\\019-invoke.json",
+        "action": "invoke",
+        "class": "Zed::Window",
+        "found": true,
+        "height": 839,
+        "hwnd": 2691980,
+        "invoked": true,
+        "matched_control_type": "ControlType.Button",
+        "matched_id": "",
+        "matched_name": "ブリーフを提出",
+        "name_match": "ブリーフを提出",
+        "pattern": "invoke",
+        "patterns_tried": [
+          "invoke"
+        ],
+        "title": "COS Desktop",
+        "width": 1296
+      },
+      "submit_disabled_label_present": false,
+      "submit_enabled": true,
+      "submit_method": "uia_invoke",
+      "task_ref": "task-43660b72f284446e9a7795d4eead59ad",
+      "task_ref_source": "receipt",
+      "uia_brief": {
+        "at": "2026-11-10T05:38:32+0900",
+        "elements": 72,
+        "label": "brief-open",
+        "names": [
+          "COS Desktop 作業画面",
+          "現在のタスクと状態",
+          "task-00eeff7805964e1f835534b81e57065b  北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+          "Runtime / 情報を受信中",
+          "タスクの状態: 完了（COMPLETED）",
+          "処理段階: RUNNING",
+          "反復回数: 第0回",
+          "成果物の利用状態: 取得可能（AVAILABLE）（1件）",
+          "接続・情報の鮮度: 情報を受信中",
+          "正式な結果: 完了（COMPLETED）",
+          "停止の操作と現在の受付状況",
+          "タスクを停止（現在は操作できません）",
+          "停止要求の受付状況を確認（現在は操作できません）",
+          "この画面から停止要求は送っていません",
+          "停止要求を1回送ります。受付状況とタスクの終了結果は別に確認します。",
+          "タスク一覧",
+          "新しいタスクを作成",
+          "タスクを検索",
+          "task-00eeff7805964e1f835534b81e57065b — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+          "完了（COMPLETED）",
+          "RUNNING",
+          "0",
+          "キーボード操作対象",
+          "task-019e673007d848018cf3dc7366258d38 — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+          "完了（COMPLETED）",
+          "RUNNING",
+          "0",
+          "作業領域：成果物",
+          "成果物",
+          "表示中",
+          "Runtime が認可した成果物メディアを取得して表示します。取得できない場合は、理由を画像領域に明示します。",
+          "全体表示 (0)",
+          "物理ピクセル1:1 (1)",
+          "拡大 (+)",
+          "縮小 (-)",
+          "全画面 / 復帰 (F11)",
+          "画像を利用できません: 認可済みの画像入力がありません。実行基盤からの取得は未対応です。",
+          "画像は未表示です",
+          "画像表示。0: 全体、1: 物理等倍、+/-: 拡大縮小、矢印: 移動、F11: 全画面、Escape: 復帰",
+          "候補の詳細",
+          "詳細と説明",
+          "候補は表示されていません",
+          "このタスクの実行履歴を開く",
+          "目的 — 利用可能: task-00eeff7805964e1f835534b81e57065b — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+          "評価 — 利用不可: 候補は選択されていません。",
+          "判断の根拠 — 利用不可: 候補は選択されていません。",
+          "改善 — 利用不可: 候補は選択されていません。",
+          "結果 — 利用可能: 正式状態: 完了（COMPLETED）",
+          "診断情報を開く",
+          "反復ごとの候補一覧",
+          "反復ごとの候補一覧。閲覧中と比較対象はこの画面の選択です。正式採用は実行基盤から通知されます。",
+          "候補一覧",
+          "task-00eeff7805964e1f835534b81e57065b — 第0回 — C1 キーボード操作対象 正式採用（実行基盤から通知）",
+          "task-019e673007d848018cf3dc7366258d38 — 第0回 — C1  正式採用（実行基盤から通知）",
+          "task-0b23811426af4a86a3fed9dc67b21947 — 第0回 — C1  正式採用（実行基盤から通知）",
+          "task-0c903dc32f36402bb9f72f676bfc8d8c — 第0回 — C1  正式採用（実行基盤から通知）",
+          "task-0ddbe166cef5482495ec675999f0fc9b — 第0回 — C1  正式採用（実行基盤から通知）",
+          "task-130479815f4b49c2be5fac0c63fe3e09 — 第0回 — C1  正式採用（実行基盤から通知）",
+          "task-15b14d7e058749a9a772e9e94efa54c2 — 第0回 — C1  正式採用（実行基盤から通知）",
+          "task-1fcce881a4934cf78ce822be296b2f58 — 第0回 — C1  正式採用（実行基盤から通知）",
+          "作業画面の切り替え",
+          "成果物  Ctrl+1",
+          "候補を比較  Ctrl+2",
+          "処理の流れ  Ctrl+3",
+          "クリエイティブ・ブリーフ",
+          "ブリーフを閉じる",
+          "目的",
+          "方向性",
+          "Production still (Krea2)",
+          "編集中",
+          "ブリーフを提出（無効）"
+        ],
+        "names_sha256": "sha256:42fe14db80494fda32c9e64939954473a817a5295b51bbe6583d21f79850024d",
+        "screenshot": {
+          "bytes": 32094,
+          "file": "C:\\dev\\cos-desktop\\target\\acc1-native\\20261110T053811-stop-revoked\\shots\\brief-open.png",
+          "height": 839,
+          "printed": true,
+          "sha256": "sha256:65773457aadeaca78cec1b6d2a55449b87d8bb531cf1090fb36c57bf75367267",
+          "width": 1296
+        },
+        "window": {
+          "class": "Zed::Window",
+          "height": 839,
+          "title": "COS Desktop",
+          "width": 1296
+        }
+      },
+      "uia_filled": {
+        "at": "2026-11-10T05:38:45+0900",
+        "elements": 72,
+        "label": "brief-filled",
+        "names": [
+          "COS Desktop 作業画面",
+          "現在のタスクと状態",
+          "task-00eeff7805964e1f835534b81e57065b  北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+          "Runtime / 情報を受信中",
+          "タスクの状態: 完了（COMPLETED）",
+          "処理段階: RUNNING",
+          "反復回数: 第0回",
+          "成果物の利用状態: 取得可能（AVAILABLE）（1件）",
+          "接続・情報の鮮度: 情報を受信中",
+          "正式な結果: 完了（COMPLETED）",
+          "停止の操作と現在の受付状況",
+          "タスクを停止（現在は操作できません）",
+          "停止要求の受付状況を確認（現在は操作できません）",
+          "この画面から停止要求は送っていません",
+          "停止要求を1回送ります。受付状況とタスクの終了結果は別に確認します。",
+          "タスク一覧",
+          "新しいタスクを作成",
+          "タスクを検索",
+          "task-00eeff7805964e1f835534b81e57065b — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+          "完了（COMPLETED）",
+          "RUNNING",
+          "0",
+          "キーボード操作対象",
+          "task-019e673007d848018cf3dc7366258d38 — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+          "完了（COMPLETED）",
+          "RUNNING",
+          "0",
+          "作業領域：成果物",
+          "成果物",
+          "表示中",
+          "Runtime が認可した成果物メディアを取得して表示します。取得できない場合は、理由を画像領域に明示します。",
+          "全体表示 (0)",
+          "物理ピクセル1:1 (1)",
+          "拡大 (+)",
+          "縮小 (-)",
+          "全画面 / 復帰 (F11)",
+          "画像を利用できません: 認可済みの画像入力がありません。実行基盤からの取得は未対応です。",
+          "画像は未表示です",
+          "画像表示。0: 全体、1: 物理等倍、+/-: 拡大縮小、矢印: 移動、F11: 全画面、Escape: 復帰",
+          "候補の詳細",
+          "詳細と説明",
+          "候補は表示されていません",
+          "このタスクの実行履歴を開く",
+          "目的 — 利用可能: task-00eeff7805964e1f835534b81e57065b — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+          "評価 — 利用不可: 候補は選択されていません。",
+          "判断の根拠 — 利用不可: 候補は選択されていません。",
+          "改善 — 利用不可: 候補は選択されていません。",
+          "結果 — 利用可能: 正式状態: 完了（COMPLETED）",
+          "診断情報を開く",
+          "反復ごとの候補一覧",
+          "反復ごとの候補一覧。閲覧中と比較対象はこの画面の選択です。正式採用は実行基盤から通知されます。",
+          "候補一覧",
+          "task-00eeff7805964e1f835534b81e57065b — 第0回 — C1 キーボード操作対象 正式採用（実行基盤から通知）",
+          "task-019e673007d848018cf3dc7366258d38 — 第0回 — C1  正式採用（実行基盤から通知）",
+          "task-0b23811426af4a86a3fed9dc67b21947 — 第0回 — C1  正式採用（実行基盤から通知）",
+          "task-0c903dc32f36402bb9f72f676bfc8d8c — 第0回 — C1  正式採用（実行基盤から通知）",
+          "task-0ddbe166cef5482495ec675999f0fc9b — 第0回 — C1  正式採用（実行基盤から通知）",
+          "task-130479815f4b49c2be5fac0c63fe3e09 — 第0回 — C1  正式採用（実行基盤から通知）",
+          "task-15b14d7e058749a9a772e9e94efa54c2 — 第0回 — C1  正式採用（実行基盤から通知）",
+          "task-1fcce881a4934cf78ce822be296b2f58 — 第0回 — C1  正式採用（実行基盤から通知）",
+          "作業画面の切り替え",
+          "成果物  Ctrl+1",
+          "候補を比較  Ctrl+2",
+          "処理の流れ  Ctrl+3",
+          "クリエイティブ・ブリーフ",
+          "ブリーフを閉じる",
+          "目的",
+          "方向性",
+          "Production still (Krea2)",
+          "編集中",
+          "ブリーフを提出"
+        ],
+        "names_sha256": "sha256:016f7f625e1425d36191ece15674433b837d0c68c13b72be170b32d6a747ec7f",
+        "screenshot": {
+          "bytes": 39849,
+          "file": "C:\\dev\\cos-desktop\\target\\acc1-native\\20261110T053811-stop-revoked\\shots\\brief-filled.png",
+          "height": 839,
+          "printed": true,
+          "sha256": "sha256:9bbd5c47de4a7f26ca20ef011903e4db7a889121176c454b6198681220e5fe89",
+          "width": 1296
+        },
+        "window": {
+          "class": "Zed::Window",
+          "height": 839,
+          "title": "COS Desktop",
+          "width": 1296
+        }
+      },
+      "uia_receipt": {
+        "at": "2026-11-10T05:38:51+0900",
+        "elements": 75,
+        "label": "receipt-accepted",
+        "names": [
+          "COS Desktop 作業画面",
+          "現在のタスクと状態",
+          "task-00eeff7805964e1f835534b81e57065b  北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+          "Runtime / 情報を受信中",
+          "タスクの状態: 完了（COMPLETED）",
+          "処理段階: RUNNING",
+          "反復回数: 第0回",
+          "成果物の利用状態: 取得可能（AVAILABLE）（1件）",
+          "接続・情報の鮮度: 情報を受信中",
+          "正式な結果: 完了（COMPLETED）",
+          "停止の操作と現在の受付状況",
+          "タスクを停止（現在は操作できません）",
+          "停止要求の受付状況を確認（現在は操作できません）",
+          "この画面から停止要求は送っていません",
+          "停止要求を1回送ります。受付状況とタスクの終了結果は別に確認します。",
+          "タスク一覧",
+          "新しいタスクを作成",
+          "タスクを検索",
+          "task-00eeff7805964e1f835534b81e57065b — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+          "完了（COMPLETED）",
+          "RUNNING",
+          "0",
+          "キーボード操作対象",
+          "task-019e673007d848018cf3dc7366258d38 — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+          "完了（COMPLETED）",
+          "RUNNING",
+          "0",
+          "作業領域：成果物",
+          "成果物",
+          "表示中",
+          "Runtime が認可した成果物メディアを取得して表示します。取得できない場合は、理由を画像領域に明示します。",
+          "全体表示 (0)",
+          "物理ピクセル1:1 (1)",
+          "拡大 (+)",
+          "縮小 (-)",
+          "全画面 / 復帰 (F11)",
+          "画像を利用できません: 認可済みの画像入力がありません。実行基盤からの取得は未対応です。",
+          "画像は未表示です",
+          "画像表示。0: 全体、1: 物理等倍、+/-: 拡大縮小、矢印: 移動、F11: 全画面、Escape: 復帰",
+          "候補の詳細",
+          "詳細と説明",
+          "候補は表示されていません",
+          "このタスクの実行履歴を開く",
+          "目的 — 利用可能: task-00eeff7805964e1f835534b81e57065b — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+          "評価 — 利用不可: 候補は選択されていません。",
+          "判断の根拠 — 利用不可: 候補は選択されていません。",
+          "改善 — 利用不可: 候補は選択されていません。",
+          "結果 — 利用可能: 正式状態: 完了（COMPLETED）",
+          "診断情報を開く",
+          "反復ごとの候補一覧",
+          "反復ごとの候補一覧。閲覧中と比較対象はこの画面の選択です。正式採用は実行基盤から通知されます。",
+          "候補一覧",
+          "task-00eeff7805964e1f835534b81e57065b — 第0回 — C1 キーボード操作対象 正式採用（実行基盤から通知）",
+          "task-019e673007d848018cf3dc7366258d38 — 第0回 — C1  正式採用（実行基盤から通知）",
+          "task-0b23811426af4a86a3fed9dc67b21947 — 第0回 — C1  正式採用（実行基盤から通知）",
+          "task-0c903dc32f36402bb9f72f676bfc8d8c — 第0回 — C1  正式採用（実行基盤から通知）",
+          "task-0ddbe166cef5482495ec675999f0fc9b — 第0回 — C1  正式採用（実行基盤から通知）",
+          "task-130479815f4b49c2be5fac0c63fe3e09 — 第0回 — C1  正式採用（実行基盤から通知）",
+          "task-15b14d7e058749a9a772e9e94efa54c2 — 第0回 — C1  正式採用（実行基盤から通知）",
+          "task-1fcce881a4934cf78ce822be296b2f58 — 第0回 — C1  正式採用（実行基盤から通知）",
+          "作業画面の切り替え",
+          "成果物  Ctrl+1",
+          "候補を比較  Ctrl+2",
+          "処理の流れ  Ctrl+3",
+          "クリエイティブ・ブリーフ",
+          "ブリーフを閉じる",
+          "目的",
+          "方向性",
+          "Production still (Krea2)",
+          "受付済み — 観測待ち",
+          "受付タスク: task-43660b72f284446e9a7795d4eead59ad",
+          "受付済みのため編集できません",
+          "受付票を再確認",
+          "ブリーフを提出（無効）"
+        ],
+        "names_sha256": "sha256:26d7652f0fa161583d7df7e94af44e92a35e0f3e9464a04a1877655601c2f09a",
+        "screenshot": {
+          "bytes": 48593,
+          "file": "C:\\dev\\cos-desktop\\target\\acc1-native\\20261110T053811-stop-revoked\\shots\\receipt-accepted.png",
+          "height": 839,
+          "printed": true,
+          "sha256": "sha256:763e8e07986c8d4b6d003c4ad884e28ff0151100dad24af3dbd75311056315da",
+          "width": 1296
+        },
+        "window": {
+          "class": "Zed::Window",
+          "height": 839,
+          "title": "COS Desktop",
+          "width": 1296
+        }
+      },
+      "uia_submitted": {
+        "at": "2026-11-10T05:38:49+0900",
+        "elements": 75,
+        "label": "brief-submitted",
+        "names": [
+          "COS Desktop 作業画面",
+          "現在のタスクと状態",
+          "task-00eeff7805964e1f835534b81e57065b  北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+          "Runtime / 情報を受信中",
+          "タスクの状態: 完了（COMPLETED）",
+          "処理段階: RUNNING",
+          "反復回数: 第0回",
+          "成果物の利用状態: 取得可能（AVAILABLE）（1件）",
+          "接続・情報の鮮度: 情報を受信中",
+          "正式な結果: 完了（COMPLETED）",
+          "停止の操作と現在の受付状況",
+          "タスクを停止（現在は操作できません）",
+          "停止要求の受付状況を確認（現在は操作できません）",
+          "この画面から停止要求は送っていません",
+          "停止要求を1回送ります。受付状況とタスクの終了結果は別に確認します。",
+          "タスク一覧",
+          "新しいタスクを作成",
+          "タスクを検索",
+          "task-00eeff7805964e1f835534b81e57065b — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+          "完了（COMPLETED）",
+          "RUNNING",
+          "0",
+          "キーボード操作対象",
+          "task-019e673007d848018cf3dc7366258d38 — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+          "完了（COMPLETED）",
+          "RUNNING",
+          "0",
+          "作業領域：成果物",
+          "成果物",
+          "表示中",
+          "Runtime が認可した成果物メディアを取得して表示します。取得できない場合は、理由を画像領域に明示します。",
+          "全体表示 (0)",
+          "物理ピクセル1:1 (1)",
+          "拡大 (+)",
+          "縮小 (-)",
+          "全画面 / 復帰 (F11)",
+          "画像を利用できません: 認可済みの画像入力がありません。実行基盤からの取得は未対応です。",
+          "画像は未表示です",
+          "画像表示。0: 全体、1: 物理等倍、+/-: 拡大縮小、矢印: 移動、F11: 全画面、Escape: 復帰",
+          "候補の詳細",
+          "詳細と説明",
+          "候補は表示されていません",
+          "このタスクの実行履歴を開く",
+          "目的 — 利用可能: task-00eeff7805964e1f835534b81e57065b — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+          "評価 — 利用不可: 候補は選択されていません。",
+          "判断の根拠 — 利用不可: 候補は選択されていません。",
+          "改善 — 利用不可: 候補は選択されていません。",
+          "結果 — 利用可能: 正式状態: 完了（COMPLETED）",
+          "診断情報を開く",
+          "反復ごとの候補一覧",
+          "反復ごとの候補一覧。閲覧中と比較対象はこの画面の選択です。正式採用は実行基盤から通知されます。",
+          "候補一覧",
+          "task-00eeff7805964e1f835534b81e57065b — 第0回 — C1 キーボード操作対象 正式採用（実行基盤から通知）",
+          "task-019e673007d848018cf3dc7366258d38 — 第0回 — C1  正式採用（実行基盤から通知）",
+          "task-0b23811426af4a86a3fed9dc67b21947 — 第0回 — C1  正式採用（実行基盤から通知）",
+          "task-0c903dc32f36402bb9f72f676bfc8d8c — 第0回 — C1  正式採用（実行基盤から通知）",
+          "task-0ddbe166cef5482495ec675999f0fc9b — 第0回 — C1  正式採用（実行基盤から通知）",
+          "task-130479815f4b49c2be5fac0c63fe3e09 — 第0回 — C1  正式採用（実行基盤から通知）",
+          "task-15b14d7e058749a9a772e9e94efa54c2 — 第0回 — C1  正式採用（実行基盤から通知）",
+          "task-1fcce881a4934cf78ce822be296b2f58 — 第0回 — C1  正式採用（実行基盤から通知）",
+          "作業画面の切り替え",
+          "成果物  Ctrl+1",
+          "候補を比較  Ctrl+2",
+          "処理の流れ  Ctrl+3",
+          "クリエイティブ・ブリーフ",
+          "ブリーフを閉じる",
+          "目的",
+          "方向性",
+          "Production still (Krea2)",
+          "受付済み — 観測待ち",
+          "受付タスク: task-43660b72f284446e9a7795d4eead59ad",
+          "受付済みのため編集できません",
+          "受付票を再確認",
+          "ブリーフを提出（無効）"
+        ],
+        "names_sha256": "sha256:26d7652f0fa161583d7df7e94af44e92a35e0f3e9464a04a1877655601c2f09a",
+        "screenshot": {
+          "bytes": 48593,
+          "file": "C:\\dev\\cos-desktop\\target\\acc1-native\\20261110T053811-stop-revoked\\shots\\brief-submitted.png",
+          "height": 839,
+          "printed": true,
+          "sha256": "sha256:763e8e07986c8d4b6d003c4ad884e28ff0151100dad24af3dbd75311056315da",
+          "width": 1296
+        },
+        "window": {
+          "class": "Zed::Window",
+          "height": 839,
+          "title": "COS Desktop",
+          "width": 1296
+        }
+      },
+      "verdict": "PASS"
+    },
+    "brief_close": {
+      "_out": "C:\\dev\\cos-desktop\\target\\acc1-native\\20261110T053811-stop-revoked\\uia\\025-invoke.json",
+      "action": "invoke",
+      "class": "Zed::Window",
+      "found": true,
+      "height": 839,
+      "hwnd": 2691980,
+      "invoked": true,
+      "matched_control_type": "ControlType.Button",
+      "matched_id": "",
+      "matched_name": "ブリーフを閉じる",
+      "name_match": "ブリーフを閉じる",
+      "pattern": "invoke",
+      "patterns_tried": [
+        "invoke"
+      ],
+      "title": "COS Desktop",
+      "width": 1296
+    },
+    "capability_seed": {
+      "error": null,
+      "projection_visible": true,
+      "run_id": "run-cos-task-43660b72f284446e9a7795d4eead59ad-i0",
+      "run_source": "drain-created-run",
+      "seeded": true,
+      "task_status_at_seed": "ACTIVE"
+    },
+    "connected-stop-revoked": {
+      "excerpt": "現在のタスクと状態\nRuntime / 情報を受信中\nタスクの状態: 完了（COMPLETED）\n接続・情報の鮮度: 情報を受信中\nタスクを停止（現在は操作できません）\n停止要求を1回送ります。受付状況とタスクの終了結果は別に確認します。\nタスク一覧\n新しいタスクを作成\nタスクを検索\nRuntime が認可した成果物メディアを取得して表示します。取得できない場合は、理由を画像領域に明示します。\nこのタスクの実行履歴を開く",
+      "pid": 52752,
+      "uia": {
+        "at": "2026-11-10T05:38:28+0900",
+        "elements": 65,
+        "label": "connected-stop-revoked",
+        "names": [
+          "COS Desktop 作業画面",
+          "現在のタスクと状態",
+          "task-00eeff7805964e1f835534b81e57065b  北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+          "Runtime / 情報を受信中",
+          "タスクの状態: 完了（COMPLETED）",
+          "処理段階: RUNNING",
+          "反復回数: 第0回",
+          "成果物の利用状態: 取得可能（AVAILABLE）（1件）",
+          "接続・情報の鮮度: 情報を受信中",
+          "正式な結果: 完了（COMPLETED）",
+          "停止の操作と現在の受付状況",
+          "タスクを停止（現在は操作できません）",
+          "停止要求の受付状況を確認（現在は操作できません）",
+          "この画面から停止要求は送っていません",
+          "停止要求を1回送ります。受付状況とタスクの終了結果は別に確認します。",
+          "タスク一覧",
+          "新しいタスクを作成",
+          "タスクを検索",
+          "task-00eeff7805964e1f835534b81e57065b — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+          "完了（COMPLETED）",
+          "RUNNING",
+          "0",
+          "キーボード操作対象",
+          "task-019e673007d848018cf3dc7366258d38 — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+          "完了（COMPLETED）",
+          "RUNNING",
+          "0",
+          "作業領域：成果物",
+          "成果物",
+          "表示中",
+          "Runtime が認可した成果物メディアを取得して表示します。取得できない場合は、理由を画像領域に明示します。",
+          "全体表示 (0)",
+          "物理ピクセル1:1 (1)",
+          "拡大 (+)",
+          "縮小 (-)",
+          "全画面 / 復帰 (F11)",
+          "画像を利用できません: 認可済みの画像入力がありません。実行基盤からの取得は未対応です。",
+          "画像は未表示です",
+          "画像表示。0: 全体、1: 物理等倍、+/-: 拡大縮小、矢印: 移動、F11: 全画面、Escape: 復帰",
+          "候補の詳細",
+          "詳細と説明",
+          "候補は表示されていません",
+          "このタスクの実行履歴を開く",
+          "目的 — 利用可能: task-00eeff7805964e1f835534b81e57065b — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+          "評価 — 利用不可: 候補は選択されていません。",
+          "判断の根拠 — 利用不可: 候補は選択されていません。",
+          "改善 — 利用不可: 候補は選択されていません。",
+          "結果 — 利用可能: 正式状態: 完了（COMPLETED）",
+          "診断情報を開く",
+          "反復ごとの候補一覧",
+          "反復ごとの候補一覧。閲覧中と比較対象はこの画面の選択です。正式採用は実行基盤から通知されます。",
+          "候補一覧",
+          "task-00eeff7805964e1f835534b81e57065b — 第0回 — C1 キーボード操作対象 正式採用（実行基盤から通知）",
+          "task-019e673007d848018cf3dc7366258d38 — 第0回 — C1  正式採用（実行基盤から通知）",
+          "task-0b23811426af4a86a3fed9dc67b21947 — 第0回 — C1  正式採用（実行基盤から通知）",
+          "task-0c903dc32f36402bb9f72f676bfc8d8c — 第0回 — C1  正式採用（実行基盤から通知）",
+          "task-0ddbe166cef5482495ec675999f0fc9b — 第0回 — C1  正式採用（実行基盤から通知）",
+          "task-130479815f4b49c2be5fac0c63fe3e09 — 第0回 — C1  正式採用（実行基盤から通知）",
+          "task-15b14d7e058749a9a772e9e94efa54c2 — 第0回 — C1  正式採用（実行基盤から通知）",
+          "task-1fcce881a4934cf78ce822be296b2f58 — 第0回 — C1  正式採用（実行基盤から通知）",
+          "作業画面の切り替え",
+          "成果物  Ctrl+1",
+          "候補を比較  Ctrl+2",
+          "処理の流れ  Ctrl+3"
+        ],
+        "names_sha256": "sha256:fb29c80ccbda7122c69f47fcbaf3bef725f6e8bb1bc9e2fb5bdad5b03bf0e461",
+        "screenshot": {
+          "bytes": 148002,
+          "file": "C:\\dev\\cos-desktop\\target\\acc1-native\\20261110T053811-stop-revoked\\shots\\connected-stop-revoked.png",
+          "height": 839,
+          "printed": true,
+          "sha256": "sha256:5b81faa6db49e9b67e9b33fddf916a17746b7567ab5e3af74ef38be56098f123",
+          "width": 1296
+        },
+        "window": {
+          "class": "Zed::Window",
+          "height": 839,
+          "title": "COS Desktop",
+          "width": 1296
+        }
+      },
+      "verdict": "PASS",
+      "window": {
+        "class": "Zed::Window",
+        "found": true,
+        "height": 839,
+        "title": "COS Desktop",
+        "width": 1296
+      }
+    },
+    "runs_before_seed": {
+      "provider_receipts": 1,
+      "run_count": 1
+    },
+    "task_selected": {
+      "excerpt": "task-43660b72f284446e9a7795d4eead59ad  ACC1-NATIVE-STOP401 20261110-053811 production still\nタスクの状態: 実行中（ACTIVE）\n処理段階: RUNNING\n成果物の利用状態: 不明 — 対象タスクに成果物の参照がありません\ntask-43660b72f284446e9a7795d4eead59ad — ACC1-NATIVE-STOP401 20261110-053811 production still\n作業領域：成果物\n成果物\nRuntime が認可した成果物メディアを取得して表示します。取得できない場合は、理由を画像領域に明示します。\n目的 — 利用可能: task-43660b72f284446e9a7795d4eead59ad — ACC1-NATIVE-STOP401 20261110-053811 production still\n成果物  Ctrl+1",
+      "filter": {
+        "click": {
+          "_out": "C:\\dev\\cos-desktop\\target\\acc1-native\\20261110T053811-stop-revoked\\uia\\027-click.json",
+          "action": "click",
+          "class": "Zed::Window",
+          "clicked": true,
+          "client_x": 120,
+          "client_y": 235,
+          "found": true,
+          "height": 839,
+          "hwnd": 2691980,
+          "matched_control_type": "ControlType.Edit",
+          "matched_id": "task-search",
+          "matched_name": "タスクを検索",
+          "mouse_down_posted": true,
+          "mouse_up_posted": true,
+          "name_match": "タスクを検索",
+          "screen_bounds": [
+            1096,
+            528,
+            208,
+            30
+          ],
+          "title": "COS Desktop",
+          "width": 1296
+        },
+        "excerpt": "task-43660b72f284446e9a7795d4eead59ad — ACC1-NATIVE-STOP401 20261110-053811 production still",
+        "typed": {
+          "_out": "C:\\dev\\cos-desktop\\target\\acc1-native\\20261110T053811-stop-revoked\\uia\\028-type.json",
+          "action": "type",
+          "class": "Zed::Window",
+          "code_units_sent": 52,
+          "focused": false,
+          "focused_control_type": "ControlType.Window",
+          "focused_name": "COS Desktop",
+          "found": true,
+          "height": 839,
+          "hwnd": 2691980,
+          "matched": true,
+          "matched_control_type": "ControlType.Edit",
+          "matched_id": "task-search",
+          "matched_name": "タスクを検索",
+          "name_match": "タスクを検索",
+          "posted_all": true,
+          "set_focus_called": true,
+          "text_length": 52,
+          "title": "COS Desktop",
+          "value_after": "ACC1-NATIVE-STOP401 20261110-053811 production still",
+          "width": 1296
+        },
+        "uia_sha256": "sha256:f8a12c0bc1e3d41eecab09caa1d1a8ceeec629e932521b6345b0764a04779de2",
+        "visible": true
+      },
+      "invoke": {
+        "_out": "C:\\dev\\cos-desktop\\target\\acc1-native\\20261110T053811-stop-revoked\\uia\\031-click.json",
+        "action": "click",
+        "class": "Zed::Window",
+        "clicked": true,
+        "client_x": 120,
+        "client_y": 409,
+        "found": true,
+        "height": 839,
+        "hwnd": 2691980,
+        "matched_control_type": "ControlType.ListItem",
+        "matched_id": "task-row-task-43660b72f284446e9a7795d4eead59ad",
+        "matched_name": "task-43660b72f284446e9a7795d4eead59ad — ACC1-NATIVE-STOP401 20261110-053811 production still",
+        "mouse_down_posted": true,
+        "mouse_up_posted": true,
+        "name_match": "ACC1-NATIVE-STOP401 20261110-053811 production still",
+        "screen_bounds": [
+          1096,
+          570,
+          208,
+          294
+        ],
+        "title": "COS Desktop",
+        "width": 1296
+      },
+      "method": "synthetic_wm_lbutton_at_rail_row",
+      "scope_task_matched": true,
+      "selected": true,
+      "uia": {
+        "at": "2026-11-10T05:39:04+0900",
+        "elements": 62,
+        "label": "stop-revoked-selected",
+        "names": [
+          "COS Desktop 作業画面",
+          "現在のタスクと状態",
+          "task-43660b72f284446e9a7795d4eead59ad  ACC1-NATIVE-STOP401 20261110-053811 production still",
+          "Runtime / 情報を受信中",
+          "タスクの状態: 実行中（ACTIVE）",
+          "処理段階: RUNNING",
+          "反復回数: 第0回",
+          "成果物の利用状態: 不明 — 対象タスクに成果物の参照がありません",
+          "接続・情報の鮮度: 情報を受信中",
+          "正式な結果: 不明 — 正式な結果の情報を受け取れていません",
+          "停止の操作と現在の受付状況",
+          "タスクを停止（現在は操作できません）",
+          "停止要求の受付状況を確認（現在は操作できません）",
+          "この画面から停止要求は送っていません",
+          "停止要求を1回送ります。受付状況とタスクの終了結果は別に確認します。",
+          "タスク一覧",
+          "新しいタスクを作成",
+          "タスクを検索",
+          "task-43660b72f284446e9a7795d4eead59ad — ACC1-NATIVE-STOP401 20261110-053811 production still",
+          "実行中（ACTIVE）",
+          "RUNNING",
+          "0",
+          "選択中",
+          "キーボード操作対象",
+          "作業領域：成果物",
+          "成果物",
+          "表示中",
+          "Runtime が認可した成果物メディアを取得して表示します。取得できない場合は、理由を画像領域に明示します。",
+          "全体表示 (0)",
+          "物理ピクセル1:1 (1)",
+          "拡大 (+)",
+          "縮小 (-)",
+          "全画面 / 復帰 (F11)",
+          "画像を利用できません: 認可済みの画像入力がありません。実行基盤からの取得は未対応です。",
+          "画像は未表示です",
+          "画像表示。0: 全体、1: 物理等倍、+/-: 拡大縮小、矢印: 移動、F11: 全画面、Escape: 復帰",
+          "候補の詳細",
+          "詳細と説明",
+          "候補は表示されていません",
+          "このタスクの実行履歴を開く",
+          "目的 — 利用可能: task-43660b72f284446e9a7795d4eead59ad — ACC1-NATIVE-STOP401 20261110-053811 production still",
+          "評価 — 利用不可: 候補は選択されていません。",
+          "判断の根拠 — 利用不可: 候補は選択されていません。",
+          "改善 — 利用不可: 候補は選択されていません。",
+          "結果 — 利用不可: このタスクの正式な結果は、受信した情報に含まれていません。",
+          "診断情報を開く",
+          "反復ごとの候補一覧",
+          "反復ごとの候補一覧。閲覧中と比較対象はこの画面の選択です。正式採用は実行基盤から通知されます。",
+          "候補一覧",
+          "task-00eeff7805964e1f835534b81e57065b — 第0回 — C1  正式採用（実行基盤から通知）",
+          "task-019e673007d848018cf3dc7366258d38 — 第0回 — C1  正式採用（実行基盤から通知）",
+          "task-0b23811426af4a86a3fed9dc67b21947 — 第0回 — C1  正式採用（実行基盤から通知）",
+          "task-0c903dc32f36402bb9f72f676bfc8d8c — 第0回 — C1  正式採用（実行基盤から通知）",
+          "task-0ddbe166cef5482495ec675999f0fc9b — 第0回 — C1  正式採用（実行基盤から通知）",
+          "task-130479815f4b49c2be5fac0c63fe3e09 — 第0回 — C1  正式採用（実行基盤から通知）",
+          "task-15b14d7e058749a9a772e9e94efa54c2 — 第0回 — C1  正式採用（実行基盤から通知）",
+          "task-1fcce881a4934cf78ce822be296b2f58 — 第0回 — C1  正式採用（実行基盤から通知）",
+          "作業画面の切り替え",
+          "成果物  Ctrl+1",
+          "候補を比較  Ctrl+2",
+          "処理の流れ  Ctrl+3"
+        ],
+        "names_sha256": "sha256:9decb450571facca7441fadd829bf1bfb92c5d715a3b0f8d6135dc4289a05616",
+        "screenshot": {
+          "bytes": 145293,
+          "file": "C:\\dev\\cos-desktop\\target\\acc1-native\\20261110T053811-stop-revoked\\shots\\stop-revoked-selected.png",
+          "height": 839,
+          "printed": true,
+          "sha256": "sha256:499cc839b6181a7036934a79a801a8ae296545cc2c41764578bf084d4476b171",
+          "width": 1296
+        },
+        "window": {
+          "class": "Zed::Window",
+          "height": 839,
+          "title": "COS Desktop",
+          "width": 1296
+        }
+      },
+      "uia_sha256": "sha256:9decb450571facca7441fadd829bf1bfb92c5d715a3b0f8d6135dc4289a05616"
+    }
+  },
+  "task": {
+    "task_ref": "task-43660b72f284446e9a7795d4eead59ad",
+    "task_ref_source": "receipt"
+  },
+  "trace_errors": [],
+  "uia_dir": "uia\\stop-revoked",
+  "verdict": "PARTIAL",
+  "work_dir": "C:\\dev\\cos-desktop\\target\\acc1-native\\20261110T053811-stop-revoked"
+}

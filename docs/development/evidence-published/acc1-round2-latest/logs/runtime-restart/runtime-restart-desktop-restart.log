@@ -1,0 +1,6 @@
+
+--- launch 1 2026-11-10T05:19:58+0900 ---
+Runtime discovered: server_identity=cos-runtime-orchestrator epoch=62c1960a26624e21b9fa2340cecd7aaa pid=34820
+observation shutdown confirmed
+preferences save confirmed
+Runtime credential revoke on teardown failed: runtime credential request was not authorized

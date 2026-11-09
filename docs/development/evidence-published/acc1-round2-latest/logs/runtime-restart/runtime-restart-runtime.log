@@ -1,0 +1,251 @@
+
+--- start 2026-11-10T05:19:52+0900 ---
+INFO:     Started server process [34820]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8132 (Press CTRL+C to quit)
+INFO:     127.0.0.1:58497 - "GET /api/ready HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51340 - "GET /api/cos/desktop/server HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51341 - "GET /api/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51738 - "GET /api/status HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51741 - "POST /api/cos/desktop/credentials HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51742 - "GET /api/cos/desktop/catalog HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51743 - "POST /api/cos/desktop/observation HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51746 - "POST /api/cos/desktop/credentials HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/server HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "POST /api/cos/desktop/observation HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-9d33573cb09e4dc5a9e96c4d4d9371e8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-9d33573cb09e4dc5a9e96c4d4d9371e8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-9d33573cb09e4dc5a9e96c4d4d9371e8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-9d33573cb09e4dc5a9e96c4d4d9371e8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-9d33573cb09e4dc5a9e96c4d4d9371e8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-9d33573cb09e4dc5a9e96c4d4d9371e8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-9d33573cb09e4dc5a9e96c4d4d9371e8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-9d33573cb09e4dc5a9e96c4d4d9371e8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-9d33573cb09e4dc5a9e96c4d4d9371e8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-9d33573cb09e4dc5a9e96c4d4d9371e8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-9d33573cb09e4dc5a9e96c4d4d9371e8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/catalog HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-9d33573cb09e4dc5a9e96c4d4d9371e8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-9d33573cb09e4dc5a9e96c4d4d9371e8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-9d33573cb09e4dc5a9e96c4d4d9371e8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-9d33573cb09e4dc5a9e96c4d4d9371e8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-9d33573cb09e4dc5a9e96c4d4d9371e8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-9d33573cb09e4dc5a9e96c4d4d9371e8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-9d33573cb09e4dc5a9e96c4d4d9371e8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-9d33573cb09e4dc5a9e96c4d4d9371e8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-9d33573cb09e4dc5a9e96c4d4d9371e8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-9d33573cb09e4dc5a9e96c4d4d9371e8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-9d33573cb09e4dc5a9e96c4d4d9371e8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-9d33573cb09e4dc5a9e96c4d4d9371e8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-9d33573cb09e4dc5a9e96c4d4d9371e8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-9d33573cb09e4dc5a9e96c4d4d9371e8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-9d33573cb09e4dc5a9e96c4d4d9371e8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-9d33573cb09e4dc5a9e96c4d4d9371e8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-9d33573cb09e4dc5a9e96c4d4d9371e8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-9d33573cb09e4dc5a9e96c4d4d9371e8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-9d33573cb09e4dc5a9e96c4d4d9371e8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-9d33573cb09e4dc5a9e96c4d4d9371e8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-9d33573cb09e4dc5a9e96c4d4d9371e8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-9d33573cb09e4dc5a9e96c4d4d9371e8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-9d33573cb09e4dc5a9e96c4d4d9371e8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-9d33573cb09e4dc5a9e96c4d4d9371e8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-9d33573cb09e4dc5a9e96c4d4d9371e8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-9d33573cb09e4dc5a9e96c4d4d9371e8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-9d33573cb09e4dc5a9e96c4d4d9371e8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-9d33573cb09e4dc5a9e96c4d4d9371e8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-9d33573cb09e4dc5a9e96c4d4d9371e8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-9d33573cb09e4dc5a9e96c4d4d9371e8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-9d33573cb09e4dc5a9e96c4d4d9371e8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-9d33573cb09e4dc5a9e96c4d4d9371e8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-9d33573cb09e4dc5a9e96c4d4d9371e8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-9d33573cb09e4dc5a9e96c4d4d9371e8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-9d33573cb09e4dc5a9e96c4d4d9371e8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-9d33573cb09e4dc5a9e96c4d4d9371e8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-9d33573cb09e4dc5a9e96c4d4d9371e8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-9d33573cb09e4dc5a9e96c4d4d9371e8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-9d33573cb09e4dc5a9e96c4d4d9371e8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-9d33573cb09e4dc5a9e96c4d4d9371e8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-9d33573cb09e4dc5a9e96c4d4d9371e8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-9d33573cb09e4dc5a9e96c4d4d9371e8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-9d33573cb09e4dc5a9e96c4d4d9371e8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-9d33573cb09e4dc5a9e96c4d4d9371e8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-9d33573cb09e4dc5a9e96c4d4d9371e8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-9d33573cb09e4dc5a9e96c4d4d9371e8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-9d33573cb09e4dc5a9e96c4d4d9371e8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-9d33573cb09e4dc5a9e96c4d4d9371e8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "POST /api/cos/desktop/commands HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "POST /api/cos/desktop/commands/lookup HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-9d33573cb09e4dc5a9e96c4d4d9371e8 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-928d6c85e277474e81e3a8eb348400da HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-928d6c85e277474e81e3a8eb348400da HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-928d6c85e277474e81e3a8eb348400da HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-928d6c85e277474e81e3a8eb348400da HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-928d6c85e277474e81e3a8eb348400da HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-ea6e0412205448229c4e3522f7bbf6fb HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-aaa9390782bb4a35920a0d8e2d17efe3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-aaa9390782bb4a35920a0d8e2d17efe3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-aaa9390782bb4a35920a0d8e2d17efe3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-aaa9390782bb4a35920a0d8e2d17efe3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-aaa9390782bb4a35920a0d8e2d17efe3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-aaa9390782bb4a35920a0d8e2d17efe3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-aaa9390782bb4a35920a0d8e2d17efe3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-aaa9390782bb4a35920a0d8e2d17efe3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-aaa9390782bb4a35920a0d8e2d17efe3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-aaa9390782bb4a35920a0d8e2d17efe3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-aaa9390782bb4a35920a0d8e2d17efe3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-aaa9390782bb4a35920a0d8e2d17efe3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-aaa9390782bb4a35920a0d8e2d17efe3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-aaa9390782bb4a35920a0d8e2d17efe3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-aaa9390782bb4a35920a0d8e2d17efe3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-aaa9390782bb4a35920a0d8e2d17efe3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-aaa9390782bb4a35920a0d8e2d17efe3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-aaa9390782bb4a35920a0d8e2d17efe3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-aaa9390782bb4a35920a0d8e2d17efe3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-aaa9390782bb4a35920a0d8e2d17efe3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-aaa9390782bb4a35920a0d8e2d17efe3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-aaa9390782bb4a35920a0d8e2d17efe3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-aaa9390782bb4a35920a0d8e2d17efe3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-aaa9390782bb4a35920a0d8e2d17efe3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-aaa9390782bb4a35920a0d8e2d17efe3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-aaa9390782bb4a35920a0d8e2d17efe3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-aaa9390782bb4a35920a0d8e2d17efe3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-aaa9390782bb4a35920a0d8e2d17efe3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-aaa9390782bb4a35920a0d8e2d17efe3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-aaa9390782bb4a35920a0d8e2d17efe3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-aaa9390782bb4a35920a0d8e2d17efe3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-aaa9390782bb4a35920a0d8e2d17efe3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-aaa9390782bb4a35920a0d8e2d17efe3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-aaa9390782bb4a35920a0d8e2d17efe3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-aaa9390782bb4a35920a0d8e2d17efe3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-aaa9390782bb4a35920a0d8e2d17efe3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-aaa9390782bb4a35920a0d8e2d17efe3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-aaa9390782bb4a35920a0d8e2d17efe3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-aaa9390782bb4a35920a0d8e2d17efe3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-aaa9390782bb4a35920a0d8e2d17efe3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-aaa9390782bb4a35920a0d8e2d17efe3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-aaa9390782bb4a35920a0d8e2d17efe3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-aaa9390782bb4a35920a0d8e2d17efe3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-aaa9390782bb4a35920a0d8e2d17efe3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-aaa9390782bb4a35920a0d8e2d17efe3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-aaa9390782bb4a35920a0d8e2d17efe3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-aaa9390782bb4a35920a0d8e2d17efe3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-aaa9390782bb4a35920a0d8e2d17efe3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-aaa9390782bb4a35920a0d8e2d17efe3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52044 - "POST /api/cos/desktop/observation HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-aaa9390782bb4a35920a0d8e2d17efe3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55900 - "GET /api/cos/desktop/tasks/task-a6d96a1678e845919d88c1406bbe15c5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-aaa9390782bb4a35920a0d8e2d17efe3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55906 - "GET /api/cos/desktop/tasks/task-a6d96a1678e845919d88c1406bbe15c5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-aaa9390782bb4a35920a0d8e2d17efe3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-aaa9390782bb4a35920a0d8e2d17efe3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-aaa9390782bb4a35920a0d8e2d17efe3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-aaa9390782bb4a35920a0d8e2d17efe3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-aaa9390782bb4a35920a0d8e2d17efe3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-aaa9390782bb4a35920a0d8e2d17efe3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-aaa9390782bb4a35920a0d8e2d17efe3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-aaa9390782bb4a35920a0d8e2d17efe3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-aaa9390782bb4a35920a0d8e2d17efe3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-aaa9390782bb4a35920a0d8e2d17efe3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-aaa9390782bb4a35920a0d8e2d17efe3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-aaa9390782bb4a35920a0d8e2d17efe3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-aaa9390782bb4a35920a0d8e2d17efe3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-aaa9390782bb4a35920a0d8e2d17efe3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-aaa9390782bb4a35920a0d8e2d17efe3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-aaa9390782bb4a35920a0d8e2d17efe3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-aaa9390782bb4a35920a0d8e2d17efe3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-aaa9390782bb4a35920a0d8e2d17efe3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-aaa9390782bb4a35920a0d8e2d17efe3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-aaa9390782bb4a35920a0d8e2d17efe3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-aaa9390782bb4a35920a0d8e2d17efe3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-aaa9390782bb4a35920a0d8e2d17efe3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-aaa9390782bb4a35920a0d8e2d17efe3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-aaa9390782bb4a35920a0d8e2d17efe3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-aaa9390782bb4a35920a0d8e2d17efe3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-aaa9390782bb4a35920a0d8e2d17efe3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-aaa9390782bb4a35920a0d8e2d17efe3 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51747 - "GET /api/cos/desktop/deltas?cursor=cursor-aaa9390782bb4a35920a0d8e2d17efe3 HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [34820]
+
+--- start 2026-11-10T05:21:21+0900 ---
+INFO:     Started server process [56520]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8132 (Press CTRL+C to quit)
+INFO:     127.0.0.1:64788 - "GET /api/ready HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52949 - "GET /api/cos/desktop/server HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52950 - "POST /api/cos/desktop/credentials HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52951 - "POST /api/cos/desktop/observation HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62741 - "GET /api/cos/desktop/deltas?cursor=cursor-8de1bd384f3149d1b79f226e8bd5e43f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62742 - "GET /api/cos/desktop/tasks/task-a6d96a1678e845919d88c1406bbe15c5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:62745 - "GET /api/cos/desktop/deltas?cursor=cursor-8de1bd384f3149d1b79f226e8bd5e43f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64806 - "GET /api/cos/desktop/tasks/task-a6d96a1678e845919d88c1406bbe15c5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56469 - "GET /api/cos/desktop/deltas?cursor=cursor-8de1bd384f3149d1b79f226e8bd5e43f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56470 - "GET /api/cos/desktop/tasks/task-a6d96a1678e845919d88c1406bbe15c5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56911 - "GET /api/cos/desktop/deltas?cursor=cursor-8de1bd384f3149d1b79f226e8bd5e43f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56912 - "GET /api/cos/desktop/tasks/task-a6d96a1678e845919d88c1406bbe15c5 HTTP/1.1" 200 OK
+cos drain factory failed: database is locked
+Traceback (most recent call last):
+  File "C:\AI\orchestrator\orchestrator_app\creative_loop.py", line 1328, in _cos_drain_loop
+    db = db_factory()
+  File "C:\AI\orchestrator\orchestrator_app\api.py", line 856, in _factory
+    return Database(db_path)
+  File "C:\AI\orchestrator\orchestrator_app\db.py", line 2482, in __init__
+    self.init()
+    ~~~~~~~~~^^
+  File "C:\AI\orchestrator\orchestrator_app\db.py", line 2508, in init
+    self._conn.execute(
+    ~~~~~~~~~~~~~~~~~~^
+        "INSERT OR IGNORE INTO schema_migrations(version) VALUES (1)"
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+sqlite3.OperationalError: database is locked
+INFO:     127.0.0.1:54234 - "GET /api/cos/desktop/deltas?cursor=cursor-8de1bd384f3149d1b79f226e8bd5e43f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53156 - "GET /api/cos/desktop/tasks/task-a6d96a1678e845919d88c1406bbe15c5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55089 - "GET /api/cos/desktop/deltas?cursor=cursor-8de1bd384f3149d1b79f226e8bd5e43f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59497 - "GET /api/cos/desktop/tasks/task-a6d96a1678e845919d88c1406bbe15c5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63185 - "GET /api/cos/desktop/deltas?cursor=cursor-8de1bd384f3149d1b79f226e8bd5e43f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63186 - "GET /api/cos/desktop/tasks/task-a6d96a1678e845919d88c1406bbe15c5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63192 - "GET /api/cos/desktop/deltas?cursor=cursor-8de1bd384f3149d1b79f226e8bd5e43f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63193 - "GET /api/cos/desktop/tasks/task-a6d96a1678e845919d88c1406bbe15c5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63320 - "GET /api/cos/desktop/deltas?cursor=cursor-8de1bd384f3149d1b79f226e8bd5e43f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63321 - "GET /api/cos/desktop/tasks/task-a6d96a1678e845919d88c1406bbe15c5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63323 - "GET /api/cos/desktop/deltas?cursor=cursor-8de1bd384f3149d1b79f226e8bd5e43f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63324 - "GET /api/cos/desktop/tasks/task-a6d96a1678e845919d88c1406bbe15c5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63402 - "GET /api/cos/desktop/deltas?cursor=cursor-8de1bd384f3149d1b79f226e8bd5e43f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63403 - "GET /api/cos/desktop/tasks/task-a6d96a1678e845919d88c1406bbe15c5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59712 - "GET /api/cos/desktop/deltas?cursor=cursor-8de1bd384f3149d1b79f226e8bd5e43f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59713 - "GET /api/cos/desktop/tasks/task-a6d96a1678e845919d88c1406bbe15c5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59720 - "GET /api/cos/desktop/deltas?cursor=cursor-8de1bd384f3149d1b79f226e8bd5e43f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59721 - "GET /api/cos/desktop/tasks/task-a6d96a1678e845919d88c1406bbe15c5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59722 - "GET /api/cos/desktop/deltas?cursor=cursor-8de1bd384f3149d1b79f226e8bd5e43f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59723 - "GET /api/cos/desktop/tasks/task-a6d96a1678e845919d88c1406bbe15c5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56900 - "GET /api/cos/desktop/deltas?cursor=cursor-8de1bd384f3149d1b79f226e8bd5e43f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56901 - "GET /api/cos/desktop/tasks/task-a6d96a1678e845919d88c1406bbe15c5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63859 - "GET /api/cos/desktop/deltas?cursor=cursor-8de1bd384f3149d1b79f226e8bd5e43f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63860 - "GET /api/cos/desktop/tasks/task-a6d96a1678e845919d88c1406bbe15c5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63861 - "GET /api/cos/desktop/deltas?cursor=cursor-8de1bd384f3149d1b79f226e8bd5e43f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:63862 - "GET /api/cos/desktop/tasks/task-a6d96a1678e845919d88c1406bbe15c5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54950 - "GET /api/cos/desktop/deltas?cursor=cursor-8de1bd384f3149d1b79f226e8bd5e43f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54951 - "GET /api/cos/desktop/tasks/task-a6d96a1678e845919d88c1406bbe15c5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54954 - "GET /api/cos/desktop/deltas?cursor=cursor-8de1bd384f3149d1b79f226e8bd5e43f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54955 - "GET /api/cos/desktop/tasks/task-a6d96a1678e845919d88c1406bbe15c5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59667 - "GET /api/cos/desktop/deltas?cursor=cursor-8de1bd384f3149d1b79f226e8bd5e43f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59671 - "GET /api/cos/desktop/tasks/task-a6d96a1678e845919d88c1406bbe15c5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50302 - "GET /api/cos/desktop/deltas?cursor=cursor-8de1bd384f3149d1b79f226e8bd5e43f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50303 - "GET /api/cos/desktop/tasks/task-a6d96a1678e845919d88c1406bbe15c5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59079 - "GET /api/cos/desktop/deltas?cursor=cursor-8de1bd384f3149d1b79f226e8bd5e43f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59080 - "GET /api/cos/desktop/tasks/task-a6d96a1678e845919d88c1406bbe15c5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50474 - "GET /api/cos/desktop/deltas?cursor=cursor-8de1bd384f3149d1b79f226e8bd5e43f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50475 - "GET /api/cos/desktop/tasks/task-a6d96a1678e845919d88c1406bbe15c5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50476 - "GET /api/cos/desktop/deltas?cursor=cursor-8de1bd384f3149d1b79f226e8bd5e43f HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50477 - "GET /api/cos/desktop/tasks/task-a6d96a1678e845919d88c1406bbe15c5 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56088 - "POST /api/cos/desktop/credentials/revoke HTTP/1.1" 401 Unauthorized
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [56520]

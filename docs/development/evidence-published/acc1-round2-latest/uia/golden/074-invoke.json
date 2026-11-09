@@ -1,0 +1,1 @@
+{"action":"invoke","found":true,"hwnd":7344680,"title":"COS Desktop","class":"Zed::Window","width":1296,"height":839,"name_match":"このタスクの実行履歴を開く","invoked":true,"matched_name":"このタスクの実行履歴を開く","matched_id":"","matched_control_type":"ControlType.Button","pattern":"invoke","patterns_tried":["invoke"]}

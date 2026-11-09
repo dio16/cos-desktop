@@ -1,0 +1,60 @@
+{
+  "at": "2026-11-10T05:50:27+0900",
+  "comfyui": {
+    "argv": [
+      "ComfyUI\\main.py",
+      "--windows-standalone-build",
+      "--lowvram",
+      "--reserve-vram",
+      "1.5",
+      "--cache-lru",
+      "10",
+      "--preview-method",
+      "taesd",
+      "--use-pytorch-cross-attention"
+    ],
+    "comfy_aimdo": "0.6.0",
+    "comfy_kitchen": "0.2.41",
+    "final_state": "stopped: no 8188 listener, no ComfyUI main.py process",
+    "final_stopped_at": "2026-11-10T05:48:17+0900",
+    "first_ready_log_at": "2026-11-10T03:36:26+0900",
+    "first_started_at": "2026-11-10T03:33:33+0900",
+    "restarted_for_pinned_campaign_at": "2026-11-10T05:05:00+0900 (approx)",
+    "stopped_at": "2026-11-10T04:59:17+0900",
+    "version": "0.44.0"
+  },
+  "desktop_binary": {
+    "build_command": "CARGO_TARGET_DIR=C:/dev/cos-desktop/target/acc1-round2-head-target cargo build --locked --release -p cos-desktop",
+    "build_finished_at": "2026-11-10T05:11:00+0900",
+    "bytes": 21120512,
+    "linker_note": "LNK4044: option '/fuse-ld=lld' is invalid and was ignored (link warning only)",
+    "path": "C:/dev/cos-desktop/target/acc1-round2-head-target/release/cos-desktop.exe",
+    "retained_copy": "C:/dev/cos-desktop/target/acc1-round2-head-binary/cos-desktop.exe",
+    "retained_copy_sha256_file": "C:/dev/cos-desktop/target/acc1-round2-head-binary/SHA256SUMS",
+    "retained_note": "Gitignored retained copy of the exact measured binary; the build worktree and CARGO_TARGET_DIR are temporary and removed after the campaign.",
+    "sha256": "ec4d7402674f2f47b57d180c692cbf89943833e7c62b48482d41175a45190f67",
+    "source_commit": "eb29f62f7c07c4ce0c1af01f3e915ee50e42000a",
+    "source_tree": "c65cb633522fd8f7c3d9619a9eec3c004c294140",
+    "source_worktree": "C:/dev/cos-desktop/target/acc1-round2-head (detached HEAD, clean)"
+  },
+  "main_checkout": {
+    "advanced_after_prestate_by_another_lane": [
+      "3e381ca fix(compare): acquire each Compare side through the media boundary",
+      "ff15fd5 test(compare): observe a Compare pane displaying admitted media",
+      "d2d5612 test(ax): capture the UIA focus-event stream and resolve F1"
+    ],
+    "head_at_finalization": "d2d56120301d4c7df4ffe28aa2ae764170497928",
+    "note": "The dev branch advanced concurrently while this campaign ran. The measured binary is a clean build of the recorded pre-state eb29f62, never of the later working tree. This task's commit adds harness/evidence only and no product code.",
+    "prestate_head": "eb29f62f7c07c4ce0c1af01f3e915ee50e42000a"
+  },
+  "runtime": {
+    "dirty_entries_never_staged": true,
+    "head": "e1bc3e68944f4c4658efa7310dbab1dc8698fd5d",
+    "pre_existing_dirty_entries": 7,
+    "root": "C:/AI/orchestrator"
+  },
+  "superseded_attempts": {
+    "pre_pinned_binary_pack": "target/acc1-round2-pre-pinned-evidence (gitignored, not committed)",
+    "reason": "An earlier campaign attempt launched target/release/cos-desktop.exe, which another lane replaced at 04:42 with a build of uncommitted Compare changes; those runs were invalidated for binary provenance and rerun against the clean pinned build."
+  }
+}

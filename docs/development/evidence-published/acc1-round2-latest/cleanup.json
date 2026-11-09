@@ -1,0 +1,31 @@
+{
+  "at": "2026-11-10T05:48:15+0900",
+  "comfyui_prior_state": "stopped (no listener, no main.py process)",
+  "comfyui_stop_evidence": "taskkill /PID 13256 /T /F; 8188 closed after 2s",
+  "comfyui_stopped_at": "2026-11-10T05:48:17+0900",
+  "global_discovery_path": "C:\\Users\\diobrando\\AppData\\Local\\COS\\runtime.json",
+  "global_discovery_present": false,
+  "lock_present": false,
+  "ollama_model_count": 6,
+  "ollama_tags_http": 200,
+  "ports": {
+    "8132": false,
+    "8133": false,
+    "8188": false
+  },
+  "processes": {
+    "comfy_python": [],
+    "cos_desktop": [],
+    "generation_worker": [],
+    "isolated_runtime": []
+  },
+  "session_run_discovery_present": {
+    "20261110T050504-artifact": false,
+    "20261110T051341-golden": false,
+    "20261110T051759-stop-revoked": false,
+    "20261110T051927-runtime-restart": false,
+    "20261110T052924-stop-revoked": false,
+    "20261110T053811-stop-revoked": false,
+    "20261110T054203-restart-followup": false
+  }
+}
