@@ -1,0 +1,235 @@
+{
+ "label": "golden-generation",
+ "reconstructed": true,
+ "reconstruction_note": "The original run record written to the evidence directory was removed before it could be committed (the follow-up session cleared the directory). Every field here is re-derived from the run's own isolated DB copy, access log, Desktop logs and retained UIA/PrintWindow artifacts in target/acc1-native/20261109T233420-golden.",
+ "started_at": "2026-11-09T23:34:20+09:00",
+ "finished_at": "2026-11-09T23:38:26+09:00 (terminal observed)",
+ "desktop": {
+  "head": "1b2fdc8 (docs/evidence only; product code unchanged since a8f332a)",
+  "binary": "target/release/cos-desktop.exe",
+  "binary_bytes": 21114368,
+  "binary_sha256": "sha256:59e015425b00ed33f22c55761ca67682a9bc5d74d6d62c71c599fc8cf08e1360"
+ },
+ "runtime": {
+  "head": "b794b63786ac0cea342d7d1cb72e57cd6974baec",
+  "epoch": "419e40cfe45e4ea297ee63bde0fb9550",
+  "epoch_claimed_at": "2026-11-09T14:34:23.819980+00:00"
+ },
+ "db_copy": {
+  "bytes": 11800576,
+  "sha256": "sha256:d4dddc9504c236cfd7e2c8f87aa0c381a9e09bf74eabc7028605a6fd87f71b8b"
+ },
+ "presets_sha256": "sha256:e1c2b553a121638bb551df1f48d21e5c996614e4821008570c066f6563baae3c",
+ "capability_seed": {
+  "run_id": "run-cos-task-ab47119a8bec467a8e128d7b82f1220a-i0",
+  "snapshot_set_digest": "sha256:6f0858dce7b014c532414541490deb3996f0343222d851d1498ad0f127fc406a",
+  "note": "test-only authoritative set seeded during ACTIVE so RC-11 derives command/media support; the Runtime composes the CAPABILITIES projection, the harness never writes a projection"
+ },
+ "task": {
+  "task_id": "task-ab47119a8bec467a8e128d7b82f1220a",
+  "status": "COMPLETED",
+  "created_at": "2026-11-09T14:34:48.234237+00:00"
+ },
+ "run": {
+  "run_id": "run-cos-task-ab47119a8bec467a8e128d7b82f1220a-i0",
+  "iteration": 0,
+  "phase": "RUNNING",
+  "created_at": "2026-11-09T14:34:49.684437+00:00"
+ },
+ "evaluation": {
+  "evaluation_id": "eval-cos-task-ab47119a8bec467a8e128d7b82f1220a-i0",
+  "candidate_id": "cand-cos-task-ab47119a8bec467a8e128d7b82f1220a-i0",
+  "artifact_digest": "sha256:eea85a247125e3365b545f606b5527e5ddfa1489729926539c956e3793908a58",
+  "created_at": "2026-11-09T14:38:26.522006+00:00"
+ },
+ "artifacts": [
+  {
+   "artifact_id": "art-v1-ce7f53bc-01c6-4d12-80c7-7440b7ead360",
+   "blob_id": "blob-v1-aaaf1424-80af-490f-aa08-70180bba21d0",
+   "external_id": "sha256:e59d3862d51202ff286ce45129fd962ee35e6b318d6436c5c173489f6db57fa3",
+   "idempotency_key": "sha256:e59d3862d51202ff286ce45129fd962ee35e6b318d6436c5c173489f6db57fa3",
+   "status": "available",
+   "run_id": "run-cutover-0b23811426af",
+   "node_id": "n-comfy-krea2",
+   "capability_id": null,
+   "legacy_generation_id": null,
+   "repo_run_id": null,
+   "error_code": null,
+   "error_message": null,
+   "manifest_digest": "sha256:4e5212d2ca6b1d26cbc58d29e3fe012200e201bd6c26090cb79017625cdeff83",
+   "created_at": "2026-09-09 23:54:58"
+  },
+  {
+   "artifact_id": "art-v1-b48b6229-e42d-4d0a-8c82-3fb9011da5c7",
+   "blob_id": "blob-v1-f2413d03-2c9f-4d7c-80ab-7106652f64ff",
+   "external_id": "cos-thumb:sha256:ba5f2e715ed8680d486857c81136e7f83bf1e810f5772e9f45bdc2c2c392a913",
+   "idempotency_key": "cos-thumb:sha256:ba5f2e715ed8680d486857c81136e7f83bf1e810f5772e9f45bdc2c2c392a913",
+   "status": "available",
+   "run_id": null,
+   "node_id": null,
+   "capability_id": null,
+   "legacy_generation_id": null,
+   "repo_run_id": null,
+   "error_code": null,
+   "error_message": null,
+   "manifest_digest": "sha256:d5125daf3ee0d34d6952b8a623105974f9d01dc0f433b3c2288180243354a5c1",
+   "created_at": "2026-09-10 00:12:32"
+  },
+  {
+   "artifact_id": "art-v1-d997c70f-e80e-4c00-b9fd-f727a68679b7",
+   "blob_id": "blob-v1-e4ca56ce-568a-4fd5-9c52-730a9e3d9319",
+   "external_id": "sha256:78160a59dfd9135917b06af03d7efde494c835933a20860e4b1bdcca90a48b1f",
+   "idempotency_key": "sha256:78160a59dfd9135917b06af03d7efde494c835933a20860e4b1bdcca90a48b1f",
+   "status": "available",
+   "run_id": "run-cos-task-88cf3e16dac94436a9396b364f6d5bd0-i0",
+   "node_id": "n-krea2",
+   "capability_id": null,
+   "legacy_generation_id": null,
+   "repo_run_id": null,
+   "error_code": null,
+   "error_message": null,
+   "manifest_digest": "sha256:399557d71520c336400c459c2486280d1cf018a941d4d9ef497944f621c90dbc",
+   "created_at": "2026-09-10 07:31:26"
+  },
+  {
+   "artifact_id": "art-v1-e13d28c2-d560-492d-a897-a9058b497f84",
+   "blob_id": "blob-v1-8b1b5de4-acbd-428a-b3ca-2d20e8fa7c80",
+   "external_id": "cos-thumb:sha256:78160a59dfd9135917b06af03d7efde494c835933a20860e4b1bdcca90a48b1f",
+   "idempotency_key": "cos-thumb:sha256:78160a59dfd9135917b06af03d7efde494c835933a20860e4b1bdcca90a48b1f",
+   "status": "available",
+   "run_id": null,
+   "node_id": null,
+   "capability_id": null,
+   "legacy_generation_id": null,
+   "repo_run_id": null,
+   "error_code": null,
+   "error_message": null,
+   "manifest_digest": "sha256:8fa9b7c07ea068667ecf349c05f39dd10150cb575f7b39b861e7499fa7361b60",
+   "created_at": "2026-09-10 07:31:27"
+  },
+  {
+   "artifact_id": "art-v1-bbc55b37-c0e7-4015-acac-b605ae23c757",
+   "blob_id": "blob-v1-36163ded-8925-4e15-a40d-4e9954554e2c",
+   "external_id": "sha256:6da7030f77830d2b52e1a17bda38ebadc7af12d1e9296d9c85ec2fd5e0649f7d",
+   "idempotency_key": "sha256:6da7030f77830d2b52e1a17bda38ebadc7af12d1e9296d9c85ec2fd5e0649f7d",
+   "status": "available",
+   "run_id": "run-cos-task-2ad2b17a3875470882263cc1f54ac2d7-i0",
+   "node_id": "n-krea2",
+   "capability_id": null,
+   "legacy_generation_id": null,
+   "repo_run_id": null,
+   "error_code": null,
+   "error_message": null,
+   "manifest_digest": "sha256:52a33e424e90f0f8a292cad602657089255dc44344f669056ee10a505497b406",
+   "created_at": "2026-09-10 13:24:46"
+  }
+ ],
+ "outcome": {
+  "formal_status": "COMPLETED",
+  "stop_reason": "SUCCESS_ACCEPT",
+  "selected_artifact_digest": "sha256:eea85a247125e3365b545f606b5527e5ddfa1489729926539c956e3793908a58"
+ },
+ "workflow": {
+  "brief_receipt_painted": true,
+  "drain_dispatch": true,
+  "observed_states": [
+   "ACTIVE/RUNNING",
+   "COMPLETED/RUNNING"
+  ],
+  "desktop_restart_mid_generation": true,
+  "same_epoch_across_restart": "419e40cfe45e4ea297ee63bde0fb9550"
+ },
+ "projection": {
+  "resync_required_409_count": 0,
+  "http_status_histogram": {
+   "200": 1986
+  },
+  "note": "zero 409 answers in the serving access log; no epoch-change refusal"
+ },
+ "native_media_requests": [
+  "INFO:     127.0.0.1:59375 - \"GET /api/cos/media/sha256%3Aeea85a247125e3365b545f606b5527e5ddfa1489729926539c956e3793908a58 HTTP/1.1\" 200 OK",
+  "INFO:     127.0.0.1:59376 - \"GET /api/cos/media/<redacted-media-handle>/blob HTTP/1.1\" 200 OK"
+ ],
+ "screenshots": {
+  "artifact-surface-before.png": {
+   "bytes": 146599,
+   "sha256": "sha256:dd1eca2462b267d67955304ee989b40fd5fe77f17819162f3606d9c0aa3a32db"
+  },
+  "artifact-surface.png": {
+   "bytes": 179886,
+   "sha256": "sha256:e999dde3074ab09ff7c7c0310e599f77a47bf9f398dc43b7ac4ce7fbd04efeb1"
+  },
+  "brief-filled.png": {
+   "bytes": 39646,
+   "sha256": "sha256:17c122e103299b38ffe42affc08efd2b94df8a74362e1016b88cc7fd8673ca25"
+  },
+  "brief-open.png": {
+   "bytes": 31918,
+   "sha256": "sha256:fb346171ef9cb00e43c07d048e373cf4a2a955762674a00b706c0a03579350c9"
+  },
+  "brief-submitted.png": {
+   "bytes": 48582,
+   "sha256": "sha256:d9deceb684e74625b0f9ca8b41d7640ee82dbbeaf3dcc3dc8a4a1e05e78f8a8b"
+  },
+  "compare-surface.png": {
+   "bytes": 202387,
+   "sha256": "sha256:9367c1939d0063ab3caf0527ca7e53afabc0e291487e49c5fd48aaf34df2af43"
+  },
+  "connected-main.png": {
+   "bytes": 148002,
+   "sha256": "sha256:5b81faa6db49e9b67e9b33fddf916a17746b7567ab5e3af74ef38be56098f123"
+  },
+  "flow-surface.png": {
+   "bytes": 303686,
+   "sha256": "sha256:c3ea1446d26cafa53d7400a78eb48e35bdcf1cc933a3cac068d283d52465d218"
+  },
+  "history-open.png": {
+   "bytes": 40513,
+   "sha256": "sha256:2a96449f453d898881569bbed278a5b19c9325b337fbc882b2b1fe71ab4814af"
+  },
+  "history-reopened.png": {
+   "bytes": 40513,
+   "sha256": "sha256:2a96449f453d898881569bbed278a5b19c9325b337fbc882b2b1fe71ab4814af"
+  },
+  "receipt-accepted.png": {
+   "bytes": 48582,
+   "sha256": "sha256:d9deceb684e74625b0f9ca8b41d7640ee82dbbeaf3dcc3dc8a4a1e05e78f8a8b"
+  },
+  "state-1-ACTIVE.png": {
+   "bytes": 143766,
+   "sha256": "sha256:5da177e6d68d87874767ef19c2f949e8542a6cc44b9ebdd40f700670ecc74c8e"
+  },
+  "state-3-COMPLETED.png": {
+   "bytes": 146599,
+   "sha256": "sha256:dd1eca2462b267d67955304ee989b40fd5fe77f17819162f3606d9c0aa3a32db"
+  },
+  "surfaces-after.png": {
+   "bytes": 197800,
+   "sha256": "sha256:5b2c458d41d82a189570d3e7a4a0a6d5a7da25abe0a03e77dd5ea103b0f2d46f"
+  },
+  "surfaces-before.png": {
+   "bytes": 179886,
+   "sha256": "sha256:e999dde3074ab09ff7c7c0310e599f77a47bf9f398dc43b7ac4ce7fbd04efeb1"
+  },
+  "task-assigned.png": {
+   "bytes": 143766,
+   "sha256": "sha256:5da177e6d68d87874767ef19c2f949e8542a6cc44b9ebdd40f700670ecc74c8e"
+  },
+  "task-relaunched.png": {
+   "bytes": 143937,
+   "sha256": "sha256:215468ebb8239c309a464ef87836fe8dbdfbd2ad1f8ebb2f180ffdb4aeec2012"
+  },
+  "task-terminal.png": {
+   "bytes": 146599,
+   "sha256": "sha256:dd1eca2462b267d67955304ee989b40fd5fe77f17819162f3606d9c0aa3a32db"
+  }
+ },
+ "logs": {
+  "desktop_main": "golden-generation/desktop-main.log",
+  "desktop_relaunch": "golden-generation/desktop-relaunch.log",
+  "runtime_access_log": "golden-generation/runtime-access-log.sanitized.txt"
+ },
+ "verdict": "PASS",
+ "source_work_dir": "target\\acc1-native\\20261109T233420-golden",
+ "verdict_note": "native display of the same task/artifact is measured in record-artifact.json under a fresh serving epoch (split measurement); generation, projection through terminal and formal OUTCOME are from this run"
+}

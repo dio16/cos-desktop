@@ -53,6 +53,7 @@ import re
 import secrets
 import shutil
 import socket
+import sqlite3
 import subprocess
 import sys
 import time
@@ -74,7 +75,9 @@ SOURCE_PRESETS = acc1.SOURCE_PRESETS
 DESKTOP_EXE = base.DESKTOP_EXE
 PROBE = base.PROBE
 CONTROL_LAUNCHER = HARNESS / "isolated_runtime_control.py"
-EVIDENCE_DIR = ROOT / "docs" / "development" / "evidence-published" / "acc1-native-latest"
+EVIDENCE_DIR = (
+    ROOT / "docs" / "development" / "evidence-published" / "acc1-native-closure-latest"
+)
 WORK_ROOT = ROOT / "target" / "acc1-native"
 PORT_MAIN = 8132
 PORT_INJECT = 8133
@@ -82,14 +85,43 @@ GOAL_PREFIX = "ACC1-NATIVE"
 RECIPE_LABEL = "Production still (Krea2)"
 
 MEDIA_AVAILABLE = "メディア画像を表示できます。"
+MEDIA_DISPLAYED_MARKER = "メディア画像（"
 MEDIA_PREPARING_MARKERS = ("メディア画像を準備中", "準備中")
 MEDIA_MISSING = "画像を利用できません: この成果物のメディアが見つかりません。"
 MEDIA_FAILED = "画像を利用できません: メディアの取得または検証に失敗しました。"
 MEDIA_UNAVAILABLE_MARKER = "画像を利用できません"
 CAPABILITY_BLOCKED_MARKER = "機能の利用可否情報が投影されていません"
 
+# Test-only authoritative capability material.  The Runtime composes the
+# CAPABILITIES projection only when a capability snapshot set exists for the
+# task's run (RC-11 keeps that contract); the production-derived DB copy has
+# none, so the native gate would stay "capability not projected" forever.  This
+# harness seeds one Rust-validated set into the isolated copy, exactly like the
+# RT5 lane: it never writes a projection, only the authoritative snapshot set.
+CAPABILITY_EFFECTS = ["compute", "local_write"]
+CAPABILITY_PERMISSIONS = ["artifact.write"]
+CAPABILITY_SEED_ID = "img-gen-v1"
+CAPABILITY_SEED_VERSION = "1.0.0"
+
 
 # --------------------------------------------------------------------------- basics
+
+
+def redact_text(text: str) -> str:
+    """Redact media capabilities and bearer values from retained evidence."""
+    text = re.sub(r"mh1\.[A-Za-z0-9_\-]+\.[A-Za-z0-9_\-]+", "<redacted-media-handle>", text)
+    return re.sub(r"Bearer\s+[A-Za-z0-9._\-]{16,}", "Bearer <redacted>", text)
+
+
+def redact_document(value: object) -> object:
+    """Recursively redact string values before a record is written."""
+    if isinstance(value, str):
+        return redact_text(value)
+    if isinstance(value, list):
+        return [redact_document(item) for item in value]
+    if isinstance(value, dict):
+        return {key: redact_document(item) for key, item in value.items()}
+    return value
 
 
 def now_iso() -> str:
@@ -137,6 +169,139 @@ def bounded(text: str, limit: int = 6000) -> str:
 
 
 # --------------------------------------------------------------------------- UIA probe
+
+
+def capability_seed_modules():
+    """Import the Runtime's own DB/registry helpers in the harness process.
+
+    ``COS_RUNTIME_PROCESS_ROLE=generation-worker`` keeps ``Database.init()``
+    from claiming the Desktop observation epoch; the serving Runtime stays the
+    only epoch owner (d6e0ba2).  This is the same seeding method the RT5 lane
+    uses, and the isolated copy is test-only.
+    """
+    os.environ["COS_RUNTIME_PROCESS_ROLE"] = "generation-worker"
+    root = str(RUNTIME_ROOT)
+    if root not in sys.path:
+        sys.path.insert(0, root)
+    from orchestrator_app import capability_registry  # noqa: PLC0415
+    from orchestrator_app.contracts.canonical import digest_v1  # noqa: PLC0415
+    from orchestrator_app.db import Database  # noqa: PLC0415
+
+    return Database, digest_v1, capability_registry
+
+
+def build_capability_snapshot(digest_v1, capability_id: str, version: str) -> dict:
+    """One authoritative CapabilitySnapshotV1 with its Rust digest (RT5 shape)."""
+    snapshot = {
+        "capability_id": capability_id,
+        "schema_version": 1,
+        "implementation_version": version,
+        "implementation_digest": "sha256:" + hashlib.sha256(
+            f"{capability_id}:{version}:impl".encode("utf-8")).hexdigest(),
+        "source": "local",
+        "executable_or_package_digest": "sha256:" + hashlib.sha256(
+            f"{capability_id}:{version}:package".encode("utf-8")).hexdigest(),
+        "input_schema_digest": "sha256:" + hashlib.sha256(
+            f"{capability_id}:input".encode("utf-8")).hexdigest(),
+        "output_schema_digest": "sha256:" + hashlib.sha256(
+            f"{capability_id}:output".encode("utf-8")).hexdigest(),
+        "config_schema_digest": "sha256:" + hashlib.sha256(
+            f"{capability_id}:config".encode("utf-8")).hexdigest(),
+        "effects": list(CAPABILITY_EFFECTS),
+        "permissions": list(CAPABILITY_PERMISSIONS),
+        "auth_requirement": {"mode": "none"},
+        "resource": {"estimated_vram_mb": 1024, "estimated_runtime_s": 30,
+                     "cost_budget": 10, "timeout_s": 120},
+    }
+    snapshot["descriptor_digest"] = digest_v1(
+        "capability",
+        {key: value for key, value in snapshot.items() if key != "descriptor_digest"},
+    )
+    authorization = {
+        "capability_id": capability_id,
+        "known_implementation_versions": [version],
+        "authorized_effects": list(CAPABILITY_EFFECTS),
+        "authorized_permissions": list(CAPABILITY_PERMISSIONS),
+    }
+    return {"snapshot": snapshot, "authorization": authorization}
+
+
+def seed_task_capability(db_copy: Path, task_ref: str) -> dict:
+    """Bind one authoritative capability set to the task's latest run."""
+    Database, digest_v1, registry = capability_seed_modules()
+    material = build_capability_snapshot(digest_v1, CAPABILITY_SEED_ID,
+                                         CAPABILITY_SEED_VERSION)
+    database = Database(str(db_copy))
+    try:
+        row = database._conn.execute(
+            "SELECT run_id, iteration, phase FROM creative_runs WHERE task_id = ?"
+            " ORDER BY iteration DESC, created_at DESC, run_id DESC LIMIT 1",
+            (task_ref,),
+        ).fetchone()
+        run_source = "drain-created-run"
+        if row is None:
+            maximum = database._conn.execute(
+                "SELECT MAX(iteration) AS maximum FROM creative_runs WHERE task_id = ?",
+                (task_ref,),
+            ).fetchone()
+            iteration = int((maximum["maximum"] if maximum else 0) or 0) + 1
+            run_id = f"run-acc1-cap-{task_ref[-8:]}-i{iteration}"
+            database._conn.execute(
+                "INSERT INTO creative_runs(run_id, task_id, iteration, parent_run_id,"
+                " plan_id, plan_digest, proposal_id, phase, stop_reason, record_json,"
+                " created_at) VALUES (?, ?, ?, NULL, ?, ?, NULL, 'REFINE', NULL, '{}', ?)",
+                (run_id, task_ref, iteration, f"plan-acc1-cap-{task_ref[-8:]}-i{iteration}",
+                 "sha256:" + hashlib.sha256(f"{run_id}:plan".encode("utf-8")).hexdigest(),
+                 now_iso()),
+            )
+            database._conn.commit()
+            run_source = "harness-inserted-run"
+        else:
+            run_id = str(row["run_id"])
+        result = registry.store_snapshot_set(
+            database, run_id, {CAPABILITY_SEED_ID: material["snapshot"]},
+            {CAPABILITY_SEED_ID: material["authorization"]},
+        )
+        status_row = database._conn.execute(
+            "SELECT status FROM creative_tasks WHERE task_id = ?", (task_ref,)
+        ).fetchone()
+        return {
+            "seeded_at": now_iso(),
+            "db_copy": str(db_copy),
+            "run_id": run_id,
+            "run_source": run_source,
+            "task_status_at_seed": str(status_row["status"]) if status_row else None,
+            "store_result": result,
+            "snapshot": material["snapshot"],
+            "authorization": material["authorization"],
+        }
+    finally:
+        database.close()
+
+
+def read_observation_epoch(db_copy: Path) -> dict:
+    """Read the serving-owned epoch ledger without opening a Runtime Database.
+
+    A plain read-only SQLite connection never runs ``Database.init()``, so this
+    cannot claim or invalidate the serving process's epoch.
+    """
+    try:
+        connection = sqlite3.connect(f"file:{db_copy.as_posix()}?mode=ro", uri=True, timeout=5)
+    except sqlite3.Error as error:
+        return {"readable": False, "error": f"{type(error).__name__}: {error}"}
+    try:
+        connection.row_factory = sqlite3.Row
+        row = connection.execute(
+            "SELECT epoch, claimed_at FROM cos_desktop_observation_epoch WHERE singleton = 1"
+        ).fetchone()
+        if row is None:
+            return {"readable": True, "row": None}
+        return {"readable": True, "epoch": str(row["epoch"]),
+                "claimed_at": str(row["claimed_at"])}
+    except sqlite3.Error as error:
+        return {"readable": False, "error": f"{type(error).__name__}: {error}"}
+    finally:
+        connection.close()
 
 
 class Ui:
@@ -629,7 +794,8 @@ class Trace:
 
 
 class Ctx:
-    def __init__(self, label: str, port: int, *, control: bool = False):
+    def __init__(self, label: str, port: int, *, control: bool = False,
+                 source_run: Path | None = None):
         stamp = time.strftime("%Y%m%dT%H%M%S")
         self.label = label
         self.port = port
@@ -640,6 +806,7 @@ class Ctx:
         self.secret = secrets.token_hex(24)
         self.handle_secret = secrets.token_hex(24)
         self.collect = [self.secret, self.handle_secret]
+        self.source_run = Path(source_run) if source_run else None
         self.db_copy = self.work / "generation.sqlite"
         self.presets = self.work / "cos_presets.json"
         self.control_dir = self.work / "control" if control else None
@@ -660,7 +827,20 @@ class Ctx:
         }
 
     def start_runtime(self, *, wait_generation: bool = True) -> dict:
-        base.copy_database(SOURCE_DB, self.db_copy)
+        if self.source_run is not None:
+            # Bounded follow-up session: reuse the exact isolated DB copy and CAS
+            # of a measured run (same task, same canonical artifact bytes) instead
+            # of generating again. The serving epoch is new, so this session's
+            # publication is its own; it is recorded as a split measurement.
+            source_db = self.source_run / "generation.sqlite"
+            if not source_db.is_file():
+                raise RuntimeError(f"the source run has no DB copy: {source_db}")
+            base.copy_database(source_db, self.db_copy)
+            source_cas = self.source_run / "cas"
+            if source_cas.is_dir():
+                shutil.copytree(source_cas, self.work / "cas", dirs_exist_ok=True)
+        else:
+            base.copy_database(SOURCE_DB, self.db_copy)
         shutil.copyfile(SOURCE_PRESETS, self.presets)
         self.record["db_copy_sha256"] = sha256_file(self.db_copy)
         self.record["db_copy_bytes"] = self.db_copy.stat().st_size
@@ -722,6 +902,128 @@ class Ctx:
             "expires_in": document.get("expires_in"), "token_recorded": False,
         }
         return self.record["runtime"]
+
+    def seed_capabilities(self, task_ref: str) -> dict:
+        """Seed one authoritative capability set and prove it publishes.
+
+        The set is test-only material for the isolated copy: the Runtime still
+        derives command/media support itself (RC-11), and the Desktop still
+        fails closed when the projection is absent.
+        """
+        step: dict = {"at": now_iso(), "seeded": False, "task_ref": task_ref}
+        try:
+            step.update(seed_task_capability(self.db_copy, task_ref))
+            step["seeded"] = True
+        except Exception as error:  # noqa: BLE001 - record, never fake a projection
+            step["error"] = f"{type(error).__name__}: {error}"
+            self.record["capability_seed"] = step
+            return step
+        observed: dict = {}
+        deadline = time.monotonic() + 45.0
+        while True:
+            response = self.runtime.open_observation(self.token)
+            document = response.get("document") or {}
+            capabilities = None
+            task_projection = None
+            for mutation in acc1.snapshot_mutations(document):
+                projection = mutation.get("projection") or {}
+                kind = projection.get("projection")
+                if kind == "CAPABILITIES":
+                    scope = projection.get("scope") or {}
+                    if str(scope.get("task_id") or "") == task_ref:
+                        capabilities = projection
+                elif kind == "TASK" and str(projection.get("task_ref") or "") == task_ref:
+                    task_projection = projection
+            if capabilities is not None:
+                observed = {
+                    "at": now_iso(),
+                    "http_status": response["status"],
+                    "capabilities": capabilities,
+                    "task_capabilities_ref": (task_projection or {}).get("capabilities_ref"),
+                    "capabilities_ref_matches_task": (
+                        (task_projection or {}).get("capabilities_ref")
+                        == capabilities.get("capabilities_ref")),
+                }
+                break
+            if time.monotonic() >= deadline:
+                break
+            time.sleep(1.5)
+        step["observed"] = observed
+        step["projection_visible"] = bool(observed)
+        if not observed:
+            step["reason"] = "the CAPABILITIES projection did not become visible in 45 s"
+        self.record["capability_seed"] = step
+        return step
+
+    def list_desktop_principals(self) -> dict:
+        """Read the serving credential registry's principals (test control)."""
+        if self.control_dir is None:
+            return {"available": False, "reason": "this run has no control channel"}
+        trigger = self.control_dir / "list-desktop-credentials"
+        ack = self.control_dir / "list-desktop-credentials.ack.json"
+        with contextlib.suppress(FileNotFoundError):
+            ack.unlink()
+        trigger.write_text("list", encoding="utf-8")
+        deadline = time.monotonic() + 20.0
+        while time.monotonic() < deadline:
+            if ack.is_file():
+                document = json.loads(ack.read_text(encoding="utf-8"))
+                document["available"] = True
+                document["registry_order"] = "issuance order; the app credential is issued last"
+                return document
+            time.sleep(0.2)
+        return {"available": False, "reason": "the control ack did not appear"}
+
+    def rebind_task_owner(self, task_ref: str, principal: str) -> dict:
+        """Test-only owner rebind in the isolated copy (same-operator stop)."""
+        connection = sqlite3.connect(str(self.db_copy), timeout=15)
+        try:
+            before_row = connection.execute(
+                "SELECT created_by FROM creative_tasks WHERE task_id = ?", (task_ref,)
+            ).fetchone()
+            before = before_row[0] if before_row else None
+            connection.execute(
+                "UPDATE creative_tasks SET created_by = ? WHERE task_id = ?",
+                (principal, task_ref))
+            connection.commit()
+            after_row = connection.execute(
+                "SELECT created_by FROM creative_tasks WHERE task_id = ?", (task_ref,)
+            ).fetchone()
+            return {"before": before, "after": after_row[0] if after_row else None,
+                    "principal": principal, "test_only_rebind": True}
+        finally:
+            connection.close()
+
+    def wait_capability_entry(self, task_ref: str, group: str, name: str,
+                              predicate, timeout: float = 60.0) -> dict:
+        """Wait until the projected entry satisfies ``predicate`` (harness read)."""
+        deadline = time.monotonic() + timeout
+        last: dict = {}
+        while True:
+            response = self.runtime.open_observation(self.token)
+            document = response.get("document") or {}
+            entries: list[dict] = []
+            for mutation in acc1.snapshot_mutations(document):
+                projection = mutation.get("projection") or {}
+                if projection.get("projection") != "CAPABILITIES":
+                    continue
+                if str((projection.get("scope") or {}).get("task_id") or "") != task_ref:
+                    continue
+                entries = list(projection.get(group) or [])
+                last = {"at": now_iso(), "http_status": response["status"],
+                        "entries": entries,
+                        "availability": projection.get("availability"),
+                        "capabilities_ref": projection.get("capabilities_ref")}
+                entry = next((item for item in entries if str(item.get("operation")
+                               or item.get("representation") or "") == name), None)
+                if entry is not None and predicate(str(entry.get("support") or "")):
+                    last["matched"] = True
+                    last["entry"] = entry
+                    return last
+            last.setdefault("matched", False)
+            if time.monotonic() >= deadline:
+                return last
+            time.sleep(1.5)
 
     def launch_desktop(self, label: str = "main") -> dict:
         base.cleanup_credential_store(self.runtime.endpoint)
@@ -888,85 +1190,97 @@ class Ctx:
                 "excerpt": bounded("\n".join(
                     line for line in text.splitlines() if needle in line), 1500)}
 
-    def select_task(self, goal: str, label: str) -> dict:
+    def select_task(self, goal: str, label: str, task_ref: str = "") -> dict:
         assert self.app is not None and self.app.ui is not None
         ui = self.app.ui
         filtered = self.filter_rail(goal)
         invoked = ui.invoke(goal)
-        dump, text, selected = ui.wait_names(
-            lambda value: "タスクの状態:" in value and goal in value, 20.0, "task-selected")
-        return {"filter": filtered, "invoke": invoked, "selected": selected,
+        method = "uia_invoke"
+        if not invoked.get("invoked"):
+            # The rail row is not a Button (no Invoke/Selection pattern); select
+            # it with a synthetic pointer click inside its UIA bounds.
+            invoked = ui.click(goal)
+            method = "synthetic_wm_lbutton_at_rail_row"
+
+        def selected_predicate(value: str) -> bool:
+            if task_ref:
+                return f"目的 — 利用可能: {task_ref}" in value
+            return "タスクの状態:" in value and goal in value
+
+        dump, text, selected = ui.wait_names(selected_predicate, 20.0, "task-selected")
+        return {"filter": filtered, "invoke": invoked, "method": method,
+                "selected": selected, "scope_task_matched": selected and bool(task_ref),
                 "uia_sha256": dump.get("_names_sha256"),
                 "uia": uia_snapshot(ui, label), "excerpt": bounded("\n".join(
                     line for line in text.splitlines()
                     if "タスクの状態" in line or "処理段階" in line or "成果物" in line
-                    or goal in line), 2000)}
+                    or "目的 — " in line or goal in line), 2000)}
+
+    def view_candidate(self, task_ref: str) -> dict:
+        """Make this task's candidate the viewed candidate through its dock row."""
+        assert self.app is not None and self.app.ui is not None
+        ui = self.app.ui
+        names = list(ui.dump().get("names") or [])
+        label = next((line for line in names if task_ref in line and "第0回" in line), "")
+        if label and "閲覧中" in label:
+            invoked: dict = {"already_viewed": True}
+            method = "already_viewed"
+        elif label:
+            invoked = ui.invoke(f"{task_ref} — 第0回")
+            method = "mounted_row_invoke"
+        else:
+            anchor = next((line for line in names if "第0回 — C1" in line), "")
+            focus_row = ui.invoke(anchor) if anchor else {"invoked": False}
+            time.sleep(1.0)
+            ui.probe("key", text="end")
+            invoked = {"focus_row": focus_row.get("invoked"), "reached": False}
+            method = "dock_end_left_walk"
+            for _ in range(120):
+                current = list(ui.dump().get("names") or [])
+                match = next((line for line in current
+                              if task_ref in line and "第" in line), "")
+                if match:
+                    invoked = ui.invoke(f"{task_ref} — 第0回")
+                    invoked["focus_row"] = focus_row.get("invoked")
+                    invoked["reached"] = True
+                    method = "dock_end_left_mounted_row_invoke"
+                    break
+                ui.probe("key", text="left")
+                time.sleep(0.35)
+        dump, text, viewed = ui.wait_names(
+            lambda value: any(task_ref in line and "閲覧中" in line
+                              for line in value.splitlines()), 20.0, "candidate-viewed")
+        # Force one surface transition: the media binding is (re)triggered from
+        # the Artifact surface for a changed viewed identity, and navigating back
+        # guarantees that path runs for this candidate.
+        surface_switch = ui.invoke("処理の流れ  Ctrl+3")
+        time.sleep(0.7)
+        back = ui.invoke("成果物  Ctrl+1")
+        if not back.get("invoked"):
+            back = ui.click("成果物  Ctrl+1")
+        time.sleep(1.0)
+        return {"method": method, "invoke": invoked, "viewed": viewed,
+                "surface_switch": surface_switch.get("invoked"),
+                "back_to_artifact": back.get("invoked"),
+                "label": next((line for line in (dump.get("names") or [])
+                               if task_ref in line and "第0回" in line), ""),
+                "names_sha256": dump.get("_names_sha256")}
 
     def view_artifact(self, task_ref: str, label: str) -> dict:
         assert self.app is not None and self.app.ui is not None
         ui = self.app.ui
         before = uia_snapshot(ui, f"{label}-before")
-        names = list(ui.dump().get("names") or [])
-        method = ""
-        if any(task_ref in line and "第0回" in line for line in names):
-            invoked = ui.invoke(f"{task_ref} — 第0回")
-            method = "visible_dock_row_invoke"
-        else:
-            # The dock is horizontally virtualized and ordered by task id, so a
-            # newly created task's row is usually off-screen. Scroll the dock
-            # through its own horizontal wheel route until the row appears, and
-            # only then invoke it.
-            anchor = next((line for line in names if "第0回 — C1" in line), "")
-            invoked: dict = {}
-            method = "dock_hwheel_scroll_invoke"
-            found = False
-            for _ in range(40):
-                wheel = ui.probe("hwheel", match=anchor, text="-120")
-                time.sleep(0.25)
-                current = list(ui.dump().get("names") or [])
-                if any(task_ref in line and "第0回" in line for line in current):
-                    invoked = ui.invoke(f"{task_ref} — 第0回")
-                    found = True
-                    break
-            if not found:
-                # A plain selection stores Compare side A, so the dock is focused
-                # through one anchor row and the walk selects this task as side B.
-                # Compare then opens with this task as the viewed candidate; the
-                # Artifact surface is restored through its own accessible surface
-                # switch so the artifact viewer evaluates this task's media.
-                focus_row = ui.invoke(anchor) if anchor else {"invoked": False}
-                time.sleep(1.2)
-                walk: list[str] = []
-                enter_key: dict = {"skipped": "active_row_is_not_this_task"}
-                method = "dock_candidate_not_reached"
-                for _ in range(80):
-                    current = list(ui.dump().get("names") or [])
-                    active = [line for line in current if "キーボード操作対象" in line]
-                    if active:
-                        walk.append(active[0])
-                    if any(line.startswith(task_ref + " — 第") and "キーボード操作対象" in line
-                           for line in current):
-                        enter_key = ui.probe("key", text="enter")
-                        method = "dock_right_enter_then_artifact_surface"
-                        break
-                    ui.probe("key", text="right")
-                    time.sleep(0.4)
-                surface_switch = {"skipped": "candidate_not_reached"}
-                if method == "dock_right_enter_then_artifact_surface":
-                    time.sleep(1.0)
-                    surface_switch = ui.invoke("成果物  Ctrl+1")
-                    if not surface_switch.get("invoked"):
-                        surface_switch = ui.click("成果物  Ctrl+1")
-                invoked = {"focus_row": focus_row.get("invoked"), "enter": enter_key,
-                           "surface_switch": surface_switch,
-                           "walk_first": walk[:2], "walk_last": walk[-2:],
-                           "walk_steps": len(walk)}
-        deadline = time.monotonic() + 90.0
+        invoked = self.view_candidate(task_ref)
+        method = invoked.get("method", "")
+        deadline = time.monotonic() + 120.0
         state = "PENDING"
         dump: dict = {"found": False}
         while time.monotonic() < deadline:
             dump = ui.dump()
             text = "\n".join(dump.get("names") or [])
+            if MEDIA_DISPLAYED_MARKER in text:
+                state = "DISPLAYED"
+                break
             if MEDIA_AVAILABLE in text:
                 state = "AVAILABLE"
                 break
@@ -989,10 +1303,22 @@ class Ctx:
         return {"invoke": invoked, "method": method, "state": state,
                 "inspector_task_match": re.search(
                     rf"目的 — 利用可能: {re.escape(task_ref)}", final_text) is not None,
+                "viewport_present": any("拡大縮小" in line or "物理等倍" in line
+                                        for line in (dump.get("names") or [])),
                 "media_lines": [line for line in (dump.get("names") or [])
                                 if "画像" in line or "メディア" in line or "候補" in line
                                 or "機能の利用可否" in line][:40],
                 "uia_before": before, "uia_after": after}
+
+    def projection_task(self, task_ref: str) -> dict:
+        response = self.runtime.open_observation(self.token)
+        document = response.get("document") or {}
+        for mutation in acc1.snapshot_mutations(document):
+            projection = mutation.get("projection") or {}
+            if (projection.get("projection") == "TASK"
+                    and str(projection.get("task_ref") or "") == task_ref):
+                return projection
+        return {}
 
     def resolve_artifact(self, task_ref: str) -> dict:
         response = self.runtime.open_observation(self.token)
@@ -1137,6 +1463,492 @@ def restart_desktop(ctx: Ctx, goal: str, task_ref: str) -> dict:
 # --------------------------------------------------------------------------- scenarios
 
 
+def _lines(text: str, needles: tuple[str, ...], limit: int = 2200) -> str:
+    return bounded("\n".join(line for line in text.splitlines()
+                            if any(needle in line for needle in needles)), limit)
+
+
+def _surface_names(ui: Ui, contains: tuple[str, ...], limit: int = 40) -> list[str]:
+    text = "\n".join(ui.dump().get("names") or [])
+    return [line for line in text.splitlines()
+            if any(needle in line for needle in contains)][:limit]
+
+
+def native_surface_interactions(ctx: Ctx, task_ref: str, goal: str) -> dict:
+    """Exercise History/Evidence/Flow/Compare through the native UIA surface.
+
+    Every branch records what the real window exposes. A surface that is absent
+    or refused records the exact label instead of an invented state.
+    """
+    ui = ctx.app.ui
+    assert ui is not None
+    result: dict = {"at": now_iso(), "task_ref": task_ref}
+    # The dock navigation (and any other surface work) can move the rail
+    # selection; re-select this task so every surface below is about it.
+    reselect = ctx.select_task(goal, "surfaces-task-selected", task_ref)
+    result["task_reselected"] = {"selected": reselect.get("selected"),
+                                 "uia_sha256": reselect.get("uia_sha256"),
+                                 "excerpt": reselect.get("excerpt")}
+    result["viewed_candidate"] = ctx.view_candidate(task_ref)
+    before = uia_snapshot(ui, "surfaces-before")
+
+    # --- History: open, load a row, close, reopen ---------------------------
+    history: dict = {"steps": []}
+    try:
+        opened = ui.invoke("このタスクの実行履歴を開く")
+        method = "uia_invoke_inspector_action"
+        if not opened.get("invoked"):
+            opened = ui.invoke("履歴を開く（Ctrl+H）")
+            method = "uia_invoke_button_text"
+        dump, text, visible = ui.wait_names(
+            lambda value: "実行履歴" in value or "履歴 — " in value, 25.0, "history-open")
+        history.update({"open_method": method, "open_result": opened, "opened": visible,
+                        "names_sha256": dump.get("_names_sha256"),
+                        "excerpt": _lines(text, ("履歴", "反復", "状態")),
+                        "uia": uia_snapshot(ui, "history-open")})
+        if visible:
+            _, loaded_text, loaded = ui.wait_names(
+                lambda value: "履歴を読み込みました" in value or "第0回" in value
+                or "実行履歴。" in value, 20.0, "history-loaded")
+            history["loaded"] = loaded
+            history["loaded_excerpt"] = _lines(loaded_text, ("履歴", "第", "状態", "表示"))
+            enter = ui.probe("key", text="enter")
+            time.sleep(1.2)
+            _, reopened_text, reopened_loaded = ui.wait_names(
+                lambda value: "履歴" in value, 10.0, "history-row-activated")
+            history["enter"] = enter
+            history["row_activated"] = reopened_loaded
+            history["row_excerpt"] = _lines(reopened_text, ("履歴", "第", "表示", "復元"))
+            close = ui.invoke("履歴を閉じる")
+            time.sleep(1.0)
+            reopened = ui.invoke("このタスクの実行履歴を開く")
+            if not reopened.get("invoked"):
+                reopened = ui.invoke("履歴を開く（Ctrl+H）")
+            dump2, text2, visible2 = ui.wait_names(
+                lambda value: "実行履歴" in value or "履歴 — " in value, 20.0, "history-reopened")
+            history["close"] = close
+            history["reopen"] = {"invoked": reopened.get("invoked"), "visible": visible2,
+                                 "names_sha256": dump2.get("_names_sha256"),
+                                 "excerpt": _lines(text2, ("履歴", "第", "状態"))}
+            history["reopen_uia"] = uia_snapshot(ui, "history-reopened")
+            ui.invoke("履歴を閉じる")
+            time.sleep(0.8)
+        history["verdict"] = ("PASS" if history.get("opened")
+                              and (history.get("reopen") or {}).get("visible")
+                              else ("PARTIAL" if history.get("opened") else "NOT_RUN"))
+    except Exception as error:  # noqa: BLE001 - record the surface failure
+        history.update(verdict="NOT_RUN", error=f"{type(error).__name__}: {error}")
+    result["history"] = history
+
+    # --- Evidence: expand the first projected evidence group ----------------
+    evidence: dict = {}
+    try:
+        names = list(ui.dump().get("names") or [])
+        groups = [line for line in names if "根拠は" in line and "件です" in line]
+        evidence["groups_visible"] = len(groups)
+        evidence["group_labels"] = groups[:8]
+        evidence["inspector_evidence_lines"] = [
+            line for line in names
+            if "判断の根拠" in line or "改善" in line or "証拠" in line][:12]
+        if not groups:
+            evidence["not_projected_lines"] = [
+                line for line in names
+                if "根拠" in line or "投影されていません" in line or "利用不可" in line][:8]
+            explicit_reason = [line for line in names
+                               if "判断の根拠" in line or "根拠の詳細情報は投影されていません" in line]
+            evidence["verdict"] = "PARTIAL" if explicit_reason else "NOT_RUN"
+            evidence["reason"] = (
+                "no evidence group is exposed in the native UIA tree"
+                + ("; the inspector states an explicit unavailable/not-projected reason"
+                   if explicit_reason else ""))
+        else:
+            expanded = ui.invoke(groups[0])
+            method = "uia_invoke_group_header"
+            if not expanded.get("invoked"):
+                expanded = ui.click(groups[0])
+                method = "synthetic_wm_lbutton_at_uia_bounds"
+            dump, text, visible = ui.wait_names(
+                lambda value: "— " in value or "根拠" in value, 12.0, "evidence-expanded")
+            evidence.update({
+                "expand_method": method, "expand_result": expanded,
+                "expanded": visible, "names_sha256": dump.get("_names_sha256"),
+                "excerpt": _lines(text, ("根拠", "状態", "見つかりません", "利用可能",
+                                         "利用不可", "投影", "評価", "証拠")),
+                "uia": uia_snapshot(ui, "evidence-expanded"),
+            })
+            detail_rows = [line for line in (dump.get("names") or [])
+                           if "—" in line and ("DIGEST" in line or "状態" in line
+                                              or "PASS" in line or "SUCCESS" in line)]
+            evidence["detail_rows"] = detail_rows[:12]
+            evidence["verdict"] = "PASS" if visible else "PARTIAL"
+    except Exception as error:  # noqa: BLE001
+        evidence.update(verdict="NOT_RUN", error=f"{type(error).__name__}: {error}")
+    result["evidence"] = evidence
+
+    # --- Flow: surface switch, node/edge lists ------------------------------
+    flow: dict = {}
+    try:
+        switched = ui.invoke("処理の流れ  Ctrl+3")
+        method = "uia_invoke_surface_switch"
+        if not switched.get("invoked"):
+            switched = ui.click("処理の流れ  Ctrl+3")
+            method = "synthetic_wm_lbutton_at_uia_bounds"
+        dump, text, visible = ui.wait_names(
+            lambda value: "処理の一覧" in value or "接続関係" in value
+            or "処理の流れ" in value, 20.0, "flow-open")
+        nodes = [line for line in (dump.get("names") or [])
+                 if "ノード" in line or "処理" in line][:12]
+        edges = [line for line in (dump.get("names") or [])
+                 if "接続" in line or "エッジ" in line][:12]
+        flow.update({"switch_method": method, "switch_result": switched,
+                     "visible": visible, "names_sha256": dump.get("_names_sha256"),
+                     "nodes": nodes, "edges": edges,
+                     "excerpt": _lines(text, ("処理", "接続", "ノード", "流れ", "検索")),
+                     "uia": uia_snapshot(ui, "flow-surface")})
+        flow["verdict"] = ("PASS" if visible and (nodes or edges)
+                           else ("PARTIAL" if visible else "NOT_RUN"))
+        back = ui.invoke("成果物  Ctrl+1")
+        if not back.get("invoked"):
+            back = ui.click("成果物  Ctrl+1")
+        flow["back_to_artifact"] = back
+    except Exception as error:  # noqa: BLE001
+        flow.update(verdict="NOT_RUN", error=f"{type(error).__name__}: {error}")
+    result["flow"] = flow
+
+    # --- Compare: pair selection through the dock ---------------------------
+    compare: dict = {}
+    try:
+        names = list(ui.dump().get("names") or [])
+        compare["switcher_before"] = [
+            line for line in names if "候補を比較" in line][:4]
+        compare["pair_required_label"] = any(
+            "候補を2つ選ぶ必要があります" in line for line in names)
+        rows = [line for line in names if "第0回" in line]
+        compare["dock_rows_visible"] = len(rows)
+        compare["dock_rows_sample"] = rows[:6]
+        own_row = next((line for line in rows if task_ref in line), "")
+        other_row = next((line for line in rows if task_ref not in line), "")
+        selections: list[dict] = []
+        for label in (own_row, other_row):
+            if not label:
+                continue
+            result_invoke = ui.invoke(label)
+            method = "uia_invoke_dock_row"
+            if not result_invoke.get("invoked"):
+                result_invoke = ui.click(label)
+                method = "synthetic_wm_lbutton_at_uia_bounds"
+            selections.append({"label": label, "method": method,
+                               "result": result_invoke})
+            time.sleep(1.5)
+        compare["selections"] = selections
+        names = list(ui.dump().get("names") or [])
+        compare["switcher_after"] = [
+            line for line in names if "候補を比較" in line][:4]
+        switched = ui.invoke("候補を比較  Ctrl+2")
+        method = "uia_invoke_surface_switch"
+        if not switched.get("invoked"):
+            switched = ui.click("候補を比較  Ctrl+2")
+            method = "synthetic_wm_lbutton_at_uia_bounds"
+        time.sleep(2.0)
+        dump = ui.dump()
+        names = list(dump.get("names") or [])
+        compare["switch_method"] = method
+        compare["switch_result"] = switched
+        compare["pair_lines"] = [line for line in names
+                                 if "比較" in line or "A側" in line or "B側" in line][:20]
+        compare["image_lines"] = [line for line in names
+                                  if "画像" in line or "メディア" in line][:10]
+        compare["uia"] = uia_snapshot(ui, "compare-surface")
+        pair_visible = any("比較対象" in line or "A側" in line or "B側" in line
+                           for line in names)
+        compare["verdict"] = "PASS" if pair_visible else "PARTIAL"
+        back = ui.invoke("成果物  Ctrl+1")
+        if not back.get("invoked"):
+            back = ui.click("成果物  Ctrl+1")
+        compare["back_to_artifact"] = back
+    except Exception as error:  # noqa: BLE001
+        compare.update(verdict="NOT_RUN", error=f"{type(error).__name__}: {error}")
+    result["compare"] = compare
+
+    result["before"] = before
+    result["after"] = uia_snapshot(ui, "surfaces-after")
+    return result
+
+
+def scenario_artifact(args: argparse.Namespace) -> dict:
+    """Native artifact display + surface interactions on a measured completed task.
+
+    Bounded follow-up session: the isolated DB copy and CAS of a measured run are
+    reused (same task identity and the exact canonical bytes the generation
+    produced); no new generation is required. Recorded as a split measurement.
+    """
+    ctx = Ctx("artifact", PORT_MAIN, source_run=Path(args.source_run))
+    record = ctx.record
+    task_ref = args.task_ref
+    record["source_run"] = str(args.source_run)
+    record["task"]["task_ref"] = task_ref
+    record["measurement_split"] = (
+        "follow-up session on the measured run's DB/CAS; the generation, projection"
+        " through terminal and OUTCOME were measured in that run, the native artifact"
+        " display and surfaces are measured here under a fresh serving epoch")
+    try:
+        ctx.start_runtime(wait_generation=False)
+        task = ctx.projection_task(task_ref)
+        record["task"]["projection"] = {
+            key: task.get(key)
+            for key in ("title", "task_status", "inner_phase", "capabilities_ref")}
+        goal = str(task.get("title") or "")
+        if not goal:
+            record["verdict"] = "NOT_RUN"
+            record["residuals"].append("the reused DB carries no TASK projection for the task")
+            return record
+        ctx.launch_desktop("artifact")
+        record["steps"]["task_selected"] = ctx.select_task(goal, "artifact-task-selected", task_ref)
+        record["steps"]["capability_media"] = ctx.wait_capability_entry(
+            task_ref, "media", "ORIGINAL", lambda support: support == "SUPPORTED", 30.0)
+        media_view = ctx.view_artifact(task_ref, "artifact-surface")
+        record["steps"]["artifact_surface"] = media_view
+        resolved = ctx.resolve_artifact(task_ref)
+        media = ctx.fetch_artifact(resolved, args.evidence_dir / "artifact.png")
+        record["media"] = {"resolved": redact_descriptor(resolved), "fetch": media,
+                           "native_view_state": media_view.get("state"),
+                           "native_displayed_image": media_view.get("state") in {"AVAILABLE", "DISPLAYED"},
+                           "native_viewport_present": media_view.get("viewport_present"),
+                           "native_media_lines": media_view.get("media_lines"),
+                           "native_media_requests": [
+                               line for line in ctx.runtime.log_tail(400_000).splitlines()
+                               if "/media" in line or "media/" in line][-16:]}
+        record["outcome"] = resolved.get("outcome")
+        record["steps"]["surfaces"] = native_surface_interactions(ctx, task_ref, goal)
+        record["resyncs"] = ctx.trace.resyncs
+        record["resync_count"] = len(ctx.trace.resyncs)
+        record["resync_reasons"] = [item.get("reason") for item in ctx.trace.resyncs]
+        record["epoch"] = {"at_start": read_observation_epoch(ctx.db_copy)}
+        record["verdict"] = (
+            "PASS" if (media_view.get("state") in {"AVAILABLE", "DISPLAYED"}
+                       and (media or {}).get("digest_matches_descriptor")) else "PARTIAL")
+        surfaces = record["steps"].get("surfaces") or {}
+        record["surface_verdicts"] = {
+            name: (surfaces.get(name) or {}).get("verdict")
+            for name in ("history", "evidence", "flow", "compare")}
+        record["not_measured"] = [
+            "Start / Next Iteration (DD-25 command semantics remain blocked)",
+            "generation in this session (the measured run's artifact is reused)"]
+        return record
+    finally:
+        ctx.cleanup()
+        record["_secrets"] = list(ctx.collect)
+        record["finished_at"] = now_iso()
+
+
+def scenario_missing_media_reload(args: argparse.Namespace) -> dict:
+    """Display the real image, remove only the isolated CAS blob, reload, observe."""
+    ctx = Ctx("missing-media-reload", PORT_INJECT, source_run=Path(args.source_run))
+    record = ctx.record
+    task_ref = args.task_ref
+    record["source_run"] = str(args.source_run)
+    record["task"]["task_ref"] = task_ref
+    injection: dict = {"at": now_iso()}
+    try:
+        ctx.start_runtime(wait_generation=False)
+        task = ctx.projection_task(task_ref)
+        goal = str(task.get("title") or "")
+        if not goal:
+            injection.update(verdict="NOT_RUN", reason="no TASK projection in the reused DB")
+            record["injections"]["missing_media"] = injection
+            record["verdict"] = "NOT_RUN"
+            return record
+        ctx.launch_desktop("missing")
+        record["steps"]["task_selected"] = ctx.select_task(goal, "missing-task-selected", task_ref)
+        record["steps"]["capability_media"] = ctx.wait_capability_entry(
+            task_ref, "media", "ORIGINAL", lambda support: support == "SUPPORTED", 30.0)
+        view_before = ctx.view_artifact(task_ref, "missing-artifact-before")
+        injection["native_view_before_removal"] = view_before
+        injection["native_displayed_before_removal"] = view_before.get("state") in {
+            "AVAILABLE", "DISPLAYED"}
+        resolved = ctx.resolve_artifact(task_ref)
+        digest = (resolved.get("artifact") or {}).get("artifact_digest") or ""
+        descriptor_before = ctx.runtime.media_descriptor(ctx.token, ctx.trace.context, digest)
+        injection["descriptor_before"] = {
+            "http_status": descriptor_before["status"],
+            "digest": digest,
+            "access_handle_present": bool(
+                (descriptor_before.get("document") or {}).get("access_handle")),
+        }
+        blob = find_cas_blob(ctx.runtime.cas_root, digest) if digest else None
+        injection["blob_before"] = (
+            {"path_relative_to_cas_root": str(blob.relative_to(ctx.runtime.cas_root)),
+             "bytes": blob.stat().st_size, "sha256": sha256_file(blob),
+             "digest_matches_descriptor": sha256_file(blob) == digest,
+             "isolated_copy_only": True} if blob else None)
+        if not injection["native_displayed_before_removal"] or blob is None:
+            injection.update(verdict="NOT_RUN", reason=(
+                "the image was not displayed before removal"
+                if not injection["native_displayed_before_removal"]
+                else "the isolated CAS copy carries no blob for the descriptor digest"))
+            record["injections"]["missing_media"] = injection
+            record["verdict"] = "NOT_RUN"
+            return record
+        blob.unlink()
+        injection["blob_removed"] = not blob.exists()
+        after_descriptor = ctx.runtime.media_descriptor(ctx.token, ctx.trace.context, digest)
+        injection["descriptor_after_removal"] = {"http_status": after_descriptor["status"]}
+        fetch_attempt = ctx.fetch_artifact(resolved, ctx.work / "should-not-exist.png")
+        injection["fetch_after_removal"] = {
+            "fetched": fetch_attempt.get("fetched"), "reason": fetch_attempt.get("reason"),
+            "status": fetch_attempt.get("status")}
+        injection["desktop_restart_reload"] = restart_desktop(ctx, goal, task_ref)
+        assert ctx.app is not None and ctx.app.ui is not None
+        injection["rail_filter_after_restart"] = ctx.filter_rail(goal)
+        injection["selected_after_restart"] = ctx.select_task(
+            goal, "missing-task-reselected", task_ref).get("selected")
+        view_after = ctx.view_artifact(task_ref, "missing-artifact-after")
+        injection["native_view_after_removal"] = view_after
+        injection["native_media_requests_after_removal"] = [
+            line for line in ctx.runtime.log_tail(400_000).splitlines()
+            if "/media" in line or "media/" in line][-12:]
+        injection["verdict"] = (
+            "PASS" if (view_after.get("state") in {"MISSING", "FAILED"}
+                       and not fetch_attempt.get("fetched")) else "PARTIAL")
+        record["injections"]["missing_media"] = injection
+        record["verdict"] = injection["verdict"]
+        record["residuals"].append(
+            "the removed blob is the only missing-media variant exercised; a corrupt-blob"
+            " (digest mismatch) variant is not measured in this run")
+        return record
+    finally:
+        ctx.cleanup()
+        record["_secrets"] = list(ctx.collect)
+        record["finished_at"] = now_iso()
+
+
+def scenario_stop_active(args: argparse.Namespace) -> dict:
+    """Native STOP against a live ACTIVE task in a reused isolated copy."""
+    ctx = Ctx("stop-active", PORT_INJECT, source_run=Path(args.source_run), control=True)
+    record = ctx.record
+    task_ref = args.task_ref
+    record["source_run"] = str(args.source_run)
+    record["task"]["task_ref"] = task_ref
+    injection: dict = {"at": now_iso()}
+    try:
+        ctx.start_runtime(wait_generation=False)
+        task = ctx.projection_task(task_ref)
+        goal = str(task.get("title") or "")
+        injection["projection_before"] = {
+            key: task.get(key)
+            for key in ("task_status", "inner_phase", "capabilities_ref")}
+        if str(task.get("task_status")) not in {"ACTIVE", "ASSIGNED"}:
+            injection.update(verdict="NOT_RUN", reason=(
+                f"the reused task is not live (status={task.get('task_status')});"
+                " STOP_TASK cannot be measured"))
+            record["injections"]["stop"] = injection
+            record["verdict"] = injection["verdict"]
+            return record
+        seed = ctx.seed_capabilities(task_ref)
+        injection["capability_seed"] = {
+            "seeded": seed.get("seeded"), "run_id": seed.get("run_id"),
+            "run_source": seed.get("run_source"),
+            "task_status_at_seed": seed.get("task_status_at_seed"),
+            "projection_visible": seed.get("projection_visible"),
+            "error": seed.get("error")}
+        supported = ctx.wait_capability_entry(
+            task_ref, "commands", "STOP_TASK",
+            lambda support: support == "SUPPORTED", 60.0)
+        injection["stop_supported_projection"] = supported
+        ctx.launch_desktop("stop")
+        assert ctx.app is not None and ctx.app.ui is not None
+        # The app's Desktop principal is issued with the app credential (the last
+        # registration in the serving registry). The reused task was created by a
+        # previous session's principal, so the isolated copy's owner is rebound to
+        # the measured principal; this is test setup, never a fabricated receipt.
+        principals = ctx.list_desktop_principals()
+        injection["desktop_principals"] = principals
+        candidates = list(principals.get("principals") or [])
+        if candidates:
+            rebind = ctx.rebind_task_owner(task_ref, candidates[-1])
+            injection["owner_rebind"] = rebind
+        else:
+            injection["owner_rebind"] = {"skipped": "no principal in the serving registry"}
+        record["steps"]["task_selected"] = ctx.select_task(goal, "stop-task-selected", task_ref)
+        ui = ctx.app.ui
+        names: list[str] = []
+        deadline_ui = time.monotonic() + 60.0
+        while time.monotonic() < deadline_ui:
+            names = list(ui.dump().get("names") or [])
+            if "タスクを停止" in names:
+                break
+            time.sleep(1.5)
+        disabled = "タスクを停止（現在は操作できません）" in names
+        enabled = "タスクを停止" in names
+        injection.update({"stop_button_enabled": enabled, "stop_button_disabled": disabled,
+                          "uia_before": uia_snapshot(ui, "stop-before")})
+        if not enabled or disabled:
+            injection.update(verdict="NOT_RUN",
+                             reason="the native stop button is disabled; the capability"
+                                    " projection does not authorize stop for this task")
+            record["injections"]["stop"] = injection
+            record["verdict"] = injection["verdict"]
+            return record
+        clicked = ui.invoke("タスクを停止")
+        method = "uia_invoke"
+        if not clicked.get("invoked"):
+            clicked = ui.click("タスクを停止")
+            method = "synthetic_wm_lbutton_at_uia_bounds"
+        injection["command"] = {"method": method, "result": clicked, "at": now_iso()}
+        time.sleep(2.0)
+        after_dump = ui.dump()
+        injection["receipt_lines_immediate"] = [
+            line for line in after_dump.get("names") or []
+            if "停止" in line or "受付" in line or "拒否" in line or "送信" in line]
+        lookup = ui.invoke("停止の受付状況")
+        lookup_method = "uia_invoke"
+        if not lookup.get("invoked"):
+            lookup = ui.invoke("停止要求の受付状況を確認")
+            lookup_method = "uia_invoke_aria_label"
+        if not lookup.get("invoked"):
+            lookup = ui.click("停止の受付状況")
+            lookup_method = "synthetic_wm_lbutton_at_uia_bounds"
+        time.sleep(2.0)
+        lookup_dump = ui.dump()
+        injection["receipt_lookup"] = {
+            "method": lookup_method, "result": lookup, "at": now_iso(),
+            "lines": [line for line in lookup_dump.get("names") or []
+                      if "停止" in line or "受付" in line or "確認" in line][:20],
+            "uia": uia_snapshot(ui, "stop-receipt-lookup")}
+        injection["screenshot"] = injection["receipt_lookup"]["uia"]["screenshot"]
+        transitions: list[dict] = []
+        final_task: dict = {}
+        deadline = time.monotonic() + 240.0
+        while time.monotonic() < deadline:
+            response = ctx.runtime.desktop_task(ctx.token, ctx.trace.context, task_ref)
+            current = (response.get("document") or {}).get("task") or {}
+            state = {"at": now_iso(), "task_status": current.get("task_status"),
+                     "inner_phase": current.get("inner_phase"),
+                     "projection_revision": current.get("projection_revision")}
+            if not transitions or transitions[-1]["task_status"] != state["task_status"]:
+                transitions.append(state)
+            final_task = current
+            if terminal(current):
+                break
+            time.sleep(2.0)
+        injection["transitions"] = transitions
+        injection["final_task"] = final_task
+        injection["native_after_terminal"] = uia_snapshot(ui, "stop-terminal")
+        injection["verdict"] = ("PASS" if str(final_task.get("task_status")) == "CANCELLED"
+                                else "PARTIAL")
+        record["injections"]["stop"] = injection
+        record["verdict"] = injection["verdict"]
+        record["residuals"].append(
+            "the reused ACTIVE task is an orphaned generation (the generation plane is"
+            " unavailable after the ComfyUI dependency break); STOP acceptance is read"
+            " from the native stop surface and completion only from projected CANCELLED")
+        return record
+    finally:
+        ctx.cleanup()
+        record["_secrets"] = list(ctx.collect)
+        record["finished_at"] = now_iso()
+
+
 def scenario_golden(args: argparse.Namespace) -> dict:
     ctx = Ctx("golden", PORT_MAIN)
     record = ctx.record
@@ -1165,12 +1977,16 @@ def scenario_golden(args: argparse.Namespace) -> dict:
 
         assert ctx.app is not None and ctx.app.ui is not None
         record["steps"]["brief_close"] = ctx.app.ui.invoke("ブリーフを閉じる")
-        record["steps"]["task_selected"] = ctx.select_task(goal, "task-assigned")
+        record["steps"]["task_selected"] = ctx.select_task(goal, "task-assigned", task_ref)
 
         restarted = False
+        capability_seeded = False
         terminal_record = None
         last_state = None
         first_state = None
+        epoch_at_start = read_observation_epoch(ctx.db_copy)
+        record["epoch"] = {"at_start": epoch_at_start,
+                           "runtime_reported": (ctx.record.get("runtime") or {}).get("epoch")}
         deadline = time.monotonic() + args.timeout
         while time.monotonic() < deadline:
             poll = ctx.trace.poll(task_ref)
@@ -1189,6 +2005,13 @@ def scenario_golden(args: argparse.Namespace) -> dict:
                         "state": state, "uia": snapshot,
                         "task_row_excerpt": ctx.app.ui.excerpt((goal, "タスクの状態", "処理段階")),
                     }
+                if not capability_seeded and str(state.get("task_status")) == "ACTIVE":
+                    capability_seeded = True
+                    seeded = ctx.seed_capabilities(task_ref)
+                    seeded["at_active_state"] = state
+                    record["steps"]["capability_seed"] = seeded
+                    record["steps"]["capability_at_active"] = ctx.wait_capability_entry(
+                        task_ref, "media", "ORIGINAL", lambda support: True, 15.0)
                 if not restarted and str(state.get("task_status")) == "ACTIVE":
                     restarted = True
                     record["injections"]["desktop_restart"] = restart_desktop(ctx, goal, task_ref)
@@ -1218,14 +2041,24 @@ def scenario_golden(args: argparse.Namespace) -> dict:
             record["residuals"].append("the task did not reach a terminal state inside the run budget")
             return record
 
-        record["steps"]["task_selected_terminal"] = ctx.select_task(goal, "task-terminal")
+        record["steps"]["task_selected_terminal"] = ctx.select_task(goal, "task-terminal", task_ref)
+        record["steps"]["capability_media_at_terminal"] = ctx.wait_capability_entry(
+            task_ref, "media", "ORIGINAL", lambda support: support == "SUPPORTED", 60.0)
         media_view = ctx.view_artifact(task_ref, "artifact-surface")
         record["steps"]["artifact_surface"] = media_view
         resolved = ctx.resolve_artifact(task_ref)
         media = ctx.fetch_artifact(resolved, args.evidence_dir / "artifact.png")
         record["media"] = {"resolved": redact_descriptor(resolved), "fetch": media,
-                           "native_view_state": media_view.get("state")}
+                           "native_view_state": media_view.get("state"),
+                           "native_displayed_image": media_view.get("state") in {"AVAILABLE", "DISPLAYED"},
+                           "native_viewport_present": media_view.get("viewport_present"),
+                           "native_media_lines": media_view.get("media_lines"),
+                           "native_media_requests": [
+                               line for line in ctx.runtime.log_tail(400_000).splitlines()
+                               if "/media" in line or "media/" in line][-16:]}
         record["outcome"] = resolved.get("outcome")
+        record["epoch"]["at_terminal"] = read_observation_epoch(ctx.db_copy)
+        record["steps"]["surfaces"] = native_surface_interactions(ctx, task_ref, goal)
         fresh = ctx.runtime.open_observation(ctx.token)
         fresh_doc = fresh.get("document") or {}
         context_id = str(((fresh_doc.get("grant") or {}).get("stamp") or {}).get("context_id") or "")
@@ -1235,11 +2068,22 @@ def scenario_golden(args: argparse.Namespace) -> dict:
         }
         record["projection_trace"] = ctx.trace.transactions
         record["resyncs"] = ctx.trace.resyncs
+        record["resync_count"] = len(ctx.trace.resyncs)
+        record["resync_reasons"] = [item.get("reason") for item in ctx.trace.resyncs]
+        record["unknown_owner_resyncs"] = [
+            item for item in ctx.trace.resyncs
+            if "unknown-owner" in str(item.get("reason") or "")]
         record["trace_errors"] = ctx.trace.errors
         record["runtime_log_epoch_conflict"] = (
             "observation epoch changed in the database ledger" in ctx.runtime.log_tail(200_000))
+        epoch_start = record["epoch"].get("at_start") or {}
+        epoch_terminal = record["epoch"].get("at_terminal") or {}
+        record["epoch"]["serving_owned"] = (
+            bool(epoch_start.get("epoch")) and epoch_start.get("epoch")
+            == epoch_terminal.get("epoch"))
+        record["epoch"]["unchanged_during_generation"] = record["epoch"]["serving_owned"]
         record["verdict"] = (
-            "PASS" if (media_view.get("state") == "AVAILABLE"
+            "PASS" if (media_view.get("state") in {"AVAILABLE", "DISPLAYED"}
                        and str(terminal_record.get("task_status")) == "COMPLETED") else "PARTIAL")
         if media_view.get("state") == "BLOCKED_CAPABILITY":
             record["residuals"].append(
@@ -1251,11 +2095,23 @@ def scenario_golden(args: argparse.Namespace) -> dict:
             record["residuals"].append(
                 f"native artifact view state = {media_view.get('state')};"
                 f" terminal status = {terminal_record.get('task_status')}")
+        surfaces = record["steps"].get("surfaces") or {}
+        record["surface_verdicts"] = {
+            name: (surfaces.get(name) or {}).get("verdict")
+            for name in ("history", "evidence", "flow", "compare")}
         record["not_measured"] = [
-            "Compare interaction and multi-recipe breadth",
-            "native Evidence/Flow/History surface interaction (protocol reads only)",
             "Start / Next Iteration (DD-25 command semantics remain blocked)",
+            "screen-reader/IME/DPI/High Contrast acceptance (outside this lane)",
         ]
+        recipes = (record.get("catalog") or {}).get("recipes") or []
+        record["multi_recipe"] = {
+            "catalog_recipes": len(recipes),
+            "recipes": recipes,
+            "verdict": "NOT_RUN" if len(recipes) < 2 else "AVAILABLE",
+            "reason": ("the authenticated catalog exposes one recipe; a second recipe"
+                       " cannot be run without changing the catalog or the Runtime"
+                       if len(recipes) < 2 else "a second catalog recipe is available"),
+        }
         return record
     finally:
         ctx.cleanup()
@@ -1352,12 +2208,33 @@ def scenario_stop(args: argparse.Namespace) -> dict:
             return record
         assert ctx.app is not None and ctx.app.ui is not None
         ctx.app.ui.invoke("ブリーフを閉じる")
-        ctx.select_task(goal, "stop-task-selected")
+        ctx.select_task(goal, "stop-task-selected", task_ref)
         active = wait_task_state(ctx, task_ref,
                                  lambda task: str(task.get("task_status")) == "ACTIVE", 120.0)
         injection: dict = {"wait_active": active, "at": now_iso()}
+        seed = ctx.seed_capabilities(task_ref)
+        injection["capability_seed"] = {
+            "seeded": seed.get("seeded"), "run_id": seed.get("run_id"),
+            "run_source": seed.get("run_source"),
+            "task_status_at_seed": seed.get("task_status_at_seed"),
+            "projection_visible": seed.get("projection_visible"),
+            "error": seed.get("error"),
+        }
+        supported = ctx.wait_capability_entry(
+            task_ref, "commands", "STOP_TASK",
+            lambda support: support == "SUPPORTED", 60.0)
+        injection["stop_supported_projection"] = supported
         ui = ctx.app.ui
-        names = list(ui.dump().get("names") or [])
+        # The capability delta must reach the window before the control enables.
+        names: list[str] = []
+        deadline_ui = time.monotonic() + 60.0
+        while time.monotonic() < deadline_ui:
+            names = list(ui.dump().get("names") or [])
+            if "タスクを停止" in names:
+                break
+            if not supported.get("matched"):
+                break
+            time.sleep(1.5)
         disabled = "タスクを停止（現在は操作できません）" in names
         enabled = "タスクを停止" in names
         injection.update({"stop_button_enabled": enabled, "stop_button_disabled": disabled,
@@ -1378,17 +2255,33 @@ def scenario_stop(args: argparse.Namespace) -> dict:
         if not clicked.get("invoked"):
             clicked = ui.click("タスクを停止")
             method = "synthetic_wm_lbutton_at_uia_bounds"
-        injection["command"] = {"method": method, "result": clicked}
+        injection["command"] = {"method": method, "result": clicked, "at": now_iso()}
         time.sleep(2.0)
         after_dump = ui.dump()
-        injection["receipt_lines"] = [
+        injection["receipt_lines_immediate"] = [
             line for line in after_dump.get("names") or []
             if "停止" in line or "受付" in line or "拒否" in line or "送信" in line]
-        injection["uia_after"] = uia_snapshot(ui, "stop-after")
-        injection["screenshot"] = injection["uia_after"]["screenshot"]
+        # Explicit bounded receipt lookup, never a resend.
+        lookup = ui.invoke("停止の受付状況")
+        lookup_method = "uia_invoke"
+        if not lookup.get("invoked"):
+            lookup = ui.invoke("停止要求の受付状況を確認")
+            lookup_method = "uia_invoke_aria_label"
+        if not lookup.get("invoked"):
+            lookup = ui.click("停止の受付状況")
+            lookup_method = "synthetic_wm_lbutton_at_uia_bounds"
+        time.sleep(2.0)
+        lookup_dump = ui.dump()
+        injection["receipt_lookup"] = {
+            "method": lookup_method, "result": lookup, "at": now_iso(),
+            "lines": [line for line in lookup_dump.get("names") or []
+                      if "停止" in line or "受付" in line or "確認" in line][:20],
+            "uia": uia_snapshot(ui, "stop-receipt-lookup"),
+        }
+        injection["screenshot"] = injection["receipt_lookup"]["uia"]["screenshot"]
         transitions: list[dict] = []
         final_task: dict = {}
-        deadline = time.monotonic() + 180.0
+        deadline = time.monotonic() + 240.0
         while time.monotonic() < deadline:
             response = ctx.runtime.desktop_task(ctx.token, ctx.trace.context, task_ref)
             task = (response.get("document") or {}).get("task") or {}
@@ -1403,13 +2296,17 @@ def scenario_stop(args: argparse.Namespace) -> dict:
             time.sleep(2.0)
         injection["transitions"] = transitions
         injection["final_task"] = final_task
+        injection["native_after_terminal"] = uia_snapshot(ui, "stop-terminal")
+        injection["native_terminal_excerpt"] = ui.excerpt(
+            (goal, "タスクの状態", "処理段階", "キャンセル", "停止"))
         injection["verdict"] = ("PASS" if str(final_task.get("task_status")) == "CANCELLED"
                                 else "PARTIAL")
         record["injections"]["stop"] = injection
         record["verdict"] = injection["verdict"]
         record["residuals"].append(
-            "STOP_TASK receipt text is read from the native UIA tree; the Runtime audit"
-            " record is not available on an isolated serving process")
+            "STOP_TASK acceptance is read from the native stop-status surface and the"
+            " Runtime audit record is not available on an isolated serving process;"
+            " completion is claimed only from the projected CANCELLED state")
         return record
     finally:
         ctx.cleanup()
@@ -1436,7 +2333,7 @@ def scenario_revoke(args: argparse.Namespace) -> dict:
             return record
         assert ctx.app is not None and ctx.app.ui is not None
         ctx.app.ui.invoke("ブリーフを閉じる")
-        ctx.select_task(goal, "revoke-task-selected")
+        ctx.select_task(goal, "revoke-task-selected", task_ref)
         active = wait_task_state(ctx, task_ref,
                                  lambda task: str(task.get("task_status")) == "ACTIVE", 120.0)
         injection: dict = {"wait_active": active, "at": now_iso()}
@@ -1471,7 +2368,7 @@ def scenario_revoke(args: argparse.Namespace) -> dict:
                 break
             time.sleep(1.0)
         injection["reauth_log_line"] = reauth_line
-        reselect = ctx.select_task(goal, "revoke-task-reselected")
+        reselect = ctx.select_task(goal, "revoke-task-reselected", task_ref)
         injection["reselect"] = {"selected": reselect.get("selected")}
         transitions: list[dict] = []
         final_task: dict = {}
@@ -1557,6 +2454,17 @@ def scenario_missing_media(args: argparse.Namespace) -> dict:
             record["injections"]["missing_media"] = injection
             record["verdict"] = "NOT_RUN"
             return record
+        seed = ctx.seed_capabilities(task_ref)
+        injection["capability_seed"] = {
+            "seeded": seed.get("seeded"), "run_id": seed.get("run_id"),
+            "run_source": seed.get("run_source"),
+            "task_status_at_seed": seed.get("task_status_at_seed"),
+            "projection_visible": seed.get("projection_visible"),
+            "error": seed.get("error"),
+        }
+        supported = ctx.wait_capability_entry(
+            task_ref, "media", "ORIGINAL", lambda support: support == "SUPPORTED", 60.0)
+        injection["media_supported_projection"] = supported
         digest = resolved["artifact"]["artifact_digest"]
         blob = find_cas_blob(ctx.runtime.cas_root, digest)
         if blob is None:
@@ -1573,6 +2481,27 @@ def scenario_missing_media(args: argparse.Namespace) -> dict:
             "http_status": resolved["descriptor_http_status"],
             "access_handle_present": bool((resolved.get("descriptor") or {}).get("access_handle")),
         }
+        ctx.launch_desktop("missing")
+        assert ctx.app is not None and ctx.app.ui is not None
+        injection["rail_filter"] = ctx.filter_rail(goal)
+        selected = ctx.select_task(goal, "missing-task-selected", task_ref)
+        injection["selected"] = selected.get("selected")
+        view_before = ctx.view_artifact(task_ref, "missing-artifact-before")
+        injection["native_view_before_removal"] = view_before
+        injection["native_displayed_before_removal"] = view_before.get("state") in {
+            "AVAILABLE", "DISPLAYED"}
+        log_before_removal = ctx.runtime.log_tail(400_000)
+        injection["native_media_requests_before_removal"] = [
+            line for line in log_before_removal.splitlines()
+            if "/media" in line or "media/" in line][-12:]
+        if view_before.get("state") not in {"AVAILABLE", "DISPLAYED"}:
+            injection.update(verdict="NOT_RUN",
+                             reason=("the native artifact surface did not display the image"
+                                     f" before removal (state={view_before.get('state')});"
+                                     " the missing-media injection needs a displayed image"))
+            record["injections"]["missing_media"] = injection
+            record["verdict"] = "NOT_RUN"
+            return record
         blob.unlink()
         injection["blob_removed"] = not blob.exists()
         after_descriptor = ctx.runtime.media_descriptor(
@@ -1582,14 +2511,20 @@ def scenario_missing_media(args: argparse.Namespace) -> dict:
         injection["fetch_after_removal"] = {
             "fetched": fetch_attempt.get("fetched"), "reason": fetch_attempt.get("reason"),
             "status": fetch_attempt.get("status")}
-        ctx.launch_desktop("missing")
+        # A Desktop restart is the deterministic re-open: no in-memory texture can
+        # mask the removed canonical blob, so the reload must ask the Runtime again.
+        injection["desktop_restart_reload"] = restart_desktop(ctx, goal, task_ref)
         assert ctx.app is not None and ctx.app.ui is not None
-        injection["rail_filter"] = ctx.filter_rail(goal)
-        selected = ctx.select_task(goal, "missing-task-selected")
-        injection["selected"] = selected.get("selected")
-        view = ctx.view_artifact(task_ref, "missing-artifact")
-        injection["native_view"] = view
-        if view.get("state") == "BLOCKED_CAPABILITY":
+        injection["rail_filter_after_restart"] = ctx.filter_rail(goal)
+        injection["selected_after_restart"] = ctx.select_task(
+            goal, "missing-task-reselected", task_ref).get("selected")
+        view_after = ctx.view_artifact(task_ref, "missing-artifact-after")
+        injection["native_view_after_removal"] = view_after
+        log_after_removal = ctx.runtime.log_tail(400_000)
+        injection["native_media_requests_after_removal"] = [
+            line for line in log_after_removal.splitlines()
+            if "/media" in line or "media/" in line][-12:]
+        if view_after.get("state") == "BLOCKED_CAPABILITY":
             injection["verdict"] = "NOT_RUN"
             injection["reason"] = (
                 "the native media path refuses before the descriptor/blob fetch because"
@@ -1599,8 +2534,9 @@ def scenario_missing_media(args: argparse.Namespace) -> dict:
                 " fabricated")
         else:
             injection["verdict"] = (
-                "PASS" if (view.get("state") in {"MISSING", "FAILED", "UNAVAILABLE"}
-                           and not fetch_attempt.get("fetched")) else "PARTIAL")
+                "PASS" if (view_after.get("state") in {"MISSING", "FAILED"}
+                           and not fetch_attempt.get("fetched")
+                           and injection["native_displayed_before_removal"]) else "PARTIAL")
         record["injections"]["missing_media"] = injection
         record["verdict"] = injection["verdict"]
         record["residuals"].append(
@@ -1703,14 +2639,23 @@ def copy_run_evidence(run: dict, evidence_dir: Path) -> None:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--scenario", action="append",
-                        choices=("golden", "receipt", "stop", "revoke", "missing-media"),
+                        choices=("golden", "receipt", "stop", "revoke", "missing-media",
+                                 "artifact", "missing-media-reload", "stop-active"),
                         help="scenario to run (repeatable; default: golden)")
     parser.add_argument("--evidence-dir", default=str(EVIDENCE_DIR))
     parser.add_argument("--desktop-exe", default="",
                         help="bounded variant: launch this release binary instead of target/release")
     parser.add_argument("--timeout", type=float, default=900.0)
+    parser.add_argument("--source-run", default="",
+                        help="reuse this measured run's isolated DB copy and CAS")
+    parser.add_argument("--task-ref", default="",
+                        help="task identity inside the reused DB for artifact/stop variants")
     parser.add_argument("--no-build", action="store_true")
     args = parser.parse_args(argv)
+    if args.scenario and set(args.scenario) & {"artifact", "missing-media-reload",
+                                               "stop-active"}:
+        if not args.source_run or not args.task_ref:
+            raise SystemExit("--source-run and --task-ref are required for the reuse variants")
     if args.desktop_exe:
         global DESKTOP_EXE
         DESKTOP_EXE = Path(args.desktop_exe).resolve()
@@ -1767,6 +2712,12 @@ def main(argv: list[str] | None = None) -> int:
                 run = scenario_receipt(args)
             elif name == "stop":
                 run = scenario_stop(args)
+            elif name == "stop-active":
+                run = scenario_stop_active(args)
+            elif name == "artifact":
+                run = scenario_artifact(args)
+            elif name == "missing-media-reload":
+                run = scenario_missing_media_reload(args)
             elif name == "revoke":
                 run = scenario_revoke(args)
             else:
@@ -1781,6 +2732,7 @@ def main(argv: list[str] | None = None) -> int:
             }
         collected_secrets.extend(run.get("_secrets") or [])
         copy_run_evidence(run, args.evidence_dir)
+        run = redact_document(run)
         run.pop("_secrets", None)
         session["runs"][name] = run
         write_json(args.evidence_dir / f"record-{name}.json", run)
@@ -1807,6 +2759,7 @@ def main(argv: list[str] | None = None) -> int:
         "comfyui_8188_open": port_open(8188),
         "runs": {name: run.get("cleanup") for name, run in session["runs"].items()},
     }
+    session = redact_document(session)
     session["leak_check"] = leak_scan(args.evidence_dir, collected_secrets)
     write_json(args.evidence_dir / "session.json", session)
     write_json(args.evidence_dir / "record.json", {"runs": session["runs"]})

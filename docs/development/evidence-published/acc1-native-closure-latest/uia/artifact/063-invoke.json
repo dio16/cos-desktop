@@ -1,0 +1,1 @@
+{"action":"invoke","found":true,"hwnd":55841714,"title":"COS Desktop","class":"Zed::Window","width":1296,"height":839,"name_match":"候補を比較  Ctrl+2","invoked":true,"matched_name":"候補を比較  Ctrl+2","matched_id":"","matched_control_type":"ControlType.Button","pattern":"invoke","patterns_tried":["invoke"]}

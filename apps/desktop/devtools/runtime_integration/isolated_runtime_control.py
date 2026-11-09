@@ -37,17 +37,36 @@ import uvicorn  # noqa: E402 - path setup must precede the import
 
 TRIGGER_NAME = "revoke-desktop-credentials"
 ACK_NAME = "revoke-desktop-credentials.ack.json"
+LIST_TRIGGER_NAME = "list-desktop-credentials"
+LIST_ACK_NAME = "list-desktop-credentials.ack.json"
 
 
 def control_loop(control_dir: Path, stop_event: threading.Event) -> None:
-    """Watch one trigger file; revoke the serving registry; write an ack."""
+    """Watch the test triggers; write an ack for each."""
 
     from orchestrator_app import api
 
     trigger = control_dir / TRIGGER_NAME
     ack = control_dir / ACK_NAME
+    list_trigger = control_dir / LIST_TRIGGER_NAME
+    list_ack = control_dir / LIST_ACK_NAME
     while not stop_event.is_set():
         try:
+            if list_trigger.is_file():
+                with api._desktop_credentials_lock:
+                    principals = [
+                        str(record.get("principal", ""))
+                        for record in api._desktop_credentials.values()
+                    ]
+                    holders = len(api._desktop_credentials)
+                document = {
+                    "at": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+                    "credential_count": holders,
+                    "principals": principals,
+                    "token_values_recorded": False,
+                }
+                list_ack.write_text(json.dumps(document, ensure_ascii=True), encoding="utf-8")
+                list_trigger.unlink()
             if trigger.is_file():
                 with api._desktop_credentials_lock:
                     principals = sorted(

@@ -1,0 +1,1 @@
+{"action":"invoke","found":true,"hwnd":11342906,"title":"COS Desktop","class":"Zed::Window","width":1296,"height":839,"name_match":"タスクを停止","invoked":true,"matched_name":"タスクを停止","matched_id":"","matched_control_type":"ControlType.Button","pattern":"invoke","patterns_tried":["invoke"]}
