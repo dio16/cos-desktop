@@ -738,17 +738,59 @@ def copy_database(source: Path, destination: Path) -> None:
         reader.close()
 
 
-def cleanup_credential_store(origin: str) -> dict:
+CREDENTIAL_USER = "desktop-observation"
+CREDENTIAL_SERVICE_PREFIX = "cos-desktop/observation"
+
+
+def credential_targets(origin: str) -> list[str]:
+    """Mirror of ``run_integration.credential_targets`` (this file is standalone).
+
+    The keyring crate composes ``{user}.{service}``, so the stored target is
+    ``desktop-observation.cos-desktop/observation/<sha256(origin)[:32]>``; the
+    bare service string never matches it.
+    """
     head = hashlib.sha256(origin.encode("utf-8")).hexdigest()[:32]
-    target = f"cos-desktop/observation/{head}"
-    try:
-        completed = subprocess.run(
-            ["cmdkey", f"/delete:{target}"], capture_output=True, text=True, timeout=20
+    return [
+        f"{CREDENTIAL_USER}.{CREDENTIAL_SERVICE_PREFIX}/{head}",
+        f"{CREDENTIAL_SERVICE_PREFIX}/{head}",
+    ]
+
+
+def _cmdkey_outcome(completed: subprocess.CompletedProcess[str]) -> tuple[str, str]:
+    output = (completed.stdout + completed.stderr).strip()
+    if completed.returncode == 0:
+        return "deleted", output
+    lowered = output.lower()
+    if "not found" in lowered or "\u898b\u3064\u304b\u308a\u307e\u305b\u3093" in output:
+        return "not_found", output
+    return "failed", output
+
+
+def cleanup_credential_store(origin: str) -> dict:
+    """Mirror of ``run_integration.cleanup_credential_store``; never raises."""
+    attempts: list[dict] = []
+    deleted = False
+    for target in credential_targets(origin):
+        try:
+            completed = subprocess.run(
+                ["cmdkey", f"/delete:{target}"], capture_output=True, text=True, timeout=20
+            )
+        except (OSError, subprocess.SubprocessError) as error:
+            attempts.append(
+                {"target": target, "result": "error", "error": type(error).__name__}
+            )
+            continue
+        result, output = _cmdkey_outcome(completed)
+        deleted = deleted or result == "deleted"
+        attempts.append(
+            {
+                "target": target,
+                "exit": completed.returncode,
+                "result": result,
+                "output": output[:200],
+            }
         )
-        output = (completed.stdout + completed.stderr).strip()
-        return {"target": target, "exit": completed.returncode, "output": output[:200]}
-    except (OSError, subprocess.SubprocessError) as error:
-        return {"target": target, "error": type(error).__name__}
+    return {"origin": origin, "targets": attempts, "deleted": deleted}
 
 
 # --------------------------------------------------------------------------- media request summary

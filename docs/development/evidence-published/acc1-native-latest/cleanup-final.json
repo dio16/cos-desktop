@@ -22,5 +22,27 @@
     "untouched": true,
     "reason": "Ollama was already running with 6 models and was never started, stopped or reconfigured by this harness"
   },
-  "note": "The harness itself records its own two Runtime processes exiting cleanly (exit 0), port_free true, discovery descriptor removed, and the Windows credential-store entry deleted for each isolated endpoint. This file adds the operator-level ComfyUI restore and the final three-port check."
+  "note": "The harness itself records its own two Runtime processes exiting cleanly (exit 0), port_free true, discovery descriptor removed, and one credential-store delete attempt per isolated endpoint. That attempt targeted only the BARE service string, so it could never match the Desktop's keyring-composed entry (see credential_store_correction). This file adds the operator-level ComfyUI restore and the final three-port check.",
+  "credential_store_correction": {
+    "corrected_at": "2026-11-09T12:32:44+09:00",
+    "original_claim": "the Windows credential-store entry deleted for each isolated endpoint",
+    "original_claim_status": "INACCURATE - the helper deleted only the bare target, so no stored entry was matched or removed",
+    "actual_harness_attempts": {
+      "8132": {
+        "target": "cos-desktop/observation/dd179b0386bf34a9b1beb72dfed6a36f",
+        "exit": 1,
+        "output": "CMDKEY: Element not found."
+      },
+      "8133": {
+        "target": "cos-desktop/observation/14887796bad1e1416ccd52d08bf9ed4d",
+        "exit": 1,
+        "output": "CMDKEY: Element not found."
+      }
+    },
+    "target_written_by_desktop": "desktop-observation.cos-desktop/observation/<sha256(origin)[:32]> (keyring {user}.{service}; the harness never attempted this string)",
+    "follow_up_record": "cleanup-final-fix.json",
+    "follow_up_result": "The composed target was absent BEFORE and AFTER the follow-up helper run for both 8132 and 8133, so no entry was deleted (both attempts recorded cmdkey exit 1, 'Element not found'). The shared helper now attempts the composed target first and the bare target second and records exit/result per attempt; its composed-delete path was proven with a throwaway entry (created with cmdkey /generic, deleted by the helper with exit 0 'CMDKEY: Credential deleted successfully').",
+    "why_absent": "OBSERVED: both target forms are absent from the Credential Manager now. INFERENCE (not measured): the Desktop revokes and deletes its stored credential on explicit teardown (apps/desktop/src/runtime.rs), which is consistent with the clean app exits recorded in session.json.",
+    "helper_fix": "apps/desktop/devtools/runtime_integration/run_integration.py::cleanup_credential_store (and the run_media_integration.py copy) now attempt desktop-observation.cos-desktop/observation/<hash> first and cos-desktop/observation/<hash> second; run_acc1_native.py inherits the fix because it calls the shared helper."
+  }
 }

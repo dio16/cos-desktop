@@ -92,12 +92,19 @@ Isolation/cleanup notes:
   campaign records an explicit relaunch before the auth matrix (relaunch itself
   consumes no replacement because the stored credential is valid).
 - Credential-store cleanup uses the exact Windows Credential Manager target
-  `desktop-observation.cos-desktop/observation/<sha256(origin)[:32]>`. The older
-  `cleanup_credential_store` helper in `run_integration.py` deletes only the
-  bare service string, which never matches the keyring `{user}.{service}`
-  target; stale entries then cause an avoidable startup 401 in a later run.
-  `run_rt3_matrix.py` fixes this locally (the shared baseline helper is left
-  unchanged).
+  `desktop-observation.cos-desktop/observation/<sha256(origin)[:32]>` (the keyring
+  `{user}.{service}` composition). `cmdkey /delete` matches the whole target, so
+  deleting only the bare service string never removes the stored entry and a stale
+  credential then causes an avoidable startup 401 in a later run. The shared
+  `run_integration.cleanup_credential_store` now attempts the composed target first
+  and the bare one second and records each attempt's exit code and outcome
+  (`deleted` / `not_found` / `failed`), so evidence can distinguish a real deletion
+  from "already absent"; `run_acc1_native.py` and `run_rt3_rt8.py` inherit it and
+  `run_media_integration.py` carries the same fixed copy. `run_rt3_matrix.py` keeps
+  its local composed-target logic. `cleanup_observation_credentials.py` reproduces
+  the cleanup for explicit origins (with a throwaway composed-entry round-trip that
+  proves the composed delete), and `run_integration.py --credential-self-test`
+  checks the target construction offline.
 - Both Runtime instances are stopped through the isolated launcher lifespan, the
   evidence directories are leak-scanned, and the ports must be free at the end.
   Raw logs and the isolated database copy stay under `target/rt3-matrix/run1/`

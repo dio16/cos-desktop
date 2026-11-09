@@ -620,17 +620,90 @@ def git_value(root: Path, *args: str) -> str:
         return ""
 
 
-def cleanup_credential_store(origin: str) -> dict:
+CREDENTIAL_USER = "desktop-observation"
+CREDENTIAL_SERVICE_PREFIX = "cos-desktop/observation"
+
+
+def credential_targets(origin: str) -> list[str]:
+    """Return the Credential Manager targets for a Desktop observation origin.
+
+    The Desktop stores the entry through the ``keyring`` crate, whose Windows
+    backend composes ``{user}.{service}``: the stored target is
+    ``desktop-observation.cos-desktop/observation/<sha256(origin)[:32]>``.
+    ``cmdkey /delete`` matches the whole target string, so deleting only the bare
+    service string never removes a composed entry (``CMDKEY: Element not found``).
+    The composed target is attempted first; the bare one is kept second so an
+    entry created under the older (wrong) expectation can still be removed.
+    """
     head = hashlib.sha256(origin.encode("utf-8")).hexdigest()[:32]
-    target = f"cos-desktop/observation/{head}"
-    try:
-        completed = subprocess.run(
-            ["cmdkey", f"/delete:{target}"], capture_output=True, text=True, timeout=20
+    return [
+        f"{CREDENTIAL_USER}.{CREDENTIAL_SERVICE_PREFIX}/{head}",
+        f"{CREDENTIAL_SERVICE_PREFIX}/{head}",
+    ]
+
+
+def _cmdkey_outcome(completed: subprocess.CompletedProcess[str]) -> tuple[str, str]:
+    output = (completed.stdout + completed.stderr).strip()
+    if completed.returncode == 0:
+        return "deleted", output
+    lowered = output.lower()
+    if "not found" in lowered or "\u898b\u3064\u304b\u308a\u307e\u305b\u3093" in output:
+        return "not_found", output
+    return "failed", output
+
+
+def cleanup_credential_store(origin: str) -> dict:
+    """Delete the Desktop's stored credential for one origin; never fail the harness.
+
+    Both target forms are attempted and each attempt records its own exit code and
+    outcome, so evidence distinguishes ``deleted`` (cmdkey exit 0) from
+    ``not_found`` (cmdkey exit 1, "Element not found": nothing was stored, for
+    example because the app removed it during a clean teardown).
+    """
+    attempts: list[dict] = []
+    deleted = False
+    for target in credential_targets(origin):
+        try:
+            completed = subprocess.run(
+                ["cmdkey", f"/delete:{target}"], capture_output=True, text=True, timeout=20
+            )
+        except (OSError, subprocess.SubprocessError) as error:
+            attempts.append(
+                {"target": target, "result": "error", "error": type(error).__name__}
+            )
+            continue
+        result, output = _cmdkey_outcome(completed)
+        deleted = deleted or result == "deleted"
+        attempts.append(
+            {
+                "target": target,
+                "exit": completed.returncode,
+                "result": result,
+                "output": output[:200],
+            }
         )
-        output = (completed.stdout + completed.stderr).strip()
-        return {"target": target, "exit": completed.returncode, "output": output[:200]}
-    except (OSError, subprocess.SubprocessError) as error:
-        return {"target": target, "error": type(error).__name__}
+    return {"origin": origin, "targets": attempts, "deleted": deleted}
+
+
+def credential_target_self_test() -> dict:
+    """Offline self-check of the composed target construction (no cmdkey write)."""
+    origin = "http://127.0.0.1:8132"
+    head = hashlib.sha256(origin.encode("utf-8")).hexdigest()[:32]
+    composed, bare = credential_targets(origin)
+    checks = {
+        "head_is_32_hex": len(head) == 32 and set(head) <= set("0123456789abcdef"),
+        "composed_first": composed == f"desktop-observation.cos-desktop/observation/{head}",
+        "composed_keeps_service_suffix": composed.endswith(f"cos-desktop/observation/{head}"),
+        "bare_second": bare == f"cos-desktop/observation/{head}",
+        "targets_differ": composed != bare,
+    }
+    return {
+        "origin": origin,
+        "head": head,
+        "targets": [composed, bare],
+        "checks": checks,
+        "ok": all(checks.values()),
+    }
 
 
 # --------------------------------------------------------------------------- one run
@@ -1098,7 +1171,17 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--runs", type=int, default=2, choices=(1, 2, 3))
     parser.add_argument("--label-prefix", default="run")
     parser.add_argument("--no-build", action="store_true", help="reuse the existing release binary")
+    parser.add_argument(
+        "--credential-self-test",
+        action="store_true",
+        help="print the Credential Manager target construction self-check and exit",
+    )
     args = parser.parse_args(argv)
+
+    if args.credential_self_test:
+        result = credential_target_self_test()
+        print(json.dumps(result, indent=2))
+        return 0 if result["ok"] else 1
 
     for required in (RUNTIME_PYTHON, SOURCE_DB, CONFIG_TEMPLATE, DESKTOP_EXE, PROBE):
         if not required.is_file():

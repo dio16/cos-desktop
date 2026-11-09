@@ -1,0 +1,175 @@
+{
+  "at": "2026-11-09T12:34:16+09:00",
+  "purpose": "verified cleanup of Desktop observation credentials in the Windows Credential Manager after the shared helper was fixed to delete the composed keyring target",
+  "helper": {
+    "module": "apps/desktop/devtools/runtime_integration/run_integration.py",
+    "function": "cleanup_credential_store",
+    "targets_attempted": [
+      "desktop-observation.cos-desktop/observation/<hash>",
+      "cos-desktop/observation/<hash>"
+    ],
+    "note": "cmdkey /delete matches the whole target; the bare service string never matched the keyring-composed entry, so a bare-only delete reported 'Element not found' and left any stored entry in place"
+  },
+  "python": "3.13.14",
+  "git": {
+    "head": "427e36f7d541fa2024d038c670c02809e8480e2f",
+    "dirty_entries": 10
+  },
+  "self_test": {
+    "origin": "http://127.0.0.1:8132",
+    "head": "dd179b0386bf34a9b1beb72dfed6a36f",
+    "targets": [
+      "desktop-observation.cos-desktop/observation/dd179b0386bf34a9b1beb72dfed6a36f",
+      "cos-desktop/observation/dd179b0386bf34a9b1beb72dfed6a36f"
+    ],
+    "checks": {
+      "head_is_32_hex": true,
+      "composed_first": true,
+      "composed_keeps_service_suffix": true,
+      "bare_second": true,
+      "targets_differ": true
+    },
+    "ok": true
+  },
+  "round_trip": {
+    "origin": "http://127.0.0.1:1",
+    "head": "10d8eb39449320b2c5808410ff44ca02",
+    "password_recorded": false,
+    "create_exit": 0,
+    "create_output": "CMDKEY: Credential added successfully.",
+    "present_before": true,
+    "cleanup": {
+      "origin": "http://127.0.0.1:1",
+      "targets": [
+        {
+          "target": "desktop-observation.cos-desktop/observation/10d8eb39449320b2c5808410ff44ca02",
+          "exit": 0,
+          "result": "deleted",
+          "output": "CMDKEY: Credential deleted successfully."
+        },
+        {
+          "target": "cos-desktop/observation/10d8eb39449320b2c5808410ff44ca02",
+          "exit": 1,
+          "result": "not_found",
+          "output": "CMDKEY: Element not found."
+        }
+      ],
+      "deleted": true
+    },
+    "present_after": false,
+    "composed_target": "desktop-observation.cos-desktop/observation/10d8eb39449320b2c5808410ff44ca02",
+    "bare_target": "cos-desktop/observation/10d8eb39449320b2c5808410ff44ca02",
+    "ok": true
+  },
+  "origins": [
+    {
+      "origin": "http://127.0.0.1:8132",
+      "head": "dd179b0386bf34a9b1beb72dfed6a36f",
+      "present_before": {
+        "origin": "http://127.0.0.1:8132",
+        "composed": {
+          "target": "desktop-observation.cos-desktop/observation/dd179b0386bf34a9b1beb72dfed6a36f",
+          "present": false,
+          "list_exit": 0,
+          "listed": []
+        },
+        "bare": {
+          "target": "cos-desktop/observation/dd179b0386bf34a9b1beb72dfed6a36f",
+          "present": false,
+          "list_exit": 0,
+          "listed": []
+        }
+      },
+      "cleanup": {
+        "origin": "http://127.0.0.1:8132",
+        "targets": [
+          {
+            "target": "desktop-observation.cos-desktop/observation/dd179b0386bf34a9b1beb72dfed6a36f",
+            "exit": 1,
+            "result": "not_found",
+            "output": "CMDKEY: Element not found."
+          },
+          {
+            "target": "cos-desktop/observation/dd179b0386bf34a9b1beb72dfed6a36f",
+            "exit": 1,
+            "result": "not_found",
+            "output": "CMDKEY: Element not found."
+          }
+        ],
+        "deleted": false
+      },
+      "present_after": {
+        "origin": "http://127.0.0.1:8132",
+        "composed": {
+          "target": "desktop-observation.cos-desktop/observation/dd179b0386bf34a9b1beb72dfed6a36f",
+          "present": false,
+          "list_exit": 0,
+          "listed": []
+        },
+        "bare": {
+          "target": "cos-desktop/observation/dd179b0386bf34a9b1beb72dfed6a36f",
+          "present": false,
+          "list_exit": 0,
+          "listed": []
+        }
+      }
+    },
+    {
+      "origin": "http://127.0.0.1:8133",
+      "head": "14887796bad1e1416ccd52d08bf9ed4d",
+      "present_before": {
+        "origin": "http://127.0.0.1:8133",
+        "composed": {
+          "target": "desktop-observation.cos-desktop/observation/14887796bad1e1416ccd52d08bf9ed4d",
+          "present": false,
+          "list_exit": 0,
+          "listed": []
+        },
+        "bare": {
+          "target": "cos-desktop/observation/14887796bad1e1416ccd52d08bf9ed4d",
+          "present": false,
+          "list_exit": 0,
+          "listed": []
+        }
+      },
+      "cleanup": {
+        "origin": "http://127.0.0.1:8133",
+        "targets": [
+          {
+            "target": "desktop-observation.cos-desktop/observation/14887796bad1e1416ccd52d08bf9ed4d",
+            "exit": 1,
+            "result": "not_found",
+            "output": "CMDKEY: Element not found."
+          },
+          {
+            "target": "cos-desktop/observation/14887796bad1e1416ccd52d08bf9ed4d",
+            "exit": 1,
+            "result": "not_found",
+            "output": "CMDKEY: Element not found."
+          }
+        ],
+        "deleted": false
+      },
+      "present_after": {
+        "origin": "http://127.0.0.1:8133",
+        "composed": {
+          "target": "desktop-observation.cos-desktop/observation/14887796bad1e1416ccd52d08bf9ed4d",
+          "present": false,
+          "list_exit": 0,
+          "listed": []
+        },
+        "bare": {
+          "target": "cos-desktop/observation/14887796bad1e1416ccd52d08bf9ed4d",
+          "present": false,
+          "list_exit": 0,
+          "listed": []
+        }
+      }
+    }
+  ],
+  "verdict": {
+    "self_test_ok": true,
+    "round_trip_ok": true,
+    "origins_recorded": 2
+  }
+}

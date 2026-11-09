@@ -93,8 +93,15 @@ handles and bearer values are redacted before they are written.
 - The RC-13 descriptor is retained with its `access_handle`/URL capabilities replaced by
   `<redacted-media-capability>`; no token, context id, cursor or media handle is recorded in
   plaintext.
-- The Windows credential-store entry for each isolated endpoint was deleted during cleanup
-  (`cmdkey` “Element not found” after the app's clean teardown, i.e. already removed).
+- The harness's credential-store cleanup deleted only the bare service target
+  (`cos-desktop/observation/<hash>`), which never matches the Desktop's keyring-composed
+  `desktop-observation.cos-desktop/observation/<hash>` entry: both isolated endpoints
+  recorded `cmdkey` exit 1, “Element not found”, so **no stored entry was deleted by the
+  run**. The follow-up record ([`cleanup-final-fix.json`](cleanup-final-fix.json)) lists both
+  target forms for 8132/8133 as absent **before and after** the fixed helper ran (again
+  `Element not found`, i.e. already absent; the Desktop removes its stored credential on
+  explicit teardown). The fixed helper deletes the composed target first and proves it with a
+  throwaway entry (exit 0, “Credential deleted successfully”).
 
 ## Cleanup
 
@@ -103,6 +110,14 @@ handles and bearer values are redacted before they are written.
 `isolated_runtime` process remains; ComfyUI (PID 28056) was stopped and the prior stopped
 state restored; Ollama was untouched. Each harness run itself exited its Runtime cleanly
 (exit 0), verified the port free, and removed its discovery descriptor.
+
+`cleanup-final.json` also carries a correction: the harness's credential-store delete used
+only the bare service target and never matched the composed entry, so the earlier
+"entry deleted" statement was wrong. The follow-up
+([`cleanup-final-fix.json`](cleanup-final-fix.json)) records the actual outcome per target
+(composed and bare, exit code plus `deleted`/`not_found`) for both isolated endpoints, and the
+shared `run_integration.cleanup_credential_store` now attempts the composed target first so
+future runs do not leave a stored entry behind.
 
 ## What was NOT measured (`NOT_MEASURED` / `NOT_RUN`)
 
