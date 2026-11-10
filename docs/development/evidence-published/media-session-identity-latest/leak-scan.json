@@ -1,0 +1,7 @@
+{
+  "schema_version": 1,
+  "method": "patterns over json/md/txt/sha256; exact per-run secrets checked by the harness before these documentation files were added",
+  "files_checked": 11,
+  "findings": [],
+  "clean": true
+}

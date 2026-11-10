@@ -1,0 +1,9 @@
+
+--- launch 1 2026-11-10T12:52:20+0900 ---
+Runtime discovered: server_identity=cos-runtime-orchestrator epoch=e5e71c5819104becab6527611f23ef08 pid=46824
+Runtime rediscovery unavailable: runtime discovery descriptor was not published
+Runtime reconnect unavailable: the Runtime discovery descriptor is unavailable
+Runtime credential reauthorized after rejection; the session reopens a fresh observation
+observation shutdown confirmed
+preferences save confirmed
+Runtime credential revoked on explicit teardown

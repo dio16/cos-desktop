@@ -1,0 +1,113 @@
+{
+  "schema_version": 1,
+  "kind": "defect-repair",
+  "status": "FIXED_MEASURED",
+  "date": "2026-11-10",
+  "title": "Media resolution follows the live session credential and authenticated principal",
+  "defect": {
+    "evidence": "docs/development/evidence-published/media-expiry-native-latest/defect.json",
+    "sha256": "sha256:9f9a7c1996fd1588fbbf9d92b9f6d4ff41cd862a027928c2b65571d889070b7b",
+    "observed": {
+      "media_descriptor_http_status": 401,
+      "native_state": "FORBIDDEN",
+      "media_descriptor_access_log_line": "GET /api/cos/media/sha256%3Aeea85a247125e3365b545f606b5527e5ddfa1489729926539c956e3793908a58 HTTP/1.1 401 Unauthorized",
+      "retry_observed": false
+    }
+  },
+  "root_cause": "The media binding captured the launch token and audience in its source factory. The observation transport recovered through its own CredentialSlot and could reauthorize after a Runtime restart, but that slot and the new authenticated principal were never propagated to media. A Runtime restart issues a new credential with a new principal, so a token-only update would still fail descriptor audience validation.",
+  "design": {
+    "shape": "one live SessionIdentity shared by the observation transport, bounded reauthorization, reconnect installer and media executor",
+    "credential": "the same cos-client CredentialSlot the protocol transport presents; read by MediaHttp at request time",
+    "audience": "a shared principal cell read by MediaRuntime at each resolution; replaced only from the persisted credential record",
+    "reauth": "ReauthHttp and the reconnect client build install the persisted token and principal; media does not issue, refresh or store credentials",
+    "retry": "one media request retry only when a 401 raced a changed installed credential; a 401 without a replacement is returned to the existing status mapping",
+    "invariants": [
+      "no second token source",
+      "descriptor audience equality is still required",
+      "no token, principal or access handle in logs, errors or evidence",
+      "bounded retry, no unbounded loop"
+    ]
+  },
+  "changes": [
+    "apps/desktop/src/main.rs",
+    "apps/desktop/src/runtime.rs",
+    "apps/desktop/src/reconnect.rs",
+    "apps/desktop/src/media_executor.rs",
+    "crates/desktop-gpui/src/media_presentation.rs",
+    "crates/desktop-gpui/src/lib.rs"
+  ],
+  "tests": {
+    "a_rotation_before_resolution": [
+      "runtime::tests::a_media_binding_reads_the_live_session_identity_per_request",
+      "media_executor::tests::a_rotated_session_credential_is_presented_by_the_next_media_request",
+      "media_presentation::tests::a_reinstalled_principal_is_visible_to_the_next_resolution"
+    ],
+    "b_reconnect_install_updates_media": [
+      "reconnect::tests::a_reconnect_install_replaces_the_shared_credential_and_principal",
+      "runtime::tests::a_reauthorization_installs_the_replacement_principal_for_media"
+    ],
+    "c_401_with_fresh_credential_retries": [
+      "media_executor::tests::a_media_401_with_a_replaced_session_credential_retries_once",
+      "media_executor::tests::a_raced_401_admits_through_the_real_repository_after_one_retry",
+      "media_executor::tests::a_media_401_without_a_replacement_is_not_retried"
+    ],
+    "d_cold_start_unchanged": [
+      "runtime::tests::a_media_binding_reads_the_live_session_identity_per_request",
+      "media_presentation::tests::every_media_binding_has_its_own_explicit_surface_statement"
+    ],
+    "e_no_secret_surface": [
+      "media_executor::tests::errors_carry_no_token_path_or_handle_value"
+    ],
+    "gates": {
+      "fmt": "PASS",
+      "metadata": "PASS",
+      "clippy_all_targets_deny_warnings": "PASS",
+      "tests": "PASS (app-core, cos-client, desktop-gpui, cos-desktop)",
+      "dependency_rules": "PASS"
+    }
+  },
+  "native": {
+    "verdict": "PASS",
+    "harness": "apps/desktop/devtools/runtime_integration/run_rt3_session_identity.py",
+    "desktop_binary_sha256": "sha256:ba3552b2443bd8c8ade230376eae43991a713c1ae05c65e56aeefc76844e0da0",
+    "desktop_binary_bytes": 21258240,
+    "runtime_head": "7764b7c4cdc8060bd9934dc72c4dcbab2eb60565",
+    "port": 8167,
+    "discovery_only": true,
+    "generation_executed": false,
+    "task_ref": "task-ab47119a8bec467a8e128d7b82f1220a",
+    "artifact_digest": "sha256:eea85a247125e3365b545f606b5527e5ddfa1489729926539c956e3793908a58",
+    "epoch_before": "e5e71c5819104becab6527611f23ef08",
+    "epoch_after": "cfe8675403d643cba374a7168a8fce29",
+    "epoch_changed": true,
+    "before_restart_state": "DISPLAYED",
+    "before_restart_descriptor_statuses": [200, 200],
+    "before_restart_blob_statuses": [200],
+    "reconnect_credential_200": true,
+    "reconnect_observation_200": true,
+    "post_restart_descriptor_statuses": [200],
+    "post_restart_blob_statuses": [200],
+    "post_restart_media_401": false,
+    "refetch_elapsed_seconds": 13.034,
+    "after_restart_state": "DISPLAYED",
+    "after_restart_displayed_marker": true,
+    "after_restart_forbidden_text": false,
+    "viewed_candidate_coherent": true,
+    "protocol_descriptor_status": 200,
+    "protocol_blob_status": 200,
+    "protocol_blob_bytes": 1363011,
+    "protocol_digest_matches_descriptor": true,
+    "screenshot_before": "shots/identity-before.png",
+    "screenshot_after": "shots/identity-after-restart.png",
+    "uia_before": "uia/identity-before.json",
+    "uia_after": "uia/identity-after-restart.json",
+    "leak_scan_clean": true,
+    "cleanup": "desktop exit 0, Runtime clean stop, port free"
+  },
+  "commit": "e7a3a1044c13ad21ef75ec61930f22b8b54c7263",
+  "residuals": [
+    "a real 300 s TTL expiry and a native wire-410 to Expired path remain NOT_MEASURED",
+    "the before/after screenshots are byte-identical because the recovered view shows the same artifact content; the refetch proof is the post-restart Runtime descriptor+blob 200 pair and the independent protocol fetch digest",
+    "PREVIEW/THUMBNAIL/METADATA, non-PNG artifacts and clock skew remain NOT_MEASURED"
+  ]
+}

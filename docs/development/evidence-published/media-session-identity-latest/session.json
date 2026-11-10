@@ -1,0 +1,640 @@
+{
+  "schema_version": 1,
+  "task": "RT3 media session-identity repair (same-process Runtime restart)",
+  "started_at": "2026-11-10T12:52:14+0900",
+  "desktop_root": "C:\\tmp\\rt3-session-identity",
+  "runtime_root": "C:\\AI\\orchestrator",
+  "desktop_head": "cc4effdfed1bf48ef2292d397808a197c6e20b00",
+  "desktop_status_porcelain": " M apps/desktop/src/main.rs\n M apps/desktop/src/media_executor.rs\n M apps/desktop/src/reconnect.rs\n M apps/desktop/src/runtime.rs\n M crates/desktop-gpui/src/lib.rs\n M crates/desktop-gpui/src/media_presentation.rs\n?? apps/desktop/devtools/runtime_integration/run_rt3_session_identity.py",
+  "runtime_head": "7764b7c4cdc8060bd9934dc72c4dcbab2eb60565",
+  "runtime_status_porcelain": " M orchestrator/docs/guides/development-loop.md\n M orchestrator/orchestrator_app/dev_caller.py\n M orchestrator/tests/test_dev_caller.py\n M orchestrator/tests/test_dev_caller_e2e.py\n?? orchestrator/devplan/plan-draft.json\n?? orchestrator/devplan/plan-prepare.json\n?? orchestrator/devplan/prepare-out.json",
+  "desktop_binary": {
+    "path": "C:\\tmp\\rt3-session-identity\\target\\release\\cos-desktop.exe",
+    "sha256": "sha256:ba3552b2443bd8c8ade230376eae43991a713c1ae05c65e56aeefc76844e0da0",
+    "bytes": 21258240
+  },
+  "source_db": {
+    "path": "C:\\AI\\orchestrator\\db\\generation.sqlite",
+    "sha256": "sha256:e4ead0aa8a9c2cf0161b8b0338dd4c957e8ae4995e12dd5f4f4f63068ac6b4e5",
+    "bytes": 11522048
+  },
+  "native_source_run": {
+    "path": "C:\\dev\\cos-desktop\\target\\acc1-native\\20261109T233420-golden",
+    "db_sha256": "sha256:d4dddc9504c236cfd7e2c8f87aa0c381a9e09bf74eabc7028605a6fd87f71b8b",
+    "db_bytes": 11800576,
+    "task_ref": "task-ab47119a8bec467a8e128d7b82f1220a",
+    "note": "fresh copy of the prior isolated closure run's DB/CAS; the task's capability snapshot set is test-only material, no generation was executed by this session"
+  },
+  "ports": {
+    "native": 8167
+  },
+  "measurement": {
+    "schema_version": 1,
+    "kind": "native-measurement",
+    "label": "session-identity",
+    "started_at": "2026-11-10T12:52:15+0900",
+    "verdict": "PASS",
+    "precondition": {
+      "task_ref": "task-ab47119a8bec467a8e128d7b82f1220a",
+      "source_run": "C:\\dev\\cos-desktop\\target\\acc1-native\\20261109T233420-golden",
+      "desktop_binary": {
+        "path": "C:\\tmp\\rt3-session-identity\\target\\release\\cos-desktop.exe",
+        "sha256": "sha256:ba3552b2443bd8c8ade230376eae43991a713c1ae05c65e56aeefc76844e0da0",
+        "bytes": 21258240,
+        "built_at": "2026-11-10T12:39:00"
+      },
+      "desktop_head": "cc4effdfed1bf48ef2292d397808a197c6e20b00",
+      "desktop_status_porcelain": " M apps/desktop/src/main.rs\n M apps/desktop/src/media_executor.rs\n M apps/desktop/src/reconnect.rs\n M apps/desktop/src/runtime.rs\n M crates/desktop-gpui/src/lib.rs\n M crates/desktop-gpui/src/media_presentation.rs\n?? apps/desktop/devtools/runtime_integration/run_rt3_session_identity.py",
+      "runtime_head": "7764b7c4cdc8060bd9934dc72c4dcbab2eb60565",
+      "runtime_epoch_1": "e5e71c5819104becab6527611f23ef08",
+      "runtime_server_identity": "cos-runtime-orchestrator",
+      "db_copy_sha256": "sha256:597a1c4eae387c6aa62b5e47d678c5a65ac9c39dc60b060b9292591b869ff3f8",
+      "db_copy_bytes": 11800576,
+      "discovery_only": true,
+      "port": 8167,
+      "generation_executed": false,
+      "task_projection": {
+        "title": "ACC1-NATIVE-golden 20261109-233420 production still",
+        "task_status": "COMPLETED",
+        "inner_phase": "RUNNING",
+        "capabilities_ref": "sha256:6f0858dce7b014c532414541490deb3996f0343222d851d1498ad0f127fc406a"
+      },
+      "capability_media": {
+        "at": "2026-11-10T12:52:20+0900",
+        "http_status": 200,
+        "entries": [
+          {
+            "representation": "ORIGINAL",
+            "support": "SUPPORTED"
+          },
+          {
+            "representation": "THUMBNAIL",
+            "support": "SUPPORTED"
+          },
+          {
+            "representation": "PREVIEW",
+            "support": "UNSUPPORTED",
+            "reason": "PREVIEW transcode is not supported by this Runtime"
+          },
+          {
+            "representation": "METADATA",
+            "support": "UNSUPPORTED",
+            "reason": "METADATA byte route is not supported by this Runtime"
+          }
+        ],
+        "availability": "SUPPORTED",
+        "capabilities_ref": "sha256:6f0858dce7b014c532414541490deb3996f0343222d851d1498ad0f127fc406a",
+        "matched": true,
+        "entry": {
+          "representation": "ORIGINAL",
+          "support": "SUPPORTED"
+        }
+      }
+    },
+    "before_restart": {
+      "connected": {
+        "verdict": "PASS",
+        "pid": 38296,
+        "window": {
+          "found": true,
+          "title": "COS Desktop",
+          "class": "Zed::Window",
+          "width": 1296,
+          "height": 839
+        },
+        "uia": {
+          "label": "connected-session-identity-before",
+          "at": "2026-11-10T12:52:23+0900",
+          "elements": 58,
+          "names_sha256": "sha256:9736ef9ce0792454118706e272a5cd3563d2855b648980884462e3f397ce6153",
+          "names": [
+            "COS Desktop 作業画面",
+            "現在のタスクと状態",
+            "task-00eeff7805964e1f835534b81e57065b  北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+            "Runtime / 情報を受信中",
+            "タスクの状態: 完了（COMPLETED）",
+            "処理段階: RUNNING",
+            "反復回数: 第0回",
+            "成果物の利用状態: 取得可能（AVAILABLE）（1件）",
+            "接続・情報の鮮度: 情報を受信中",
+            "正式な結果: 完了（COMPLETED）",
+            "停止の操作と現在の受付状況",
+            "タスクを停止（現在は操作できません）",
+            "停止要求の受付状況を確認（現在は操作できません）",
+            "この画面から停止要求は送っていません",
+            "停止要求を1回送ります。受付状況とタスクの終了結果は別に確認します。",
+            "タスク一覧",
+            "新しいタスクを作成",
+            "タスクを検索",
+            "task-00eeff7805964e1f835534b81e57065b — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+            "完了（COMPLETED）",
+            "RUNNING",
+            "0",
+            "キーボード操作対象",
+            "task-019e673007d848018cf3dc7366258d38 — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+            "完了（COMPLETED）",
+            "RUNNING",
+            "0",
+            "作業領域：成果物",
+            "成果物",
+            "表示中",
+            "Runtime が認可した成果物メディアを取得して表示します。取得できない場合は、理由を画像領域に明示します。",
+            "全体表示 (0)",
+            "物理ピクセル1:1 (1)",
+            "拡大 (+)",
+            "縮小 (-)",
+            "全画面 / 復帰 (F11)",
+            "画像を利用できません: 認可済みの画像入力がありません。実行基盤からの取得は未対応です。",
+            "画像は未表示です",
+            "画像表示。0: 全体、1: 物理等倍、+/-: 拡大縮小、矢印: 移動、F11: 全画面、Escape: 復帰",
+            "候補の詳細",
+            "詳細と説明",
+            "候補は表示されていません",
+            "このタスクの実行履歴を開く",
+            "目的 — 利用可能: task-00eeff7805964e1f835534b81e57065b — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+            "評価 — 利用不可: 候補は選択されていません。",
+            "判断の根拠 — 利用不可: 候補は選択されていません。",
+            "改善 — 利用不可: 候補は選択されていません。",
+            "結果 — 利用可能: 正式状態: 完了（COMPLETED）",
+            "診断情報を開く",
+            "反復ごとの候補一覧",
+            "反復ごとの候補一覧。閲覧中と比較対象はこの画面の選択です。正式採用は実行基盤から通知されます。",
+            "候補一覧",
+            "task-00eeff7805964e1f835534b81e57065b — 第0回 — C1 キーボード操作対象 正式採用（実行基盤から通知）",
+            "作業画面の切り替え",
+            "成果物  Ctrl+1",
+            "候補を比較 — 候補を2つ選ぶ必要があります",
+            "処理の流れ  Ctrl+3"
+          ],
+          "window": {
+            "title": "COS Desktop",
+            "class": "Zed::Window",
+            "width": 1296,
+            "height": 839
+          },
+          "screenshot": {
+            "file": "C:\\tmp\\rt3-session-identity\\target\\media-session-identity\\20261110T125215-session-identity\\ctx\\20261110T125215-session-identity\\shots\\connected-session-identity-before.png",
+            "sha256": "sha256:4f1402bb8eaa02ccc6ecf87d9d696214d6a53d74511b7a18ed06203b5b5b9597",
+            "bytes": 147542,
+            "printed": true,
+            "width": 1296,
+            "height": 839
+          }
+        },
+        "excerpt": "現在のタスクと状態\nRuntime / 情報を受信中\nタスクの状態: 完了（COMPLETED）\n接続・情報の鮮度: 情報を受信中\nタスクを停止（現在は操作できません）\n停止要求を1回送ります。受付状況とタスクの終了結果は別に確認します。\nタスク一覧\n新しいタスクを作成\nタスクを検索\nRuntime が認可した成果物メディアを取得して表示します。取得できない場合は、理由を画像領域に明示します。\nこのタスクの実行履歴を開く"
+      },
+      "task_selected": {
+        "method": "synthetic_wm_lbutton_at_rail_row",
+        "viewed": null
+      },
+      "artifact_surface": {
+        "state": "DISPLAYED",
+        "viewport_present": true,
+        "inspector_task_match": true
+      },
+      "uia": {
+        "label": "identity-before",
+        "at": "2026-11-10T12:52:41+0900",
+        "state": "DISPLAYED",
+        "elements": 55,
+        "window": {
+          "title": "COS Desktop",
+          "class": "Zed::Window",
+          "width": 1296,
+          "height": 839
+        },
+        "uia_file": "uia\\identity-before.json",
+        "uia_sha256": "sha256:7a43f89786bf72db487b1730bf36d1fe74b02d65222c6a1a100421867f47f149",
+        "names_sha256": "sha256:d581d5f76dc617fe7f988de2b100c2e129b1c8e87bbfbe268d94857e1a03f20a",
+        "names_count": 54,
+        "media_lines": [
+          "成果物の利用状態: 取得可能（AVAILABLE）（1件）",
+          "作業領域：成果物",
+          "成果物",
+          "Runtime が認可した成果物メディアを取得して表示します。取得できない場合は、理由を画像領域に明示します。",
+          "メディア画像（記述子のダイジェスト検証済み）: 低解像度プレビュー。原寸の詳細表示・1:1ではありません。",
+          "画像表示。0: 全体、1: 物理等倍、+/-: 拡大縮小、矢印: 移動、F11: 全画面、Escape: 復帰",
+          "成果物  Ctrl+1"
+        ],
+        "has_displayed_marker": true,
+        "forbidden_text_present": false,
+        "screenshot": {
+          "file": "shots\\identity-before.png",
+          "sha256": "sha256:b7b46b70b2c4e060e322a86783045f94c77dacbfdd3d36096e8772c3e9babd17",
+          "bytes": 203440,
+          "printed": true,
+          "width": 1296,
+          "height": 839
+        }
+      },
+      "resolved_artifact": {
+        "artifact": {
+          "artifact_ref": "art-v1-58ba544d-8d83-4728-8aa1-16efbc895106",
+          "artifact_digest": "sha256:eea85a247125e3365b545f606b5527e5ddfa1489729926539c956e3793908a58",
+          "media_type": "image/png",
+          "availability": "AVAILABLE",
+          "task_ref": null
+        },
+        "descriptor_http_status": 200,
+        "descriptor": {
+          "descriptor_id": "descriptor-c0602610a2ca7fcbde1db259ee6fe4f1",
+          "artifact_ref": "art-v1-58ba544d-8d83-4728-8aa1-16efbc895106",
+          "artifact_digest": "sha256:eea85a247125e3365b545f606b5527e5ddfa1489729926539c956e3793908a58",
+          "representation": "ORIGINAL",
+          "representation_version": 1,
+          "media_type": "image/png",
+          "byte_length": 1363011,
+          "width": 1024,
+          "height": 1024,
+          "availability": "AVAILABLE",
+          "verification": {
+            "state": "VERIFIED",
+            "algorithm": "sha256",
+            "expected_digest": "eea85a247125e3365b545f606b5527e5ddfa1489729926539c956e3793908a58"
+          },
+          "server_identity": "cos-runtime-orchestrator",
+          "expires_at_unix_ms": 1794283062192,
+          "access_handle_present": true,
+          "access_handle_length": 474,
+          "audience_sha256_16": "sha256:1afbb5320eb2c4c0"
+        }
+      },
+      "media_access": {
+        "entries": [
+          {
+            "route": "descriptor",
+            "status": 200,
+            "line": "INFO:     127.0.0.1:62191 - \"GET /api/cos/media/sha256%3Aeea85a247125e3365b545f606b5527e5ddfa1489729926539c956e3793908a58 HTTP/1.1\" 200 OK"
+          },
+          {
+            "route": "blob",
+            "status": 200,
+            "line": "ImV4cCI6MTc5NDI4MzA1NCwicmVwIjoiT1JJR0lOQUwiLCJzaWQiOiJjb3MtcnVudGltZS1vcmNoZXN0cmF0b3IiLCJzdWIiOiJkZXNrdG9wOmNjZjcyOGM2NDUyZjQ5NmRmNmI3OWQ0MTgwNTdjYTVjIiwidiI6MSwidmVyIjoxfQ.aiiCppu1dhDP_qADMj9lHY_4YCjio11CmR6r51Gg2qg/blob HTTP/1.1\" 200 OK"
+          },
+          {
+            "route": "descriptor",
+            "status": 200,
+            "line": "INFO:     127.0.0.1:53380 - \"GET /api/cos/media/sha256%3Aeea85a247125e3365b545f606b5527e5ddfa1489729926539c956e3793908a58 HTTP/1.1\" 200 OK"
+          }
+        ],
+        "descriptor_statuses": [
+          200,
+          200
+        ],
+        "blob_statuses": [
+          200
+        ]
+      }
+    },
+    "restart": {
+      "stop_1": {
+        "pid": 57840,
+        "clean": true,
+        "exit": 0
+      },
+      "port_free_after_stop": true,
+      "start_2": {
+        "pid": 25156,
+        "epoch": "cfe8675403d643cba374a7168a8fce29",
+        "server_identity": "cos-runtime-orchestrator",
+        "epoch_changed": true,
+        "at": "2026-11-10T12:52:45+0900"
+      },
+      "discovery_reappeared": true
+    },
+    "reconnect": {
+      "at": "2026-11-10T12:52:45+0900",
+      "seen": true,
+      "credential_200": true,
+      "observation_200": true,
+      "log_lines": [
+        "INFO:     127.0.0.1:54732 - \"POST /api/cos/desktop/observation HTTP/1.1\" 401 Unauthorized",
+        "INFO:     127.0.0.1:56353 - \"POST /api/cos/desktop/credentials/refresh HTTP/1.1\" 401 Unauthorized",
+        "INFO:     127.0.0.1:56354 - \"POST /api/cos/desktop/credentials HTTP/1.1\" 200 OK",
+        "INFO:     127.0.0.1:54732 - \"POST /api/cos/desktop/observation HTTP/1.1\" 409 Conflict",
+        "INFO:     127.0.0.1:54732 - \"POST /api/cos/desktop/observation HTTP/1.1\" 200 OK"
+      ],
+      "after": "2026-11-10T12:52:47+0900",
+      "candidate_settle": {
+        "at": "2026-11-10T12:52:47+0900",
+        "candidate_projected": true,
+        "polls": 1,
+        "after": "2026-11-10T12:52:48+0900"
+      },
+      "task_reselect": {
+        "method": "synthetic_wm_lbutton_at_rail_row",
+        "selected": true,
+        "scope_task_matched": true
+      }
+    },
+    "after_restart": {
+      "at": "2026-11-10T12:52:57+0900",
+      "reentry": {
+        "at": "2026-11-10T12:52:53+0900",
+        "actions": [
+          {
+            "action": "flow",
+            "result": {
+              "method": "uia_invoke",
+              "result": {
+                "action": "invoke",
+                "found": true,
+                "hwnd": 16519606,
+                "title": "COS Desktop",
+                "class": "Zed::Window",
+                "width": 1296,
+                "height": 839,
+                "name_match": "処理の流れ  Ctrl+3",
+                "invoked": true,
+                "matched_name": "処理の流れ  Ctrl+3",
+                "matched_id": "",
+                "matched_control_type": "ControlType.Button",
+                "pattern": "invoke",
+                "patterns_tried": [
+                  "invoke"
+                ],
+                "_out": "C:\\tmp\\rt3-session-identity\\target\\media-session-identity\\20261110T125215-session-identity\\ctx\\20261110T125215-session-identity\\uia\\033-invoke.json"
+              }
+            }
+          },
+          {
+            "action": "artifact",
+            "result": {
+              "method": "uia_invoke",
+              "result": {
+                "action": "invoke",
+                "found": true,
+                "hwnd": 16519606,
+                "title": "COS Desktop",
+                "class": "Zed::Window",
+                "width": 1296,
+                "height": 839,
+                "name_match": "成果物  Ctrl+1",
+                "invoked": true,
+                "matched_name": "成果物  Ctrl+1",
+                "matched_id": "",
+                "matched_control_type": "ControlType.Button",
+                "pattern": "invoke",
+                "patterns_tried": [
+                  "invoke"
+                ],
+                "_out": "C:\\tmp\\rt3-session-identity\\target\\media-session-identity\\20261110T125215-session-identity\\ctx\\20261110T125215-session-identity\\uia\\034-invoke.json"
+              }
+            }
+          }
+        ],
+        "log_offset": 15711
+      },
+      "media_refetch_after_restart": {
+        "at": "2026-11-10T12:52:55+0900",
+        "found": true,
+        "poll": 1,
+        "access": {
+          "entries": [
+            {
+              "route": "descriptor",
+              "status": 200,
+              "line": "INFO:     127.0.0.1:56360 - \"GET /api/cos/media/sha256%3Aeea85a247125e3365b545f606b5527e5ddfa1489729926539c956e3793908a58 HTTP/1.1\" 200 OK"
+            },
+            {
+              "route": "blob",
+              "status": 200,
+              "line": "ImV4cCI6MTc5NDI4MzA2NiwicmVwIjoiT1JJR0lOQUwiLCJzaWQiOiJjb3MtcnVudGltZS1vcmNoZXN0cmF0b3IiLCJzdWIiOiJkZXNrdG9wOjgxMWZlNTUzYjBjYWM5MjRhMDlhNWQzNGViZDYwY2Q4IiwidiI6MSwidmVyIjoxfQ.dnLDZyCqLHlmRFzSsqM4UdQWix9KK6GBy7OGZ3KRFjA/blob HTTP/1.1\" 200 OK"
+            }
+          ],
+          "descriptor_statuses": [
+            200
+          ],
+          "blob_statuses": [
+            200
+          ]
+        },
+        "elapsed_seconds": 13.034,
+        "after": "2026-11-10T12:52:55+0900",
+        "after_reentry": {
+          "entries": [],
+          "descriptor_statuses": [],
+          "blob_statuses": []
+        }
+      },
+      "transitions": [
+        {
+          "at": "2026-11-10T12:52:56+0900",
+          "state": "DISPLAYED"
+        }
+      ],
+      "final_state": "DISPLAYED",
+      "viewed_candidate_coherent": true,
+      "displayed_marker": true,
+      "forbidden_text_present": false,
+      "uia": {
+        "label": "identity-after-restart",
+        "at": "2026-11-10T12:52:57+0900",
+        "state": "DISPLAYED",
+        "elements": 55,
+        "window": {
+          "title": "COS Desktop",
+          "class": "Zed::Window",
+          "width": 1296,
+          "height": 839
+        },
+        "uia_file": "uia\\identity-after-restart.json",
+        "uia_sha256": "sha256:7a43f89786bf72db487b1730bf36d1fe74b02d65222c6a1a100421867f47f149",
+        "names_sha256": "sha256:d581d5f76dc617fe7f988de2b100c2e129b1c8e87bbfbe268d94857e1a03f20a",
+        "names_count": 54,
+        "media_lines": [
+          "成果物の利用状態: 取得可能（AVAILABLE）（1件）",
+          "作業領域：成果物",
+          "成果物",
+          "Runtime が認可した成果物メディアを取得して表示します。取得できない場合は、理由を画像領域に明示します。",
+          "メディア画像（記述子のダイジェスト検証済み）: 低解像度プレビュー。原寸の詳細表示・1:1ではありません。",
+          "画像表示。0: 全体、1: 物理等倍、+/-: 拡大縮小、矢印: 移動、F11: 全画面、Escape: 復帰",
+          "成果物  Ctrl+1"
+        ],
+        "has_displayed_marker": true,
+        "forbidden_text_present": false,
+        "screenshot": {
+          "file": "shots\\identity-after-restart.png",
+          "sha256": "sha256:b7b46b70b2c4e060e322a86783045f94c77dacbfdd3d36096e8772c3e9babd17",
+          "bytes": 203440,
+          "printed": true,
+          "width": 1296,
+          "height": 839
+        }
+      },
+      "media_access": {
+        "entries": [
+          {
+            "route": "descriptor",
+            "status": 200,
+            "line": "INFO:     127.0.0.1:56360 - \"GET /api/cos/media/sha256%3Aeea85a247125e3365b545f606b5527e5ddfa1489729926539c956e3793908a58 HTTP/1.1\" 200 OK"
+          },
+          {
+            "route": "blob",
+            "status": 200,
+            "line": "ImV4cCI6MTc5NDI4MzA2NiwicmVwIjoiT1JJR0lOQUwiLCJzaWQiOiJjb3MtcnVudGltZS1vcmNoZXN0cmF0b3IiLCJzdWIiOiJkZXNrdG9wOjgxMWZlNTUzYjBjYWM5MjRhMDlhNWQzNGViZDYwY2Q4IiwidiI6MSwidmVyIjoxfQ.dnLDZyCqLHlmRFzSsqM4UdQWix9KK6GBy7OGZ3KRFjA/blob HTTP/1.1\" 200 OK"
+          }
+        ],
+        "descriptor_statuses": [
+          200
+        ],
+        "blob_statuses": [
+          200
+        ]
+      },
+      "descriptor_200_after_restart": true,
+      "descriptor_401_after_restart": false,
+      "blob_200_after_restart": true,
+      "reconnect_log_lines": [
+        "INFO:     127.0.0.1:54732 - \"POST /api/cos/desktop/observation HTTP/1.1\" 401 Unauthorized",
+        "INFO:     127.0.0.1:56353 - \"POST /api/cos/desktop/credentials/refresh HTTP/1.1\" 401 Unauthorized",
+        "INFO:     127.0.0.1:56354 - \"POST /api/cos/desktop/credentials HTTP/1.1\" 200 OK",
+        "INFO:     127.0.0.1:54732 - \"POST /api/cos/desktop/observation HTTP/1.1\" 409 Conflict",
+        "INFO:     127.0.0.1:54732 - \"POST /api/cos/desktop/observation HTTP/1.1\" 200 OK"
+      ],
+      "elapsed_after_restart_seconds": 15.19
+    },
+    "protocol_after_restart": {
+      "at": "2026-11-10T12:52:57+0900",
+      "credential_http_status": 200,
+      "observation_http_status": 200,
+      "descriptor_http_status": 200,
+      "descriptor": {
+        "descriptor_id": "descriptor-3867a16e747eb26b73c7049f26a25a11",
+        "artifact_ref": "art-v1-58ba544d-8d83-4728-8aa1-16efbc895106",
+        "artifact_digest": "sha256:eea85a247125e3365b545f606b5527e5ddfa1489729926539c956e3793908a58",
+        "representation": "ORIGINAL",
+        "representation_version": 1,
+        "media_type": "image/png",
+        "byte_length": 1363011,
+        "width": 1024,
+        "height": 1024,
+        "availability": "AVAILABLE",
+        "verification": {
+          "state": "VERIFIED",
+          "algorithm": "sha256",
+          "expected_digest": "eea85a247125e3365b545f606b5527e5ddfa1489729926539c956e3793908a58"
+        },
+        "server_identity": "cos-runtime-orchestrator",
+        "expires_at_unix_ms": 1794283078032,
+        "access_handle_present": true,
+        "access_handle_length": 474,
+        "audience_sha256_16": "sha256:4419756661078080"
+      },
+      "blob_http_status": 200,
+      "blob_bytes": 1363011,
+      "blob_sha256": "sha256:eea85a247125e3365b545f606b5527e5ddfa1489729926539c956e3793908a58",
+      "digest_matches_descriptor": true
+    },
+    "prefix_reference": {
+      "evidence": "docs\\development\\evidence-published\\media-expiry-native-latest",
+      "note": "published pre-fix negative from the same product source for the defect path; not re-run in this session",
+      "defect_sha256": "sha256:9f9a7c1996fd1588fbbf9d92b9f6d4ff41cd862a027928c2b65571d889070b7b",
+      "observed": {
+        "status": "REPRODUCED_NOT_FIXED",
+        "media_descriptor_http_status": 401,
+        "native_state": "FORBIDDEN",
+        "native_sentence": "画像を利用できません: このセッションにはメディアの閲覧権限がありません。",
+        "image_displayed": false,
+        "retry_observed": false
+      },
+      "record_sha256": "sha256:c2ca914774c4e111a8689d3acf2b164bfe24b9f335b5861ee189d89d8471dbce"
+    },
+    "cleanup": {
+      "desktop": {
+        "pid": 38296,
+        "wm_close_sent": true,
+        "exited": true,
+        "exit_code": 0,
+        "forced": null
+      },
+      "runtime": {
+        "pid": 25156,
+        "clean": true,
+        "exit": 0
+      },
+      "port": 8167,
+      "port_free": true,
+      "credential_store": {
+        "origin": "http://127.0.0.1:8167",
+        "targets": [
+          {
+            "target": "desktop-observation.cos-desktop/observation/4245ee4bf0fb0ec5ca27b70584e43cfe",
+            "exit": 1,
+            "result": "not_found",
+            "output": "CMDKEY: Element not found."
+          },
+          {
+            "target": "cos-desktop/observation/4245ee4bf0fb0ec5ca27b70584e43cfe",
+            "exit": 1,
+            "result": "not_found",
+            "output": "CMDKEY: Element not found."
+          }
+        ],
+        "deleted": false
+      },
+      "discovery_present_after_stop": false
+    },
+    "residuals": [],
+    "desktop_log_tail": "\n--- launch 1 2026-11-10T12:52:20+0900 ---\nRuntime discovered: server_identity=cos-runtime-orchestrator epoch=e5e71c5819104becab6527611f23ef08 pid=46824\nRuntime rediscovery unavailable: runtime discovery descriptor was not published\nRuntime reconnect unavailable: the Runtime discovery descriptor is unavailable\nRuntime credential reauthorized after rejection; the session reopens a fresh observation\n",
+    "finished_at": "2026-11-10T12:52:59+0900",
+    "desktop_log_path": "C:\\tmp\\rt3-session-identity\\target\\media-session-identity\\20261110T125215-session-identity\\ctx\\20261110T125215-session-identity\\desktop-session-identity-before.log"
+  },
+  "cleanup": {
+    "desktop": {
+      "pid": 38296,
+      "wm_close_sent": true,
+      "exited": true,
+      "exit_code": 0,
+      "forced": null
+    },
+    "runtime": {
+      "pid": 25156,
+      "clean": true,
+      "exit": 0
+    },
+    "port": 8167,
+    "port_free": true,
+    "credential_store": {
+      "origin": "http://127.0.0.1:8167",
+      "targets": [
+        {
+          "target": "desktop-observation.cos-desktop/observation/4245ee4bf0fb0ec5ca27b70584e43cfe",
+          "exit": 1,
+          "result": "not_found",
+          "output": "CMDKEY: Element not found."
+        },
+        {
+          "target": "cos-desktop/observation/4245ee4bf0fb0ec5ca27b70584e43cfe",
+          "exit": 1,
+          "result": "not_found",
+          "output": "CMDKEY: Element not found."
+        }
+      ],
+      "deleted": false
+    },
+    "discovery_present_after_stop": false
+  },
+  "residuals": [],
+  "log_manifests": [
+    {
+      "source": "C:\\tmp\\rt3-session-identity\\target\\media-session-identity\\20261110T125215-session-identity\\ctx\\20261110T125215-session-identity\\runtime.log",
+      "file": "runtime-native.log.sanitized.txt",
+      "sha256": "sha256:77d3a3581c55bb517cc4c2d11ec119e31fd4068ef619385be403bd7c2204d1cf",
+      "bytes": 16938,
+      "redactions": 3
+    },
+    {
+      "source": "C:\\tmp\\rt3-session-identity\\target\\media-session-identity\\20261110T125215-session-identity\\ctx\\20261110T125215-session-identity\\desktop-session-identity-before.log",
+      "file": "desktop-native.log.sanitized.txt",
+      "sha256": "sha256:6d58f09f3361d670d7293fc2f2488edbe85ebf90880db76caac6e93ce0e255da",
+      "bytes": 516,
+      "redactions": 0
+    }
+  ],
+  "finished_at": "2026-11-10T12:52:59+0900",
+  "fix_commit": "e7a3a1044c13ad21ef75ec61930f22b8b54c7263",
+  "harness": "apps/desktop/devtools/runtime_integration/run_rt3_session_identity.py",
+  "measured_binary_source": "detached worktree cc4effd + fix e7a3a10",
+  "documented_at": "2026-11-10T13:00:00+0900"
+}

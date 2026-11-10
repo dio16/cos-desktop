@@ -1,0 +1,13 @@
+{
+  "leak-scan.json": "sha256:1235abc7c845685e8b49f825ccb4a60d5c8a5691dd9be541feb5102ea3737056",
+  "logs/desktop-native.log.sanitized.txt": "sha256:6d58f09f3361d670d7293fc2f2488edbe85ebf90880db76caac6e93ce0e255da",
+  "logs/runtime-native.log.sanitized.txt": "sha256:77d3a3581c55bb517cc4c2d11ec119e31fd4068ef619385be403bd7c2204d1cf",
+  "README.md": "sha256:7efbc585c06d2f47b17d5e807117419118357b36aacd6480f17b34d7dd39f412",
+  "record-native.json": "sha256:bf75bffa9f87e2902156aa8fd23efbd765288175499d36a98f6a01a505cf95e1",
+  "repair.json": "sha256:3a003287448407fbad1befd7655f76aa8342758caebf63de88fb236decf27bda",
+  "session.json": "sha256:eb7119f962a67f1a4e6358a7f85bea7b98e0f4f5fb330e98cf83bdcf5c58de59",
+  "shots/identity-after-restart.png": "sha256:b7b46b70b2c4e060e322a86783045f94c77dacbfdd3d36096e8772c3e9babd17",
+  "shots/identity-before.png": "sha256:b7b46b70b2c4e060e322a86783045f94c77dacbfdd3d36096e8772c3e9babd17",
+  "uia/identity-after-restart.json": "sha256:7a43f89786bf72db487b1730bf36d1fe74b02d65222c6a1a100421867f47f149",
+  "uia/identity-before.json": "sha256:7a43f89786bf72db487b1730bf36d1fe74b02d65222c6a1a100421867f47f149"
+}
