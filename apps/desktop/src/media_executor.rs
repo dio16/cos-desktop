@@ -11,9 +11,15 @@
 //!   validated origin here. An absolute URL, a scheme-relative path, a
 //!   backslash, a query/fragment, a raw dot segment or any percent-encoding is
 //!   refused before a socket is opened;
-//! - the bearer credential is attached only by this executor and only for the
-//!   media route family; a caller-supplied `Authorization`/`Host`/proxy header is
-//!   refused rather than merged, so a header cannot override the credential;
+//! - the bearer credential is read from the session's live credential slot at
+//!   request time (the same slot the observation transport presents) and
+//!   attached only by this executor and only for the media route family; a
+//!   caller-supplied `Authorization`/`Host`/proxy header is refused rather than
+//!   merged, so a header cannot override the credential;
+//! - a `401` is retried exactly once **only** when that shared slot has since
+//!   been given a different credential (a bounded reauthorization or reconnect
+//!   install). This module never issues, refreshes, stores or logs a credential:
+//!   the session-level recovery path remains the only credential authority;
 //! - redirects and environment proxies are disabled in the agent itself: a 3xx
 //!   is returned as a response (and mapped to an unexpected status), never
 //!   followed to another origin;
@@ -21,13 +27,14 @@
 //!   representation budget from `cos-client`), so an oversized or misdeclared
 //!   response is refused without an unbounded read.
 //!
-//! The token is held for the lifetime of the executor, is never formatted,
-//! logged, placed in an error or stored anywhere, and no error type here can
-//! carry it. No GPUI object and no decode work exists in this module.
+//! The executor retains no copy of the credential: it reads the shared slot per
+//! request and never formats, logs or stores the value, and no error type here
+//! can carry it. No GPUI object and no decode work exists in this module.
 
 use std::io::Read;
 use std::time::Duration;
 
+use cos_client::CredentialSlot;
 use cos_client::media::{Cancellation, MediaExecutor, MediaResponse, MediaTransportError};
 
 /// Whole-request budget for one media exchange.
@@ -41,25 +48,41 @@ const MEDIA_ROUTE_PREFIX: &str = "/api/cos/media/";
 
 /// Blocking same-authority media executor over the validated loopback origin.
 ///
-/// Not `Debug`/`Display`: it owns one copy of the session credential, and no
+/// Not `Debug`/`Display`: the shared credential slot is read per request and no
 /// rendering of this value may ever exist.
 pub(crate) struct MediaHttp {
     origin: String,
-    token: String,
+    /// The one live session credential slot, shared with the observation
+    /// transport and updated by the session reauthorization/reconnect path.
+    token: CredentialSlot,
     agent: ureq::Agent,
 }
 
 impl MediaHttp {
-    /// Build an executor for one configured endpoint.
+    /// Build an executor for one configured endpoint with a fixed test token.
     ///
     /// The endpoint is validated as a plain-HTTP loopback IP-literal origin
     /// (`http://127.x.x.x[:port]` or `http://[::1][:port]`). An unsupported
-    /// endpoint yields `None`; no adapter, proxy or hostname fallback exists.
+    /// endpoint, or an empty token, yields `None`; no adapter, proxy or hostname
+    /// fallback exists. Production code uses [`Self::with_slot`].
+    #[cfg(test)]
     pub(crate) fn new(endpoint: &str, token: &str) -> Option<Self> {
-        let origin = crate::runtime::validated_origin(endpoint)?;
         if token.is_empty() {
             return None;
         }
+        Self::with_slot(
+            endpoint,
+            std::sync::Arc::new(std::sync::Mutex::new(Some(token.to_owned()))),
+        )
+    }
+
+    /// Build an executor that reads the one live session credential slot.
+    ///
+    /// The slot is the same handle the observation transport presents, so a
+    /// reauthorization or reconnect install is visible on the next media request
+    /// without rebuilding this executor or the media binding.
+    pub(crate) fn with_slot(endpoint: &str, token: CredentialSlot) -> Option<Self> {
+        let origin = crate::runtime::validated_origin(endpoint)?;
         let agent = ureq::AgentBuilder::new()
             .timeout(MEDIA_REQUEST_TIMEOUT)
             // A redirect could replay the credential to another origin, and an
@@ -69,9 +92,18 @@ impl MediaHttp {
             .build();
         Some(Self {
             origin,
-            token: token.to_owned(),
+            token,
             agent,
         })
+    }
+
+    /// The credential currently installed in the shared session slot.
+    fn current_token(&self) -> Option<String> {
+        self.token
+            .lock()
+            .ok()
+            .and_then(|value| value.clone())
+            .filter(|token| !token.is_empty())
     }
 
     /// Whether a path is one this executor may request.
@@ -130,48 +162,73 @@ impl MediaExecutor for MediaHttp {
             return Err(MediaTransportError::Transport);
         }
         let url = format!("{}{}", self.origin, path);
-        let mut call = self.agent.request("GET", &url);
-        // The session credential is attached here and only here; every other
-        // header is the transport-independent client's own value (never a
-        // credential or an origin override).
-        call = call.set("Authorization", &format!("Bearer {}", self.token));
-        for (name, value) in headers {
-            call = call.set(name, value);
+        // One bounded replacement retry: a `401` is re-issued once only when the
+        // shared slot now carries a different credential. The session-level
+        // reauthorization/reconnect path is the only credential authority; this
+        // executor never issues or refreshes one.
+        for attempt in 0..2u8 {
+            let Some(token) = self.current_token() else {
+                // No credential is installed: no unauthenticated attempt.
+                return Err(MediaTransportError::Transport);
+            };
+            let mut call = self.agent.request("GET", &url);
+            // The session credential is attached here and only here; every other
+            // header is the transport-independent client's own value (never a
+            // credential or an origin override).
+            call = call.set("Authorization", &format!("Bearer {token}"));
+            for (name, value) in headers {
+                call = call.set(name, value);
+            }
+            let outcome = call.call();
+            if cancellation.is_cancelled() {
+                return Err(MediaTransportError::Transport);
+            }
+            let (status, response) = match outcome {
+                Ok(response) => (response.status(), response),
+                // A 4xx/5xx body is a response to classify, not a transport failure.
+                Err(ureq::Error::Status(status, response)) => (status, response),
+                // `ErrorKind` is closed and value-free: it can never carry the URL,
+                // the origin, the path, the handle or the token.
+                Err(ureq::Error::Transport(_)) => return Err(MediaTransportError::Transport),
+            };
+            if status == 401 && attempt == 0 {
+                // The request may have raced a credential replacement. Only a
+                // genuinely different installed value can repair it; otherwise
+                // the rejection is returned to the client's status mapping.
+                if let Some(replacement) = self.current_token()
+                    && replacement != token
+                {
+                    eprintln!(
+                        "Runtime media request retried once with the installed session credential"
+                    );
+                    continue;
+                }
+            }
+            let content_length = response
+                .header("Content-Length")
+                .and_then(|value| value.trim().parse::<u64>().ok());
+            // A body declared beyond the caller's bound is refused before reading.
+            if content_length.is_some_and(|length| length > max_bytes) {
+                return Err(MediaTransportError::Oversized);
+            }
+            let limit = max_bytes.saturating_add(1);
+            let mut body = Vec::new();
+            response
+                .into_reader()
+                .take(limit)
+                .read_to_end(&mut body)
+                .map_err(|_| MediaTransportError::Transport)?;
+            if body.len() as u64 > max_bytes {
+                return Err(MediaTransportError::Oversized);
+            }
+            return Ok(MediaResponse {
+                status,
+                content_length,
+                body,
+            });
         }
-        let outcome = call.call();
-        if cancellation.is_cancelled() {
-            return Err(MediaTransportError::Transport);
-        }
-        let (status, response) = match outcome {
-            Ok(response) => (response.status(), response),
-            // A 4xx/5xx body is a response to classify, not a transport failure.
-            Err(ureq::Error::Status(status, response)) => (status, response),
-            // `ErrorKind` is closed and value-free: it can never carry the URL,
-            // the origin, the path, the handle or the token.
-            Err(ureq::Error::Transport(_)) => return Err(MediaTransportError::Transport),
-        };
-        let content_length = response
-            .header("Content-Length")
-            .and_then(|value| value.trim().parse::<u64>().ok());
-        // A body declared beyond the caller's bound is refused before reading.
-        if content_length.is_some_and(|length| length > max_bytes) {
-            return Err(MediaTransportError::Oversized);
-        }
-        let limit = max_bytes.saturating_add(1);
-        let mut body = Vec::new();
-        response
-            .into_reader()
-            .take(limit)
-            .read_to_end(&mut body)
-            .map_err(|_| MediaTransportError::Transport)?;
-        if body.len() as u64 > max_bytes {
-            return Err(MediaTransportError::Oversized);
-        }
-        Ok(MediaResponse {
-            status,
-            content_length,
-            body,
-        })
+        // The loop body always returns; this only satisfies the compiler.
+        Err(MediaTransportError::Transport)
     }
 }
 
@@ -184,6 +241,7 @@ mod tests {
     };
     use std::io::{Read, Write};
     use std::net::{TcpListener, TcpStream};
+    use std::sync::Mutex;
     use std::time::Duration;
 
     /// One scripted loopback response.
@@ -724,6 +782,185 @@ mod tests {
             "{}",
             requests[3]
         );
+    }
+
+    /// Serve a scripted sequence, replacing the shared session credential after
+    /// the first request is read (the exact state a bounded reauthorization or
+    /// reconnect install produces while a media request is in flight).
+    fn serve_sequence_with_rotation(
+        slot: cos_client::CredentialSlot,
+        replacement: &'static str,
+        stubs: Vec<Stub>,
+    ) -> (String, std::thread::JoinHandle<Vec<String>>) {
+        let (listener, address) = bind();
+        let handle = std::thread::spawn(move || {
+            let mut requests = Vec::new();
+            for (index, stub) in stubs.into_iter().enumerate() {
+                let (mut stream, _) = listener.accept().expect("request accepted");
+                let request = read_request(&mut stream);
+                if index == 0 {
+                    *slot.lock().expect("slot") = Some(replacement.to_owned());
+                }
+                let _ = stream.write_all(&stub.render());
+                let _ = stream.flush();
+                requests.push(request);
+            }
+            requests
+        });
+        (format!("http://{address}"), handle)
+    }
+
+    fn bearer(request: &str) -> Option<&str> {
+        request
+            .lines()
+            .find_map(|line| line.strip_prefix("authorization: bearer "))
+    }
+
+    /// The next request presents whatever the session credential slot currently
+    /// holds: a rotation/reconnect install is never masked by a launch copy.
+    #[test]
+    fn a_rotated_session_credential_is_presented_by_the_next_media_request() {
+        let slot: cos_client::CredentialSlot =
+            std::sync::Arc::new(Mutex::new(Some("launch-token-value".to_owned())));
+        let (origin, server) = serve_many(vec![Stub::bytes(png()), Stub::bytes(png())]);
+        let mut executor =
+            MediaHttp::with_slot(&origin, std::sync::Arc::clone(&slot)).expect("loopback origin");
+        let first = executor
+            .get(
+                "/api/cos/media/mh1.first/blob",
+                &[],
+                1024 * 1024,
+                &Cancellation::default(),
+            )
+            .expect("first response");
+        assert_eq!(first.status, 200);
+        *slot.lock().expect("slot") = Some("rotated-token-value".to_owned());
+        let second = executor
+            .get(
+                "/api/cos/media/mh1.second/blob",
+                &[],
+                1024 * 1024,
+                &Cancellation::default(),
+            )
+            .expect("second response");
+        assert_eq!(second.status, 200);
+        let requests = server.join().expect("server finished");
+        assert_eq!(bearer(&requests[0]), Some("launch-token-value"));
+        assert_eq!(
+            bearer(&requests[1]),
+            Some("rotated-token-value"),
+            "the second request carries the installed replacement, not the launch credential"
+        );
+    }
+
+    /// A `401` whose request raced a credential replacement is retried exactly
+    /// once with the installed value; it does not become a terminal failure.
+    #[test]
+    fn a_media_401_with_a_replaced_session_credential_retries_once() {
+        let slot: cos_client::CredentialSlot =
+            std::sync::Arc::new(Mutex::new(Some("launch-token-value".to_owned())));
+        let (origin, server) = serve_sequence_with_rotation(
+            std::sync::Arc::clone(&slot),
+            "rotated-token-value",
+            vec![
+                Stub::status("HTTP/1.1 401 Unauthorized"),
+                Stub::bytes(png()),
+            ],
+        );
+        let mut executor =
+            MediaHttp::with_slot(&origin, std::sync::Arc::clone(&slot)).expect("loopback origin");
+        let response = executor
+            .get(
+                "/api/cos/media/mh1.opaque/blob",
+                &[],
+                1024 * 1024,
+                &Cancellation::default(),
+            )
+            .expect("retried response");
+        assert_eq!(response.status, 200);
+        let requests = server.join().expect("server finished");
+        assert_eq!(requests.len(), 2, "exactly one retry");
+        assert_eq!(bearer(&requests[0]), Some("launch-token-value"));
+        assert_eq!(bearer(&requests[1]), Some("rotated-token-value"));
+    }
+
+    /// A `401` with no replacement installed is returned after one exchange: the
+    /// media path never loops and never claims a credential it does not have.
+    #[test]
+    fn a_media_401_without_a_replacement_is_not_retried() {
+        let slot: cos_client::CredentialSlot =
+            std::sync::Arc::new(Mutex::new(Some("launch-token-value".to_owned())));
+        let (origin, server) = serve_once(Stub::status("HTTP/1.1 401 Unauthorized"));
+        let mut executor =
+            MediaHttp::with_slot(&origin, std::sync::Arc::clone(&slot)).expect("loopback origin");
+        let response = executor
+            .get("/api/cos/media/x", &[], 64, &Cancellation::default())
+            .expect("a 401 is a response");
+        assert_eq!(response.status, 401);
+        let request = server.join().expect("server finished");
+        assert_eq!(bearer(&request), Some("launch-token-value"));
+    }
+
+    /// The real repository path turns a raced `401` into admitted bytes instead
+    /// of the terminal `Forbidden` mapping: descriptor and byte fetches both
+    /// present the replacement credential after one bounded retry.
+    #[test]
+    fn a_raced_401_admits_through_the_real_repository_after_one_retry() {
+        let body = png();
+        let (hex, digest) = expected_hex_and_digest(&body);
+        let descriptor = descriptor_body(
+            SERVER,
+            AUDIENCE,
+            DIGEST,
+            &hex,
+            "/api/cos/media/mh1.opaque/blob",
+            body.len(),
+        );
+        let slot: cos_client::CredentialSlot =
+            std::sync::Arc::new(Mutex::new(Some("launch-token-value".to_owned())));
+        let (origin, server) = serve_sequence_with_rotation(
+            std::sync::Arc::clone(&slot),
+            "rotated-token-value",
+            vec![
+                Stub::status("HTTP/1.1 401 Unauthorized"),
+                Stub::json_ok(&descriptor),
+                Stub::bytes(body.clone()),
+            ],
+        );
+        let executor =
+            MediaHttp::with_slot(&origin, std::sync::Arc::clone(&slot)).expect("loopback origin");
+        let mut source = MediaFetcher::new(executor, SERVER, AUDIENCE);
+        let mut repository = repository();
+        let artifact = desktop_protocol::ArtifactSnapshot {
+            artifact_ref: desktop_protocol::ArtifactId::new("artifact-1").expect("artifact id"),
+            artifact_digest: desktop_protocol::ArtifactDigest::new(DIGEST).expect("digest"),
+            media_type: Some("image/png".to_owned()),
+            availability: desktop_protocol::Availability::Available,
+            descriptor_refs: Vec::new(),
+            verification: None,
+            projection_revision: desktop_protocol::Counter::from_u128(1),
+        };
+        let session = app_core::MediaSessionContext::new(
+            desktop_protocol::ServerId::new(SERVER).expect("server"),
+            AUDIENCE,
+            desktop_protocol::EpochId::new("epoch-1").expect("epoch"),
+            "read-context-value",
+        );
+        let selection = app_core::MediaSelection::for_artifact(
+            &artifact,
+            session,
+            desktop_protocol::RepresentationKind::Original,
+        );
+        let presentation = repository.load(&mut source, &selection, &Cancellation::default());
+        let admitted = presentation
+            .admitted()
+            .expect("the replacement credential admitted the bytes");
+        assert_eq!(admitted.computed_digest, digest);
+        let requests = server.join().expect("server finished");
+        assert_eq!(requests.len(), 3, "{requests:#?}");
+        assert_eq!(bearer(&requests[0]), Some("launch-token-value"));
+        assert_eq!(bearer(&requests[1]), Some("rotated-token-value"));
+        assert_eq!(bearer(&requests[2]), Some("rotated-token-value"));
     }
 
     #[test]

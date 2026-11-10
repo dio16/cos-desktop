@@ -164,6 +164,13 @@ fn main() {
         ),
     };
     drop(runtime_token);
+    // One live session identity for the whole process: the observation
+    // transport, its bounded reauthorization, the reconnect installer and the
+    // media executor all share this credential slot and principal cell. A
+    // Runtime restart mints a new credential and principal; installing them here
+    // is what keeps media from presenting a launch-time copy.
+    let session =
+        runtime::SessionIdentity::new(runtime::planned_credential(&launch), media_audience.clone());
     let observation_store = std::sync::Arc::clone(&credential_store);
     let outcome = std::sync::Arc::clone(&exit_outcome);
     let teardown: std::sync::Arc<std::sync::Mutex<Option<runtime::RuntimeTeardown>>> =
@@ -180,6 +187,7 @@ fn main() {
                 discovery_path.clone(),
                 std::sync::Arc::clone(&credential_store),
                 std::sync::Arc::clone(&teardown),
+                session.clone(),
                 reconnect::RuntimeReconnector::ureq_exchange(),
             )))
         }
@@ -225,11 +233,15 @@ fn main() {
                 }
             },
             runtime::LaunchPlan::Runtime(settings) => {
-                // The production media boundary is built from the same validated
-                // origin/credential as the protocol transport; it never reaches
-                // the protocol routes and never renders its credential.
-                let media = runtime::media_binding(&settings, media_audience.as_deref());
-                match runtime::observation(settings, std::sync::Arc::clone(&observation_store)) {
+                // The production media boundary shares the session identity the
+                // observation transport presents; it never reaches the protocol
+                // routes and never renders its credential.
+                let media = runtime::media_binding(&settings, &session);
+                match runtime::observation(
+                    settings,
+                    std::sync::Arc::clone(&observation_store),
+                    session.clone(),
+                ) {
                     Ok(observation) => {
                         let runtime::RuntimeObservation {
                             client,

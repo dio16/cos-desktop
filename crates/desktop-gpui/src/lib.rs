@@ -2528,9 +2528,21 @@ impl Shell {
         };
         let (repository, audience) = match &self.media {
             media_presentation::MediaBinding::Runtime(runtime) => {
-                (runtime.repository(), runtime.audience().to_owned())
+                (runtime.repository(), runtime.audience())
             }
             _ => return,
+        };
+        // A credential without an authenticated principal cannot be matched
+        // against a descriptor audience. An in-process reauthorization installs
+        // the replacement cell; until then this is the explicit unavailable
+        // state, never a request with a stale launch-time principal.
+        let Some(audience) = audience else {
+            self.withdraw_artifact_media();
+            let notice = media_presentation::media_principal_unavailable_statement();
+            self.artifact_viewer.update(cx, |viewer, cx| {
+                viewer.unavailable(notice.into(), cx);
+            });
+            return;
         };
         let capability_key = media_capability_key(&capability);
         let key = MediaLoadKey {
@@ -2645,9 +2657,21 @@ impl Shell {
         };
         let (repository, audience) = match &self.media {
             media_presentation::MediaBinding::Runtime(runtime) => {
-                (runtime.repository(), runtime.audience().to_owned())
+                (runtime.repository(), runtime.audience())
             }
             _ => return,
+        };
+        let Some(audience) = audience else {
+            // No authenticated principal is installed for the current
+            // credential: say so on both panes instead of fetching with a stale
+            // launch-time value.
+            let notice = media_presentation::media_principal_unavailable_statement();
+            for side in [CompareSide::A, CompareSide::B] {
+                self.compare_view
+                    .update(cx, |view, cx| view.unavailable(side, notice.into(), cx));
+            }
+            self.compare_media.forget_all();
+            return;
         };
         let session = MediaSessionContext::new(
             context.server_identity().clone(),

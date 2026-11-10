@@ -25,7 +25,7 @@ use crate::app::Mode;
 use crate::credential_issuance;
 use crate::credentials::CredentialStore;
 use crate::discovery;
-use crate::runtime::{self, LaunchPlan, RuntimeTeardown, RuntimeUnavailable};
+use crate::runtime::{self, LaunchPlan, RuntimeTeardown, RuntimeUnavailable, SessionIdentity};
 
 /// One bounded credential exchange for a reconnect attempt.
 ///
@@ -46,6 +46,10 @@ pub(crate) struct RuntimeReconnector {
     /// The process-wide teardown slot: a reconnect replaces the credential the
     /// exit handshake must revoke.
     teardown: Arc<Mutex<Option<RuntimeTeardown>>>,
+    /// The one live session identity. The attempt's freshly resolved credential
+    /// and principal are installed here by the client build, so the media
+    /// boundary reads exactly what the new observation presents.
+    session: SessionIdentity,
     exchange: Box<ExchangeFactory>,
 }
 
@@ -56,6 +60,7 @@ impl RuntimeReconnector {
         discovery_path: Option<PathBuf>,
         store: Arc<dyn CredentialStore>,
         teardown: Arc<Mutex<Option<RuntimeTeardown>>>,
+        session: SessionIdentity,
         exchange: Box<ExchangeFactory>,
     ) -> Self {
         Self {
@@ -64,6 +69,7 @@ impl RuntimeReconnector {
             discovery_path,
             store,
             teardown,
+            session,
             exchange,
         }
     }
@@ -155,7 +161,7 @@ impl RuntimeReconnector {
                 ),
             }
         }
-        match runtime::observation(settings, Arc::clone(&self.store)) {
+        match runtime::observation(settings, Arc::clone(&self.store), self.session.clone()) {
             Ok(observation) => {
                 if let Ok(mut slot) = self.teardown.lock() {
                     *slot = observation.teardown;
@@ -504,7 +510,7 @@ mod tests {
             },
             Arc::clone(store),
             "http://127.0.0.1:8134".to_owned(),
-            Arc::clone(&slot),
+            SessionIdentity::from_slot(Arc::clone(&slot), None),
             revoke,
             Arc::new(|| Some("operator-secret".to_owned())),
             ScriptedExchange {
@@ -846,6 +852,7 @@ mod tests {
             Some(path.clone()),
             store,
             Arc::new(Mutex::new(None)),
+            SessionIdentity::new(None, None),
             exchange,
         );
         assert_eq!(
@@ -867,6 +874,72 @@ mod tests {
             reconnector.rediscover(),
             Err(ReconnectUnavailable::Discovery),
             "an absent descriptor is an explicit discovery failure, never a stale origin"
+        );
+    }
+
+    /// The reconnect install must replace the shared session credential and
+    /// principal, not just build a new observation client: that one identity is
+    /// what the media boundary reads on its next request.
+    #[test]
+    fn a_reconnect_install_replaces_the_shared_credential_and_principal() {
+        const LAUNCH: &str = "launch-credential-0123456789";
+        const ROTATED: &str = "rotated-credential-0123456789";
+        const LAUNCH_PRINCIPAL: &str = "desktop:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+        const ROTATED_PRINCIPAL: &str = "desktop:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+        let root = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("../../target/reconnect-discovery-tests")
+            .join(std::process::id().to_string())
+            .join("session-identity");
+        std::fs::create_dir_all(&root).expect("create test directory");
+        let path = root.join("runtime-discovery.json");
+        std::fs::write(
+            &path,
+            r#"{"schema_version":1,"origin":"http://127.0.0.1:8145","server_identity":"cos-runtime-orchestrator","epoch":"epoch-after-restart","protocol":{"major":2,"min_minor":0,"max_minor":0},"schema":{"major":2,"min_minor":0,"max_minor":0},"pid":222,"started_at":"2026-11-10T05:00:00+09:00","ready":true}"#,
+        )
+        .expect("write descriptor");
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|elapsed| elapsed.as_secs())
+            .unwrap_or(0);
+        let record = crate::credential_issuance::encode_for_test(
+            ROTATED,
+            ROTATED_PRINCIPAL,
+            now.saturating_add(3600),
+        );
+        let store: Arc<dyn CredentialStore> = Arc::new(MemoryStore {
+            state: Mutex::new(Some(record)),
+        });
+        let session =
+            SessionIdentity::new(Some(LAUNCH.to_owned()), Some(LAUNCH_PRINCIPAL.to_owned()));
+        let exchange: Box<super::ExchangeFactory> = Box::new(|origin: &str| {
+            Box::new(FixedExchange {
+                _origin: origin.to_owned(),
+            }) as Box<dyn crate::credential_issuance::CredentialExchange + Send>
+        });
+        let reconnector = RuntimeReconnector::new(
+            crate::app::Mode::Runtime {
+                endpoint_configured: true,
+            },
+            None,
+            Some(path),
+            store,
+            Arc::new(Mutex::new(None)),
+            session.clone(),
+            exchange,
+        );
+        let client = reconnector
+            .reconnect()
+            .expect("the reconnect builds a client");
+        drop(client);
+        assert_eq!(
+            session.credential_slot().lock().expect("slot").as_deref(),
+            Some(ROTATED),
+            "the reconnected credential is the one media will present"
+        );
+        assert_eq!(
+            session.audience().as_deref(),
+            Some(ROTATED_PRINCIPAL),
+            "the reconnected principal is the one media will validate against"
         );
     }
 

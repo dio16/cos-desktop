@@ -24,10 +24,18 @@ use crate::image_upload::{ImageUploadError, UploadRequest};
 /// Build one media source for the authenticated read context.
 ///
 /// The binary boundary supplies it; the closure captures the validated loopback
-/// origin and the session credential, so no token, origin or handle ever enters
-/// this crate, `app-core`, a status sentence or a diagnostic.
+/// origin and the live session credential slot, so no token, origin or handle
+/// ever enters this crate, `app-core`, a status sentence or a diagnostic.
 pub type MediaSourceFactory =
     Box<dyn Fn(&ServerId, &str) -> Box<dyn MediaSource + Send> + Send + Sync>;
+
+/// The authenticated Desktop principal the current session credential owns.
+///
+/// The binary updates this one shared cell when a bounded reauthorization or a
+/// reconnect install persists a replacement credential (a Runtime restart mints
+/// a new principal). Media reads it per resolution, so a launch-time copy can
+/// never be presented against a descriptor minted for the current credential.
+pub type MediaAudienceCell = Arc<Mutex<Option<String>>>;
 
 /// One binary-provided media acquisition boundary for the artifact surface.
 ///
@@ -37,21 +45,21 @@ pub type MediaSourceFactory =
 /// GPUI's background executor through [`crate::image_viewer::ImageViewer::resolve_media`].
 pub struct MediaRuntime {
     repository: Arc<Mutex<MediaRepository>>,
-    audience: String,
+    audience: MediaAudienceCell,
     source: MediaSourceFactory,
 }
 
 impl MediaRuntime {
-    /// Bind the process-wide repository, the authenticated Desktop principal and
-    /// the per-load source factory.
+    /// Bind the process-wide repository, the live authenticated principal cell
+    /// and the per-load source factory.
     pub fn new(
         repository: MediaRepository,
-        audience: impl Into<String>,
+        audience: MediaAudienceCell,
         source: MediaSourceFactory,
     ) -> Self {
         Self {
             repository: Arc::new(Mutex::new(repository)),
-            audience: audience.into(),
+            audience,
             source,
         }
     }
@@ -62,8 +70,21 @@ impl MediaRuntime {
     }
 
     /// Authenticated Desktop principal the descriptor audience must match.
-    pub fn audience(&self) -> &str {
-        &self.audience
+    ///
+    /// `None` means no authenticated principal is installed for the current
+    /// credential (an operator bare token has none); the caller must surface the
+    /// explicit unavailable state instead of requesting media.
+    pub fn audience(&self) -> Option<String> {
+        self.audience
+            .lock()
+            .ok()
+            .and_then(|value| value.clone())
+            .filter(|value| !value.is_empty())
+    }
+
+    /// The live principal cell, shared with the binary's credential lifecycle.
+    pub fn audience_cell(&self) -> MediaAudienceCell {
+        Arc::clone(&self.audience)
     }
 
     /// One source bound to this publication's server identity and audience.
@@ -101,13 +122,21 @@ pub fn media_binding_statement(binding: &MediaBinding) -> &'static str {
         MediaBinding::Absent => {
             "現在の版では、成果物の画像を表示できません。候補の説明情報のみを表示しています。"
         }
-        MediaBinding::Unavailable => {
-            "画像を利用できません: このセッションの認証済みメディア主体を確認できないため、成果物の画像を取得できません。"
-        }
+        MediaBinding::Unavailable => media_principal_unavailable_statement(),
         MediaBinding::Runtime(_) => {
             "Runtime が認可した成果物メディアを取得して表示します。取得できない場合は、理由を画像領域に明示します。"
         }
     }
+}
+
+/// Explicit sentence for a session whose credential no longer proves an
+/// authenticated Desktop principal.
+///
+/// A Runtime binding whose live principal cell is empty (a revoked or
+/// unavailable identity) must say so instead of promising media acquisition or
+/// validating against a stale launch-time principal.
+pub fn media_principal_unavailable_statement() -> &'static str {
+    "画像を利用できません: このセッションの認証済みメディア主体を確認できないため、成果物の画像を取得できません。"
 }
 
 /// The only representation kind this build can decode and present.
@@ -601,6 +630,10 @@ mod tests {
         }
     }
 
+    fn audience_cell(principal: &str) -> MediaAudienceCell {
+        Arc::new(Mutex::new(Some(principal.to_owned())))
+    }
+
     fn runtime() -> MediaRuntime {
         let repository = app_core::MediaRepository::new(media::LocalLimits {
             max_input_bytes: 1024,
@@ -611,7 +644,7 @@ mod tests {
         .expect("repository limits");
         MediaRuntime::new(
             repository,
-            "desktop:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            audience_cell("desktop:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"),
             Box::new(|_, _| Box::new(StubSource)),
         )
     }
@@ -649,9 +682,10 @@ mod tests {
             max_pixels: 1024,
         })
         .expect("repository limits");
+        let cell = audience_cell(audience);
         let runtime = MediaRuntime::new(
             repository,
-            audience,
+            Arc::clone(&cell),
             Box::new(move |server, audience| {
                 record
                     .lock()
@@ -660,18 +694,53 @@ mod tests {
                 Box::new(StubSource)
             }),
         );
-        assert_eq!(runtime.audience(), audience);
+        assert_eq!(runtime.audience().as_deref(), Some(audience));
+        assert!(
+            Arc::ptr_eq(&runtime.audience_cell(), &cell),
+            "the runtime holds the one live principal cell"
+        );
         let first = runtime.repository();
         let second = runtime.repository();
         assert!(
             Arc::ptr_eq(&first, &second),
             "one bounded repository per session"
         );
-        let _ = runtime.source(&server, runtime.audience());
+        let resolved = runtime
+            .audience()
+            .expect("a principal is installed for this test");
+        let _ = runtime.source(&server, &resolved);
         let captured = seen.lock().expect("capture");
         assert_eq!(
             captured.as_slice(),
             [("server-1".to_owned(), audience.to_owned())]
+        );
+    }
+
+    #[test]
+    fn a_reinstalled_principal_is_visible_to_the_next_resolution() {
+        // A Runtime restart mints a new principal; the one shared cell must make
+        // the replacement visible without rebuilding the binding.
+        let repository = app_core::MediaRepository::new(media::LocalLimits {
+            max_input_bytes: 1024,
+            max_live_bytes: 4096,
+            max_live_entries: 2,
+            max_pixels: 1024,
+        })
+        .expect("repository limits");
+        let cell = audience_cell("desktop:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+        let runtime = MediaRuntime::new(
+            repository,
+            Arc::clone(&cell),
+            Box::new(|_, _| Box::new(StubSource)),
+        );
+        let replacement = "desktop:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+        *cell.lock().expect("cell") = Some(replacement.to_owned());
+        assert_eq!(runtime.audience().as_deref(), Some(replacement));
+        *cell.lock().expect("cell") = None;
+        assert_eq!(
+            runtime.audience(),
+            None,
+            "an absent authenticated principal is explicit, never a stale value"
         );
     }
 }

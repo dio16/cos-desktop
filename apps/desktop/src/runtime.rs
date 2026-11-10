@@ -204,6 +204,18 @@ pub(crate) enum LaunchPlan {
     },
 }
 
+/// The credential a runtime launch plan resolved, for arming the one live
+/// session identity before the media/observation clients are built.
+///
+/// The value is only moved into the in-memory slot; it is never logged,
+/// rendered, stored a second time or returned by something that formats it.
+pub(crate) fn planned_credential(plan: &LaunchPlan) -> Option<String> {
+    match plan {
+        LaunchPlan::Runtime(settings) => Some(settings.token.clone()),
+        LaunchPlan::Fixture { .. } | LaunchPlan::RuntimeUnavailable { .. } => None,
+    }
+}
+
 /// Decide the launch plan for one startup mode without side effects.
 ///
 /// A runtime mode can only produce a runtime (ready or unavailable) plan; it can
@@ -401,25 +413,128 @@ fn non_zero_port(raw: &str) -> Option<u16> {
     raw.parse::<u16>().ok().filter(|port| *port != 0)
 }
 
+/// The one live session identity shared by the whole process session.
+///
+/// It carries exactly two values: the bearer credential the protocol transport
+/// presents (the same [`CredentialSlot`] type `cos-client` reads per request)
+/// and the authenticated Desktop principal (the media audience) that credential
+/// owns. The observation transport, the session reauthorization executor, the
+/// reconnect installer and the media executor all read and replace these two
+/// cells in place, so no component can keep a stale launch-time copy and no
+/// second token source exists.
+///
+/// The principal is replaced only by a value read from the protected record that
+/// was actually persisted for the current credential; it is never synthesized
+/// from local state or a descriptor's own claim.
+#[derive(Clone)]
+pub(crate) struct SessionIdentity {
+    credential: CredentialSlot,
+    audience: Arc<Mutex<Option<String>>>,
+}
+
+impl SessionIdentity {
+    /// Bind the initial launch credential and principal (both may be absent for
+    /// an explicitly unavailable plan).
+    pub(crate) fn new(credential: Option<String>, audience: Option<String>) -> Self {
+        Self {
+            credential: Arc::new(Mutex::new(credential)),
+            audience: Arc::new(Mutex::new(audience)),
+        }
+    }
+
+    /// Bind an existing credential slot (test seam for the reauthorization path).
+    #[cfg(test)]
+    pub(crate) fn from_slot(credential: CredentialSlot, audience: Option<String>) -> Self {
+        Self {
+            credential,
+            audience: Arc::new(Mutex::new(audience)),
+        }
+    }
+
+    /// Install the credential resolved for one client build and, when the
+    /// protected record carries one, its authenticated principal.
+    ///
+    /// The credential is always replaced. The principal is only replaced by a
+    /// real value: a transient attempt that cannot prove a principal must not
+    /// erase the last authenticated one.
+    pub(crate) fn install(&self, credential: &str, audience: Option<String>) {
+        if let Ok(mut slot) = self.credential.lock() {
+            *slot = Some(credential.to_owned());
+        }
+        if let Some(audience) = audience
+            && let Ok(mut slot) = self.audience.lock()
+        {
+            *slot = Some(audience);
+        }
+    }
+
+    /// The shared credential slot presented by the transport and the media executor.
+    pub(crate) fn credential_slot(&self) -> CredentialSlot {
+        Arc::clone(&self.credential)
+    }
+
+    /// The shared media-audience cell.
+    pub(crate) fn audience_cell(&self) -> Arc<Mutex<Option<String>>> {
+        Arc::clone(&self.audience)
+    }
+
+    /// The authenticated principal currently installed for this session.
+    pub(crate) fn audience(&self) -> Option<String> {
+        self.audience
+            .lock()
+            .ok()
+            .and_then(|value| value.clone())
+            .filter(|value| !value.is_empty())
+    }
+
+    /// The credential currently installed for this session (never rendered).
+    fn credential(&self) -> Option<String> {
+        self.credential
+            .lock()
+            .ok()
+            .and_then(|value| value.clone())
+            .filter(|value| !value.is_empty())
+    }
+}
+
+/// Authenticated Desktop principal of the protected record this attempt resolved.
+///
+/// Mirrors the startup derivation exactly: only a credential this app issued or
+/// renewed carries a principal. An operator bare token has none, so media is
+/// explicitly unavailable instead of trusting a descriptor's own audience claim.
+fn stored_audience(origin: &str, store: &dyn CredentialStore) -> Option<String> {
+    store
+        .load(origin)
+        .ok()
+        .flatten()
+        .and_then(|raw| crate::credential_issuance::stored_principal(&raw))
+}
+
 /// Build the production media binding for one Runtime session.
 ///
-/// `audience` is the authenticated Desktop principal of the session credential,
-/// read from the protected record by the composition root. The descriptor's own
-/// audience claim is never trusted, so an absent principal is an explicit
-/// `Unavailable` rather than a permission to skip audience validation. The
-/// binding owns one process-wide bounded repository and a source factory that
-/// builds a fresh same-authority executor per resolution; the credential lives
-/// only inside that factory and no rendering path can reach it.
-pub(crate) fn media_binding(settings: &RuntimeSettings, audience: Option<&str>) -> MediaBinding {
-    let Some(audience) = audience.map(str::trim).filter(|value| !value.is_empty()) else {
+/// The authenticated Desktop principal comes from the shared [`SessionIdentity`]
+/// (the protected record's principal), so the descriptor's own audience claim is
+/// never trusted and an absent principal is an explicit `Unavailable` rather
+/// than a permission to skip audience validation. The binding owns one
+/// process-wide bounded repository and a source factory that builds a fresh
+/// same-authority executor per resolution; the executor reads the one live
+/// credential slot at request time, so a bounded reauthorization or reconnect
+/// install is visible without rebuilding the binding, and no rendering path can
+/// reach the value.
+pub(crate) fn media_binding(settings: &RuntimeSettings, session: &SessionIdentity) -> MediaBinding {
+    if session.audience().is_none() {
         eprintln!(
             "Runtime media acquisition unavailable: the authenticated Desktop principal is unavailable"
         );
         return MediaBinding::Unavailable;
-    };
-    // Validate the origin and non-empty credential before exposing a binding;
-    // the factory re-creates the executor for each resolution.
-    let Some(probe) = MediaHttp::new(&settings.endpoint, &settings.token) else {
+    }
+    // Validate the origin and the initially installed credential before exposing
+    // a binding; the factory re-creates the executor for each resolution.
+    if session.credential().is_none() {
+        eprintln!("Runtime media acquisition unavailable: the session credential is unavailable");
+        return MediaBinding::Unavailable;
+    }
+    let Some(probe) = MediaHttp::with_slot(&settings.endpoint, session.credential_slot()) else {
         eprintln!(
             "Runtime media acquisition unavailable: the configured endpoint is not a supported loopback origin"
         );
@@ -431,13 +546,12 @@ pub(crate) fn media_binding(settings: &RuntimeSettings, audience: Option<&str>) 
         return MediaBinding::Unavailable;
     };
     let origin = settings.endpoint.clone();
-    let token = settings.token.clone();
-    let audience = audience.to_owned();
+    let session = session.clone();
     MediaBinding::Runtime(MediaRuntime::new(
         repository,
-        audience,
+        session.audience_cell(),
         Box::new(move |server_identity, audience| {
-            let executor = MediaHttp::new(&origin, &token)
+            let executor = MediaHttp::with_slot(&origin, session.credential_slot())
                 .expect("the composition root validated this origin and credential");
             Box::new(MediaFetcher::new(
                 executor,
@@ -449,20 +563,26 @@ pub(crate) fn media_binding(settings: &RuntimeSettings, audience: Option<&str>) 
 }
 
 /// Build the observation client over the configured Runtime origin.
+///
+/// The shared [`SessionIdentity`] is armed from this attempt's resolution *after*
+/// the credential preparation persisted any replacement, so the principal and
+/// credential the media executor sees are the ones this observation presents.
 pub(crate) fn observation(
     settings: RuntimeSettings,
     store: Arc<dyn CredentialStore>,
+    session: SessionIdentity,
 ) -> Result<RuntimeObservation, RuntimeUnavailable> {
     let RuntimeSettings {
         endpoint,
         token,
         revocable,
     } = settings;
-    // One in-memory credential value shared by the transport and the recovery
-    // executor: a reauthorized value is presented by every later request
-    // without rebuilding the session. Only a credential this app issued or
-    // recovered is ever armed for teardown revocation.
-    let slot: CredentialSlot = Arc::new(Mutex::new(Some(token)));
+    // Arm the one live session identity from this attempt's resolution. The
+    // principal is read back from the protected record preparation just wrote;
+    // a bare operator token carries none and leaves any previously proven
+    // principal untouched.
+    session.install(&token, stored_audience(&endpoint, store.as_ref()));
+    let slot = session.credential_slot();
     let revoke_slot: Arc<Mutex<Option<String>>> = Arc::new(Mutex::new(None));
     let teardown = Some(RuntimeTeardown {
         origin: endpoint.clone(),
@@ -479,7 +599,7 @@ pub(crate) fn observation(
         PlainHttp::new(&endpoint),
         Arc::clone(&store),
         endpoint.clone(),
-        Arc::clone(&slot),
+        session,
         Arc::clone(&revoke_slot),
         // Re-read at each bounded recovery boundary; the secret is never
         // retained by the long-lived executor.
@@ -537,10 +657,11 @@ pub(crate) struct ReauthHttp<E: ProtocolHttp, X: CredentialExchange + Send> {
     inner: E,
     store: Arc<dyn CredentialStore>,
     origin: String,
-    /// Credential the transport presents per request. Updated in place after a
-    /// successful reauthorization so later requests never replay a rejected
-    /// value.
-    slot: cos_client::CredentialSlot,
+    /// The one live session identity: the credential the transport presents and
+    /// the authenticated principal media validates. Both are replaced in place
+    /// after a successful reauthorization, so no component keeps a rejected
+    /// value or its old principal.
+    session: SessionIdentity,
     /// Token this session must revoke on explicit teardown, if any. Empty for
     /// an operator-provisioned value, which the Desktop must not revoke.
     revoke_slot: Arc<Mutex<Option<String>>>,
@@ -576,7 +697,7 @@ impl<E: ProtocolHttp, X: CredentialExchange + Send> ReauthHttp<E, X> {
         inner: E,
         store: Arc<dyn CredentialStore>,
         origin: String,
-        slot: cos_client::CredentialSlot,
+        session: SessionIdentity,
         revoke_slot: Arc<Mutex<Option<String>>>,
         secret: Arc<dyn Fn() -> Option<String> + Send + Sync>,
         exchange: X,
@@ -585,7 +706,7 @@ impl<E: ProtocolHttp, X: CredentialExchange + Send> ReauthHttp<E, X> {
             inner,
             store,
             origin,
-            slot,
+            session,
             revoke_slot,
             secret,
             exchange,
@@ -629,9 +750,12 @@ impl<E: ProtocolHttp, X: CredentialExchange + Send> ReauthHttp<E, X> {
             std::time::SystemTime::now(),
         ) {
             crate::credential_issuance::Recovery::Rotated(token) => {
-                if let Ok(mut slot) = self.slot.lock() {
-                    *slot = Some(token.clone());
-                }
+                // The replacement credential is persisted; its authenticated
+                // principal is read back from that record and installed in the
+                // same cell the media boundary reads. A rotation keeps the
+                // principal; a reissue after a Runtime restart replaces it.
+                let audience = stored_audience(&self.origin, self.store.as_ref());
+                self.session.install(&token, audience);
                 if let Ok(mut revoke) = self.revoke_slot.lock() {
                     *revoke = Some(token.clone());
                 }
@@ -805,8 +929,8 @@ impl PlainHttp {
 #[cfg(test)]
 mod tests {
     use super::{
-        LaunchPlan, Mode, PlainHttp, ReauthHttp, ReauthPolicy, RuntimeUnavailable, observation,
-        plain_http_origin, plan, settings,
+        LaunchPlan, Mode, PlainHttp, ReauthHttp, ReauthPolicy, RuntimeSettings, RuntimeUnavailable,
+        SessionIdentity, media_binding, observation, plain_http_origin, plan, settings,
     };
     use cos_client::{
         COMMANDS_PATH, DELTAS_PATH, HttpMethod, HttpRequest, HttpResponse, OBSERVATION_PATH,
@@ -818,6 +942,7 @@ mod tests {
 
     use crate::credential_issuance::{CredentialExchange, ExchangeFailure, HttpResponseBytes};
     use crate::credentials::{CredentialStore, CredentialStoreError};
+    use desktop_gpui::media_presentation::MediaBinding;
     use std::sync::Mutex;
     use std::sync::atomic::{AtomicUsize, Ordering};
 
@@ -959,12 +1084,18 @@ mod tests {
         assert_eq!(store.store_calls(), vec!["token".to_owned()]);
         // The executor is built from the settings; the scope is the documented
         // all-task view and the client starts unbound from any real server.
-        let observation =
-            observation(settings, std::sync::Arc::new(store)).expect("observation builds");
+        let session = SessionIdentity::new(None, None);
+        let observation = observation(settings, std::sync::Arc::new(store), session.clone())
+            .expect("observation builds");
         assert!(observation.scope.task_ids.is_empty());
         assert_eq!(observation.scope.filters.len(), 1);
         assert_eq!(observation.scope.filters[0].name, "view");
         assert_eq!(observation.scope.filters[0].value, "all");
+        assert_eq!(
+            session.credential().as_deref(),
+            Some("token"),
+            "the build arms the one live credential slot"
+        );
     }
 
     #[test]
@@ -976,9 +1107,12 @@ mod tests {
             &override_store,
         )
         .expect("override resolves");
-        let override_observation =
-            observation(override_settings, std::sync::Arc::new(override_store))
-                .expect("observation builds");
+        let override_observation = observation(
+            override_settings,
+            std::sync::Arc::new(override_store),
+            SessionIdentity::new(None, None),
+        )
+        .expect("observation builds");
         assert!(
             override_observation
                 .teardown
@@ -995,8 +1129,18 @@ mod tests {
         let issued_store = MemoryStore::with_token(&record);
         let issued_settings =
             settings(Some("http://127.0.0.1:8123"), None, &issued_store).expect("record resolves");
-        let issued_observation = observation(issued_settings, std::sync::Arc::new(issued_store))
-            .expect("observation builds");
+        let issued_session = SessionIdentity::new(None, None);
+        let issued_observation = observation(
+            issued_settings,
+            std::sync::Arc::new(issued_store),
+            issued_session.clone(),
+        )
+        .expect("observation builds");
+        assert_eq!(
+            issued_session.audience().as_deref(),
+            Some("desktop:0123456789abcdef0123456789abcdef"),
+            "the authenticated principal of the record is installed for media"
+        );
         assert!(
             issued_observation
                 .teardown
@@ -1127,8 +1271,12 @@ mod tests {
     }
 
     fn credential_document(token: &str) -> Vec<u8> {
+        credential_document_with_principal(token, "desktop:0123456789abcdef0123456789abcdef")
+    }
+
+    fn credential_document_with_principal(token: &str, principal: &str) -> Vec<u8> {
         format!(
-            r#"{{"token":"{token}","principal":"desktop:0123456789abcdef0123456789abcdef","scopes":["read:observe","desktop:command"],"expires_in":43200}}"#
+            r#"{{"token":"{token}","principal":"{principal}","scopes":["read:observe","desktop:command"],"expires_in":43200}}"#
         )
         .into_bytes()
     }
@@ -1153,7 +1301,7 @@ mod tests {
             SequencedHttp::new(responses),
             store,
             TEST_ORIGIN.to_owned(),
-            slot,
+            SessionIdentity::from_slot(slot, None),
             revoke,
             std::sync::Arc::new(move || secret.map(str::to_owned)),
             exchange,
@@ -1396,6 +1544,103 @@ mod tests {
             .iter()
             .find(|(name, _)| name.eq_ignore_ascii_case("authorization"))
             .and_then(|(_, value)| value.strip_prefix("Bearer ").map(str::to_owned))
+    }
+
+    /// The production media binding shares the session credential slot and the
+    /// live principal cell: a rotation/reconnect install is presented by the very
+    /// next media request, never a launch-time copy.
+    #[test]
+    fn a_media_binding_reads_the_live_session_identity_per_request() {
+        const PRINCIPAL: &str = "desktop:0123456789abcdef0123456789abcdef";
+        const REPLACEMENT_PRINCIPAL: &str = "desktop:fedcba9876543210fedcba9876543210";
+        let (origin, server) = serve_once("HTTP/1.1 200 OK", "{}");
+        let settings = RuntimeSettings {
+            endpoint: origin,
+            token: OLD_TOKEN.to_owned(),
+            revocable: false,
+        };
+        let session = SessionIdentity::new(Some(OLD_TOKEN.to_owned()), Some(PRINCIPAL.to_owned()));
+        let binding = media_binding(&settings, &session);
+        let MediaBinding::Runtime(runtime) = binding else {
+            panic!("a validated origin and principal must expose a runtime binding");
+        };
+        assert_eq!(runtime.audience().as_deref(), Some(PRINCIPAL));
+
+        // A credential rotation/reconnect install replaces both shared cells.
+        session.install(NEW_TOKEN, Some(REPLACEMENT_PRINCIPAL.to_owned()));
+        assert_eq!(
+            runtime.audience().as_deref(),
+            Some(REPLACEMENT_PRINCIPAL),
+            "the media boundary sees the new principal without being rebuilt"
+        );
+        let mut source = runtime.source(
+            &desktop_protocol::ServerId::new("server-1").expect("server"),
+            REPLACEMENT_PRINCIPAL,
+        );
+        let _ = source.fetch_descriptor(
+            "sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+            "read-context-value",
+            &cos_client::media::Cancellation::default(),
+        );
+        let request = server.join().expect("server finished").to_ascii_lowercase();
+        assert!(
+            request.contains(&format!("authorization: bearer {NEW_TOKEN}")),
+            "the rotated credential is presented: {request}"
+        );
+        assert!(
+            !request.contains(OLD_TOKEN),
+            "the launch credential is never replayed: {request}"
+        );
+    }
+
+    /// A reauthorization that replaced the principal (Runtime restart) installs
+    /// the replacement in the one shared cell media validates against.
+    #[test]
+    fn a_reauthorization_installs_the_replacement_principal_for_media() {
+        const INITIAL_PRINCIPAL: &str = "desktop:0123456789abcdef0123456789abcdef";
+        const REPLACEMENT_PRINCIPAL: &str = "desktop:fedcba9876543210fedcba9876543210";
+        let store: std::sync::Arc<dyn CredentialStore> =
+            std::sync::Arc::new(MemoryStore::with_token(&versioned_record(OLD_TOKEN)));
+        let slot: cos_client::CredentialSlot =
+            std::sync::Arc::new(Mutex::new(Some(OLD_TOKEN.to_owned())));
+        let session = SessionIdentity::from_slot(
+            std::sync::Arc::clone(&slot),
+            Some(INITIAL_PRINCIPAL.to_owned()),
+        );
+        let revoke = std::sync::Arc::new(Mutex::new(None));
+        let mut executor = ReauthHttp::new(
+            SequencedHttp::new([(401, b"{}".to_vec()), (200, b"{}".to_vec())]),
+            std::sync::Arc::clone(&store),
+            TEST_ORIGIN.to_owned(),
+            session.clone(),
+            revoke,
+            std::sync::Arc::new(|| Some("operator-secret".to_owned())),
+            SequencedExchange::new([
+                (401, Vec::new()),
+                (
+                    200,
+                    credential_document_with_principal(NEW_TOKEN, REPLACEMENT_PRINCIPAL),
+                ),
+            ]),
+        );
+        executor.set_policy(ReauthPolicy {
+            max_attempts: 3,
+            min_interval: Duration::ZERO,
+        });
+        let response = executor
+            .execute(authorized(DELTAS_PATH, HttpMethod::Get, OLD_TOKEN))
+            .expect("two responses");
+        assert_eq!(response.status, 200);
+        assert_eq!(
+            session.audience().as_deref(),
+            Some(REPLACEMENT_PRINCIPAL),
+            "the new principal is installed for the media boundary"
+        );
+        assert_eq!(
+            slot.lock().expect("slot").as_deref(),
+            Some(NEW_TOKEN),
+            "the new credential is installed in the shared slot"
+        );
     }
 
     #[test]
@@ -1857,7 +2102,7 @@ mod tests {
             },
             std::sync::Arc::clone(&store),
             TEST_ORIGIN.to_owned(),
-            std::sync::Arc::clone(&slot),
+            SessionIdentity::from_slot(std::sync::Arc::clone(&slot), None),
             revoke,
             std::sync::Arc::new(|| Some("operator-secret".to_owned())),
             StubExchange {
