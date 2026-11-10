@@ -1,0 +1,39 @@
+{
+  "source": "https://download.nvaccess.org/releases/2026.3.1/nvda_2026.3.1.exe",
+  "version": "2026.3.1",
+  "official_sha256": "6f80a5b0ca720a7d0d314b5be212f37388bbe81a1107ac3298c1821a1cd3f052",
+  "installer_present": true,
+  "installer_bytes": 69896584,
+  "installer_sha256": "sha256:6f80a5b0ca720a7d0d314b5be212f37388bbe81a1107ac3298c1821a1cd3f052",
+  "signature": {
+    "Status": 0,
+    "Signer": "CN=NV Access Limited, O=NV Access Limited, L=Camp Mountain, S=Queensland, C=AU"
+  },
+  "file_version": {
+    "FileVersion": "2026.3.1.58288",
+    "ProductVersion": "2026.3.1"
+  },
+  "per_user_install": {
+    "machine_wide_install_silent": {
+      "status": "NOT_RUN_ELEVATION_REQUIRED",
+      "command": "nvda_2026.3.1.exe --install-silent",
+      "why": "The official installer has no per-user install mode: installerGui.doInstall calls systemUtils.execElevated(..., 'runas') and installer.install() writes WritePaths.defaultInstallDir (%ProgramFiles%\\nvda) and HKLM registration. With UAC enabled, a standard user, ConsentPromptBehaviorUser=3 and PromptOnSecureDesktop=1, this raises an unattended secure-desktop credential prompt; it was not triggered to avoid leaving a blocking UAC prompt."
+    },
+    "portable_per_user": {
+      "status": "PASS",
+      "command": "nvda_2026.3.1.exe --create-portable-silent --portable-path=%LOCALAPPDATA%\\nvda-at\\portable -c %LOCALAPPDATA%\\nvda-at\\config -f %LOCALAPPDATA%\\nvda-at\\logs\\portable-create.log -l 12 -n ja --no-sr-flag",
+      "exit_code": 0,
+      "portable_exe": "C:\\Users\\diobrando\\AppData\\Local\\nvda-at\\portable\\nvda.exe",
+      "portable_exe_sha256": "sha256:b3442f222cb677141138dab33a08f9baeae1b3b24b06e2cd9c1bf56083bd15a1"
+    }
+  },
+  "cleanup": {
+    "installer_removed": true,
+    "portable_executables_removed": true,
+    "portable_residual": [
+      "portable/lib/2026.3.1/x64/IAccessible2proxy.dll",
+      "portable/lib/2026.3.1/x64/ISimpleDOM.dll"
+    ],
+    "reason": "the two DLLs are mapped into running Chrome/DeepSeek Harness/SteelSeriesGGClient processes; no nvda process remains"
+  }
+}

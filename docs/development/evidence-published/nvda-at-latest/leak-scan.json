@@ -1,0 +1,7 @@
+{
+  "files_checked": 27,
+  "secrets_checked": 0,
+  "findings": [],
+  "clean": true,
+  "note": "post-cleanup scan; the earlier session scan (leak-scan-session.json) checked the 3 in-memory per-run secrets and was clean"
+}

@@ -1,0 +1,29 @@
+{
+  "at": "2026-11-11T00:24:30+0900",
+  "nvda_processes": "0",
+  "desktop_processes_ours": "closed by the session (exit 0)",
+  "unrelated_cos_desktop_processes": "",
+  "dll_holders": "12704 SteelSeriesGGClient\n26860 chrome\n56220 DeepSeek Harness",
+  "ports": {
+    "8155": false,
+    "8188": false
+  },
+  "removed": [
+    "target/acc1-native/20261110T230554-nvda-smoke",
+    "target/acc1-native/20261110T232451-nvda-at",
+    "target/acc1-native/20261110T233759-nvda-at",
+    "target/acc1-native/20261110T234430-nvda-at",
+    "target/acc1-native/20261110T235449-nvda-at",
+    "target/acc1-native/20261111T000250-nvda-at",
+    "target/acc1-native/20261110T225726-ax-audit",
+    "target/nvda-at",
+    "%LOCALAPPDATA%/nvda-at (all except two locked COM proxy DLLs)"
+  ],
+  "residual": [
+    "%LOCALAPPDATA%/nvda-at/portable/lib/2026.3.1/x64/IAccessible2proxy.dll",
+    "%LOCALAPPDATA%/nvda-at/portable/lib/2026.3.1/x64/ISimpleDOM.dll"
+  ],
+  "chrome_restored": true,
+  "raw_nvda_log_deleted": true,
+  "installer_deleted": true
+}
