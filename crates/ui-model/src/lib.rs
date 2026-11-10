@@ -719,9 +719,10 @@ pub struct ProjectionDisplay {
     /// Owner-local marker for the complete snapshot that produced these records.
     pub source_revision: Counter,
     pub scope: DerivationScope,
+    /// Dock rows for the selected task only, in flattened group order.
     pub candidates: Arc<[Arc<CandidateDisplay>]>,
-    /// Iteration groups covering every candidate row exactly once, in
-    /// authoritative iteration order.
+    /// Iteration groups covering every selected-task candidate row exactly once,
+    /// in authoritative iteration order.
     pub candidate_groups: Arc<[CandidateGroupDisplay]>,
     /// Candidate identities the authoritative outcome projection formally selects.
     /// Display-only: never a local selection and never a command (ADR-0010 D-13).
@@ -754,6 +755,9 @@ pub struct DerivationCache {
     axes: Option<(Counter, TaskId, StateAxes)>,
     candidates: BTreeMap<CandidateRef, DisplayEntry<CandidateDisplay>>,
     candidate_groups: Arc<[CandidateGroupDisplay]>,
+    /// Task the current dock rows/groups are scoped to. `None` means the dock is
+    /// empty because no task is selected or projected.
+    candidate_task: Option<TaskId>,
     /// Authoritative iteration revisions the current groups were derived from.
     iteration_revisions: Vec<(IterationId, Counter)>,
     evaluations: BTreeMap<EvaluationId, DisplayEntry<EvaluationDisplay>>,
@@ -775,6 +779,7 @@ impl DerivationCache {
         self.axes = None;
         self.candidates.clear();
         self.candidate_groups = Arc::from([]);
+        self.candidate_task = None;
         self.iteration_revisions.clear();
         self.evaluations.clear();
         self.outcomes.clear();
@@ -817,7 +822,19 @@ impl DerivationCache {
             let scope = DerivationScope {
                 session_generation: publication.session_generation,
             };
-            let projection = self.derive_snapshot(snapshot, revision, scope, &cancelled)?;
+            // The dock is scoped to exactly the task this publication presents. A
+            // selected identity that disappeared does not fall back to another task.
+            let task = match selected_task {
+                Some(identity) => snapshot.tasks.get(identity),
+                None => snapshot.tasks.values().next(),
+            };
+            let projection = self.derive_snapshot(
+                snapshot,
+                revision,
+                scope,
+                task.map(|task| &task.task_ref),
+                &cancelled,
+            )?;
             text.epoch = snapshot.epoch.clone();
             text.projection_revision = Some(revision.as_str().to_owned());
             text.artifacts = Arc::clone(&projection.candidates);
@@ -831,10 +848,6 @@ impl DerivationCache {
                 self.reset();
                 return None;
             }
-            let task = match selected_task {
-                Some(identity) => snapshot.tasks.get(identity),
-                None => snapshot.tasks.values().next(),
-            };
             text.inspector = inspector::Index::derive(snapshot, task);
             if let Some(task) = task {
                 let matches_cached = self.task.as_ref().is_some_and(|cached| {
@@ -924,11 +937,16 @@ impl DerivationCache {
     /// Entity rows are reused only when their family, full identity and
     /// authoritative entity projection revision are unchanged. The returned
     /// `source_revision` tags the complete snapshot with its owner marker.
+    ///
+    /// Dock rows and iteration groups cover only the candidates whose
+    /// authoritative `task_ref` is `selected_task`. `None` (no selected task is
+    /// projected) leaves the dock empty rather than listing every task.
     pub fn derive_snapshot(
         &mut self,
         snapshot: &SnapshotHandle,
         revision: &Counter,
         scope: DerivationScope,
+        selected_task: Option<&TaskId>,
         cancelled: impl Fn() -> bool,
     ) -> Option<ProjectionDisplay> {
         if cancelled() {
@@ -940,7 +958,9 @@ impl DerivationCache {
             self.scope = Some(scope.clone());
             self.epoch = snapshot.epoch.clone();
         }
-        if self.snapshot_revision.as_ref() == Some(revision) {
+        if self.snapshot_revision.as_ref() == Some(revision)
+            && self.candidate_task.as_ref() == selected_task
+        {
             return Some(ProjectionDisplay {
                 source_revision: revision.clone(),
                 scope,
@@ -1176,14 +1196,28 @@ impl DerivationCache {
                 iteration.projection_revision.clone(),
             ));
         }
-        if candidate_displays_changed || self.iteration_revisions != iteration_revisions {
+        if candidate_displays_changed
+            || self.iteration_revisions != iteration_revisions
+            || self.candidate_task.as_ref() != selected_task
+        {
             // A previous grouped display is not an ordering authority. Always
             // start from the same source-key order as a fresh derivation.
+            //
+            // Only the selected task's rows enter the dock. The cache still holds
+            // display records for every snapshot candidate so a task switch reuses
+            // them; the filter applies to what this window may present.
             let mut base = Vec::with_capacity(self.candidates.len());
-            for entry in self.candidates.values() {
+            for (identity, entry) in &self.candidates {
                 if cancelled() {
                     self.reset();
                     return None;
+                }
+                let Some(candidate) = snapshot.candidates.get(identity) else {
+                    continue;
+                };
+                let in_scope = selected_task.is_some_and(|task| task == &candidate.task_ref);
+                if !in_scope {
+                    continue;
                 }
                 base.push(Arc::clone(&entry.display));
             }
@@ -1203,6 +1237,7 @@ impl DerivationCache {
             }
             self.candidate_groups = groups.into();
             self.candidate_displays = flattened.into();
+            self.candidate_task = selected_task.cloned();
             self.iteration_revisions = iteration_revisions;
         }
         if evaluation_displays_changed {
@@ -1425,7 +1460,7 @@ pub struct WorkbenchText {
     pub source: String,
     pub mode: String,
     pub artifacts: Arc<[Arc<CandidateDisplay>]>,
-    /// Authoritative iteration groups covering the dock rows.
+    /// Authoritative iteration groups covering the selected task's dock rows.
     pub candidate_groups: Arc<[CandidateGroupDisplay]>,
     /// Candidate identities the runtime formally selects; display-only (ADR-0010 D-13).
     pub formal_candidates: Arc<[CandidateRef]>,
@@ -1991,6 +2026,7 @@ mod tests {
     use std::cell::Cell;
     use std::sync::Arc;
 
+    use super::presentation::{CompareSide, Presentation, SelectionEffect, ViewedCandidate};
     use super::{DerivationCache, DisplayCache, NOT_PROJECTED_FACT, WorkbenchText};
     use app_core::{
         ObservationPublication, PublicationConnection, PublicationNotice, PublicationSource,
@@ -2192,6 +2228,54 @@ mod tests {
         }
     }
 
+    fn dock_task() -> TaskSnapshot {
+        TaskSnapshot {
+            task_ref: TaskId::fixture("task/Task-184"),
+            display_id: Some("Task-184".to_owned()),
+            title: "Dock task".to_owned(),
+            task_status: TaskStatus::Active,
+            inner_phase: Some(PhaseLabel::new("REFINE").expect("valid phase")),
+            iteration_ref: Some(IterationId::fixture("iteration/Task-184/1")),
+            iteration_index: Some(1),
+            best_candidate_ref: None,
+            formal_outcome_ref: None,
+            accepted_brief_ref: None,
+            capabilities_ref: None,
+            projection_revision: Counter::from_u128(1),
+        }
+    }
+
+    fn other_dock_task() -> TaskSnapshot {
+        let mut task = dock_task();
+        task.task_ref = TaskId::fixture("task/Other");
+        task.display_id = Some("Task-Other".to_owned());
+        task.title = "Other dock task".to_owned();
+        task.iteration_ref = Some(IterationId::fixture("iteration/Other/1"));
+        task
+    }
+
+    fn other_task_candidate(local: &str, label: &str, iteration: u32) -> CandidateSnapshot {
+        let mut candidate = dock_candidate(local, label, iteration);
+        candidate.task_ref = TaskId::fixture("task/Other");
+        candidate.candidate_ref.task_id = candidate.task_ref.clone();
+        candidate.iteration_ref = IterationId::fixture(format!("iteration/Other/{iteration}"));
+        candidate
+    }
+
+    fn other_dock_iteration(index: u32, candidate_refs: Vec<CandidateRef>) -> IterationSnapshot {
+        let mut iteration = dock_iteration(index, candidate_refs);
+        iteration.task_ref = TaskId::fixture("task/Other");
+        iteration.iteration_ref = IterationId::fixture(format!("iteration/Other/{index}"));
+        iteration
+    }
+
+    fn insert_task(snapshot: &mut SnapshotHandle, task: TaskSnapshot) {
+        Arc::get_mut(snapshot)
+            .expect("snapshot has one owner")
+            .tasks
+            .insert(task.task_ref.clone(), task);
+    }
+
     fn dock_snapshot(
         candidates: Vec<CandidateSnapshot>,
         iterations: Vec<IterationSnapshot>,
@@ -2199,6 +2283,8 @@ mod tests {
         let mut snapshot: SnapshotHandle = Arc::default();
         let state = Arc::get_mut(&mut snapshot).expect("snapshot has one owner");
         state.epoch = Some(desktop_protocol::EpochId::fixture("epoch/1"));
+        let task = dock_task();
+        state.tasks.insert(task.task_ref.clone(), task);
         for candidate in candidates {
             state
                 .candidates
@@ -2241,6 +2327,7 @@ mod tests {
                 super::DerivationScope {
                     session_generation: 1,
                 },
+                Some(&TaskId::fixture("task/Task-184")),
                 || false,
             )
             .expect("non-canceled snapshot derives");
@@ -2271,7 +2358,7 @@ mod tests {
         assert_eq!(
             flattened,
             vec!["B", "A", "E", "Z"],
-            "dock rows follow the authoritative iteration order and keep every candidate"
+            "dock rows follow the authoritative iteration order and keep every selected-task candidate"
         );
     }
 
@@ -2290,6 +2377,7 @@ mod tests {
                 super::DerivationScope {
                     session_generation: 1,
                 },
+                Some(&TaskId::fixture("task/Task-184")),
                 || false,
             )
             .expect("non-canceled snapshot derives");
@@ -3325,7 +3413,7 @@ mod tests {
     }
 
     #[test]
-    fn dock_candidates_follow_authoritative_iteration_order() {
+    fn dock_groups_exclude_candidates_and_iterations_of_other_tasks() {
         let a = dock_candidate("a", "A", 1);
         let mut b = dock_candidate("b", "B", 1);
         b.task_ref = TaskId::fixture("task/Other");
@@ -3353,8 +3441,6 @@ mod tests {
         };
         assert_eq!(group(&a.iteration_ref).rows[0].identity, a.candidate_ref);
         assert_eq!(group(&a.iteration_ref).rows.len(), 1);
-        assert_eq!(group(&b.iteration_ref).rows[0].identity, b.candidate_ref);
-        assert_eq!(group(&b.iteration_ref).rows.len(), 1);
         let unavailable = display
             .candidate_groups
             .iter()
@@ -3362,6 +3448,234 @@ mod tests {
             .expect("explicit unattributed group");
         assert_eq!(unavailable.rows[0].identity, missing.candidate_ref);
         assert_eq!(unavailable.rows.len(), 1);
+        // The other task's candidate and iteration are never presented, even though
+        // both are authoritative rows in the same snapshot.
+        assert!(
+            !display
+                .candidate_groups
+                .iter()
+                .any(|group| group.iteration.as_ref() == Some(&b.iteration_ref)),
+            "another task's iteration group must not appear in the dock"
+        );
+        assert!(
+            !display
+                .artifacts
+                .iter()
+                .any(|row| row.identity == b.candidate_ref),
+            "another task's candidate must not appear in the dock"
+        );
+        assert_eq!(display.artifacts.len(), 2, "only the selected task's rows");
+    }
+
+    #[test]
+    fn selected_task_replaces_the_dock_without_a_snapshot_revision_change() {
+        let task_a = TaskId::fixture("task/Task-184");
+        let task_b = TaskId::fixture("task/Other");
+        let a_one = dock_candidate("a1", "C1", 1);
+        let a_two = dock_candidate("a2", "C2", 1);
+        let b_one = other_task_candidate("b1", "C1", 1);
+        let b_two = other_task_candidate("b2", "C2", 1);
+        let mut snapshot = dock_snapshot(
+            vec![a_one.clone(), a_two.clone(), b_one.clone(), b_two.clone()],
+            vec![
+                dock_iteration(
+                    1,
+                    vec![a_one.candidate_ref.clone(), a_two.candidate_ref.clone()],
+                ),
+                other_dock_iteration(
+                    1,
+                    vec![b_one.candidate_ref.clone(), b_two.candidate_ref.clone()],
+                ),
+            ],
+        );
+        insert_task(&mut snapshot, other_dock_task());
+        // One publication and one revision for both task selections: only the
+        // selected identity changes, so this also covers the cached-projection path.
+        let published = publication(snapshot, 1, 1, 1);
+        let mut cache = DerivationCache::default();
+        fn labels(text: &WorkbenchText) -> Vec<&str> {
+            text.artifacts
+                .iter()
+                .map(|row| row.label.as_ref())
+                .collect()
+        }
+
+        let selected_a = cache
+            .derive(&published, Some(&task_a), "9.8.7", || false)
+            .expect("selected task A derives");
+        assert_eq!(labels(&selected_a), ["C1", "C2"]);
+        assert!(
+            selected_a
+                .artifacts
+                .iter()
+                .all(|row| row.identity.task_id == task_a)
+        );
+        assert_eq!(selected_a.candidate_groups.len(), 1);
+        assert_eq!(
+            selected_a.candidate_groups[0].iteration.as_ref(),
+            Some(&IterationId::fixture("iteration/Task-184/1"))
+        );
+
+        let selected_b = cache
+            .derive(&published, Some(&task_b), "9.8.7", || false)
+            .expect("selected task B derives");
+        assert_eq!(labels(&selected_b), ["C1", "C2"]);
+        assert!(
+            selected_b
+                .artifacts
+                .iter()
+                .all(|row| row.identity.task_id == task_b),
+            "a task switch replaces the dock instead of appending another task's rows"
+        );
+        assert_eq!(selected_b.candidate_groups.len(), 1);
+        assert_eq!(
+            selected_b.candidate_groups[0].iteration.as_ref(),
+            Some(&IterationId::fixture("iteration/Other/1"))
+        );
+
+        // Back to A through the same cached publication: the rows are derived again
+        // (not answered from B's cached groups) and remain A's own rows.
+        let selected_again = cache
+            .derive(&published, Some(&task_a), "9.8.7", || false)
+            .expect("selected task A derives again");
+        assert_eq!(labels(&selected_again), ["C1", "C2"]);
+        assert!(Arc::ptr_eq(
+            &selected_a.artifacts[0],
+            &selected_again.artifacts[0]
+        ));
+    }
+
+    #[test]
+    fn switching_tasks_clears_the_compare_pair_and_a_cross_task_pair_is_unavailable() {
+        let task_a = TaskId::fixture("task/Task-184");
+        let task_b = TaskId::fixture("task/Other");
+        let a_one = dock_candidate("a1", "C1", 1);
+        let a_two = dock_candidate("a2", "C2", 1);
+        let b_one = other_task_candidate("b1", "C1", 1);
+        let b_two = other_task_candidate("b2", "C2", 1);
+        let mut snapshot = dock_snapshot(
+            vec![a_one.clone(), a_two.clone(), b_one.clone(), b_two.clone()],
+            vec![
+                dock_iteration(
+                    1,
+                    vec![a_one.candidate_ref.clone(), a_two.candidate_ref.clone()],
+                ),
+                other_dock_iteration(
+                    1,
+                    vec![b_one.candidate_ref.clone(), b_two.candidate_ref.clone()],
+                ),
+            ],
+        );
+        insert_task(&mut snapshot, other_dock_task());
+        let published = publication(snapshot, 1, 1, 1);
+        let mut cache = DerivationCache::default();
+        let dock_a = cache
+            .derive(&published, Some(&task_a), "9.8.7", || false)
+            .expect("selected task A derives");
+        let dock_b = cache
+            .derive(&published, Some(&task_b), "9.8.7", || false)
+            .expect("selected task B derives");
+
+        // Pair selection can only consume rows the selected task's dock exposes.
+        let mut presentation = Presentation::default();
+        assert_eq!(
+            presentation.select(ViewedCandidate(dock_a.artifacts[0].identity.clone())),
+            SelectionEffect::CompareSideA
+        );
+        assert_eq!(
+            presentation.select(ViewedCandidate(dock_a.artifacts[1].identity.clone())),
+            SelectionEffect::CompareSideB
+        );
+        let pair = presentation
+            .compare_pair()
+            .expect("two selected-task rows complete the pair");
+        assert!(pair.iter().all(|candidate| candidate.0.task_id == task_a));
+
+        // The dock's task switch (D-9) discards the pair and the pending side.
+        assert!(presentation.reset_for_task(task_b.clone()));
+        assert_eq!(presentation.compare_pair(), None);
+        assert_eq!(presentation.compare_side(CompareSide::A), None);
+        assert_eq!(presentation.viewed(), None);
+
+        // A persisted pair that names one candidate from another task is refused
+        // against the selected task's dock, never re-paired or silently accepted.
+        let cross_task = [
+            dock_a.artifacts[0].identity.clone(),
+            dock_b.artifacts[0].identity.clone(),
+        ];
+        let outcome = presentation.restore(None, Some(&cross_task), |reference| {
+            dock_b
+                .artifacts
+                .iter()
+                .any(|row| row.identity == *reference)
+        });
+        assert!(
+            outcome.pair_missing,
+            "a cross-task pair is unavailable rather than partially applied"
+        );
+        assert_eq!(presentation.compare_pair(), None);
+
+        // Two rows of the selected task still form a pair normally.
+        assert_eq!(
+            presentation.select(ViewedCandidate(dock_b.artifacts[0].identity.clone())),
+            SelectionEffect::CompareSideA
+        );
+        assert_eq!(
+            presentation.select(ViewedCandidate(dock_b.artifacts[1].identity.clone())),
+            SelectionEffect::CompareSideB
+        );
+        let pair = presentation.compare_pair().expect("selected-task pair");
+        assert!(pair.iter().all(|candidate| candidate.0.task_id == task_b));
+    }
+
+    #[test]
+    fn a_task_without_projected_candidates_keeps_an_empty_dock() {
+        let empty_task_id = TaskId::fixture("task/empty");
+        let mut snapshot = fixture_snapshot(
+            "Task",
+            TaskStatus::Active,
+            1,
+            vec![candidate("e", "Candidate E", 1)],
+            "epoch/1",
+        );
+        let mut empty_task = dock_task();
+        empty_task.task_ref = empty_task_id.clone();
+        empty_task.display_id = Some("Task-empty".to_owned());
+        empty_task.title = "Empty task".to_owned();
+        empty_task.iteration_ref = None;
+        empty_task.iteration_index = None;
+        insert_task(&mut snapshot, empty_task);
+        let published = publication(snapshot, 1, 1, 1);
+        let mut cache = DerivationCache::default();
+
+        let empty = cache
+            .derive(&published, Some(&empty_task_id), "9.8.7", || false)
+            .expect("empty selected task derives");
+        assert!(empty.artifacts.is_empty());
+        assert!(empty.candidate_groups.is_empty());
+        assert_eq!(empty.task.as_ref(), Some(&empty_task_id));
+
+        // A selected identity that is no longer projected keeps the dock empty
+        // instead of falling back to another task's candidates.
+        let missing = cache
+            .derive(
+                &published,
+                Some(&TaskId::fixture("task/removed")),
+                "9.8.7",
+                || false,
+            )
+            .expect("missing selected task derives");
+        assert!(missing.artifacts.is_empty());
+        assert!(missing.candidate_groups.is_empty());
+        assert_eq!(missing.task, None);
+
+        // The initial-task behavior still presents its own row.
+        let first = cache
+            .derive(&published, None, "9.8.7", || false)
+            .expect("initial task derives");
+        assert_eq!(first.artifacts.len(), 1);
+        assert_eq!(first.artifacts[0].identity, candidate_ref("e"));
+        assert_eq!(first.candidate_groups.len(), 1);
     }
 
     #[test]
@@ -3790,6 +4104,9 @@ mod tests {
         assert!(selected.axes.task_status.contains("COMPLETED"));
         assert_eq!(selected.axes.inner_phase.as_ref(), "REVIEW");
         assert!(!selected.stop_enabled);
+        // Task-999 projects no candidates: the dock must not show Task-184's row.
+        assert!(selected.artifacts.is_empty());
+        assert!(selected.candidate_groups.is_empty());
 
         let missing_id = TaskId::fixture("task/removed");
         let missing = cache
@@ -3797,6 +4114,8 @@ mod tests {
             .expect("missing selected task yields unavailable context");
         assert_eq!(missing.task, None);
         assert!(!missing.stop_enabled);
+        assert!(missing.artifacts.is_empty());
+        assert!(missing.candidate_groups.is_empty());
     }
 
     #[test]
