@@ -41,10 +41,22 @@ Runtime pairing: the release was validated against the COS Runtime `dev` tip
   Evidence groups not projected, some media variants (PREVIEW/THUMBNAIL/METADATA,
   non-PNG, clock skew), a native wire-410 Expired path and an actual 300 s TTL expiry
   remain measured or accepted as documented in the repository plan/evidence.
-- Accessibility: UIA focus/keyboard behavior is measured; a real screen-reader (NVDA/AT)
-  pronouncement and mixed-DPI/High-Contrast/Japanese-IME composition remain limited.
-- The Runtime full test suite retains pre-existing/environment-specific failures
-  documented in the Runtime repository; the Desktop gates above are green.
+- Accessibility: UIA focus/keyboard behavior is measured. A post-release **real NVDA
+  2026.3.1 per-user portable session** recorded 77 utterances across the main surface,
+  Brief, inspector/evidence, History and command palette (commit `6904b69`), with
+  three focus-pattern findings (F1–F3) remaining. This is a bounded pronouncement
+  measurement, not an accessibility/AX certification; machine-wide NVDA installation
+  requires elevation and was not run.
+- The Runtime full suite was made green post-release at Runtime `dev` `06ee825e`
+  (2,502 passed / 16 skipped / 1 deselected); the Desktop gates above are green.
+
+## Post-release updates
+
+These items were recorded after the v0.1.0 artifact was built and do not change its
+bytes: the real NVDA session (`6904b69`), the Runtime full-suite fixes
+(`270cc2ba`/`3ed11354`/`06ee825e`) and the release-record updates. The EXPIRED-surface
+actionable refetch control remains work-in-progress and is **not** in this artifact.
+
 
 ## Running
 
