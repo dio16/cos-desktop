@@ -8,8 +8,8 @@ use crate::{
         TileDemand, UploadRequest, ViewPaint,
     },
     media_presentation::{
-        admitted_bytes, media_decode_failure_text, media_preparing_text, media_success_text,
-        media_unavailable_text, media_upload_request,
+        MediaRefetchState, admitted_bytes, media_decode_failure_text, media_preparing_text,
+        media_success_text, media_unavailable_text, media_upload_request,
     },
     view_transform::{Point, Rect, Size, ViewCamera, ViewTransform},
 };
@@ -18,9 +18,9 @@ use app_core::{
     MediaSource, MediaUnavailable, MediaUnavailableCause,
 };
 use gpui::{
-    App, Bounds, Context, EventEmitter, FocusHandle, GpuDeviceState, IntoElement, KeyBinding,
-    MouseButton, Pixels, Render, Role, SharedString, Subscription, Window, actions, canvas, div,
-    fill, point, prelude::*, px, rgb, size,
+    AccessibleAction, App, Bounds, Context, EventEmitter, FocusHandle, GpuDeviceState, IntoElement,
+    KeyBinding, MouseButton, Pixels, Render, Role, SharedString, Subscription, Window, actions,
+    canvas, div, fill, point, prelude::*, px, rgb, size,
 };
 use media::{Cancellation, MediaError, Orientation, RepresentationKey};
 use std::sync::Arc;
@@ -37,7 +37,8 @@ actions!(
         ViewerUp,
         ViewerDown,
         ViewerFullscreen,
-        ViewerEscape
+        ViewerEscape,
+        ViewerRefetch
     ]
 );
 
@@ -54,6 +55,7 @@ pub fn bind_keys(cx: &mut App) {
         KeyBinding::new("down", ViewerDown, Some("ImageViewer")),
         KeyBinding::new("f11", ViewerFullscreen, Some("ImageViewer")),
         KeyBinding::new("escape", ViewerEscape, Some("ImageViewer")),
+        KeyBinding::new("r", ViewerRefetch, Some("ImageViewer")),
     ]);
 }
 
@@ -139,6 +141,12 @@ pub enum ViewerMode {
 pub enum ViewerEvent {
     Camera(ViewCamera),
     Focused,
+    /// The user activated the one manual media refetch this pane offered.
+    ///
+    /// The viewer starts no fetch: the host owns the canonical identity, the
+    /// live session credential and the cancellation, and re-resolves the same
+    /// media selection through them.
+    RefetchMedia,
 }
 
 /// Per-pane CPU scene observation. Shared resources do not share this readiness or geometry.
@@ -210,6 +218,8 @@ pub struct ImageViewer {
     media_request_serial: u64,
     /// Highest media request sequence already applied to this pane.
     media_applied_serial: u64,
+    /// Explicit media outcome plus the one manual refetch this pane may offer.
+    media_refetch: MediaRefetchState,
 }
 
 impl ImageViewer {
@@ -274,6 +284,7 @@ impl ImageViewer {
             consumer: ConsumerId::allocate(),
             media_request_serial: 0,
             media_applied_serial: 0,
+            media_refetch: MediaRefetchState::default(),
         }
     }
 
@@ -644,7 +655,43 @@ impl ImageViewer {
         // The host withdrew this pane's picture: no recovery backup may resurrect it later.
         self.requested = None;
         self.demand = None;
+        // A non-media reason replaced the pane's status: no media outcome (and no
+        // refetch offer) may survive it.
+        self.media_refetch.clear();
         self.status = reason;
+        cx.notify();
+    }
+
+    /// Whether this pane currently offers the one manual media refetch.
+    ///
+    /// Compare panes carry no host-owned refetch path, so only the standalone
+    /// artifact pane offers it.
+    pub fn media_refetch_offered(&self) -> bool {
+        self.compare_pane.is_none() && self.media_refetch.offers()
+    }
+
+    /// Take the refetch offer and ask the host to re-resolve the same media.
+    ///
+    /// The pane starts no fetch itself. It records that one bounded attempt is in
+    /// flight (a repeated click or key press cannot start a second) and emits
+    /// [`ViewerEvent::RefetchMedia`]; the host owns the canonical identity, the
+    /// live session credential, the cancellation and the resolution.
+    pub fn request_media_refetch(&mut self, cx: &mut Context<Self>) -> bool {
+        if self.compare_pane.is_some() || !self.media_refetch.request() {
+            return false;
+        }
+        cx.emit(ViewerEvent::RefetchMedia);
+        cx.notify();
+        true
+    }
+
+    /// The host could not start the requested refetch.
+    ///
+    /// The explicit media state is kept (never replaced by a fabricated one) and
+    /// the control is re-enabled for a later manual attempt instead of leaving
+    /// it silently disabled.
+    pub fn media_refetch_unstarted(&mut self, cx: &mut Context<Self>) {
+        self.media_refetch.settle();
         cx.notify();
     }
 
@@ -747,11 +794,18 @@ impl ImageViewer {
         };
         match presentation {
             // Cancellation is not an availability state: this pane keeps its current status.
-            MediaPresentation::Cancelled => {}
+            MediaPresentation::Cancelled => self.media_refetch.settle(),
             MediaPresentation::Unavailable(unavailable) => {
                 self.unavailable(media_unavailable_text(&unavailable), cx);
+                // Only an explicit media outcome may offer a refetch; `unavailable`
+                // cleared the previous one before this state was recorded.
+                self.media_refetch
+                    .record_unavailable(unavailable.availability);
             }
             MediaPresentation::Admitted(admitted) => {
+                // A presented picture replaces the empty/unavailable state (and any
+                // refetch offer) before the background preparation completes.
+                self.media_refetch.record_available();
                 let request = match media_upload_request(&admitted, generation) {
                     Ok(request) => request,
                     Err(refusal) => {
@@ -1594,7 +1648,12 @@ impl Render for ImageViewer {
             || "画像表示".to_owned(),
             |index| format!("比較する{}側の画像", if index == 0 { "A" } else { "B" }),
         );
-        let viewport = div().id("image-viewport").role(Role::Group).aria_label(SharedString::from(format!("{pane_label}。0: 全体、1: 物理等倍、+/-: 拡大縮小、矢印: 移動、F11: 全画面、Escape: 復帰")))
+        let refetch_hint = if self.media_refetch_offered() {
+            "、R: メディア再取得"
+        } else {
+            ""
+        };
+        let viewport = div().id("image-viewport").role(Role::Group).aria_label(SharedString::from(format!("{pane_label}。0: 全体、1: 物理等倍、+/-: 拡大縮小、矢印: 移動、F11: 全画面、Escape: 復帰{refetch_hint}")))
             .key_context("ImageViewer").track_focus(&self.focus).relative().flex_1().min_h_0().w_full().overflow_hidden()
             .border_1().border_color(rgb(if self.focus.is_focused(window) { palette.colors.focus } else { palette.colors.border }))
             .on_action(cx.listener(|this, _: &ViewerFit, _, cx| this.change(ViewTransform::fit, cx)))
@@ -1607,6 +1666,7 @@ impl Render for ImageViewer {
             .on_action(cx.listener(|this, _: &ViewerDown, _, cx| this.pan(0.0, -64.0, cx)))
             .on_action(cx.listener(|this, _: &ViewerFullscreen, window, cx| this.fullscreen(window, cx)))
             .on_action(cx.listener(|this, _: &ViewerEscape, window, cx| { if window.is_fullscreen() { this.fullscreen(window, cx); } }))
+            .on_action(cx.listener(|this, _: &ViewerRefetch, _, cx| { this.request_media_refetch(cx); }))
             .on_mouse_down(MouseButton::Left, cx.listener(|this, event: &gpui::MouseDownEvent, window, cx| { this.drag = Some(event.position); this.focus.focus(window, cx); cx.emit(ViewerEvent::Focused); }))
             .on_mouse_up(MouseButton::Left, cx.listener(|this, _, _, _| this.drag = None))
             .on_mouse_move(cx.listener(|this, event: &gpui::MouseMoveEvent, _, cx| {
@@ -1674,7 +1734,31 @@ impl Render for ImageViewer {
                         )))
                         .child(button("viewer-fullscreen", "全画面 / 復帰 (F11)").on_click(
                             cx.listener(|this, _, window, cx| this.fullscreen(window, cx)),
-                        )),
+                        ))
+                        // One manual refetch, offered only from an explicit expired or
+                        // refused-principal state. Activation means the same thing to a
+                        // keyboard, a screen reader (UIA Invoke) and a mouse click: ask
+                        // the host to re-resolve the same canonical identity through the
+                        // current session. The pane takes the offer before emitting, so a
+                        // double click or key repeat cannot start a second resolution.
+                        .when(self.media_refetch_offered(), |element| {
+                            element.child(
+                                button("viewer-refetch", "メディアを再取得 (R)")
+                                    .on_click(cx.listener(|this, _, window, cx| {
+                                        if this.request_media_refetch(cx) {
+                                            this.focus.focus(window, cx);
+                                        }
+                                    }))
+                                    .on_a11y_action(AccessibleAction::Click, {
+                                        let entity = cx.entity().downgrade();
+                                        move |_, _, cx| {
+                                            let _ = entity.update(cx, |this, cx| {
+                                                this.request_media_refetch(cx);
+                                            });
+                                        }
+                                    }),
+                            )
+                        }),
                 )
             })
             .child(

@@ -121,6 +121,9 @@ impl CompareView {
                 match event {
                     ViewerEvent::Focused => this.active = index,
                     ViewerEvent::Camera(camera) => this.propagate_shared_camera(index, *camera, cx),
+                    // Compare panes carry no host-owned refetch path; a compare side's
+                    // media is re-resolved from its own canonical identity instead.
+                    ViewerEvent::RefetchMedia => {}
                 }
                 cx.notify();
             })

@@ -231,6 +231,81 @@ pub fn media_unavailable_text(unavailable: &MediaUnavailable) -> SharedString {
     media_state_text(unavailable.availability).into()
 }
 
+/// Explicit sentence for a manual refetch that cannot start.
+///
+/// The pane keeps an actionable control only while a resolution can still be
+/// attempted through the live session; when no observation/lease is available
+/// the attempt is refused with this sentence instead of pretending to retry.
+pub fn media_refetch_unavailable_statement() -> &'static str {
+    "画像を利用できません: 現在の観測情報がないため、メディアを再取得できません。"
+}
+
+/// The media outcome a pane currently shows, plus the one manual refetch it offers.
+///
+/// The viewer never invents an availability state: it only records the state one
+/// resolution reported. A manual refetch is offered exactly for the outcomes a
+/// fresh resolution through the current session identity can change — an expired
+/// descriptor/handle and a refused principal — and never while one is already in
+/// flight, so one activation starts at most one resolution (no retry storm).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct MediaRefetchState {
+    availability: Option<MediaAvailability>,
+    pending: bool,
+}
+
+impl MediaRefetchState {
+    /// Record one explicit unavailable outcome.
+    pub fn record_unavailable(&mut self, availability: MediaAvailability) {
+        self.availability = Some(availability);
+        self.pending = false;
+    }
+
+    /// Record a presented picture: the empty/unavailable state is gone.
+    pub fn record_available(&mut self) {
+        *self = Self::default();
+    }
+
+    /// A resolution ended without an outcome (cancelled/superseded); any attempt
+    /// that was in flight is no longer running.
+    pub fn settle(&mut self) {
+        self.pending = false;
+    }
+
+    /// Forget any media outcome: a non-media reason replaced the pane's status.
+    pub fn clear(&mut self) {
+        *self = Self::default();
+    }
+
+    /// Whether the pane should show the refetch control now.
+    pub fn offers(&self) -> bool {
+        !self.pending
+            && matches!(
+                self.availability,
+                Some(MediaAvailability::Expired | MediaAvailability::Forbidden)
+            )
+    }
+
+    /// Take the one offer, if present. Returns whether a refetch may start.
+    pub fn request(&mut self) -> bool {
+        if self.offers() {
+            self.pending = true;
+            true
+        } else {
+            false
+        }
+    }
+
+    /// Whether one manual refetch is in flight.
+    pub fn is_pending(&self) -> bool {
+        self.pending
+    }
+
+    /// The state the pane currently shows; `None` means no explicit media outcome.
+    pub fn availability(&self) -> Option<MediaAvailability> {
+        self.availability
+    }
+}
+
 /// Status while admitted bytes are being decoded on the background executor.
 pub fn media_preparing_text(verified: bool) -> SharedString {
     if verified {
@@ -422,6 +497,99 @@ mod tests {
         assert!(!states.iter().any(
             |state| media_state_text(*state) == media_state_text(MediaAvailability::Available)
         ));
+    }
+
+    #[test]
+    fn a_manual_refetch_is_offered_only_for_expired_and_forbidden_outcomes() {
+        // A cold pane (no media resolution has reported anything) offers nothing.
+        let cold = MediaRefetchState::default();
+        assert!(!cold.offers());
+        assert_eq!(cold.availability(), None);
+        for (availability, offered) in [
+            (MediaAvailability::Expired, true),
+            (MediaAvailability::Forbidden, true),
+            (MediaAvailability::Missing, false),
+            (MediaAvailability::Pending, false),
+            (MediaAvailability::Unsupported, false),
+            (MediaAvailability::Failed, false),
+            (MediaAvailability::Available, false),
+        ] {
+            let mut state = MediaRefetchState::default();
+            state.record_unavailable(availability);
+            assert_eq!(state.offers(), offered, "{availability:?}");
+            assert_eq!(state.availability(), Some(availability));
+            assert!(!state.is_pending());
+        }
+        // A non-media reason (Missing/gate/principal sentence) replaces the pane
+        // status and must not leave an actionable media control behind.
+        let mut cleared = MediaRefetchState::default();
+        cleared.record_unavailable(MediaAvailability::Expired);
+        cleared.clear();
+        assert!(!cleared.offers());
+        assert_eq!(cleared.availability(), None);
+    }
+
+    #[test]
+    fn one_activation_starts_at_most_one_manual_refetch() {
+        let mut state = MediaRefetchState::default();
+        state.record_unavailable(MediaAvailability::Expired);
+        assert!(state.offers());
+        assert!(state.request());
+        // While one attempt is in flight the control is gone: a second activation
+        // (double click or key repeat) cannot start another resolution.
+        assert!(state.is_pending());
+        assert!(!state.offers());
+        assert!(!state.request());
+        // An attempt that could not start (no observation/lease) re-enables the
+        // control instead of leaving it silently disabled.
+        state.settle();
+        assert!(state.offers());
+    }
+
+    #[test]
+    fn a_presented_picture_replaces_the_expired_state() {
+        let mut state = MediaRefetchState::default();
+        state.record_unavailable(MediaAvailability::Expired);
+        assert!(state.request());
+        state.record_available();
+        assert_eq!(state.availability(), None);
+        assert!(!state.is_pending());
+        assert!(!state.offers());
+    }
+
+    #[test]
+    fn a_repeated_failure_keeps_an_explicit_state_and_reoffers_the_control() {
+        let mut state = MediaRefetchState::default();
+        state.record_unavailable(MediaAvailability::Expired);
+        assert!(state.request());
+        // The refetch failed again: the explicit state is unchanged, and the
+        // user may try once more (one attempt at a time, never an automatic loop).
+        state.record_unavailable(MediaAvailability::Expired);
+        assert_eq!(state.availability(), Some(MediaAvailability::Expired));
+        assert!(!state.is_pending());
+        assert!(state.offers());
+        // A refused principal keeps its own explicit state.
+        state.record_unavailable(MediaAvailability::Forbidden);
+        assert_eq!(state.availability(), Some(MediaAvailability::Forbidden));
+        assert!(state.offers());
+    }
+
+    #[test]
+    fn a_refused_manual_refetch_has_its_own_explicit_sentence() {
+        let text = media_refetch_unavailable_statement();
+        assert!(text.contains("画像を利用できません"));
+        assert!(text.contains("再取得できません"));
+        assert!(!text.contains("表示できます"));
+        for state in [
+            MediaAvailability::Expired,
+            MediaAvailability::Missing,
+            MediaAvailability::Forbidden,
+            MediaAvailability::Pending,
+            MediaAvailability::Unsupported,
+            MediaAvailability::Failed,
+        ] {
+            assert_ne!(text, media_state_text(state));
+        }
     }
 
     #[test]

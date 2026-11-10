@@ -199,6 +199,8 @@ mod tests {
             artifact_digest: ArtifactDigest::fixture(format!("digest/{label}")),
             representation: RepresentationKind::Original,
             capability: None,
+            // Compare sides re-resolve on a changed canonical identity only.
+            refetch: 0,
         }
     }
 

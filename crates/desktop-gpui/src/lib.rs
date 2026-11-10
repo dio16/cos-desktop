@@ -725,6 +725,11 @@ struct MediaLoadKey {
     /// Capability projection the request was gated on; a new revision forces a
     /// new gate decision instead of reusing the previous offer.
     capability: Option<(CapabilitiesId, Counter)>,
+    /// Manual-refetch nonce. A user-initiated refetch of the same canonical
+    /// identity must not equal the key already addressed, while every
+    /// authorization/content component stays identical. Automatic syncs reuse
+    /// the current nonce, so a publication delta still cannot re-fetch.
+    refetch: u64,
 }
 
 /// Identity of the capability decision that authorized a media request.
@@ -775,6 +780,12 @@ pub struct Shell {
     media_loaded: Option<MediaLoadKey>,
     /// Cancellation of the in-flight media resolution.
     media_cancel: MediaFetchCancellation,
+    /// Manual-refetch nonce for the artifact surface.
+    ///
+    /// Only the viewer's one explicit refetch control increments it; the key
+    /// comparison then re-addresses the same canonical identity instead of
+    /// treating it as already loaded.
+    media_refetch: u64,
     /// Per-side identity of the Compare panes' media resolutions.
     ///
     /// Compare owns no canonical state: each side addresses the artifact the
@@ -1061,6 +1072,16 @@ impl Shell {
         let artifact_viewer = cx.new(|cx| {
             image_viewer::ImageViewer::new(image_viewer::ViewerMode::PreviewOnly, "", window, cx)
         });
+        // The artifact pane's one manual media refetch is a host-owned resolution:
+        // the pane records the bounded attempt and emits, and the shell re-addresses
+        // the same canonical identity through the live session identity.
+        cx.subscribe_in(&artifact_viewer, window, |this, _, event, _, cx| {
+            if matches!(event, image_viewer::ViewerEvent::RefetchMedia) {
+                this.refetch_artifact_media(cx);
+            }
+            cx.notify();
+        })
+        .detach();
         let compare_view = cx.new(|cx| {
             compare_view::CompareView::new(image_viewer::ViewerMode::PreviewOnly, "", window, cx)
         });
@@ -1120,6 +1141,7 @@ impl Shell {
             media,
             media_loaded: None,
             media_cancel: MediaFetchCancellation::default(),
+            media_refetch: 0,
             compare_media: compare_media::CompareMediaState::default(),
             support_state: SupportPreviewState::default(),
             support_focus: cx.focus_handle().tab_stop(true),
@@ -2467,14 +2489,22 @@ impl Shell {
             return;
         }
         let Some(handle) = self.handle.clone() else {
+            self.artifact_viewer
+                .update(cx, |viewer, cx| viewer.media_refetch_unstarted(cx));
             return;
         };
         let Ok(lease) = handle.current() else {
             self.withdraw_artifact_media();
+            // A refetch that could not start keeps its explicit state and re-enables
+            // the control instead of leaving it silently disabled.
+            self.artifact_viewer
+                .update(cx, |viewer, cx| viewer.media_refetch_unstarted(cx));
             return;
         };
         let Some(context) = lease.read_context() else {
             self.withdraw_artifact_media();
+            self.artifact_viewer
+                .update(cx, |viewer, cx| viewer.media_refetch_unstarted(cx));
             return;
         };
         let Some(viewed) = self.workbench.as_ref().and_then(|workbench| {
@@ -2509,10 +2539,16 @@ impl Shell {
                     })
                     .is_err()
                 {
+                    self.artifact_viewer
+                        .update(cx, |viewer, cx| viewer.media_refetch_unstarted(cx));
                     return;
                 }
             }
-            Err(_) => return,
+            Err(_) => {
+                self.artifact_viewer
+                    .update(cx, |viewer, cx| viewer.media_refetch_unstarted(cx));
+                return;
+            }
         }
         let Some(artifact) = artifact else {
             // The complete projection does not carry the viewed candidate's
@@ -2554,6 +2590,7 @@ impl Shell {
             artifact_digest: artifact.artifact_digest.clone(),
             representation: RepresentationKind::Original,
             capability: capability_key,
+            refetch: self.media_refetch,
         };
         if self.media_loaded.as_ref() == Some(&key) {
             return;
@@ -2603,6 +2640,43 @@ impl Shell {
             self.media_cancel.cancel();
             self.media_cancel = MediaFetchCancellation::default();
         }
+    }
+
+    /// Re-resolve the artifact surface's current media selection after the pane's
+    /// one manual refetch control was activated.
+    ///
+    /// The viewer offers the control only from an explicit `Expired`/`Forbidden`
+    /// state and records at most one in-flight attempt, so this is not an automatic
+    /// retry: one user action produces one resolution of the same canonical identity
+    /// through the live session identity (credential slot, principal/audience, epoch
+    /// and read context). The nonce makes the existing "already addressed" guard
+    /// re-run; every authorization and content component stays unchanged. No bytes
+    /// are fabricated, and a repeated failure renders its explicit state again.
+    fn refetch_artifact_media(&mut self, cx: &mut Context<Self>) {
+        let artifact_surface = self
+            .workbench
+            .as_ref()
+            .is_some_and(|workbench| workbench.core.navigation.surface() == Surface::Artifact);
+        if !artifact_surface {
+            // The pane is not the visible artifact surface: keep its explicit state
+            // and re-enable the control for when it is visible again.
+            self.artifact_viewer
+                .update(cx, |viewer, cx| viewer.media_refetch_unstarted(cx));
+            return;
+        }
+        if !matches!(&self.media, media_presentation::MediaBinding::Runtime(_)) {
+            // No Runtime media boundary exists in this session: the refetch cannot
+            // be attempted, and the pane says so instead of pretending to retry.
+            self.artifact_viewer.update(cx, |viewer, cx| {
+                viewer.unavailable(
+                    media_presentation::media_refetch_unavailable_statement().into(),
+                    cx,
+                );
+            });
+            return;
+        }
+        self.media_refetch = self.media_refetch.wrapping_add(1);
+        self.sync_artifact_media(cx);
     }
 
     /// Resolve the picture of each held Compare side through the same media boundary.
@@ -2758,6 +2832,9 @@ impl Shell {
                         artifact_digest: selection.artifact_digest().clone(),
                         representation: RepresentationKind::Original,
                         capability,
+                        // Compare sides have no manual refetch control; they
+                        // re-resolve on a changed canonical identity only.
+                        refetch: 0,
                     };
                     let settled = self.compare_view.read(cx).has_frame(side, cx);
                     if self.compare_media.addressed(index) == Some(&key)
@@ -8152,5 +8229,131 @@ mod capability_media_tests {
         let denied = second.gate_media(&RepresentationKind::Original, &artifact);
         assert!(!denied.enabled);
         assert_eq!(denied.reason.as_ref(), "revoked");
+    }
+}
+
+#[cfg(test)]
+mod media_refetch_tests {
+    use desktop_protocol::{
+        ArtifactDigest, ArtifactId, EpochId, ReadContextId, RepresentationKind, ServerId,
+    };
+
+    use super::MediaLoadKey;
+
+    /// The artifact-surface load key with every canonical component pinned.
+    fn artifact_key(refetch: u64) -> MediaLoadKey {
+        MediaLoadKey {
+            server_identity: ServerId::fixture("server/local"),
+            epoch: EpochId::fixture("epoch/1"),
+            context_id: ReadContextId::fixture("read-context/task-184"),
+            audience: "fixture:audience/desktop".to_owned(),
+            artifact_ref: ArtifactId::fixture("artifact/a"),
+            artifact_digest: ArtifactDigest::fixture("digest/a"),
+            representation: RepresentationKind::Original,
+            capability: None,
+            refetch,
+        }
+    }
+
+    #[test]
+    fn a_manual_refetch_rekeys_only_the_refetch_nonce() {
+        let loaded = artifact_key(0);
+        let refetched = artifact_key(1);
+        // A manual refetch must not compare equal to the key already addressed,
+        // otherwise `sync_artifact_media` would return without resolving.
+        assert!(loaded != refetched);
+        // Every authorization/content component is identical: the same canonical
+        // identity is resolved again through the current session identity.
+        assert_eq!(loaded.server_identity, refetched.server_identity);
+        assert_eq!(loaded.epoch, refetched.epoch);
+        assert_eq!(loaded.context_id, refetched.context_id);
+        assert_eq!(loaded.audience, refetched.audience);
+        assert_eq!(loaded.artifact_ref, refetched.artifact_ref);
+        assert_eq!(loaded.artifact_digest, refetched.artifact_digest);
+        assert_eq!(loaded.representation, refetched.representation);
+        assert_eq!(loaded.capability, refetched.capability);
+        // An automatic sync at the current nonce is still the same key: a
+        // publication delta never re-fetches the same admitted representation.
+        assert!(loaded == artifact_key(0));
+        assert!(artifact_key(1) != artifact_key(2));
+    }
+
+    #[test]
+    fn the_expired_media_state_exposes_one_accessible_refetch_control() {
+        // Check the construction site, not an element instance: no window is
+        // created in a unit test, so this is SOURCE_WIRING_VERIFIED only.
+        let viewer_whole = include_str!("image_viewer.rs");
+        let viewer = &viewer_whole[..viewer_whole
+            .find("\n#[cfg(test)]\nmod tests {")
+            .expect("the viewer test module marker")];
+        for needle in [
+            "button(\"viewer-refetch\", \"メディアを再取得 (R)\")",
+            ".role(Role::Button)",
+            ".aria_label(label)",
+            "KeyBinding::new(\"r\", ViewerRefetch, Some(\"ImageViewer\"))",
+            ".on_action(cx.listener(|this, _: &ViewerRefetch, _, cx| { this.request_media_refetch(cx); }))",
+            ".on_a11y_action(AccessibleAction::Click",
+            "cx.emit(ViewerEvent::RefetchMedia)",
+            "if self.compare_pane.is_some() || !self.media_refetch.request()",
+            "media_refetch: MediaRefetchState::default()",
+            "MediaPresentation::Unavailable(unavailable) => {",
+            ".record_unavailable(unavailable.availability);",
+        ] {
+            assert!(viewer.contains(needle), "the viewer is missing {needle}");
+        }
+        // The control is rendered only while the pane offers it.
+        assert!(viewer.contains(".when(self.media_refetch_offered(), |element| {"));
+
+        let shell_whole = include_str!("lib.rs");
+        let shell = &shell_whole[..shell_whole
+            .find("\n#[cfg(test)]\nmod ")
+            .expect("the first test module marker")];
+        for needle in [
+            "cx.subscribe_in(&artifact_viewer, window, |this, _, event, _, cx| {",
+            "image_viewer::ViewerEvent::RefetchMedia",
+            "fn refetch_artifact_media(&mut self, cx: &mut Context<Self>)",
+            "self.media_refetch = self.media_refetch.wrapping_add(1);",
+            "refetch: self.media_refetch,",
+            "media_presentation::media_refetch_unavailable_statement()",
+        ] {
+            assert!(shell.contains(needle), "the shell is missing {needle}");
+        }
+        // Compare sides have no host-owned refetch path.
+        let compare = include_str!("compare_view.rs");
+        assert!(compare.contains("ViewerEvent::RefetchMedia => {}"));
+    }
+
+    #[test]
+    fn the_manual_refetch_path_logs_no_secret_and_uses_the_live_identity() {
+        let shell_whole = include_str!("lib.rs");
+        let shell = &shell_whole[..shell_whole
+            .find("\n#[cfg(test)]\nmod ")
+            .expect("the first test module marker")];
+        let start = shell
+            .find("fn refetch_artifact_media(")
+            .expect("the refetch handler");
+        let tail = &shell[start..];
+        let end = tail.find("\n    }\n").expect("the handler end");
+        let handler = &tail[..end];
+        // No new logging and no credential/handle value can be emitted here: the
+        // handler only re-addresses the same canonical identity.
+        for forbidden in [
+            "eprintln!",
+            "println!",
+            "log::",
+            "tracing::",
+            "Bearer",
+            "token",
+        ] {
+            assert!(
+                !handler.contains(forbidden),
+                "the refetch handler must not contain {forbidden}"
+            );
+        }
+        // The handler reuses the one sync path (live credential slot, principal,
+        // epoch and read context); it never builds a second credential source.
+        assert!(handler.contains("self.sync_artifact_media(cx);"));
+        assert!(!handler.contains("Credential"));
+        assert!(!handler.contains("MediaHttp"));
     }
 }
