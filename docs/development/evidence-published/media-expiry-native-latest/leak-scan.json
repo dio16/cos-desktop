@@ -1,0 +1,12 @@
+{
+  "files_checked": 14,
+  "findings": [],
+  "clean": true,
+  "patterns": [
+    "mh1.<body>.<sig>",
+    "Bearer <16+ token chars>",
+    "X-Auth-Secret assignment"
+  ],
+  "exact_secret_values_checked_in_harness": true,
+  "note": "harness scanned every generated file against the exact per-run secrets before README/defect were added; neither adds a runtime value"
+}

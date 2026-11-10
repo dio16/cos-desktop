@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "kind": "defect-observation",
+  "status": "REPRODUCED_NOT_FIXED",
+  "date": "2026-11-10",
+  "title": "Media binding keeps the startup credential and audience across a Runtime restart",
+  "severity": "user-visible wrong availability state; media does not recover in-process",
+  "measured_by": "run_rt3_native_expiry.py --part all",
+  "desktop_head": "2fa792d30e1ba7572245fef4194d378293ab6029",
+  "desktop_binary_sha256": "sha256:a2701360d35ad7391cf60256ee115d91982533ba6dc7bc4966a50bc2321742d8",
+  "runtime_head": "7764b7c4cdc8060bd9934dc72c4dcbab2eb60565",
+  "observed": {
+    "scenario": "same Desktop process; Runtime clean stop and restart on the same DB copy; epoch and credential changed; the bounded reconnect completed (credentials 200 and observation 200); Artifact surface re-entered",
+    "media_descriptor_http_status": 401,
+    "media_descriptor_access_log_line": "GET /api/cos/media/sha256%3Aeea85a247125e3365b545f606b5527e5ddfa1489729926539c956e3793908a58 HTTP/1.1\" 401 Unauthorized",
+    "native_state": "FORBIDDEN",
+    "native_sentence": "画像を利用できません: このセッションにはメディアの閲覧権限がありません。",
+    "image_displayed": false,
+    "displayed_admission_marker_present": false,
+    "media_blob_requested": false,
+    "retry_observed": false,
+    "elapsed_seconds_to_forbidden": 22.468,
+    "uia": "uia/native-same-process-after-restart.json",
+    "screenshot": "shots/native-same-process-after-restart.png",
+    "cold_relaunch_control": {
+      "native_state": "EXPIRED",
+      "image_displayed": false,
+      "descriptor_requests": 2,
+      "blob_requests": 0,
+      "uia": "uia/native-expired-cold.json"
+    }
+  },
+  "source": [
+    "apps/desktop/src/runtime.rs:433-447 - media_binding captures settings.token and audience in the source factory",
+    "apps/desktop/src/runtime.rs:452-503 - observation reauthorizes through a CredentialSlot that media does not share",
+    "apps/desktop/src/reconnect.rs:158 - reconnect builds a new observation only; no media binding update",
+    "apps/desktop/src/main.rs:231 - media binding is constructed once at startup",
+    "crates/cos-client/src/media.rs:423 - 401 maps to MediaFetchError::Unauthorized",
+    "crates/app-core/src/media_presentation.rs:209 - Unauthorized maps to MediaAvailability::Forbidden"
+  ],
+  "root_cause": "The media binding is built once from the startup (endpoint, token, audience). A Runtime restart loses the process-local credential registry; the Desktop reconnect issues a new credential with a new principal, so both the cached token and the cached audience are stale. The observation transport recovers through its own shared CredentialSlot, but that slot and the new principal are never propagated to the media binding. A token-only refresh would still fail the descriptor audience check.",
+  "why_not_fixed_in_this_commit": "The correct repair is a session-identity refresh for the media binding (share credential and audience with the observation session, or rebuild the media binding on reconnect and reset media_loaded). That is a product design change across app-core/desktop-gpui/binary wiring with its own tests; changing only the token would leave the audience mismatch. This measurement commit is evidence/harness only, so the defect is recorded unfixed for a separately authorized repair.",
+  "recommended_next_step": "Authorize a minimal RT3/RC-13 repair: make the media binding read the current credential and principal from the same session identity that the observation transport uses, or rebuild/replace the media binding when the reconnect provider installs a new client; then re-run this harness so the same-process path reaches EXPIRED instead of FORBIDDEN."
+}

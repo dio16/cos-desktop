@@ -1,0 +1,146 @@
+{
+  "schema_version": 1,
+  "task": "RT3 media-expiry residuals (native Expired UI, 300 s default TTL, ephemeral 401)",
+  "started_at": "2026-11-10T11:21:55+0900",
+  "desktop_root": "C:\\dev\\cos-desktop",
+  "runtime_root": "C:\\AI\\orchestrator",
+  "desktop_head": "2fa792d30e1ba7572245fef4194d378293ab6029",
+  "desktop_status_porcelain": " M apps/desktop/devtools/runtime_integration/probe_window.ps1\n M apps/desktop/devtools/runtime_integration/run_acc1_native.py\n?? apps/desktop/devtools/runtime_integration/isolated_runtime_descriptor_delay.py\n?? apps/desktop/devtools/runtime_integration/run_rt3_native_expiry.py\n?? docs/development/evidence-published/dock-scope-latest/",
+  "runtime_head": "7764b7c4cdc8060bd9934dc72c4dcbab2eb60565",
+  "runtime_status_porcelain": "M orchestrator/docs/guides/development-loop.md\n M orchestrator/orchestrator_app/dev_caller.py\n M orchestrator/tests/test_dev_caller.py\n M orchestrator/tests/test_dev_caller_e2e.py\n?? orchestrator/devplan/plan-draft.json\n?? orchestrator/devplan/plan-prepare.json\n?? orchestrator/devplan/prepare-out.json",
+  "desktop_binary": {
+    "path": "C:\\dev\\cos-desktop\\target\\release\\cos-desktop.exe",
+    "sha256": "sha256:a2701360d35ad7391cf60256ee115d91982533ba6dc7bc4966a50bc2321742d8",
+    "bytes": 21215232
+  },
+  "source_db": {
+    "path": "C:\\AI\\orchestrator\\db\\generation.sqlite",
+    "sha256": "sha256:e4ead0aa8a9c2cf0161b8b0338dd4c957e8ae4995e12dd5f4f4f63068ac6b4e5",
+    "bytes": 11522048
+  },
+  "native_source_run": {
+    "path": "C:\\dev\\cos-desktop\\target\\acc1-native\\20261109T233420-golden",
+    "db_sha256": "sha256:d4dddc9504c236cfd7e2c8f87aa0c381a9e09bf74eabc7028605a6fd87f71b8b",
+    "db_bytes": 11800576,
+    "task_ref": "task-ab47119a8bec467a8e128d7b82f1220a",
+    "note": "fresh copy of the prior isolated closure run's DB/CAS; the task's capability snapshot set is test-only material, no generation was executed by this session"
+  },
+  "ports": {
+    "native": 8132,
+    "protocol": 8165
+  },
+  "measurements": {
+    "native_expiry": {
+      "verdict": "MEASURED",
+      "initial_state": "DISPLAYED",
+      "expired_found": true,
+      "expired_text_present": true,
+      "stale_image_absent": true,
+      "viewport_absent": false,
+      "runtime_2_epoch": "cfded304674d42448231f038593171a9",
+      "descriptor_delay_seconds": 63.0,
+      "fresh_fetch_status": 200,
+      "cleanup": {
+        "desktop": {
+          "pid": 56056,
+          "wm_close_sent": true,
+          "exited": true,
+          "exit_code": 0,
+          "forced": null
+        },
+        "runtime": {
+          "pid": 50368,
+          "clean": true,
+          "exit": 0
+        },
+        "port": 8132,
+        "port_free": true,
+        "credential_store": {
+          "origin": "http://127.0.0.1:8132",
+          "targets": [
+            {
+              "target": "desktop-observation.cos-desktop/observation/dd179b0386bf34a9b1beb72dfed6a36f",
+              "exit": 1,
+              "result": "not_found",
+              "output": "CMDKEY: Element not found."
+            },
+            {
+              "target": "cos-desktop/observation/dd179b0386bf34a9b1beb72dfed6a36f",
+              "exit": 1,
+              "result": "not_found",
+              "output": "CMDKEY: Element not found."
+            }
+          ],
+          "deleted": false
+        },
+        "discovery_present_after_stop": false
+      }
+    },
+    "default_ttl": {
+      "verdict": "MEASURED",
+      "advertised_remaining_seconds": 299.924,
+      "within_expected_window": true,
+      "blob_status": 200,
+      "digest_matches": true,
+      "expiry_at_300s_observed": false
+    },
+    "ephemeral_401": {
+      "status": 401,
+      "code": "MEDIA_UNAUTHORIZED",
+      "epoch_changed": true,
+      "fresh_descriptor_status": 200,
+      "fresh_blob_status": 200,
+      "cleanup": {
+        "runtime_2": {
+          "pid": 39860,
+          "exit": 0,
+          "clean_exit": true,
+          "port_closed": true,
+          "discovery_removed": true
+        }
+      }
+    }
+  },
+  "cleanup": {},
+  "not_measured": [
+    "the actual 300 s expiry transition for the default-TTL descriptor",
+    "a native UI transition to Forbidden on a live 401 (the client does not retain a handle across a Runtime restart; the 401 mapping is measured by the app-core mapping test, not by the native window)",
+    "PREVIEW/THUMBNAIL/METADATA byte routes and non-PNG media types",
+    "clock skew and simultaneous multi-handle expiry"
+  ],
+  "residuals": [],
+  "mapping_test": {
+    "command": "cargo test --locked -p app-core --lib every_fetch_failure_class_maps_to_one_availability_state_and_expiry_is_not_missing -- --nocapture",
+    "exit": 0,
+    "elapsed_s": 0.76,
+    "stdout_tail": "\nrunning 1 test\ntest media_presentation::tests::every_fetch_failure_class_maps_to_one_availability_state_and_expiry_is_not_missing ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 108 filtered out; finished in 0.00s\n\n",
+    "stderr_tail": "warning: linker stdout: LINK : warning LNK4044: オプション '/fuse-ld=lld' は無効です。無視されます。\n  |\n  = note: `#[warn(linker_messages)]` on by default\n\nwarning: `app-core` (lib test) generated 1 warning\n    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.66s\n     Running unittests src\\lib.rs (target\\debug\\deps\\app_core-85ab720a1bb1c6e7.exe)\n"
+  },
+  "finished_at": "2026-11-10T11:26:50+0900",
+  "verdicts": {
+    "native_expired_ui": "MEASURED",
+    "default_ttl_300_advertised": "MEASURED",
+    "default_ttl_expiry_at_300s": "NOT_MEASURED",
+    "ephemeral_401": "MEASURED",
+    "desktop_401_mapping": "MEASURED (app-core test)"
+  },
+  "secrets_retained": false,
+  "evidence": {
+    "uia_files": [
+      "native-displayed.json",
+      "native-expired-cold.json",
+      "native-same-process-after-restart.json"
+    ],
+    "screenshots": [
+      "native-displayed.png",
+      "native-expired-cold.png",
+      "native-same-process-after-restart.png"
+    ],
+    "logs": [
+      "desktop-native.log.sanitized.txt",
+      "runtime-native.log.sanitized.txt",
+      "runtime-protocol-1.log.sanitized.txt",
+      "runtime-protocol-2.log.sanitized.txt"
+    ]
+  }
+}
