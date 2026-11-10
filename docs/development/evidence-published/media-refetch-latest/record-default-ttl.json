@@ -1,0 +1,154 @@
+{
+ "schema_version": 1,
+ "kind": "protocol-measurement",
+ "label": "default-ttl",
+ "started_at": "2026-11-11T00:53:58+0900",
+ "verdict": "PASS",
+ "precondition": {
+  "task_ref": "task-ab47119a8bec467a8e128d7b82f1220a",
+  "source_run": "C:\\dev\\cos-desktop\\target\\acc1-native\\20261109T233420-golden",
+  "runtime_head": "06ee825eeb3be741b8a870189ed28f848c811630",
+  "runtime_epoch": "929cce871ccc404ab8bc38aedc5a846c",
+  "runtime_server_identity": "cos-runtime-orchestrator",
+  "ttl_env": null,
+  "ttl_default_seconds": 300,
+  "port": 8168,
+  "db_copy_sha256": "sha256:597a1c4eae387c6aa62b5e47d678c5a65ac9c39dc60b060b9292591b869ff3f8",
+  "db_copy_bytes": 11800576,
+  "generation_executed": false,
+  "artifact": {
+   "artifact_ref": "art-v1-58ba544d-8d83-4728-8aa1-16efbc895106",
+   "artifact_digest": "sha256:eea85a247125e3365b545f606b5527e5ddfa1489729926539c956e3793908a58",
+   "media_type": "image/png",
+   "availability": "AVAILABLE",
+   "task_ref": null
+  }
+ },
+ "descriptor": {
+  "http_status": 200,
+  "descriptor": {
+   "descriptor_id": "descriptor-3fe4eaffcfde628f71b35d5b91b5b866",
+   "artifact_ref": "art-v1-58ba544d-8d83-4728-8aa1-16efbc895106",
+   "artifact_digest": "sha256:eea85a247125e3365b545f606b5527e5ddfa1489729926539c956e3793908a58",
+   "representation": "ORIGINAL",
+   "representation_version": 1,
+   "media_type": "image/png",
+   "byte_length": 1363011,
+   "width": 1024,
+   "height": 1024,
+   "availability": "AVAILABLE",
+   "verification": {
+    "state": "VERIFIED",
+    "algorithm": "sha256",
+    "expected_digest": "eea85a247125e3365b545f606b5527e5ddfa1489729926539c956e3793908a58"
+   },
+   "server_identity": "cos-runtime-orchestrator",
+   "expires_at_unix_ms": 1794326343699,
+   "access_handle_present": true,
+   "access_handle_length": 474,
+   "audience_sha256_16": "sha256:11efe8df953fd7fb"
+  },
+  "minted_at": "2026-11-11T00:54:03+0900",
+  "minted_at_unix": 1794326043.6819475,
+  "timing": {
+   "descriptor_expires_at_unix_ms": 1794326343699,
+   "advertised_remaining_seconds": 299.976
+  },
+  "ttl_override_present": false,
+  "within_expected_window": true
+ },
+ "immediate_blob": {
+  "http_status": 200,
+  "bytes": 1363011,
+  "sha256": "sha256:eea85a247125e3365b545f606b5527e5ddfa1489729926539c956e3793908a58",
+  "digest_matches_descriptor": true,
+  "elapsed_seconds": 0.088
+ },
+ "expiry_wait": {
+  "waited_seconds": 304.912,
+  "since_descriptor_seconds": 305.0,
+  "at": "2026-11-11T00:59:08+0900"
+ },
+ "expired_blob": {
+  "http_status": 410,
+  "bytes": 31,
+  "document": {
+   "code": "MEDIA_HANDLE_EXPIRED"
+  },
+  "wire_code": "MEDIA_HANDLE_EXPIRED",
+  "elapsed_after_descriptor_seconds": 305.021
+ },
+ "fresh_fetch_after_expiry": {
+  "descriptor_http_status": 200,
+  "descriptor": {
+   "descriptor_id": "descriptor-76afda2d8043054e26e09945b6a536a1",
+   "artifact_ref": "art-v1-58ba544d-8d83-4728-8aa1-16efbc895106",
+   "artifact_digest": "sha256:eea85a247125e3365b545f606b5527e5ddfa1489729926539c956e3793908a58",
+   "representation": "ORIGINAL",
+   "representation_version": 1,
+   "media_type": "image/png",
+   "byte_length": 1363011,
+   "width": 1024,
+   "height": 1024,
+   "availability": "AVAILABLE",
+   "verification": {
+    "state": "VERIFIED",
+    "algorithm": "sha256",
+    "expected_digest": "eea85a247125e3365b545f606b5527e5ddfa1489729926539c956e3793908a58"
+   },
+   "server_identity": "cos-runtime-orchestrator",
+   "expires_at_unix_ms": 1794326648721,
+   "access_handle_present": true,
+   "access_handle_length": 474,
+   "audience_sha256_16": "sha256:11efe8df953fd7fb"
+  },
+  "descriptor_timing": {
+   "descriptor_expires_at_unix_ms": 1794326648721,
+   "advertised_remaining_seconds": 299.93
+  },
+  "blob_http_status": 200,
+  "blob_bytes": 1363011,
+  "blob_sha256": "sha256:eea85a247125e3365b545f606b5527e5ddfa1489729926539c956e3793908a58",
+  "digest_matches_descriptor": true
+ },
+ "cleanup": {
+  "desktop": {
+   "closed": false
+  },
+  "runtime": {
+   "pid": 31584,
+   "clean": true,
+   "exit": 0
+  },
+  "port": 8168,
+  "port_free": true,
+  "credential_store": {
+   "origin": "http://127.0.0.1:8168",
+   "targets": [
+    {
+     "target": "desktop-observation.cos-desktop/observation/6b0f33b910fb5cab8687ee74806407cf",
+     "exit": 1,
+     "result": "not_found",
+     "output": "CMDKEY: Element not found."
+    },
+    {
+     "target": "cos-desktop/observation/6b0f33b910fb5cab8687ee74806407cf",
+     "exit": 1,
+     "result": "not_found",
+     "output": "CMDKEY: Element not found."
+    }
+   ],
+   "deleted": false
+  },
+  "discovery_present_after_stop": false
+ },
+ "residuals": [],
+ "finished_at": "2026-11-11T00:59:09+0900",
+ "runtime_log": {
+  "source": "C:\\dev\\cos-desktop\\target\\media-refetch\\20261111T005358-ttl\\ctx\\20261111T005358-default-ttl\\runtime.log",
+  "file": "runtime-default-ttl.log.sanitized.txt",
+  "sha256": "457fc4fa0c02c89c02a66a66d324a6a9ca2b9ca1238fe1d1ae5a3a29352c320b",
+  "bytes": 1850,
+  "redactions": 3
+ }
+}

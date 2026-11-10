@@ -1,0 +1,875 @@
+{
+ "schema_version": 1,
+ "kind": "native-measurement",
+ "label": "native-refetch",
+ "started_at": "2026-11-11T00:41:27+0900",
+ "verdict": "PASS",
+ "precondition": {
+  "task_ref": "task-ab47119a8bec467a8e128d7b82f1220a",
+  "source_run": "C:\\dev\\cos-desktop\\target\\acc1-native\\20261109T233420-golden",
+  "desktop_binary": {
+   "path": "C:\\dev\\cos-desktop\\target\\release\\cos-desktop.exe",
+   "sha256": "382e88629f05b3be233bdbc2f9e4afeb7a6931fec52f83af6379b4e305919e5f",
+   "bytes": 21271040,
+   "built_at": "2026-11-10T23:10:21"
+  },
+  "desktop_head": "885196efa5f0611a05083b8b5ef44ae2661d0a50",
+  "desktop_status_porcelain": "M crates/desktop-gpui/src/compare_media.rs\n M crates/desktop-gpui/src/compare_view.rs\n M crates/desktop-gpui/src/image_viewer.rs\n M crates/desktop-gpui/src/lib.rs\n M crates/desktop-gpui/src/media_presentation.rs\n?? apps/desktop/devtools/runtime_integration/isolated_runtime_media_delay.py\n?? apps/desktop/devtools/runtime_integration/run_rt3_media_refetch.py\n?? docs/development/evidence-published/media-refetch-latest/",
+  "runtime_head": "06ee825eeb3be741b8a870189ed28f848c811630",
+  "runtime_epoch_1": "b8641c5ce6e044e3ad6d0c1c1764cc3a",
+  "runtime_server_identity": "cos-runtime-orchestrator",
+  "ttl_seconds": 60,
+  "descriptor_delay_seconds": 63.0,
+  "blob_delay_seconds": 63.0,
+  "descriptor_delay_mechanism": "harness-only ASGI wrapper sleeps after the real Runtime minted the descriptor and before its bytes are written; the descriptor/handle document is not rewritten",
+  "blob_delay_mechanism": "harness-only ASGI wrapper sleeps before the Runtime handles /blob; the server's own expiry check then answers 410 for the real handle",
+  "db_copy_sha256": "sha256:597a1c4eae387c6aa62b5e47d678c5a65ac9c39dc60b060b9292591b869ff3f8",
+  "db_copy_bytes": 11800576,
+  "discovery_only": true,
+  "port": 8135,
+  "generation_executed": false,
+  "task_projection": {
+   "title": "ACC1-NATIVE-golden 20261109-233420 production still",
+   "task_status": "COMPLETED",
+   "inner_phase": "RUNNING",
+   "capabilities_ref": "sha256:6f0858dce7b014c532414541490deb3996f0343222d851d1498ad0f127fc406a"
+  },
+  "capability_media": {
+   "at": "2026-11-11T00:41:33+0900",
+   "http_status": 200,
+   "entries": [
+    {
+     "representation": "ORIGINAL",
+     "support": "SUPPORTED"
+    },
+    {
+     "representation": "THUMBNAIL",
+     "support": "SUPPORTED"
+    },
+    {
+     "representation": "PREVIEW",
+     "support": "UNSUPPORTED",
+     "reason": "PREVIEW transcode is not supported by this Runtime"
+    },
+    {
+     "representation": "METADATA",
+     "support": "UNSUPPORTED",
+     "reason": "METADATA byte route is not supported by this Runtime"
+    }
+   ],
+   "availability": "SUPPORTED",
+   "capabilities_ref": "sha256:6f0858dce7b014c532414541490deb3996f0343222d851d1498ad0f127fc406a",
+   "matched": true,
+   "entry": {
+    "representation": "ORIGINAL",
+    "support": "SUPPORTED"
+   }
+  }
+ },
+ "cold_start": {
+  "connected": {
+   "verdict": "PASS",
+   "pid": 33168,
+   "window": {
+    "found": true,
+    "title": "COS Desktop",
+    "class": "Zed::Window",
+    "width": 1296,
+    "height": 839
+   },
+   "uia": {
+    "label": "connected-media-refetch",
+    "at": "2026-11-11T00:41:37+0900",
+    "elements": 58,
+    "names_sha256": "sha256:9736ef9ce0792454118706e272a5cd3563d2855b648980884462e3f397ce6153",
+    "names": [
+     "COS Desktop 作業画面",
+     "現在のタスクと状態",
+     "task-00eeff7805964e1f835534b81e57065b  北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+     "Runtime / 情報を受信中",
+     "タスクの状態: 完了（COMPLETED）",
+     "処理段階: RUNNING",
+     "反復回数: 第0回",
+     "成果物の利用状態: 取得可能（AVAILABLE）（1件）",
+     "接続・情報の鮮度: 情報を受信中",
+     "正式な結果: 完了（COMPLETED）",
+     "停止の操作と現在の受付状況",
+     "タスクを停止（現在は操作できません）",
+     "停止要求の受付状況を確認（現在は操作できません）",
+     "この画面から停止要求は送っていません",
+     "停止要求を1回送ります。受付状況とタスクの終了結果は別に確認します。",
+     "タスク一覧",
+     "新しいタスクを作成",
+     "タスクを検索",
+     "task-00eeff7805964e1f835534b81e57065b — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+     "完了（COMPLETED）",
+     "RUNNING",
+     "0",
+     "キーボード操作対象",
+     "task-019e673007d848018cf3dc7366258d38 — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+     "完了（COMPLETED）",
+     "RUNNING",
+     "0",
+     "作業領域：成果物",
+     "成果物",
+     "表示中",
+     "Runtime が認可した成果物メディアを取得して表示します。取得できない場合は、理由を画像領域に明示します。",
+     "全体表示 (0)",
+     "物理ピクセル1:1 (1)",
+     "拡大 (+)",
+     "縮小 (-)",
+     "全画面 / 復帰 (F11)",
+     "画像を利用できません: 認可済みの画像入力がありません。実行基盤からの取得は未対応です。",
+     "画像は未表示です",
+     "画像表示。0: 全体、1: 物理等倍、+/-: 拡大縮小、矢印: 移動、F11: 全画面、Escape: 復帰",
+     "候補の詳細",
+     "詳細と説明",
+     "候補は表示されていません",
+     "このタスクの実行履歴を開く",
+     "目的 — 利用可能: task-00eeff7805964e1f835534b81e57065b — 北欧の女子高生。あざとい表情をしてこちらを見ている自撮り。",
+     "評価 — 利用不可: 候補は選択されていません。",
+     "判断の根拠 — 利用不可: 候補は選択されていません。",
+     "改善 — 利用不可: 候補は選択されていません。",
+     "結果 — 利用可能: 正式状態: 完了（COMPLETED）",
+     "診断情報を開く",
+     "反復ごとの候補一覧",
+     "反復ごとの候補一覧。閲覧中と比較対象はこの画面の選択です。正式採用は実行基盤から通知されます。",
+     "候補一覧",
+     "task-00eeff7805964e1f835534b81e57065b — 第0回 — C1 キーボード操作対象 正式採用（実行基盤から通知）",
+     "作業画面の切り替え",
+     "成果物  Ctrl+1",
+     "候補を比較 — 候補を2つ選ぶ必要があります",
+     "処理の流れ  Ctrl+3"
+    ],
+    "window": {
+     "title": "COS Desktop",
+     "class": "Zed::Window",
+     "width": 1296,
+     "height": 839
+    },
+    "screenshot": {
+     "file": "C:\\dev\\cos-desktop\\target\\media-refetch\\20261111T004127-native\\ctx\\20261111T004127-media-refetch\\shots\\connected-media-refetch.png",
+     "sha256": "sha256:5afa0bb716d58e47bce21ca58a68417a9fa7835879c070ff3494017d73e0d38d",
+     "bytes": 150197,
+     "printed": true,
+     "width": 1296,
+     "height": 839
+    }
+   },
+   "excerpt": "現在のタスクと状態\nRuntime / 情報を受信中\nタスクの状態: 完了（COMPLETED）\n接続・情報の鮮度: 情報を受信中\nタスクを停止（現在は操作できません）\n停止要求を1回送ります。受付状況とタスクの終了結果は別に確認します。\nタスク一覧\n新しいタスクを作成\nタスクを検索\nRuntime が認可した成果物メディアを取得して表示します。取得できない場合は、理由を画像領域に明示します。\nこのタスクの実行履歴を開く"
+  },
+  "task_selected": {
+   "method": "synthetic_wm_lbutton_at_rail_row",
+   "selected": true,
+   "scope_task_matched": true,
+   "filter": {
+    "click": {
+     "skipped": "already_filtered"
+    },
+    "typed": {
+     "skipped": "already_filtered"
+    },
+    "visible": true,
+    "uia_sha256": "sha256:57fa0433e9cc1fb1332c93ade26502cd3bb5df966034db3adbd021a275377987",
+    "excerpt": "task-ab47119a8bec467a8e128d7b82f1220a — ACC1-NATIVE-golden 20261109-233420 production still"
+   }
+  },
+  "task_selection_attempts": 1,
+  "artifact_surface": {
+   "state": "DISPLAYED",
+   "viewport_present": true,
+   "inspector_task_match": true
+  },
+  "resolved_artifact": {
+   "artifact": {
+    "artifact_ref": "art-v1-58ba544d-8d83-4728-8aa1-16efbc895106",
+    "artifact_digest": "sha256:eea85a247125e3365b545f606b5527e5ddfa1489729926539c956e3793908a58",
+    "media_type": "image/png",
+    "availability": "AVAILABLE",
+    "task_ref": null
+   },
+   "descriptor_http_status": 200,
+   "descriptor": {
+    "descriptor_id": "descriptor-4f0c0428147d7251b1b955aca11d4b95",
+    "artifact_ref": "art-v1-58ba544d-8d83-4728-8aa1-16efbc895106",
+    "artifact_digest": "sha256:eea85a247125e3365b545f606b5527e5ddfa1489729926539c956e3793908a58",
+    "representation": "ORIGINAL",
+    "representation_version": 1,
+    "media_type": "image/png",
+    "byte_length": 1363011,
+    "width": 1024,
+    "height": 1024,
+    "availability": "AVAILABLE",
+    "verification": {
+     "state": "VERIFIED",
+     "algorithm": "sha256",
+     "expected_digest": "eea85a247125e3365b545f606b5527e5ddfa1489729926539c956e3793908a58"
+    },
+    "server_identity": "cos-runtime-orchestrator",
+    "expires_at_unix_ms": 1794325379979,
+    "access_handle_present": true,
+    "access_handle_length": 474,
+    "audience_sha256_16": "sha256:24b969d66f41208f"
+   },
+   "descriptor_timing": {
+    "descriptor_expires_at_unix_ms": 1794325379979,
+    "advertised_remaining_seconds": 59.979
+   }
+  },
+  "media_access": {
+   "entries": [
+    {
+     "path": "/api/cos/media/sha256%3Aeea85a247125e3365b545f606b5527e5ddfa1489729926539c956e3793908a58",
+     "status": 200
+    },
+    {
+     "path": "/api/cos/media/<redacted-media-handle>/blob",
+     "status": 200
+    },
+    {
+     "path": "/api/cos/media/sha256%3Aeea85a247125e3365b545f606b5527e5ddfa1489729926539c956e3793908a58",
+     "status": 200
+    }
+   ],
+   "descriptor_statuses": [
+    200,
+    200
+   ],
+   "blob_statuses": [
+    200
+   ],
+   "blob_410": [],
+   "descriptor_count": 2,
+   "blob_count": 1
+  },
+  "uia": {
+   "label": "cold-displayed",
+   "at": "2026-11-11T00:41:59+0900",
+   "state": "DISPLAYED",
+   "elements": 55,
+   "window": {
+    "title": "COS Desktop",
+    "class": "Zed::Window",
+    "width": 1296,
+    "height": 839
+   },
+   "uia_file": "uia\\cold-displayed.json",
+   "uia_sha256": "a15412c4cc0496b80f4f173b1ba13b48624a8f798e12e114950d99ce68a4fb99",
+   "names_sha256": "d581d5f76dc617fe7f988de2b100c2e129b1c8e87bbfbe268d94857e1a03f20a",
+   "names_count": 54,
+   "media_lines": [
+    "成果物の利用状態: 取得可能（AVAILABLE）（1件）",
+    "作業領域：成果物",
+    "成果物",
+    "Runtime が認可した成果物メディアを取得して表示します。取得できない場合は、理由を画像領域に明示します。",
+    "メディア画像（記述子のダイジェスト検証済み）: 低解像度プレビュー。原寸の詳細表示・1:1ではありません。",
+    "画像表示。0: 全体、1: 物理等倍、+/-: 拡大縮小、矢印: 移動、F11: 全画面、Escape: 復帰",
+    "成果物  Ctrl+1"
+   ],
+   "viewport_present": true,
+   "has_displayed_marker": true,
+   "expired_text_present": false,
+   "refetch_control_present": false,
+   "refetch_control_name": "メディアを再取得 (R)",
+   "screenshot": {
+    "file": "shots\\cold-displayed.png",
+    "sha256": "sha256:b7b46b70b2c4e060e322a86783045f94c77dacbfdd3d36096e8772c3e9babd17",
+    "bytes": 203440,
+    "printed": true,
+    "width": 1296,
+    "height": 839
+   }
+  },
+  "refetch_control_absent": true
+ },
+ "expiry": {
+  "waited_after_display_seconds": 70.0,
+  "at": "2026-11-11T00:43:10+0900",
+  "image_displayed_before_expiry": true,
+  "state_before_restart": "DISPLAYED",
+  "flow_before_restart": {
+   "action": "invoke",
+   "found": true,
+   "hwnd": 78319158,
+   "title": "COS Desktop",
+   "class": "Zed::Window",
+   "width": 1296,
+   "height": 839,
+   "name_match": "処理の流れ  Ctrl+3",
+   "invoked": true,
+   "matched_name": "処理の流れ  Ctrl+3",
+   "matched_id": "",
+   "matched_control_type": "ControlType.Button",
+   "pattern": "invoke",
+   "patterns_tried": [
+    "invoke"
+   ],
+   "_out": "C:\\dev\\cos-desktop\\target\\media-refetch\\20261111T004127-native\\ctx\\20261111T004127-media-refetch\\uia\\029-invoke.json"
+  },
+  "descriptor_delay_armed_before_restart": true,
+  "runtime_1_stop": {
+   "pid": 56884,
+   "clean": true,
+   "exit": 0
+  },
+  "port_free_after_stop": true,
+  "runtime_2": {
+   "pid": 56912,
+   "epoch": "4974070639284ae0bf5392154b07f33d",
+   "server_identity": "cos-runtime-orchestrator",
+   "epoch_changed": true,
+   "at": "2026-11-11T00:43:15+0900"
+  },
+  "discovery_reappeared": true,
+  "same_process_reconnect": {
+   "at": "2026-11-11T00:43:15+0900",
+   "seen": true,
+   "log_lines": [
+    "INFO:     127.0.0.1:55094 - \"POST /api/cos/desktop/observation HTTP/1.1\" 401 Unauthorized",
+    "INFO:     127.0.0.1:55114 - \"POST /api/cos/desktop/credentials/refresh HTTP/1.1\" 401 Unauthorized",
+    "INFO:     127.0.0.1:55115 - \"POST /api/cos/desktop/credentials HTTP/1.1\" 200 OK",
+    "INFO:     127.0.0.1:55094 - \"POST /api/cos/desktop/observation HTTP/1.1\" 409 Conflict",
+    "INFO:     127.0.0.1:55094 - \"POST /api/cos/desktop/observation HTTP/1.1\" 200 OK"
+   ],
+   "after": "2026-11-11T00:43:17+0900"
+  },
+  "task_reselect": {
+   "method": "synthetic_wm_lbutton_at_rail_row",
+   "selected": true,
+   "scope_task_matched": true
+  },
+  "task_reselect_attempts": 1
+ },
+ "expired_ui": {
+  "at": "2026-11-11T00:45:27+0900",
+  "reentry": {
+   "at": "2026-11-11T00:43:23+0900",
+   "attempts": [
+    {
+     "flow_invoked": true,
+     "artifact_invoked": true,
+     "at": "2026-11-11T00:43:25+0900",
+     "delayed_descriptor_seen": false
+    },
+    {
+     "flow_invoked": true,
+     "artifact_invoked": true,
+     "at": "2026-11-11T00:43:41+0900",
+     "delayed_descriptor_seen": false
+    },
+    {
+     "flow_invoked": true,
+     "artifact_invoked": true,
+     "at": "2026-11-11T00:43:57+0900",
+     "delayed_descriptor_seen": false
+    },
+    {
+     "flow_invoked": true,
+     "artifact_invoked": true,
+     "at": "2026-11-11T00:44:14+0900",
+     "delayed_descriptor_seen": true
+    }
+   ],
+   "descriptor_delay_armed": true
+  },
+  "descriptor_delay_armed": true,
+  "found": true,
+  "state": "EXPIRED",
+  "uia": {
+   "label": "expired-control",
+   "at": "2026-11-11T00:45:29+0900",
+   "state": "EXPIRED",
+   "elements": 56,
+   "window": {
+    "title": "COS Desktop",
+    "class": "Zed::Window",
+    "width": 1296,
+    "height": 839
+   },
+   "uia_file": "uia\\expired-control.json",
+   "uia_sha256": "db19cad688c3578cad34de786c8beca7396ed9b6e343e320cc28c056b069833d",
+   "names_sha256": "9be0b960f68df8247d1fcf1cd153e2393a0dc8f5c3b11729361ed89146a3055a",
+   "names_count": 55,
+   "media_lines": [
+    "成果物の利用状態: 取得可能（AVAILABLE）（1件）",
+    "作業領域：成果物",
+    "成果物",
+    "Runtime が認可した成果物メディアを取得して表示します。取得できない場合は、理由を画像領域に明示します。",
+    "メディアを再取得 (R)",
+    "画像を利用できません: メディア記述子の有効期限が切れました。再取得が必要です。",
+    "画像は未表示です",
+    "画像表示。0: 全体、1: 物理等倍、+/-: 拡大縮小、矢印: 移動、F11: 全画面、Escape: 復帰、R: メディア再取得",
+    "成果物  Ctrl+1"
+   ],
+   "viewport_present": true,
+   "has_displayed_marker": false,
+   "expired_text_present": true,
+   "refetch_control_present": true,
+   "refetch_control_name": "メディアを再取得 (R)",
+   "screenshot": {
+    "file": "shots\\expired-control.png",
+    "sha256": "sha256:1acbfc3fd341aed5feae8b97db3215f484c65d2e2232e7faf9a04b986b8f1907",
+    "bytes": 147498,
+    "printed": true,
+    "width": 1296,
+    "height": 839
+   }
+  },
+  "media_access": {
+   "entries": [
+    {
+     "path": "/api/cos/media/sha256%3Aeea85a247125e3365b545f606b5527e5ddfa1489729926539c956e3793908a58",
+     "status": 200
+    },
+    {
+     "path": "/api/cos/media/sha256%3Aeea85a247125e3365b545f606b5527e5ddfa1489729926539c956e3793908a58",
+     "status": 200
+    }
+   ],
+   "descriptor_statuses": [
+    200,
+    200
+   ],
+   "blob_statuses": [],
+   "blob_410": [],
+   "descriptor_count": 2,
+   "blob_count": 0
+  },
+  "descriptor_delay_lines": [
+   "harness media descriptor delay release path=/api/cos/media/sha256:eea85a247125e3365b545f606b5527e5ddfa1489729926539c956e3793908a58 at=1794325463.835",
+   "harness media descriptor delay begin path=/api/cos/media/sha256:eea85a247125e3365b545f606b5527e5ddfa1489729926539c956e3793908a58 seconds=63.000 at=1794325463.836",
+   "harness media descriptor delay release path=/api/cos/media/sha256:eea85a247125e3365b545f606b5527e5ddfa1489729926539c956e3793908a58 at=1794325526.930"
+  ],
+  "exact_expired_text_present": true,
+  "refetch_control_present": true,
+  "image_absent": true,
+  "elapsed_after_reentry_seconds": 126.296
+ },
+ "refetch_after_descriptor_delay": {
+  "at": "2026-11-11T00:45:30+0900",
+  "activation": {
+   "method": "uia_invoke",
+   "result": {
+    "action": "invoke",
+    "found": true,
+    "hwnd": 78319158,
+    "title": "COS Desktop",
+    "class": "Zed::Window",
+    "width": 1296,
+    "height": 839,
+    "name_match": "メディアを再取得 (R)",
+    "invoked": true,
+    "matched_name": "メディアを再取得 (R)",
+    "matched_id": "",
+    "matched_control_type": "ControlType.Button",
+    "pattern": "invoke",
+    "patterns_tried": [
+     "invoke"
+    ],
+    "_out": "C:\\dev\\cos-desktop\\target\\media-refetch\\20261111T004127-native\\ctx\\20261111T004127-media-refetch\\uia\\085-invoke.json"
+   }
+  },
+  "control_absent_in_flight": true,
+  "state_in_flight": "EXPIRED",
+  "uia_in_flight": {
+   "label": "refetch-in-flight",
+   "at": "2026-11-11T00:45:33+0900",
+   "state": "EXPIRED",
+   "elements": 55,
+   "window": {
+    "title": "COS Desktop",
+    "class": "Zed::Window",
+    "width": 1296,
+    "height": 839
+   },
+   "uia_file": "uia\\refetch-in-flight.json",
+   "uia_sha256": "89044038960eea9a6cd224c899c33932d5b3b2d5bc3b26f945b8deb642e08681",
+   "names_sha256": "de6db09c93825752b94b7799f56c287ad25d8b31f97a3cbf5fc5de69e5cb3934",
+   "names_count": 54,
+   "media_lines": [
+    "成果物の利用状態: 取得可能（AVAILABLE）（1件）",
+    "作業領域：成果物",
+    "成果物",
+    "Runtime が認可した成果物メディアを取得して表示します。取得できない場合は、理由を画像領域に明示します。",
+    "画像を利用できません: メディア記述子の有効期限が切れました。再取得が必要です。",
+    "画像は未表示です",
+    "画像表示。0: 全体、1: 物理等倍、+/-: 拡大縮小、矢印: 移動、F11: 全画面、Escape: 復帰",
+    "成果物  Ctrl+1"
+   ],
+   "viewport_present": true,
+   "has_displayed_marker": false,
+   "expired_text_present": true,
+   "refetch_control_present": false,
+   "refetch_control_name": "メディアを再取得 (R)",
+   "screenshot": {
+    "file": "shots\\refetch-in-flight.png",
+    "sha256": "sha256:71337c1fc1589f9a187adcf4b1989a9e80571b6d984fd8a0e86147647cb8ce6f",
+    "bytes": 146281,
+    "printed": true,
+    "width": 1296,
+    "height": 839
+   }
+  },
+  "control_returned": true,
+  "state_after_retry": "EXPIRED",
+  "uia_after_retry": {
+   "label": "expired-after-refetch-failure",
+   "at": "2026-11-11T00:47:38+0900",
+   "state": "EXPIRED",
+   "elements": 56,
+   "window": {
+    "title": "COS Desktop",
+    "class": "Zed::Window",
+    "width": 1296,
+    "height": 839
+   },
+   "uia_file": "uia\\expired-after-refetch-failure.json",
+   "uia_sha256": "db19cad688c3578cad34de786c8beca7396ed9b6e343e320cc28c056b069833d",
+   "names_sha256": "9be0b960f68df8247d1fcf1cd153e2393a0dc8f5c3b11729361ed89146a3055a",
+   "names_count": 55,
+   "media_lines": [
+    "成果物の利用状態: 取得可能（AVAILABLE）（1件）",
+    "作業領域：成果物",
+    "成果物",
+    "Runtime が認可した成果物メディアを取得して表示します。取得できない場合は、理由を画像領域に明示します。",
+    "メディアを再取得 (R)",
+    "画像を利用できません: メディア記述子の有効期限が切れました。再取得が必要です。",
+    "画像は未表示です",
+    "画像表示。0: 全体、1: 物理等倍、+/-: 拡大縮小、矢印: 移動、F11: 全画面、Escape: 復帰、R: メディア再取得",
+    "成果物  Ctrl+1"
+   ],
+   "viewport_present": true,
+   "has_displayed_marker": false,
+   "expired_text_present": true,
+   "refetch_control_present": true,
+   "refetch_control_name": "メディアを再取得 (R)",
+   "screenshot": {
+    "file": "shots\\expired-after-refetch-failure.png",
+    "sha256": "sha256:1acbfc3fd341aed5feae8b97db3215f484c65d2e2232e7faf9a04b986b8f1907",
+    "bytes": 147498,
+    "printed": true,
+    "width": 1296,
+    "height": 839
+   }
+  },
+  "media_access": {
+   "entries": [
+    {
+     "path": "/api/cos/media/sha256%3Aeea85a247125e3365b545f606b5527e5ddfa1489729926539c956e3793908a58",
+     "status": 200
+    },
+    {
+     "path": "/api/cos/media/sha256%3Aeea85a247125e3365b545f606b5527e5ddfa1489729926539c956e3793908a58",
+     "status": 200
+    }
+   ],
+   "descriptor_statuses": [
+    200,
+    200
+   ],
+   "blob_statuses": [],
+   "blob_410": [],
+   "descriptor_count": 2,
+   "blob_count": 0
+  },
+  "descriptor_attempts": 2
+ },
+ "wire_410": {
+  "at": "2026-11-11T00:47:39+0900",
+  "activation": {
+   "method": "uia_invoke",
+   "result": {
+    "action": "invoke",
+    "found": true,
+    "hwnd": 78319158,
+    "title": "COS Desktop",
+    "class": "Zed::Window",
+    "width": 1296,
+    "height": 839,
+    "name_match": "メディアを再取得 (R)",
+    "invoked": true,
+    "matched_name": "メディアを再取得 (R)",
+    "matched_id": "",
+    "matched_control_type": "ControlType.Button",
+    "pattern": "invoke",
+    "patterns_tried": [
+     "invoke"
+    ],
+    "_out": "C:\\dev\\cos-desktop\\target\\media-refetch\\20261111T004127-native\\ctx\\20261111T004127-media-refetch\\uia\\193-invoke.json"
+   }
+  },
+  "blob_delay_armed": true,
+  "control_absent_in_flight": true,
+  "control_returned": true,
+  "state": "EXPIRED",
+  "uia": {
+   "label": "expired-wire-410",
+   "at": "2026-11-11T00:49:47+0900",
+   "state": "EXPIRED",
+   "elements": 56,
+   "window": {
+    "title": "COS Desktop",
+    "class": "Zed::Window",
+    "width": 1296,
+    "height": 839
+   },
+   "uia_file": "uia\\expired-wire-410.json",
+   "uia_sha256": "db19cad688c3578cad34de786c8beca7396ed9b6e343e320cc28c056b069833d",
+   "names_sha256": "9be0b960f68df8247d1fcf1cd153e2393a0dc8f5c3b11729361ed89146a3055a",
+   "names_count": 55,
+   "media_lines": [
+    "成果物の利用状態: 取得可能（AVAILABLE）（1件）",
+    "作業領域：成果物",
+    "成果物",
+    "Runtime が認可した成果物メディアを取得して表示します。取得できない場合は、理由を画像領域に明示します。",
+    "メディアを再取得 (R)",
+    "画像を利用できません: メディア記述子の有効期限が切れました。再取得が必要です。",
+    "画像は未表示です",
+    "画像表示。0: 全体、1: 物理等倍、+/-: 拡大縮小、矢印: 移動、F11: 全画面、Escape: 復帰、R: メディア再取得",
+    "成果物  Ctrl+1"
+   ],
+   "viewport_present": true,
+   "has_displayed_marker": false,
+   "expired_text_present": true,
+   "refetch_control_present": true,
+   "refetch_control_name": "メディアを再取得 (R)",
+   "screenshot": {
+    "file": "shots\\expired-wire-410.png",
+    "sha256": "sha256:1acbfc3fd341aed5feae8b97db3215f484c65d2e2232e7faf9a04b986b8f1907",
+    "bytes": 147498,
+    "printed": true,
+    "width": 1296,
+    "height": 839
+   }
+  },
+  "media_access": {
+   "entries": [
+    {
+     "path": "/api/cos/media/sha256%3Aeea85a247125e3365b545f606b5527e5ddfa1489729926539c956e3793908a58",
+     "status": 200
+    },
+    {
+     "path": "/api/cos/media/<redacted-media-handle>/blob",
+     "status": 410
+    },
+    {
+     "path": "/api/cos/media/sha256%3Aeea85a247125e3365b545f606b5527e5ddfa1489729926539c956e3793908a58",
+     "status": 200
+    },
+    {
+     "path": "/api/cos/media/<redacted-media-handle>/blob",
+     "status": 410
+    }
+   ],
+   "descriptor_statuses": [
+    200,
+    200
+   ],
+   "blob_statuses": [
+    410,
+    410
+   ],
+   "blob_410": [
+    {
+     "path": "/api/cos/media/<redacted-media-handle>/blob",
+     "status": 410
+    },
+    {
+     "path": "/api/cos/media/<redacted-media-handle>/blob",
+     "status": 410
+    }
+   ],
+   "descriptor_count": 2,
+   "blob_count": 2
+  },
+  "blob_410_count": 2,
+  "blob_delay_lines": [
+   "harness media blob request delay begin path=/api/cos/media/<redacted-media-handle>/blob seconds=63.000 at=1794325659.034",
+   "harness media blob request delay release path=/api/cos/media/<redacted-media-handle>/blob at=1794325722.044",
+   "harness media blob response path=/api/cos/media/<redacted-media-handle>/blob status=410 body='{\"code\":\"MEDIA_HANDLE_EXPIRED\"}'",
+   "harness media blob request delay begin path=/api/cos/media/<redacted-media-handle>/blob seconds=63.000 at=1794325722.110",
+   "harness media blob request delay release path=/api/cos/media/<redacted-media-handle>/blob at=1794325785.121",
+   "harness media blob response path=/api/cos/media/<redacted-media-handle>/blob status=410 body='{\"code\":\"MEDIA_HANDLE_EXPIRED\"}'"
+  ],
+  "exact_expired_text_present": true,
+  "refetch_control_present": true
+ },
+ "refetch_success": {
+  "at": "2026-11-11T00:49:48+0900",
+  "activation": {
+   "method": "uia_invoke",
+   "result": {
+    "action": "invoke",
+    "found": true,
+    "hwnd": 78319158,
+    "title": "COS Desktop",
+    "class": "Zed::Window",
+    "width": 1296,
+    "height": 839,
+    "name_match": "メディアを再取得 (R)",
+    "invoked": true,
+    "matched_name": "メディアを再取得 (R)",
+    "matched_id": "",
+    "matched_control_type": "ControlType.Button",
+    "pattern": "invoke",
+    "patterns_tried": [
+     "invoke"
+    ],
+    "_out": "C:\\dev\\cos-desktop\\target\\media-refetch\\20261111T004127-native\\ctx\\20261111T004127-media-refetch\\uia\\303-invoke.json"
+   }
+  },
+  "control_absent_in_flight": true,
+  "found": true,
+  "state": "DISPLAYED",
+  "uia": {
+   "label": "displayed-after-refetch",
+   "at": "2026-11-11T00:49:50+0900",
+   "state": "DISPLAYED",
+   "elements": 55,
+   "window": {
+    "title": "COS Desktop",
+    "class": "Zed::Window",
+    "width": 1296,
+    "height": 839
+   },
+   "uia_file": "uia\\displayed-after-refetch.json",
+   "uia_sha256": "a15412c4cc0496b80f4f173b1ba13b48624a8f798e12e114950d99ce68a4fb99",
+   "names_sha256": "d581d5f76dc617fe7f988de2b100c2e129b1c8e87bbfbe268d94857e1a03f20a",
+   "names_count": 54,
+   "media_lines": [
+    "成果物の利用状態: 取得可能（AVAILABLE）（1件）",
+    "作業領域：成果物",
+    "成果物",
+    "Runtime が認可した成果物メディアを取得して表示します。取得できない場合は、理由を画像領域に明示します。",
+    "メディア画像（記述子のダイジェスト検証済み）: 低解像度プレビュー。原寸の詳細表示・1:1ではありません。",
+    "画像表示。0: 全体、1: 物理等倍、+/-: 拡大縮小、矢印: 移動、F11: 全画面、Escape: 復帰",
+    "成果物  Ctrl+1"
+   ],
+   "viewport_present": true,
+   "has_displayed_marker": true,
+   "expired_text_present": false,
+   "refetch_control_present": false,
+   "refetch_control_name": "メディアを再取得 (R)",
+   "screenshot": {
+    "file": "shots\\displayed-after-refetch.png",
+    "sha256": "sha256:b7b46b70b2c4e060e322a86783045f94c77dacbfdd3d36096e8772c3e9babd17",
+    "bytes": 203440,
+    "printed": true,
+    "width": 1296,
+    "height": 839
+   }
+  },
+  "refetch_control_absent": true,
+  "media_access": {
+   "entries": [
+    {
+     "path": "/api/cos/media/sha256%3Aeea85a247125e3365b545f606b5527e5ddfa1489729926539c956e3793908a58",
+     "status": 200
+    },
+    {
+     "path": "/api/cos/media/<redacted-media-handle>/blob",
+     "status": 200
+    }
+   ],
+   "descriptor_statuses": [
+    200
+   ],
+   "blob_statuses": [
+    200
+   ],
+   "blob_410": [],
+   "descriptor_count": 1,
+   "blob_count": 1
+  },
+  "descriptor_200": true,
+  "blob_200": true,
+  "blob_410": false
+ },
+ "protocol_check": {
+  "credential_http_status": 200,
+  "observation_http_status": 200,
+  "descriptor_http_status": 200,
+  "descriptor": {
+   "descriptor_id": "descriptor-18539edfe50c000c92b8b5b764793631",
+   "artifact_ref": "art-v1-58ba544d-8d83-4728-8aa1-16efbc895106",
+   "artifact_digest": "sha256:eea85a247125e3365b545f606b5527e5ddfa1489729926539c956e3793908a58",
+   "representation": "ORIGINAL",
+   "representation_version": 1,
+   "media_type": "image/png",
+   "byte_length": 1363011,
+   "width": 1024,
+   "height": 1024,
+   "availability": "AVAILABLE",
+   "verification": {
+    "state": "VERIFIED",
+    "algorithm": "sha256",
+    "expected_digest": "eea85a247125e3365b545f606b5527e5ddfa1489729926539c956e3793908a58"
+   },
+   "server_identity": "cos-runtime-orchestrator",
+   "expires_at_unix_ms": 1794325851171,
+   "access_handle_present": true,
+   "access_handle_length": 474,
+   "audience_sha256_16": "sha256:690b77d24ac6305f"
+  },
+  "descriptor_timing": {
+   "descriptor_expires_at_unix_ms": 1794325851171,
+   "advertised_remaining_seconds": 59.932
+  },
+  "blob_http_status": 200,
+  "blob_bytes": 1363011,
+  "blob_sha256": "sha256:eea85a247125e3365b545f606b5527e5ddfa1489729926539c956e3793908a58",
+  "digest_matches_descriptor": true
+ },
+ "cleanup": {
+  "desktop": {
+   "pid": 33168,
+   "wm_close_sent": true,
+   "exited": true,
+   "exit_code": 0,
+   "forced": null
+  },
+  "runtime": {
+   "pid": 56912,
+   "clean": true,
+   "exit": 0
+  },
+  "port": 8135,
+  "port_free": true,
+  "credential_store": {
+   "origin": "http://127.0.0.1:8135",
+   "targets": [
+    {
+     "target": "desktop-observation.cos-desktop/observation/78e18cc287a48f92d52f01f1ffb58dd3",
+     "exit": 1,
+     "result": "not_found",
+     "output": "CMDKEY: Element not found."
+    },
+    {
+     "target": "cos-desktop/observation/78e18cc287a48f92d52f01f1ffb58dd3",
+     "exit": 1,
+     "result": "not_found",
+     "output": "CMDKEY: Element not found."
+    }
+   ],
+   "deleted": false
+  },
+  "discovery_present_after_stop": false
+ },
+ "residuals": [],
+ "desktop_log_tail": "\n--- launch 1 2026-11-11T00:41:33+0900 ---\nRuntime discovered: server_identity=cos-runtime-orchestrator epoch=b8641c5ce6e044e3ad6d0c1c1764cc3a pid=58120\nRuntime rediscovery unavailable: runtime discovery descriptor was not published\nRuntime reconnect unavailable: the Runtime discovery descriptor is unavailable\nRuntime credential reauthorized after rejection; the session reopens a fresh observation\n",
+ "finished_at": "2026-11-11T00:49:52+0900",
+ "runtime_log": {
+  "source": "C:\\dev\\cos-desktop\\target\\media-refetch\\20261111T004127-native\\ctx\\20261111T004127-media-refetch\\runtime.log",
+  "file": "runtime-native.log.sanitized.txt",
+  "sha256": "7e00a90e5123e96a21ca3d629441a4ab07d41336971d1bff2fd828afda0f8de6",
+  "bytes": 201368,
+  "redactions": 11
+ },
+ "desktop_log": {
+  "source": "C:\\dev\\cos-desktop\\target\\media-refetch\\20261111T004127-native\\ctx\\20261111T004127-media-refetch\\desktop-media-refetch.log",
+  "file": "desktop-native.log.sanitized.txt",
+  "sha256": "e4a491e3ae5f97594a60ffc402d43382672f2c2c2aa9bf37218ddffa1a5982fc",
+  "bytes": 516,
+  "redactions": 0
+ }
+}

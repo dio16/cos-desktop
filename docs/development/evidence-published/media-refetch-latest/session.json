@@ -1,0 +1,40 @@
+{
+ "schema_version": 1,
+ "kind": "measurement-session",
+ "at": "2026-11-11T00:59:09+0900",
+ "updated_at": "2026-11-11T00:59:09+0900",
+ "desktop": {
+  "root": "C:\\dev\\cos-desktop",
+  "head": "885196efa5f0611a05083b8b5ef44ae2661d0a50",
+  "status_porcelain": "M crates/desktop-gpui/src/compare_media.rs\n M crates/desktop-gpui/src/compare_view.rs\n M crates/desktop-gpui/src/image_viewer.rs\n M crates/desktop-gpui/src/lib.rs\n M crates/desktop-gpui/src/media_presentation.rs\n?? apps/desktop/devtools/runtime_integration/isolated_runtime_media_delay.py\n?? apps/desktop/devtools/runtime_integration/run_rt3_media_refetch.py\n?? docs/development/evidence-published/media-refetch-latest/",
+  "binary": {
+   "path": "C:\\dev\\cos-desktop\\target\\release\\cos-desktop.exe",
+   "sha256": "382e88629f05b3be233bdbc2f9e4afeb7a6931fec52f83af6379b4e305919e5f",
+   "bytes": 21271040,
+   "built_at": "2026-11-10T23:10:21"
+  }
+ },
+ "runtime": {
+  "root": "C:\\AI\\orchestrator",
+  "head": "06ee825eeb3be741b8a870189ed28f848c811630",
+  "status_porcelain": "M orchestrator/docs/guides/development-loop.md\n M orchestrator/orchestrator_app/dev_caller.py\n M orchestrator/tests/test_dev_caller.py\n M orchestrator/tests/test_dev_caller_e2e.py\n?? orchestrator/devplan/plan-draft.json\n?? orchestrator/devplan/plan-prepare.json\n?? orchestrator/devplan/prepare-out.json"
+ },
+ "harness": {
+  "script": "apps\\desktop\\devtools\\runtime_integration\\run_rt3_media_refetch.py",
+  "script_sha256": "6437a1ff16ba3d752c470b10e75c1d1e13491bd1acefe6797e337c974cfadec5",
+  "launcher": "apps\\desktop\\devtools\\runtime_integration\\isolated_runtime_media_delay.py",
+  "launcher_sha256": "74a1d0a6b2136ecaa2cd109cc29d91d8edc92dd8f0215bb57af972b0fe9f996b",
+  "helper_runtime": "apps\\desktop\\devtools\\runtime_integration\\isolated_runtime.py",
+  "helper_runtime_sha256": "c54308c514e506447df2cec1a0f959129b0a1f26a14ced89508d33f3c9144c95",
+  "python": "3.13.14"
+ },
+ "ports": {
+  "native": 8135,
+  "default_ttl": 8168
+ },
+ "secrets": "per-run, memory only; tokens/principals/handles never written",
+ "measurements": {
+  "native": "PASS",
+  "default_ttl": "PASS"
+ }
+}
