@@ -1,0 +1,43 @@
+{
+  "checked_at": "2026-11-10T09:25:39+0900",
+  "clean": true,
+  "files_checked": 247,
+  "findings": [],
+  "harness_scans": {
+    "run1_session": {
+      "clean": true,
+      "files_checked": 59,
+      "findings": [],
+      "secrets_checked": 4
+    },
+    "run2_session": {
+      "clean": true,
+      "files_checked": 73,
+      "findings": [],
+      "secrets_checked": 4
+    },
+    "run3_session": {
+      "note": "recorded in the run3 session.json under the gitignored evidence dir: files_checked 65, secrets_checked 4, clean"
+    },
+    "survival_verify_run1": {
+      "clean": true,
+      "files_checked": 62,
+      "findings": [],
+      "secrets_checked": 3
+    },
+    "survival_verify_run3": {
+      "clean": true,
+      "files_checked": 66,
+      "findings": [],
+      "secrets_checked": 3
+    }
+  },
+  "patterns": [
+    "Bearer\\s+[A-Za-z0-9._\\-]{16,}",
+    "mh1\\.[A-Za-z0-9_\\-]+\\.[A-Za-z0-9_\\-]+",
+    "ORCHESTRATOR_AUTH_SECRET\\s*[=:]\\s*\\S+",
+    "COS_DESKTOP_RUNTIME_ISSUANCE_SECRET\\s*[=:]\\s*\\S+",
+    "X-Auth-Secret\\s*[:=]\\s*[A-Za-z0-9]{8,}"
+  ],
+  "secrets_note": "per-run issuance/handle/credential secrets are not stored in the evidence directory; each invocation's own leak scan checked them before they were discarded (session.json leak_checks, record-survival-verify records)"
+}

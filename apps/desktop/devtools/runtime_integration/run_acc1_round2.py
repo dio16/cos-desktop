@@ -22,7 +22,14 @@ own ports, per-run secrets, redirected discovery descriptor):
    through discovery; the record measures the epoch/credential behaviour, the
    projected task state, the durable provider receipt, and any loss. A terminal
    generation is never inferred: survival is only reported from a projected
-   terminal state.
+   terminal state. A duplicate provider submission is measured from durable
+   receipt identity (receipt id, ComfyUI prompt id, attempt id and run count
+   before/after the restart), not from a terminal verdict; the round-2
+   ``no_automatic_resubmission`` key meant "not terminal" and is no longer used
+   as a duplicate-submission claim. The UIA snapshots keep a PrintWindow image
+   for the withheld, reconnected and post-terminal moments, and the post-terminal
+   status is bound to this task's inspector title so another task's COMPLETED row
+   cannot be read as this task's terminal state.
 
 This module does not modify product code. It writes
 ``docs/development/evidence-published/acc1-round2-latest/``.
@@ -683,6 +690,7 @@ def scenario_runtime_restart(args: argparse.Namespace) -> dict:
             "discovery_present": ctx.runtime.discovery_path.exists(),
         }
         record["injections"]["uia_withheld"] = native.uia_snapshot(ui, "restart-withheld")
+        record["screenshots"]["restart_withheld"] = ui.shot("restart-withheld")
         time.sleep(RESTART_SETTLE_SECONDS)
         restarted = ctx.runtime.start()
         record["injections"]["runtime_restart"] = {
@@ -751,6 +759,7 @@ def scenario_runtime_restart(args: argparse.Namespace) -> dict:
         record["injections"]["manual_reconnect_required"] = not bool(
             record["injections"]["automatic_reconnect_observed"])
         record["injections"]["uia_reconnected"] = native.uia_snapshot(ui, "restart-reconnected")
+        record["screenshots"]["restart_reconnected"] = ui.shot("restart-reconnected")
         record["injections"]["app_log_window"] = selected_lines(
             read_since(ctx.app.log_path, app_offset),
             ("credential", "reauth", "401", "epoch", "observation", "runtime"))
@@ -787,6 +796,25 @@ def scenario_runtime_restart(args: argparse.Namespace) -> dict:
             time.sleep(2.0)
         record["injections"]["transitions_after_restart"] = transitions
         record["injections"]["final_task"] = now_task(final_task)
+        # Post-terminal surface: bind the strip status to *this* task by its
+        # inspector title, so a completed row from another task cannot be read as
+        # this task's terminal state.
+        terminal_deadline = time.monotonic() + 20.0
+        terminal_ui = False
+        terminal_dump: dict = {}
+        while time.monotonic() < terminal_deadline:
+            terminal_dump = ui.dump()
+            terminal_names = "\n".join(terminal_dump.get("names") or [])
+            if (f"{task_ref} — {goal}" in terminal_names
+                    and "タスクの状態: 完了（COMPLETED）" in terminal_names):
+                terminal_ui = True
+                break
+            if not base.pid_alive(ui.pid):
+                break
+            time.sleep(1.5)
+        record["injections"]["terminal_ui_observed"] = terminal_ui
+        record["injections"]["uia_after_terminal"] = native.uia_snapshot(ui, "restart-terminal")
+        record["screenshots"]["restart_terminal"] = ui.shot("restart-terminal")
         record["injections"]["comfy_after_restart"] = comfy_prompt_state(prompt_id)
         record["injections"]["db_after_restart"] = db_task_rows(ctx.db_copy, task_ref)
         record["injections"]["app_log_final"] = selected_lines(
@@ -798,20 +826,58 @@ def scenario_runtime_restart(args: argparse.Namespace) -> dict:
         generation_terminal = str(final_task.get("task_status")) == "COMPLETED"
         same_row = bool((record["injections"]["db_after_restart"].get("task") or {}).get("task_id")
                         == task_ref)
+        receipts_before = list(record["injections"]["provider_submitted"].get("receipts") or [])
+        receipts_after = list(
+            record["injections"]["db_after_restart"].get("provider_receipts") or [])
+        receipt_ids_before = sorted(int(row["receipt_id"]) for row in receipts_before
+                                    if isinstance(row.get("receipt_id"), int))
+        receipt_ids_after = sorted(int(row["receipt_id"]) for row in receipts_after
+                                   if isinstance(row.get("receipt_id"), int))
+        prompts_before = sorted({str(row["provider_receipt_id"]) for row in receipts_before
+                                 if row.get("provider_receipt_id")})
+        prompts_after = sorted({str(row["provider_receipt_id"]) for row in receipts_after
+                                if row.get("provider_receipt_id")})
+        attempts_after = sorted({str(row["attempt_id"]) for row in receipts_after
+                                 if row.get("attempt_id")})
+        attempt_suffix = [attempt for attempt in attempts_after
+                          if re.search(r"-i\d+-r\d+$", attempt)]
+        runs_after = record["injections"]["db_after_restart"].get("runs") or []
+        receipt_identity_unchanged = (
+            receipt_ids_before == receipt_ids_after and prompts_before == prompts_after)
+        duplicate_submission = bool(
+            not receipt_identity_unchanged or attempt_suffix or len(runs_after) != 1)
+        record["injections"]["provider_identity"] = {
+            "receipt_ids_before": receipt_ids_before,
+            "receipt_ids_after": receipt_ids_after,
+            "prompt_ids_before": prompts_before,
+            "prompt_ids_after": prompts_after,
+            "attempt_ids_after": attempts_after,
+            "attempt_suffix_resubmission": attempt_suffix,
+            "runs_after": len(runs_after),
+            "receipt_identity_unchanged": receipt_identity_unchanged,
+            "duplicate_submission": duplicate_submission,
+            "note": ("duplicate submission is measured from durable receipt identity"
+                     " (receipt/prompt/attempt/run rows), not from a terminal verdict;"
+                     " the round-2 'no_automatic_resubmission' key meant 'not terminal'"
+                     " and is not used as a duplicate-submission claim"),
+        }
         record["injections"]["assertions"] = {
             "durable_row_present_after_restart": same_row,
             "generation_reached_projected_terminal": generation_terminal,
             "provider_receipt_durable": bool(
                 record["injections"]["db_after_restart"].get("provider_receipts")),
             "outcome_present": bool(record["injections"]["db_after_restart"].get("outcome")),
-            "no_automatic_resubmission": not generation_terminal,
+            "provider_receipt_identity_unchanged": receipt_identity_unchanged,
+            "no_duplicate_provider_submission": not duplicate_submission,
             "automatic_reconnect_observed": bool(
                 record["injections"]["automatic_reconnect_observed"]),
             "manual_reconnect_required": bool(
                 record["injections"]["manual_reconnect_required"]),
             "desktop_reconnected": bool(record["injections"]["desktop_reconnected"]),
+            "terminal_state_rendered_in_same_process": bool(
+                record["injections"].get("terminal_ui_observed")),
         }
-        if generation_terminal:
+        if generation_terminal and not duplicate_submission and recovered:
             record["verdict"] = "PASS"
         elif same_row and recovered:
             record["verdict"] = "PARTIAL"
@@ -820,6 +886,10 @@ def scenario_runtime_restart(args: argparse.Namespace) -> dict:
                 " the restart, but the in-flight generation did not reach a projected"
                 " terminal state; the durable provider receipt remains for manual recovery"
                 " and the Runtime did not resubmit")
+            if duplicate_submission:
+                record["residuals"].append(
+                    "a duplicate provider submission was measured (receipt/prompt identity"
+                    " changed or a second run appeared); survival is not claimed as clean")
             if record["injections"]["manual_reconnect_required"]:
                 record["residuals"].append(
                     "automatic Desktop reconnection was not observed; the explicit"

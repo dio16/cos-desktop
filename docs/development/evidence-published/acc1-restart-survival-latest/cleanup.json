@@ -1,0 +1,55 @@
+{
+  "checked_at": "2026-11-10T09:22:29+0900",
+  "credential_store": {
+    "campaign_entries": 0,
+    "detail": "each run's cleanup tried the composed target desktop-observation.cos-desktop/observation/dd179b0386bf34a9b1beb72dfed6a36f and the bare target; both reported 'not_found' after the Desktop's explicit teardown revoke. No per-run secret was persisted."
+  },
+  "note": "no listener, Desktop, Runtime, worker or discovery descriptor remains in the measured state; the campaign did not modify ComfyUI/Ollama settings or the production database (read-only copies only).",
+  "prior_state": {
+    "comfyui": "stopped (verified at 08:24: no 8188 listener, /system_stats 000)",
+    "desktop": "none",
+    "discovery": "%LOCALAPPDATA%/COS/runtime.json absent",
+    "runtime": "none"
+  },
+  "rechecked_at": "2026-11-10T09:23:34+0900",
+  "restored_state": {
+    "comfyui": {
+      "listener_after": false,
+      "provider_reset_at": "2026-11-10T09:02:26+09:00",
+      "start_method": "run_8gb.bat / documented 8 GB flags",
+      "started_at": "2026-11-10T08:26:05+09:00",
+      "stop_method": "Stop-Process -Force",
+      "stopped_at": "2026-11-10T09:22:29+0900",
+      "stopped_pids": [
+        51352,
+        51356,
+        53296
+      ],
+      "system_stats_after": 0
+    },
+    "discovery": {
+      "global_descriptor_present": false,
+      "per_run_descriptors": "each run recorded discovery_present_after_stop=false (runtime-discovery.json removed by the launcher lifespan)"
+    },
+    "native_lock_present": false,
+    "ollama": {
+      "untouched_before_and_after": 200
+    },
+    "ports": {
+      "8132_listening": false,
+      "8133_listening": false,
+      "8188_listening": false
+    },
+    "processes": {
+      "comfyui": [],
+      "cos_desktop": [],
+      "isolated_runtime": [],
+      "python": "no Runtime/worker/ComfyUI python process remains: every 8132/8133/8188 listener is closed and the process list has no python whose command line names the isolated launcher or ComfyUI. The python.exe rows observed inside the check window were the short-lived evidence-writing helper itself."
+    }
+  },
+  "retained_gitignored": {
+    "build": "C:/dev/cos-desktop/target/acc1-restart-survival-head (detached worktree) + acc1-restart-survival-head-target",
+    "comfyui_log": "C:/dev/cos-desktop/target/acc1-restart-survival-comfyui.log",
+    "target_runs": "C:/dev/cos-desktop/target/acc1-native/20261110T083447-runtime-restart, 20261110T085211-runtime-restart, 20261110T090427-runtime-restart, 20261110T084649-survival-verify, 20261110T090832-survival-verify"
+  }
+}

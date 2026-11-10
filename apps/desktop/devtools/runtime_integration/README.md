@@ -110,6 +110,40 @@ Isolation/cleanup notes:
   Raw logs and the isolated database copy stay under `target/rt3-matrix/run1/`
   (documented in the evidence README).
 
+## MP-ACC1 round-2 survival campaign (restart recovery + same-process reconnect)
+
+`run_acc1_round2.py --scenario runtime-restart` is the scenario used to measure
+the round-2 provider survival repair (Runtime resume of a durable `ACTIVE`
+attempt after a serving restart, Desktop same-process recovery under a new
+epoch). Two harness details changed for that campaign:
+
+- the duplicate-provider-submission assertion is measured from durable receipt
+  identity (receipt ids, ComfyUI prompt ids, attempt ids and run count
+  before/after the restart). The round-2 key `no_automatic_resubmission` was
+  `not generation_terminal`, which inverts once survival succeeds, and is no
+  longer used as a duplicate claim;
+- the post-terminal UIA check binds the strip status to this task's inspector
+  title, so another task's `COMPLETED` row cannot be read as this task's
+  terminal state. Every UIA snapshot also keeps its PrintWindow image.
+
+`verify_restart_survival.py` is the split measurement that follows a run: it
+re-uses the run's isolated DB copy/CAS in a separate short-lived Runtime epoch,
+resolves the task's own artifact through the projected `OUTCOME.selected_refs`,
+fetches it through the RC-13 media descriptor/handle/blob path, compares the
+SHA-256 with the projection and the `artifact_blobs` row, and re-checks that the
+provider receipt/prompt/attempt/run identity did not change:
+
+```powershell
+C:/AI/orchestrator/.venv/Scripts/python.exe -u `
+  apps/desktop/devtools/runtime_integration/verify_restart_survival.py `
+  --source-run target/acc1-native/<run> --task-ref task-... `
+  --restart-record docs/development/evidence-published/<dir>/record-runtime-restart.json `
+  --evidence-dir docs/development/evidence-published/<dir>
+```
+
+Evidence for the measured campaign:
+`docs/development/evidence-published/acc1-restart-survival-latest/`.
+
 ## Boundaries
 
 - Applies no product changes; it only starts the existing Runtime and Desktop binaries.

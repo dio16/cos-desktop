@@ -1,0 +1,1 @@
+{"action":"invoke","found":true,"hwnd":15861420,"title":"COS Desktop","class":"Zed::Window","width":1296,"height":839,"name_match":"ブリーフを閉じる","invoked":true,"matched_name":"ブリーフを閉じる","matched_id":"","matched_control_type":"ControlType.Button","pattern":"invoke","patterns_tried":["invoke"]}

@@ -1,0 +1,474 @@
+{
+  "artifact_descriptor": {
+    "access_handle_present": true,
+    "digest": null,
+    "keys": [
+      "access_handle",
+      "artifact_digest",
+      "artifact_ref",
+      "audience",
+      "availability",
+      "byte_length",
+      "descriptor_id",
+      "expires_at_unix_ms",
+      "height",
+      "media_type",
+      "representation",
+      "representation_version",
+      "server_identity",
+      "verification",
+      "width"
+    ],
+    "media_type": "image/png"
+  },
+  "artifact_fetch": {
+    "bytes": 1559315,
+    "digest_matches_descriptor": true,
+    "fetched": true,
+    "file": "C:\\dev\\cos-desktop\\docs\\development\\evidence-published\\acc1-restart-survival-latest\\artifact.png",
+    "png": {
+      "height": 1024,
+      "width": 1024
+    },
+    "sha256": "sha256:5e9023e730d3bd49184cfdab123d00b86478f57327b1eeb33edcb22eab424744"
+  },
+  "artifact_identity": {
+    "db_blob_rows": [
+      {
+        "blob_id": "blob-v1-4f983898-e85f-4458-bdf5-58debf4a3e9c",
+        "content_digest": "sha256:5e9023e730d3bd49184cfdab123d00b86478f57327b1eeb33edcb22eab424744",
+        "created_at": "2026-11-09 23:36:59",
+        "length": 1559315,
+        "manifest_digest": "sha256:39287bf1089e4bc56f042a27dbb83f0a50a02e18eb66b30f0922bfb75287be00",
+        "media_type": "image/png"
+      }
+    ],
+    "db_outcome_canonical_digest": "sha256:9823a5e2daf1739626791cf13ec06af6051fe526e1207f75ac342137a8200f13",
+    "digest_matches_projection": true,
+    "fetched_bytes": 1559315,
+    "fetched_sha256": "sha256:5e9023e730d3bd49184cfdab123d00b86478f57327b1eeb33edcb22eab424744",
+    "png": {
+      "height": 1024,
+      "width": 1024
+    },
+    "projected_artifact_digest": "sha256:5e9023e730d3bd49184cfdab123d00b86478f57327b1eeb33edcb22eab424744"
+  },
+  "artifact_resolution": {
+    "artifact": {
+      "artifact_digest": "sha256:5e9023e730d3bd49184cfdab123d00b86478f57327b1eeb33edcb22eab424744",
+      "artifact_ref": "art-v1-5270e4e0-5332-497c-8991-59348216d9b3",
+      "availability": "AVAILABLE",
+      "media_type": "image/png",
+      "task_ref": null
+    },
+    "capabilities_projection_present": false,
+    "context_sha256_16": "sha256:650b91a6657703d2",
+    "descriptor_http_status": 200,
+    "found": true,
+    "outcome": {
+      "formal_status": "COMPLETED",
+      "projection_revision": "222",
+      "selected_refs": [
+        {
+          "artifact_digest": "sha256:5e9023e730d3bd49184cfdab123d00b86478f57327b1eeb33edcb22eab424744",
+          "evaluation_id": "eval-cos-task-bf345805d5f243c1b715dbe29a24097f-i0",
+          "iteration": 0,
+          "run_id": "run-cos-task-bf345805d5f243c1b715dbe29a24097f-i0"
+        }
+      ],
+      "stop_reason": "SUCCESS_ACCEPT"
+    },
+    "snapshot_kind_counts": {
+      "ARTIFACT": 37,
+      "CANDIDATE": 38,
+      "EVALUATION": 38,
+      "GRAPH": 38,
+      "ITERATION": 38,
+      "OUTCOME": 38,
+      "TASK": 40
+    }
+  },
+  "assertions": {
+    "artifact_digest_matches_projection": true,
+    "artifact_served_via_protocol": true,
+    "comfy_history_success": true,
+    "db_readable": true,
+    "durable_task_completed": true,
+    "no_attempt_suffix_resubmission": true,
+    "outcome_completed_success_accept": true,
+    "single_provider_receipt_unchanged": true
+  },
+  "catalog": {
+    "can_submit": true,
+    "http_status": 200,
+    "reason_codes": [],
+    "recipes": [
+      {
+        "execution_limits": {
+          "max_iterations": 2,
+          "summary": "up to 2 iterations"
+        },
+        "label": "Production still (Krea2)",
+        "recipe_ref": {
+          "graph_ref": {
+            "graph_digest": "sha256:4f9bfd7ca021557afe5f8e505218ccfd8c7f7d5b8a4bf636693cb456af683ecf",
+            "graph_id": "graph-cos-production-001",
+            "graph_version": 2
+          },
+          "profile_ref": null,
+          "projection_digest": "sha256:992c5753d8aeb088338ab19a1486880681caed8817db7aea1f5cd5fad2dd317c",
+          "recipe_id": "recipe-cos-production-still",
+          "source_harness_digest": "sha256:3b9b1e205b2610ebae814233743a06a7e1774785c3a59b00452b5474b4745604",
+          "source_harness_version_id": "hvid_7231516f3fe04cb9e3e26f71354eaa4f16868e233e2b5d0ff41a0c2623fd6870"
+        }
+      }
+    ]
+  },
+  "cleanup": {
+    "credential_store": {
+      "deleted": false,
+      "origin": "http://127.0.0.1:8132",
+      "targets": [
+        {
+          "exit": 1,
+          "output": "CMDKEY: Element not found.",
+          "result": "not_found",
+          "target": "desktop-observation.cos-desktop/observation/dd179b0386bf34a9b1beb72dfed6a36f"
+        },
+        {
+          "exit": 1,
+          "output": "CMDKEY: Element not found.",
+          "result": "not_found",
+          "target": "cos-desktop/observation/dd179b0386bf34a9b1beb72dfed6a36f"
+        }
+      ]
+    },
+    "desktop": {
+      "closed": false
+    },
+    "discovery_present_after_stop": false,
+    "port": 8132,
+    "port_free": true,
+    "runtime": {
+      "clean": true,
+      "exit": 0,
+      "pid": 25132
+    }
+  },
+  "comfy_history": {
+    "history_completed": true,
+    "history_present": true,
+    "history_status": "success",
+    "output_image_count": 1,
+    "output_keys": [
+      "9"
+    ],
+    "prompt_id": "431ab9be-f0f8-40c5-8964-7621b0272b1f",
+    "queue_pending": false,
+    "queue_pending_count": 0,
+    "queue_running": false,
+    "queue_running_count": 0
+  },
+  "credential": {
+    "expires_in": 43200,
+    "principal": "desktop:c6be96a635ca27c9b9ebb810508051f2",
+    "scopes": [
+      "read:observe",
+      "desktop:command"
+    ],
+    "token_recorded": false
+  },
+  "db_after_restart": {
+    "artifact_blobs": [
+      {
+        "blob_id": "blob-v1-4f983898-e85f-4458-bdf5-58debf4a3e9c",
+        "content_digest": "sha256:5e9023e730d3bd49184cfdab123d00b86478f57327b1eeb33edcb22eab424744",
+        "created_at": "2026-11-09 23:36:59",
+        "length": 1559315,
+        "manifest_digest": "sha256:39287bf1089e4bc56f042a27dbb83f0a50a02e18eb66b30f0922bfb75287be00",
+        "media_type": "image/png"
+      }
+    ],
+    "artifacts": [
+      {
+        "artifact_id": "art-v1-5270e4e0-5332-497c-8991-59348216d9b3",
+        "blob_id": "blob-v1-4f983898-e85f-4458-bdf5-58debf4a3e9c",
+        "created_at": "2026-11-09 23:36:59",
+        "manifest_digest": "sha256:39287bf1089e4bc56f042a27dbb83f0a50a02e18eb66b30f0922bfb75287be00",
+        "node_id": "n-krea2",
+        "run_id": "run-cos-task-bf345805d5f243c1b715dbe29a24097f-i0",
+        "status": "available"
+      }
+    ],
+    "journal_rows": 0,
+    "observation_epoch": [
+      {
+        "claimed_at": "2026-11-09T23:46:52.053198+00:00",
+        "epoch": "fc5f7a80b2a54665b7e520c31435f1aa"
+      }
+    ],
+    "outcome": [
+      {
+        "canonical_digest": "sha256:9823a5e2daf1739626791cf13ec06af6051fe526e1207f75ac342137a8200f13",
+        "created_at": "2026-11-09T23:36:59.108274+00:00",
+        "outcome": "COMPLETED",
+        "payload": "{\"canonical_digest\":\"sha256:9823a5e2daf1739626791cf13ec06af6051fe526e1207f75ac342137a8200f13\",\"final_evaluation_id\":\"eval-cos-task-bf345805d5f243c1b715dbe29a24097f-i0\",\"final_graph_digest\":\"sha256:4f9bfd7ca021557afe5f8e505218ccfd8c7f7d5b8a4bf636693cb456af683ecf\",\"final_graph_id\":\"graph-cos-production-001\",\"final_graph_version\":2,\"final_plan_digest\":\"sha256:0631d5840aa488cf2f871e5a933402bf5310288741c52c1ce979607565582ff8\",\"final_plan_id\":\"plan-cos-task-bf345805d5f243c1b715dbe29a24097f-i0\",\"final_run_id\":\"run-cos-task-bf345805d5f243c1b715dbe29a24097f-i0\",\"hard_constraint_status\":\"no-violation\",\"harness_digest\":\"sha256:3b9b1e205b2610ebae814233743a06a7e1774785c3a59b00452b5474b4745604\",\"harness_version_id\":\"hvid_7231516f3fe04cb9e3e26f71354eaa4f16868e233e2b5d0ff41a0c2623fd6870\",\"lineage_root_ref\":\"cman_bd21d6383e77fc2a15fa7342eeeb74c3671f1c21f20a2f8c57343916cd68bc6f\",\"outcome\":\"COMPLETED\",\"schema_version\":1,\"selected_artifact_refs\":[{\"artifact_digest\":\"sha256:5e9023e730d3bd49184cfdab123d00b86478f57327b1eeb33edcb22eab424744\",\"evaluation_id\":\"eval-cos-task-bf345805d5f243c1b715dbe29a24097f-i0\",\"iteration\":0,\"run_id\":\"run-cos-task-bf345805d5f243c1b715dbe29a24097f-i0\"}],\"stop_reason\":\"SUCCESS_ACCEPT\",\"task_id\":\"task-bf345805d5f243c1b715dbe29a24097f\"}",
+        "stop_reason": "SUCCESS_ACCEPT",
+        "task_id": "task-bf345805d5f243c1b715dbe29a24097f"
+      }
+    ],
+    "provider_intents": [
+      {
+        "created_at": "2026-11-09 23:35:32",
+        "intent_id": 38,
+        "node_id": "n-krea2",
+        "run_id": "run-cos-task-bf345805d5f243c1b715dbe29a24097f-i0"
+      }
+    ],
+    "provider_receipts": [
+      {
+        "attempt_id": "attempt-cos-task-bf345805d5f243c1b715dbe29a24097f-i0",
+        "created_at": "2026-11-09 23:35:32",
+        "node_id": "n-krea2",
+        "provider_receipt_id": "431ab9be-f0f8-40c5-8964-7621b0272b1f",
+        "receipt_id": 38,
+        "run_id": "run-cos-task-bf345805d5f243c1b715dbe29a24097f-i0"
+      }
+    ],
+    "readable": true,
+    "runs": [
+      {
+        "created_at": "2026-11-09T23:35:30.911125+00:00",
+        "iteration": 0,
+        "phase": "RUNNING",
+        "run_id": "run-cos-task-bf345805d5f243c1b715dbe29a24097f-i0"
+      }
+    ],
+    "task": [
+      {
+        "created_at": "2026-11-09T23:35:30.215642+00:00",
+        "status": "COMPLETED",
+        "task_id": "task-bf345805d5f243c1b715dbe29a24097f"
+      }
+    ]
+  },
+  "db_copy_bytes": 11661312,
+  "db_copy_sha256": "sha256:7d71243ea3f6ee3a2aea057d40cb646f546fa62a9b9f7bb83316057efa79a70a",
+  "finished_at": "2026-11-10T08:46:54+0900",
+  "health": {
+    "direct_preflight": {
+      "at": "2026-11-10T08:46:52+0900",
+      "comfyui": {
+        "argv": [
+          "ComfyUI\\main.py",
+          "--windows-standalone-build",
+          "--lowvram",
+          "--reserve-vram",
+          "1.5",
+          "--cache-lru",
+          "10",
+          "--preview-method",
+          "taesd",
+          "--use-pytorch-cross-attention"
+        ],
+        "comfyui_version": "0.44.0",
+        "http_status": 200,
+        "url": "http://127.0.0.1:8188/system_stats"
+      },
+      "ollama": {
+        "http_status": 200,
+        "model_count": 6,
+        "url": "http://127.0.0.1:11434/api/tags"
+      },
+      "probe": "direct preflight (not the Runtime report)"
+    },
+    "generation_plane_ready": false,
+    "generation_plane_required": false,
+    "polls": 1,
+    "runtime_reported": {
+      "comfy": null,
+      "llm": null
+    },
+    "transitions": [
+      {
+        "at": "2026-11-10T08:46:52+0900",
+        "health": {
+          "comfy": null,
+          "llm": null
+        },
+        "http_status": 200,
+        "loop": {
+          "loop_id": "",
+          "paused": false,
+          "reason": "",
+          "round": 0,
+          "run_id": "",
+          "running": false,
+          "status": "idle",
+          "theme": ""
+        }
+      },
+      {
+        "at": "2026-11-10T08:46:52+0900",
+        "health": {
+          "comfy": null,
+          "llm": null
+        },
+        "http_status": 200,
+        "loop": {
+          "loop_id": "",
+          "paused": false,
+          "reason": "",
+          "round": 0,
+          "run_id": "",
+          "running": false,
+          "status": "idle",
+          "theme": ""
+        }
+      }
+    ]
+  },
+  "injections": {},
+  "label": "survival-verify",
+  "media": {},
+  "mode": "split measurement: same durable DB copy/CAS as the restart run, a new short-lived serving epoch and no generation traffic",
+  "observation_open": {
+    "context_sha256_16": "sha256:e73e763656f264c9",
+    "cursor_sha256_16": "sha256:2b00bc3bf4cf021c",
+    "epoch": "fc5f7a80b2a54665b7e520c31435f1aa",
+    "http_status": 200,
+    "read_revision": "1",
+    "scope_sha256_16": "sha256:71add8b6fe6701cf",
+    "snapshot_kind_counts": {
+      "ARTIFACT": 37,
+      "CANDIDATE": 38,
+      "EVALUATION": 38,
+      "GRAPH": 38,
+      "ITERATION": 38,
+      "OUTCOME": 38,
+      "TASK": 40
+    },
+    "snapshot_mutations": 267
+  },
+  "port": 8132,
+  "pre_stop_snapshot": {
+    "prompt_id": "431ab9be-f0f8-40c5-8964-7621b0272b1f",
+    "receipt_ids": [
+      38
+    ],
+    "restarted_at_epoch": "05a4b5d699a344f6a1233c4d9036be48",
+    "run_count": 1,
+    "stopped_at_epoch": "97263b592d3344428b033c084cfb00df"
+  },
+  "presets_sha256": "sha256:e1c2b553a121638bb551df1f48d21e5c996614e4821008570c066f6563baae3c",
+  "projection": {
+    "inner_phase": "RUNNING",
+    "iteration_index": 0,
+    "projection_revision": "217",
+    "task_ref": "task-bf345805d5f243c1b715dbe29a24097f",
+    "task_status": "COMPLETED"
+  },
+  "projection_trace": [],
+  "residuals": [],
+  "resyncs": [],
+  "runtime": {
+    "cas_root": "C:\\dev\\cos-desktop\\target\\acc1-native\\20261110T084649-survival-verify\\cas",
+    "config_path": "C:\\dev\\cos-desktop\\target\\acc1-native\\20261110T084649-survival-verify\\runtime-config.yaml",
+    "config_sha256": "sha256:2a0640471af734d52999ca251bd3db530904de1c8cba7afa9a62e40eaf6ff8c1",
+    "discovery_path": "C:\\dev\\cos-desktop\\target\\acc1-native\\20261110T084649-survival-verify\\runtime-discovery.json",
+    "endpoint": "http://127.0.0.1:8132",
+    "epoch": "fc5f7a80b2a54665b7e520c31435f1aa",
+    "pid": 25132,
+    "protocol": {
+      "major": 2,
+      "minor": 0
+    },
+    "ready": {
+      "document": {
+        "status": "ready"
+      },
+      "status": 200
+    },
+    "schema": {
+      "major": 2,
+      "minor": 0
+    },
+    "server_build": "orchestrator-runtime/0.1.0",
+    "server_identity": "cos-runtime-orchestrator"
+  },
+  "screenshots": {},
+  "source_run": "C:\\dev\\cos-desktop\\target\\acc1-native\\20261110T083447-runtime-restart",
+  "source_runtime_log_bytes": 25999,
+  "source_runtime_log_sha256": "sha256:55c6630b436b873aa721dab0df33a19215714088558725b0a06d03461fe26130",
+  "started_at": "2026-11-10T08:46:49+0900",
+  "states": [],
+  "steps": {},
+  "submission_analysis": {
+    "attempt_ids": [
+      "attempt-cos-task-bf345805d5f243c1b715dbe29a24097f-i0"
+    ],
+    "attempt_suffix_resubmission": false,
+    "intent_count": 1,
+    "post_restart_prompt_ids": [
+      "431ab9be-f0f8-40c5-8964-7621b0272b1f"
+    ],
+    "post_restart_receipt_ids": [
+      38
+    ],
+    "pre_stop_receipt_ids": [
+      38
+    ],
+    "prompt_id_matches_pre_stop": true,
+    "receipt_count": 1,
+    "receipt_ids_unchanged": true,
+    "run_count": 1,
+    "selected_artifact_digests": [
+      "sha256:5e9023e730d3bd49184cfdab123d00b86478f57327b1eeb33edcb22eab424744"
+    ],
+    "serving_log_post_prompt_count": 0,
+    "serving_log_prompt_submissions": {
+      "history_queue_probe_count": 0,
+      "history_queue_probe_lines": [],
+      "post_prompt_count": 0,
+      "post_prompt_lines": [],
+      "resubmit_count": 0,
+      "resubmit_lines": []
+    },
+    "serving_log_resubmit_count": 0
+  },
+  "task": {
+    "task_ref": "task-bf345805d5f243c1b715dbe29a24097f"
+  },
+  "trace_errors": [],
+  "verdict": "PASS",
+  "verify_runtime": {
+    "endpoint": "http://127.0.0.1:8132",
+    "epoch": "fc5f7a80b2a54665b7e520c31435f1aa",
+    "observation_open": {
+      "context_sha256_16": "sha256:e73e763656f264c9",
+      "cursor_sha256_16": "sha256:2b00bc3bf4cf021c",
+      "epoch": "fc5f7a80b2a54665b7e520c31435f1aa",
+      "http_status": 200,
+      "read_revision": "1",
+      "scope_sha256_16": "sha256:71add8b6fe6701cf",
+      "snapshot_kind_counts": {
+        "ARTIFACT": 37,
+        "CANDIDATE": 38,
+        "EVALUATION": 38,
+        "GRAPH": 38,
+        "ITERATION": 38,
+        "OUTCOME": 38,
+        "TASK": 40
+      },
+      "snapshot_mutations": 267
+    },
+    "pid": 25132,
+    "ready": {
+      "document": {
+        "status": "ready"
+      },
+      "status": 200
+    }
+  },
+  "work_dir": "C:\\dev\\cos-desktop\\target\\acc1-native\\20261110T084649-survival-verify"
+}

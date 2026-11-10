@@ -1,0 +1,450 @@
+{
+  "aggregated_at": "2026-11-10T09:17:00+0900",
+  "campaign_verdict": "PASS",
+  "contracts": [
+    "DC-MP-ACC1",
+    "DC-MP-RT3"
+  ],
+  "desktop_process_continuity": {
+    "note": "one process per run; the reconnect is measured in the same process (no relaunch), see each run's desktop log launch marker",
+    "run1": {
+      "launch_count": 1,
+      "pid": 56600
+    },
+    "run2": {
+      "launch_count": 1,
+      "pid": 45336
+    },
+    "run3": {
+      "launch_count": 1,
+      "pid": 58352
+    }
+  },
+  "expected_http_accounting": {
+    "per_restart_window": {
+      "401": 2,
+      "403": 0,
+      "409": 0,
+      "5xx": 0,
+      "detail": "old credential observation POST + credential refresh both 401 after the registry reset; one Desktop credential issuance (200); fresh observation 200"
+    },
+    "run1": {
+      "epoch1_200": 151,
+      "epoch2_200": 65,
+      "epoch2_401": 2
+    },
+    "run3": {
+      "epoch1_200": 143,
+      "epoch2_200": 63,
+      "epoch2_401": 2
+    }
+  },
+  "findings": [
+    {
+      "detail": "the restart-recovery contract (cos-runtime.md 5.11.1) says an errored provider history records an explicit issue; run_cos_drain_once returns it in an in-memory issues list, but _cos_drain_loop neither logs nor persists it. In run2 a provider-error task stayed ACTIVE with no outcome, no log line, no JSON row and no projection reason for the whole 90 s window.",
+      "evidence": [
+        "record-runtime-restart-run2.json",
+        "logs/run2/runtime-restart-runtime.log",
+        "logs/run2-provider-error/"
+      ],
+      "id": "F1",
+      "scope": "Runtime (C:/AI), outside Desktop product",
+      "severity": "ACTIONABLE NON-BLOCKING",
+      "title": "an explicit provider-execution-failed issue is not observable"
+    },
+    {
+      "detail": "aimdo GetOverlappedResult failed error=1450 (ERROR_NO_SYSTEM_RESOURCES) then hostbuf_file_reader_read failed at KSampler; history status error, 0 outputs. A ComfyUI restart (same documented flags) reset the condition and run3 generation succeeded.",
+      "evidence": [
+        "logs/run2-provider-error/comfyui-provider-error.excerpt.log"
+      ],
+      "id": "F2",
+      "scope": "ComfyUI 0.44.0 / comfy-aimdo 0.6.0",
+      "severity": "ENVIRONMENT RESIDUAL",
+      "title": "comfy-aimdo host buffer read failure aborted the run2 generation"
+    },
+    {
+      "detail": "the round-2 assertion was `not generation_terminal`, so a repaired terminal run would have reported a false duplicate-submission signal. The scenario now measures durable receipt/prompt/attempt/run identity; run1 was produced with the old key and its record is retained unchanged.",
+      "evidence": [
+        "record-runtime-restart.json",
+        "record-runtime-restart-run3.json"
+      ],
+      "id": "F3",
+      "scope": "harness defect corrected in this campaign",
+      "severity": "HARNESS",
+      "title": "round-2 no_automatic_resubmission meant 'not terminal'"
+    }
+  ],
+  "first_session_leak_check": {
+    "clean": true,
+    "files_checked": 59,
+    "findings": [],
+    "secrets_checked": 4
+  },
+  "first_session_verdict": "PASS",
+  "measurement": "MP-ACC1 round-2 provider survival: Runtime restart recovery + same-process Desktop reconnect (follow-up aggregation)",
+  "not_measured": [
+    "the artifact for run1/run3 was fetched by a separate short-lived Runtime epoch on the same DB copy/CAS (split",
+    "measurement); the same-process UI rendering of the artifact image pixels was not captured beyond the UIA",
+    "availability line (取得可能（AVAILABLE）（1件）) and the PrintWindow screenshots",
+    "no exhaustive ComfyUI /history enumeration: duplicate-submission is proven from durable receipt identity",
+    "no screen-reader/DPI claim; UIA reads names/ids only"
+  ],
+  "runs": {
+    "run1_uninstrumented_harness": {
+      "artifact_verification": {
+        "db_blob_rows": [
+          {
+            "blob_id": "blob-v1-4f983898-e85f-4458-bdf5-58debf4a3e9c",
+            "content_digest": "sha256:5e9023e730d3bd49184cfdab123d00b86478f57327b1eeb33edcb22eab424744",
+            "created_at": "2026-11-09 23:36:59",
+            "length": 1559315,
+            "manifest_digest": "sha256:39287bf1089e4bc56f042a27dbb83f0a50a02e18eb66b30f0922bfb75287be00",
+            "media_type": "image/png"
+          }
+        ],
+        "db_outcome_canonical_digest": "sha256:9823a5e2daf1739626791cf13ec06af6051fe526e1207f75ac342137a8200f13",
+        "digest_matches_projection": true,
+        "fetched_bytes": 1559315,
+        "fetched_sha256": "sha256:5e9023e730d3bd49184cfdab123d00b86478f57327b1eeb33edcb22eab424744",
+        "png": {
+          "height": 1024,
+          "width": 1024
+        },
+        "projected_artifact_digest": "sha256:5e9023e730d3bd49184cfdab123d00b86478f57327b1eeb33edcb22eab424744"
+      },
+      "artifact_verify_epoch": "fc5f7a80b2a54665b7e520c31435f1aa",
+      "artifact_verify_verdict": "PASS",
+      "assertions": {
+        "automatic_reconnect_observed": true,
+        "desktop_reconnected": true,
+        "durable_row_present_after_restart": true,
+        "generation_reached_projected_terminal": true,
+        "manual_reconnect_required": false,
+        "no_automatic_resubmission": false,
+        "outcome_present": true,
+        "provider_receipt_durable": true
+      },
+      "automatic_reconnect_observed": true,
+      "captured_at": {
+        "finished": "2026-11-10T08:37:02+0900",
+        "started": "2026-11-10T08:34:47+0900"
+      },
+      "comfy_after_restart": {
+        "history_completed": true,
+        "history_present": true,
+        "history_status": "success",
+        "output_image_count": 1,
+        "output_keys": [
+          "9"
+        ],
+        "prompt_id": "431ab9be-f0f8-40c5-8964-7621b0272b1f",
+        "queue_pending": false,
+        "queue_pending_count": 0,
+        "queue_running": false,
+        "queue_running_count": 0
+      },
+      "comfy_before_stop": {
+        "history_present": false,
+        "prompt_id": "431ab9be-f0f8-40c5-8964-7621b0272b1f",
+        "queue_pending": false,
+        "queue_pending_count": 0,
+        "queue_running": true,
+        "queue_running_count": 1
+      },
+      "db_task_status": "COMPLETED",
+      "desktop_task_projection": {
+        "inner_phase": "RUNNING",
+        "iteration_index": 0,
+        "projection_revision": 2,
+        "task_ref": "task-bf345805d5f243c1b715dbe29a24097f",
+        "task_status": "COMPLETED"
+      },
+      "epoch_after": "05a4b5d699a344f6a1233c4d9036be48",
+      "epoch_before": "97263b592d3344428b033c084cfb00df",
+      "goal": "ACC1-NATIVE-RESTART 20261110-083447 production still",
+      "manual_reconnect": null,
+      "manual_reconnect_required": false,
+      "outcome": {
+        "canonical_digest": "sha256:9823a5e2daf1739626791cf13ec06af6051fe526e1207f75ac342137a8200f13",
+        "created_at": "2026-11-09T23:36:59.108274+00:00",
+        "outcome": "COMPLETED",
+        "stop_reason": "SUCCESS_ACCEPT",
+        "task_id": "task-bf345805d5f243c1b715dbe29a24097f"
+      },
+      "post_terminal_uia": null,
+      "provider_identity": null,
+      "record_verdict": "PASS",
+      "run": "run1",
+      "runtime_restart": {
+        "at": "2026-11-10T08:36:32+0900",
+        "endpoint": "http://127.0.0.1:8132",
+        "epoch": "05a4b5d699a344f6a1233c4d9036be48",
+        "pid": 44020,
+        "ready": {
+          "document": {
+            "status": "ready"
+          },
+          "status": 200
+        }
+      },
+      "runtime_stop": {
+        "at": "2026-11-10T08:36:03+0900",
+        "discovery_present": false,
+        "port_free": true,
+        "result": {
+          "clean": true,
+          "exit": 0,
+          "pid": 55772
+        },
+        "seconds": 10.59
+      },
+      "task_ref": "task-bf345805d5f243c1b715dbe29a24097f",
+      "terminal_ui_observed": null
+    },
+    "run2_provider_failed": {
+      "artifact_verification": null,
+      "artifact_verify_epoch": null,
+      "artifact_verify_verdict": null,
+      "assertions": {
+        "automatic_reconnect_observed": true,
+        "desktop_reconnected": true,
+        "durable_row_present_after_restart": true,
+        "generation_reached_projected_terminal": false,
+        "manual_reconnect_required": false,
+        "no_duplicate_provider_submission": true,
+        "outcome_present": false,
+        "provider_receipt_durable": true,
+        "provider_receipt_identity_unchanged": true,
+        "terminal_state_rendered_in_same_process": false
+      },
+      "automatic_reconnect_observed": true,
+      "captured_at": {
+        "finished": "2026-11-10T08:55:24+0900",
+        "started": "2026-11-10T08:52:11+0900"
+      },
+      "comfy_after_restart": {
+        "history_completed": false,
+        "history_present": true,
+        "history_status": "error",
+        "output_image_count": 0,
+        "output_keys": [],
+        "prompt_id": "98c48660-8301-4885-bdf4-a937c0625d37",
+        "queue_pending": false,
+        "queue_pending_count": 0,
+        "queue_running": false,
+        "queue_running_count": 0
+      },
+      "comfy_before_stop": {
+        "history_completed": false,
+        "history_present": true,
+        "history_status": "error",
+        "output_image_count": 0,
+        "output_keys": [],
+        "prompt_id": "98c48660-8301-4885-bdf4-a937c0625d37",
+        "queue_pending": false,
+        "queue_pending_count": 0,
+        "queue_running": false,
+        "queue_running_count": 0
+      },
+      "db_task_status": "ACTIVE",
+      "desktop_task_projection": {
+        "inner_phase": "RUNNING",
+        "iteration_index": 0,
+        "projection_revision": 44,
+        "task_ref": "task-d337e917a2d84a6399ea759bb5a39108",
+        "task_status": "ACTIVE"
+      },
+      "epoch_after": "666734eea22645e4adee36ef72db4605",
+      "epoch_before": "020c3b2be3734d82a3b6aba1c17636ab",
+      "goal": "ACC1-NATIVE-RESTART 20261110-085211 production still",
+      "manual_reconnect": null,
+      "manual_reconnect_required": false,
+      "outcome": null,
+      "post_terminal_uia": "2026-11-10T08:55:20+0900",
+      "provider_identity": {
+        "attempt_ids_after": [
+          "attempt-cos-task-d337e917a2d84a6399ea759bb5a39108-i0"
+        ],
+        "attempt_suffix_resubmission": [],
+        "duplicate_submission": false,
+        "note": "duplicate submission is measured from durable receipt identity (receipt/prompt/attempt/run rows), not from a terminal verdict; the round-2 'no_automatic_resubmission' key meant 'not terminal' and is not used as a duplicate-submission claim",
+        "prompt_ids_after": [
+          "98c48660-8301-4885-bdf4-a937c0625d37"
+        ],
+        "prompt_ids_before": [
+          "98c48660-8301-4885-bdf4-a937c0625d37"
+        ],
+        "receipt_identity_unchanged": true,
+        "receipt_ids_after": [
+          38
+        ],
+        "receipt_ids_before": [
+          38
+        ],
+        "runs_after": 1
+      },
+      "record_verdict": "PARTIAL",
+      "run": "run2",
+      "runtime_restart": {
+        "at": "2026-11-10T08:53:12+0900",
+        "endpoint": "http://127.0.0.1:8132",
+        "epoch": "666734eea22645e4adee36ef72db4605",
+        "pid": 54236,
+        "ready": {
+          "document": {
+            "status": "ready"
+          },
+          "status": 200
+        }
+      },
+      "runtime_stop": {
+        "at": "2026-11-10T08:52:57+0900",
+        "discovery_present": false,
+        "port_free": true,
+        "result": {
+          "clean": true,
+          "exit": 0,
+          "pid": 58020
+        },
+        "seconds": 0.46
+      },
+      "task_ref": "task-d337e917a2d84a6399ea759bb5a39108",
+      "terminal_ui_observed": false
+    },
+    "run3_instrumented_harness": {
+      "artifact_verification": {
+        "db_blob_rows": [
+          {
+            "blob_id": "blob-v1-99247d55-a724-4f81-8dae-5574102481b6",
+            "content_digest": "sha256:22c17612291e5762b0e45430d71bdebd2057ca9bc7c7a4cc373027503ae8c087",
+            "created_at": "2026-11-10 00:06:10",
+            "length": 1510802,
+            "manifest_digest": "sha256:ec009d82e7922b2c25fff2a4f5cedfe4d316c9a57f3f9f9ba8cb65b7fd18637e",
+            "media_type": "image/png"
+          }
+        ],
+        "db_outcome_canonical_digest": "sha256:85e0d1b78f2a77f9e192842e500b0eed32946b1bcf2f765f693cdf9f7efe765a",
+        "digest_matches_projection": true,
+        "fetched_bytes": 1510802,
+        "fetched_sha256": "sha256:22c17612291e5762b0e45430d71bdebd2057ca9bc7c7a4cc373027503ae8c087",
+        "png": {
+          "height": 1024,
+          "width": 1024
+        },
+        "projected_artifact_digest": "sha256:22c17612291e5762b0e45430d71bdebd2057ca9bc7c7a4cc373027503ae8c087"
+      },
+      "artifact_verify_epoch": "c8597470a3ea48ba900caa910b7000e4",
+      "artifact_verify_verdict": "PASS",
+      "assertions": {
+        "automatic_reconnect_observed": true,
+        "desktop_reconnected": true,
+        "durable_row_present_after_restart": true,
+        "generation_reached_projected_terminal": true,
+        "manual_reconnect_required": false,
+        "no_duplicate_provider_submission": true,
+        "outcome_present": true,
+        "provider_receipt_durable": true,
+        "provider_receipt_identity_unchanged": true,
+        "terminal_state_rendered_in_same_process": true
+      },
+      "automatic_reconnect_observed": true,
+      "captured_at": {
+        "finished": "2026-11-10T09:06:24+0900",
+        "started": "2026-11-10T09:04:27+0900"
+      },
+      "comfy_after_restart": {
+        "history_completed": true,
+        "history_present": true,
+        "history_status": "success",
+        "output_image_count": 1,
+        "output_keys": [
+          "9"
+        ],
+        "prompt_id": "44813e64-ff14-4943-bbb4-b154952d37ec",
+        "queue_pending": false,
+        "queue_pending_count": 0,
+        "queue_running": false,
+        "queue_running_count": 0
+      },
+      "comfy_before_stop": {
+        "history_present": false,
+        "prompt_id": "44813e64-ff14-4943-bbb4-b154952d37ec",
+        "queue_pending": false,
+        "queue_pending_count": 0,
+        "queue_running": true,
+        "queue_running_count": 1
+      },
+      "db_task_status": "COMPLETED",
+      "desktop_task_projection": {
+        "inner_phase": "RUNNING",
+        "iteration_index": 0,
+        "projection_revision": 2,
+        "task_ref": "task-f3b3498669a44cfaa9650d18d2d2362d",
+        "task_status": "COMPLETED"
+      },
+      "epoch_after": "d359d1d5fd554622a51974ef8f64e6a3",
+      "epoch_before": "85fa9fed8c3d4428bd8eecd6647b1f3d",
+      "goal": "ACC1-NATIVE-RESTART 20261110-090427 production still",
+      "manual_reconnect": null,
+      "manual_reconnect_required": false,
+      "outcome": {
+        "canonical_digest": "sha256:85e0d1b78f2a77f9e192842e500b0eed32946b1bcf2f765f693cdf9f7efe765a",
+        "created_at": "2026-11-10T00:06:10.533627+00:00",
+        "outcome": "COMPLETED",
+        "stop_reason": "SUCCESS_ACCEPT",
+        "task_id": "task-f3b3498669a44cfaa9650d18d2d2362d"
+      },
+      "post_terminal_uia": "2026-11-10T09:06:20+0900",
+      "provider_identity": {
+        "attempt_ids_after": [
+          "attempt-cos-task-f3b3498669a44cfaa9650d18d2d2362d-i0"
+        ],
+        "attempt_suffix_resubmission": [],
+        "duplicate_submission": false,
+        "note": "duplicate submission is measured from durable receipt identity (receipt/prompt/attempt/run rows), not from a terminal verdict; the round-2 'no_automatic_resubmission' key meant 'not terminal' and is not used as a duplicate-submission claim",
+        "prompt_ids_after": [
+          "44813e64-ff14-4943-bbb4-b154952d37ec"
+        ],
+        "prompt_ids_before": [
+          "44813e64-ff14-4943-bbb4-b154952d37ec"
+        ],
+        "receipt_identity_unchanged": true,
+        "receipt_ids_after": [
+          38
+        ],
+        "receipt_ids_before": [
+          38
+        ],
+        "runs_after": 1
+      },
+      "record_verdict": "PASS",
+      "run": "run3",
+      "runtime_restart": {
+        "at": "2026-11-10T09:05:54+0900",
+        "endpoint": "http://127.0.0.1:8132",
+        "epoch": "d359d1d5fd554622a51974ef8f64e6a3",
+        "pid": 56108,
+        "ready": {
+          "document": {
+            "status": "ready"
+          },
+          "status": 200
+        }
+      },
+      "runtime_stop": {
+        "at": "2026-11-10T09:05:27+0900",
+        "discovery_present": false,
+        "port_free": true,
+        "result": {
+          "clean": true,
+          "exit": 0,
+          "pid": 58120
+        },
+        "seconds": 10.6
+      },
+      "task_ref": "task-f3b3498669a44cfaa9650d18d2d2362d",
+      "terminal_ui_observed": true
+    }
+  },
+  "verdict_basis": "(a) the same Desktop process auto-recovered in all three runs; (b) the durable ACTIVE generation was mid-flight in run1/run3 and reached a projected COMPLETED/SUCCESS_ACCEPT with a servable digest-matching artifact; (c) durable provider identity was unchanged in every run; (d) only the two expected 401s per restart window and no 409/5xx. Run2 is recorded as PARTIAL because ComfyUI failed the generation (aimdo hostbuf / WinError 1450) before the Runtime stop, so there was no in-flight provider work to survive; its Desktop reconnect and duplicate-submission checks still passed."
+}

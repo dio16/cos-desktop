@@ -1,0 +1,96 @@
+{
+  "desktop": {
+    "binary": {
+      "bytes": 21214720,
+      "path": "C:/dev/cos-desktop/target/acc1-restart-survival-head-target/release/cos-desktop.exe",
+      "sha256": "sha256:2163a79371c17c1d7ab099f8d78db6f32f9635ce241d0ac70de714ae332ab1b9"
+    },
+    "build_command": "CARGO_TARGET_DIR=C:/dev/cos-desktop/target/acc1-restart-survival-head-target cargo build --locked --release -p cos-desktop --bin cos-desktop",
+    "build_source": {
+      "clean_worktree": true,
+      "head": "cf235cb53602a72aa8afacd05412cf8573fe01f5",
+      "method": "git worktree add --detach target/acc1-restart-survival-head cf235cb",
+      "tree": "03efdeddaf0b85b9cb1341a7f3301f2d1f00d476"
+    },
+    "build_target_dir": "C:/dev/cos-desktop/target/acc1-restart-survival-head-target",
+    "commits_under_test": [
+      "d9f06da",
+      "f90f0c5",
+      "cf235cb"
+    ],
+    "dev_head_advance_during_campaign": {
+      "content": "docs-only commit 63bbeee; `git diff --stat cf235cb 63bbeee` touches only docs/development/IMPLEMENTATION_MASTER_PLAN.md and IMPLEMENTATION_STATUS_AUDIT.md",
+      "head": "63bbeee2b0b14480725804c74d8e5b41ce32d413"
+    },
+    "dev_head_at_aggregation": "63bbeee2b0b14480725804c74d8e5b41ce32d413",
+    "dev_tree": "1fe684b708a69d3d1f60faf48b67cac7d7509a9c",
+    "first_build_attempt": "failed in vswhom-sys cc-rs (C1083 opening a TEMP intermediary, Permission denied); retried with TEMP/TMP inside the workspace and succeeded in 3m07s. No source change.",
+    "repository": "C:/dev/cos-desktop",
+    "toolchain": {
+      "cargo": "1.98.1 (797e8a9bc 2026-08-05)",
+      "rustc": "1.98.1 (48a229cea 2026-09-01)"
+    }
+  },
+  "evidence": {
+    "comfyui_raw_log": "C:/dev/cos-desktop/target/acc1-restart-survival-comfyui.log",
+    "dir": "C:\\dev\\cos-desktop\\docs\\development\\evidence-published\\acc1-restart-survival-latest",
+    "raw_runs_gitignored_under": "C:/dev/cos-desktop/target/acc1-native/",
+    "runs": [
+      "run1 20261110T083447",
+      "run2 20261110T085211",
+      "run3 20261110T090427"
+    ]
+  },
+  "generation_plane": {
+    "argv": [
+      "ComfyUI\\main.py",
+      "--windows-standalone-build",
+      "--lowvram",
+      "--reserve-vram",
+      "1.5",
+      "--cache-lru",
+      "10",
+      "--preview-method",
+      "taesd",
+      "--use-pytorch-cross-attention"
+    ],
+    "comfy_aimdo": "0.6.0",
+    "comfy_kitchen": "0.2.41",
+    "comfyui_git": "fca60fe70e5b84c5c6b058263653d15cb3401e44",
+    "comfyui_root": "C:/AI/ComfyUI/ComfyUI_windows_portable",
+    "comfyui_version": "0.44.0",
+    "final_state": "stopped; no 8188 listener",
+    "provider_reset": "stopped after the run2 provider error and restarted 2026-11-10T09:02:26+09:00 with the same documented flags",
+    "start": "2026-11-10T08:26:05+09:00 (run_8gb.bat, prior state stopped)"
+  },
+  "harness": {
+    "native_pinned": "target/acc1-round2-pinned/run_acc1_native.py",
+    "native_pinned_sha256": "sha256:186ed66794c72bbdc8f755db5ef9c3acaa2d6991ba7303881db713c669cb1431",
+    "runner": "apps/desktop/devtools/runtime_integration/run_acc1_round2.py",
+    "runner_bytes": 55100,
+    "runner_sha256": "sha256:d6c1e21588482ad6a7f0c048611a694f36a8e6ccd9befc137b339f86a41cccf4",
+    "supplement": "apps/desktop/devtools/runtime_integration/verify_restart_survival.py",
+    "supplement_bytes": 18134,
+    "supplement_sha256": "sha256:e378609a8ca905fe12ce9d588ec8338b3f60416f8b3969dce0f7413b554cefb9"
+  },
+  "measured_at": "2026-11-10T09:17:00+0900",
+  "ports": {
+    "comfyui": 8188,
+    "injections": 8133,
+    "main": 8132
+  },
+  "runtime": {
+    "dirty_paths_excluded": [
+      "orchestrator/docs/guides/development-loop.md",
+      "orchestrator/orchestrator_app/dev_caller.py",
+      "orchestrator/tests/test_dev_caller.py",
+      "orchestrator/tests/test_dev_caller_e2e.py",
+      "orchestrator/devplan/plan-draft.json"
+    ],
+    "head": "7d96fdeea5df4ffb8635b3d34f29f6dec5dd5bab",
+    "head_note": "7d96fdee is the 08:09 amend of 068c18ca; `git diff 068c18ca 7d96fdee` touches only orchestrator/docs/architecture/cos-runtime.md and the evidence README (no product code)",
+    "note": "unrelated working-tree changes were not used or touched; the isolated Runtime imports the committed orchestrator_app package from this checkout",
+    "python": "C:/AI/orchestrator/.venv/Scripts/python.exe",
+    "repository": "C:/AI/orchestrator (toplevel C:/AI)"
+  }
+}
