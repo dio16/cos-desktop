@@ -431,7 +431,8 @@ if ($hwnd -eq [IntPtr]::Zero) {
         $map = @{ 'end' = 0x23; 'home' = 0x24; 'left' = 0x25; 'up' = 0x26;
                   'right' = 0x27; 'down' = 0x28; 'enter' = 0x0D; 'space' = 0x20;
                   'escape' = 0x1B; 'tab' = 0x09; 'pagedown' = 0x22; 'pageup' = 0x21;
-                  'k' = 0x4B; 'a' = 0x41 }
+                  'backspace' = 0x08; 'delete' = 0x2E;
+                  'k' = 0x4B; 'a' = 0x41; '1' = 0x31; '2' = 0x32; '3' = 0x33 }
         $parts = $Text.ToLower().Split('+')
         $key_name = $parts[$parts.Length - 1]
         $vk = $map[$key_name]

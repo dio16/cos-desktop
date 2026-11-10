@@ -1320,6 +1320,25 @@ class Ctx:
                 return projection
         return {}
 
+    def projection_candidates(self, task_ref: str) -> list[dict]:
+        """Current CANDIDATE projections for one task (dock scope expectation)."""
+        response = self.runtime.open_observation(self.token)
+        document = response.get("document") or {}
+        candidates: dict[str, dict] = {}
+        for mutation in acc1.snapshot_mutations(document):
+            projection = mutation.get("projection") or {}
+            if projection.get("projection") != "CANDIDATE":
+                continue
+            if str(projection.get("task_ref") or "") != task_ref:
+                continue
+            reference = projection.get("candidate_ref") or {}
+            candidates[json.dumps(reference, sort_keys=True)] = {
+                "candidate_ref": reference,
+                "iteration_ref": projection.get("iteration_ref"),
+                "display_label": projection.get("display_label"),
+            }
+        return list(candidates.values())
+
     def resolve_artifact(self, task_ref: str) -> dict:
         response = self.runtime.open_observation(self.token)
         document = response.get("document") or {}
@@ -1765,6 +1784,304 @@ def scenario_artifact(args: argparse.Namespace) -> dict:
         record["not_measured"] = [
             "Start / Next Iteration (DD-25 command semantics remain blocked)",
             "generation in this session (the measured run's artifact is reused)"]
+        return record
+    finally:
+        ctx.cleanup()
+        record["_secrets"] = list(ctx.collect)
+        record["finished_at"] = now_iso()
+
+
+# --------------------------------------------------------------- dock scoping helpers
+
+
+DOCK_ROW_MARKER = " — 第"
+COMPARE_SURFACE_MARKER = "作業領域："
+
+
+def dock_rows(ui: Ui) -> list[str]:
+    """Candidate rows currently in the UIA tree (iteration headers are not rows)."""
+    names = list(ui.dump().get("names") or [])
+    return [line for line in names
+            if DOCK_ROW_MARKER in line and "反復回数" not in line]
+
+
+def dock_row_task(label: str) -> str:
+    """The task identity a dock row names (the row starts with it)."""
+    return label.split(" ", 1)[0]
+
+
+def candidate_task_from_element_id(element_id: str) -> str:
+    """Task identity encoded in a candidate row's collision-free element id."""
+    prefix = "candidate:"
+    if not element_id.startswith(prefix):
+        return ""
+    length_text, separator, rest = element_id[len(prefix):].partition(":")
+    if not separator or not length_text.isdigit():
+        return ""
+    return rest[: int(length_text)]
+
+
+def wait_dock_rows(ui: Ui, task_ref: str, minimum: int, timeout: float) -> list[str]:
+    """Wait for at least ``minimum`` candidate rows that name ``task_ref``."""
+    deadline = time.monotonic() + timeout
+    rows = dock_rows(ui)
+    while time.monotonic() < deadline:
+        if len([row for row in rows if dock_row_task(row) == task_ref]) >= minimum:
+            return rows
+        time.sleep(0.75)
+        rows = dock_rows(ui)
+    return rows
+
+
+def clear_rail_query(ui: Ui) -> dict:
+    """Clear the rail query with the documented backspace binding.
+
+    Ctrl+A is a *custom* rail action here, but posting VK_A with the control
+    modifier also inserts a literal ``a`` in this GPUI build, so the replacement
+    path cannot rely on select-all. Backspace is a plain deletion.
+    """
+    click = ui.click("タスクを検索")
+    before = str((ui.valueread("タスクを検索") or {}).get("value") or "")
+    sent = 0
+    for _ in range(3):
+        current = str((ui.valueread("タスクを検索") or {}).get("value") or "")
+        if not current:
+            break
+        for _ in range(len(current) + 1):
+            ui.probe("key", text="backspace")
+            sent += 1
+        time.sleep(0.2)
+    after = str((ui.valueread("タスクを検索") or {}).get("value") or "")
+    return {"click": click, "before": before, "after": after,
+            "backspaces": sent, "cleared": not after}
+
+
+def replace_rail_query(ctx: Ctx, title: str) -> dict:
+    """Replace (not append to) the rail query: WM_CHAR typing appends."""
+    assert ctx.app is not None and ctx.app.ui is not None
+    ui = ctx.app.ui
+    cleared = clear_rail_query(ui)
+    typed = ui.type_text("タスクを検索", title)
+    value = str(typed.get("value_after") or "")
+    return {"clear": cleared, "typed": typed, "value_after": value,
+            "replaced": value == title}
+
+
+def select_task_with_query(ctx: Ctx, title: str, label: str, task_ref: str) -> dict:
+    """Filter the rail by title (replacing the previous query) and select it."""
+    assert ctx.app is not None and ctx.app.ui is not None
+    ui = ctx.app.ui
+    rail = replace_rail_query(ctx, title)
+    _, _, filtered = ui.wait_contains(title, 30.0, "rail-filtered")
+    invoked = ui.invoke(title)
+    method = "uia_invoke"
+    if not invoked.get("invoked"):
+        invoked = ui.click(title)
+        method = "synthetic_wm_lbutton_at_rail_row"
+    dump, _, selected = ui.wait_names(
+        lambda value: f"目的 — 利用可能: {task_ref}" in value, 20.0, "task-selected")
+    return {"rail": rail, "filter_visible": filtered, "invoke": invoked,
+            "method": method, "selected": selected,
+            "uia_sha256": dump.get("_names_sha256"),
+            "uia": uia_snapshot(ui, label)}
+
+
+def compare_pane_state(ui: Ui, timeout: float = 45.0) -> dict:
+    """Settle on a pane's admitted media or its explicit refusal/blocked state."""
+    deadline = time.monotonic() + timeout
+    state = {"state": "PENDING", "displayed": [], "reasons": [], "blocked": [],
+             "pending": []}
+    while time.monotonic() < deadline:
+        names = list(ui.dump().get("names") or [])
+        displayed = [line for line in names if MEDIA_DISPLAYED_MARKER in line]
+        reasons = [line for line in names if MEDIA_UNAVAILABLE_MARKER in line]
+        blocked = [line for line in names if CAPABILITY_BLOCKED_MARKER in line]
+        pending = [line for line in names if "まだ表示されていません" in line]
+        state.update({"displayed": displayed[:6], "reasons": reasons[:6],
+                      "blocked": blocked[:6], "pending": pending[:6]})
+        if displayed:
+            state["state"] = "DISPLAYED"
+            return state
+        if reasons:
+            state["state"] = "REFUSED"
+            return state
+        if blocked:
+            state["state"] = "BLOCKED"
+            return state
+        time.sleep(1.5)
+    return state
+
+
+def scenario_dock_scope(args: argparse.Namespace) -> dict:
+    """Dock task scoping and Compare pair admission on the reused DB/CAS.
+
+    Two projections are selected in one session: a task with two candidates and a
+    task with one. The first measures that a pair only ever names that task's two
+    candidates; the second measures that the other task's rows are not rendered at
+    all and Compare is refused for the single-candidate task.
+    """
+    ctx = Ctx("dock-scope", PORT_MAIN, source_run=Path(args.source_run))
+    record = ctx.record
+    one_ref = args.task_ref
+    two_ref = args.second_task_ref
+    record["source_run"] = str(args.source_run)
+    record["task_refs"] = {"one_candidate": one_ref, "two_candidate": two_ref}
+    record["measurement_split"] = (
+        "follow-up session on the measured run's DB/CAS; no generation. The candidate"
+        " dock's task scoping and Compare pair admission are measured under a fresh"
+        " serving epoch.")
+    try:
+        ctx.start_runtime(wait_generation=False)
+        one_task = ctx.projection_task(one_ref)
+        two_task = ctx.projection_task(two_ref)
+        one_title = str(one_task.get("title") or "")
+        two_title = str(two_task.get("title") or "")
+        one_candidates = ctx.projection_candidates(one_ref)
+        two_candidates = ctx.projection_candidates(two_ref)
+        record["projection"] = {
+            "one_candidate_task": {
+                "task_ref": one_ref, "title": one_title,
+                "candidate_count": len(one_candidates),
+                "labels": [item.get("display_label") for item in one_candidates],
+            },
+            "two_candidate_task": {
+                "task_ref": two_ref, "title": two_title,
+                "candidate_count": len(two_candidates),
+                "labels": [item.get("display_label") for item in two_candidates],
+                "iteration_refs": sorted({str(item.get("iteration_ref"))
+                                          for item in two_candidates}),
+            },
+        }
+        projection_ok = (
+            bool(one_title) and bool(two_title)
+            and len(one_candidates) == 1 and len(two_candidates) >= 2)
+        record["projection_ok"] = projection_ok
+        if not projection_ok:
+            record["verdict"] = "NOT_RUN"
+            record["residuals"].append(
+                "the reused DB does not carry the expected one-/two-candidate tasks")
+            return record
+        ctx.launch_desktop("dock-scope")
+        ui = ctx.app.ui
+        assert ui is not None
+
+        # --- two-candidate task: the dock and pair are that task's alone ---------
+        two_step = select_task_with_query(ctx, two_title, "dock-scope-two-selected", two_ref)
+        record["steps"]["two_candidate_selected"] = two_step
+        if not two_step.get("selected"):
+            record["verdict"] = "PARTIAL"
+            record["residuals"].append("the two-candidate task was not selected in the rail")
+            return record
+        rows_two = wait_dock_rows(ui, two_ref, 2, 30.0)
+        scoped_two = [row for row in rows_two if dock_row_task(row) == two_ref]
+        foreign_two = [row for row in rows_two if dock_row_task(row) != two_ref]
+        two_step["dock"] = {
+            "rows": rows_two, "scoped_count": len(scoped_two),
+            "foreign_rows": foreign_two, "foreign_count": len(foreign_two),
+            "uia": uia_snapshot(ui, "dock-scope-two"),
+        }
+        selections: list[dict] = []
+        distinct = list(dict.fromkeys(scoped_two))
+        if len(distinct) >= 2:
+            for index, label in enumerate(distinct[:2]):
+                invoked = ui.invoke(label)
+                method = "uia_invoke_dock_row"
+                if not invoked.get("invoked"):
+                    invoked = ui.click(label)
+                    method = "synthetic_wm_lbutton_at_uia_bounds"
+                time.sleep(1.5)
+                selections.append({
+                    "label": label, "method": method, "result": invoked,
+                    "paired_task_ref": candidate_task_from_element_id(
+                        str(invoked.get("matched_id") or "")),
+                })
+        two_step["pair_selection"] = selections
+        _, _, compare_open = ui.wait_names(
+            lambda value: COMPARE_SURFACE_MARKER in value and "候補を比較" in value,
+            20.0, "compare-open")
+        two_step["compare_surface_open"] = compare_open
+        two_step["pane"] = compare_pane_state(ui, 30.0)
+        dump = ui.dump()
+        two_names = list(dump.get("names") or [])
+        two_step["pair_lines"] = [line for line in two_names
+                                  if "A側" in line or "B側" in line or "比較対象" in line][:20]
+        two_step["uia"] = uia_snapshot(ui, "dock-scope-two-compare")
+        two_step["pair_same_task"] = (
+            len(selections) == 2 and all(
+                selection["paired_task_ref"] == two_ref for selection in selections))
+        two_step["verdict"] = "PASS" if (
+            not foreign_two and len(scoped_two) >= 2
+            and two_step["pair_same_task"] and compare_open) else "PARTIAL"
+        if two_step["verdict"] != "PASS":
+            record["residuals"].append(
+                "the two-candidate task's dock/pair did not stay inside the selected task")
+        close_compare = ui.invoke("比較を閉じる")
+        if not close_compare.get("invoked"):
+            close_compare = ui.click("比較を閉じる")
+        back = ui.invoke("成果物  Ctrl+1")
+        if not back.get("invoked"):
+            back = ui.click("成果物  Ctrl+1")
+        two_step["close"] = {"close_compare": close_compare, "back": back}
+        time.sleep(1.5)
+
+        # --- one-candidate task: no other task's row, Compare refused -----------
+        one_step = select_task_with_query(ctx, one_title, "dock-scope-one-selected", one_ref)
+        record["steps"]["one_candidate_selected"] = one_step
+        if not one_step.get("selected"):
+            record["verdict"] = "PARTIAL"
+            record["residuals"].append("the one-candidate task was not selected in the rail")
+            return record
+        rows_one = wait_dock_rows(ui, one_ref, 1, 30.0)
+        scoped_one = [row for row in rows_one if dock_row_task(row) == one_ref]
+        foreign_one = [row for row in rows_one if dock_row_task(row) != one_ref]
+        one_step["dock"] = {
+            "rows": rows_one, "scoped_count": len(scoped_one),
+            "foreign_rows": foreign_one, "foreign_count": len(foreign_one),
+            "uia": uia_snapshot(ui, "dock-scope-one"),
+        }
+        # The other task's row must not be reachable, whatever its label suffix was.
+        foreign_probe = f"{two_ref} — 第0回"
+        foreign_invoke = ui.invoke(foreign_probe)
+        foreign_absent = (
+            not foreign_invoke.get("invoked")
+            and str(foreign_invoke.get("error") or "") == "match_not_found")
+        one_step["foreign_row_probe"] = {
+            "name": foreign_probe, "row_absent": foreign_absent,
+            "result": foreign_invoke}
+        # With one candidate the switcher states why Compare is closed and the
+        # disabled button has no invoke action left.
+        names = list(ui.dump().get("names") or [])
+        one_step["compare_switch_label"] = next(
+            (line for line in names if "候補を2つ選ぶ必要があります" in line), "")
+        switch_invoke = ui.invoke("候補を比較  Ctrl+2")
+        ui.probe("key", text="ctrl+2")
+        time.sleep(1.5)
+        names_after = list(ui.dump().get("names") or [])
+        compare_open_after = any(
+            COMPARE_SURFACE_MARKER in line and "候補を比較" in line
+            for line in names_after)
+        reason_lines = [line for line in names_after
+                        if "候補が2件" in line or "比較は利用できません" in line][:8]
+        one_step["compare_refusal"] = {
+            "switch_invoke": switch_invoke,
+            "surface_open": compare_open_after,
+            "reason_lines": reason_lines,
+            "uia": uia_snapshot(ui, "dock-scope-one-compare-refused"),
+        }
+        one_step["verdict"] = "PASS" if (
+            bool(scoped_one) and len(scoped_one) == 1 and not foreign_one
+            and foreign_absent
+            and not compare_open_after
+            and bool(one_step["compare_switch_label"])) else "PARTIAL"
+        if one_step["verdict"] != "PASS":
+            record["residuals"].append(
+                "the one-candidate task did not keep the dock and Compare scoped")
+        record["verdict"] = "PASS" if (
+            two_step["verdict"] == "PASS" and one_step["verdict"] == "PASS") else "PARTIAL"
+        record["not_measured"] = [
+            "generation in this session (the measured run's candidates are reused)",
+            "both Compare panes displaying pixels (the two-candidate task reuses one"
+            " artifact digest whose blob is not in the isolated CAS copy)"]
         return record
     finally:
         ctx.cleanup()
@@ -2672,7 +2989,8 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--scenario", action="append",
                         choices=("golden", "receipt", "stop", "revoke", "missing-media",
-                                 "artifact", "missing-media-reload", "stop-active"),
+                                 "artifact", "missing-media-reload", "stop-active",
+                                 "dock-scope"),
                         help="scenario to run (repeatable; default: golden)")
     parser.add_argument("--evidence-dir", default=str(EVIDENCE_DIR))
     parser.add_argument("--desktop-exe", default="",
@@ -2682,14 +3000,18 @@ def main(argv: list[str] | None = None) -> int:
                         help="reuse this measured run's isolated DB copy and CAS")
     parser.add_argument("--task-ref", default="",
                         help="task identity inside the reused DB for artifact/stop variants")
+    parser.add_argument("--second-task-ref", default="",
+                        help="second task identity for the dock-scope variant")
     parser.add_argument("--port", type=int, default=PORT_MAIN,
                         help="isolated Runtime main port (default 8132)")
     parser.add_argument("--no-build", action="store_true")
     args = parser.parse_args(argv)
     if args.scenario and set(args.scenario) & {"artifact", "missing-media-reload",
-                                               "stop-active"}:
+                                               "stop-active", "dock-scope"}:
         if not args.source_run or not args.task_ref:
             raise SystemExit("--source-run and --task-ref are required for the reuse variants")
+        if "dock-scope" in args.scenario and not args.second_task_ref:
+            raise SystemExit("--second-task-ref is required for the dock-scope variant")
     global_port = int(args.port)
     PORT_MAIN = global_port
     if args.desktop_exe:
@@ -2753,6 +3075,8 @@ def main(argv: list[str] | None = None) -> int:
                 run = scenario_artifact(args)
             elif name == "missing-media-reload":
                 run = scenario_missing_media_reload(args)
+            elif name == "dock-scope":
+                run = scenario_dock_scope(args)
             elif name == "revoke":
                 run = scenario_revoke(args)
             else:
