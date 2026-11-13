@@ -122,6 +122,15 @@ pub const CATALOG_PATH: &str = "/api/cos/desktop/catalog";
 /// handshake-class budget.
 const CATALOG_FETCH_TIMEOUT: Duration = Duration::from_secs(3);
 
+/// Maximum time one history read may block its calling (owner) thread.
+///
+/// The exchange itself runs on the transport worker; this bound limits only the
+/// caller's wait. It is deliberately the catalog read's class: the observation
+/// owner is single-threaded and must not stall for a network-scale budget. A
+/// page that cannot be served inside it is an explicit `Unavailable` the user
+/// may reload, never an unbounded owner stall.
+const HISTORY_FETCH_TIMEOUT: Duration = Duration::from_secs(3);
+
 /// Authenticated Desktop catalog document.
 ///
 /// Mirrors the Runtime `{schema_version, server, catalog}` wrapper and the
@@ -353,12 +362,36 @@ fn authorize(config: &ProtocolTransportConfig, headers: &mut Vec<(String, String
     if !is_protocol_route(path) {
         return;
     }
-    let token = match &config.credential_slot {
+    if let Some(token) = credential_value(config) {
+        headers.push(("authorization".to_owned(), format!("Bearer {token}")));
+    }
+}
+
+/// Credential the next protocol request would present, if any.
+///
+/// The mutable slot is authoritative when configured; the startup value is only the
+/// fallback for a transport that never received one.
+fn credential_value(config: &ProtocolTransportConfig) -> Option<String> {
+    match &config.credential_slot {
         Some(slot) => slot.lock().ok().and_then(|value| value.clone()),
         None => config.bearer_token.clone(),
-    };
-    if let Some(token) = token {
-        headers.push(("authorization".to_owned(), format!("Bearer {token}")));
+    }
+}
+
+/// Close the shared publication when a bounded reauthorization replaced the credential.
+///
+/// The replacement is an authentication-context change detected at the adapter
+/// boundary: the publication is closed before this exchange's result is delivered, so
+/// no consumer receives it under the previous context. The client's own bounded
+/// recovery then re-observes with the replacement credential and a fresh grant.
+fn note_credential_change(state: &mut Shared, config: &ProtocolTransportConfig) {
+    let current = credential_value(config);
+    if state.last_credential == current {
+        return;
+    }
+    state.last_credential = current;
+    if let Some(control) = state.control.clone() {
+        (control.close_visibility)();
     }
 }
 
@@ -517,6 +550,11 @@ impl<E: ProtocolHttp + 'static> ProtocolTransport<E> {
     pub fn new(executor: E, config: ProtocolTransportConfig, versions: ProtocolVersions) -> Self {
         let shared: SharedState =
             Arc::new((Mutex::new(Shared::new(config.queue_limits)), Condvar::new()));
+        {
+            // Seed the observed credential so the first replacement is a real change.
+            let mut state = lock(&shared);
+            state.last_credential = credential_value(&config);
+        }
         let worker = {
             let shared = Arc::clone(&shared);
             let worker_config = config.clone();
@@ -702,6 +740,14 @@ struct Shared {
     /// Server identity verified by that handshake.
     server: Option<ServerId>,
     control: Option<ObservationControl>,
+    /// Credential the transport last observed in the configured source.
+    ///
+    /// A bounded reauthorization replaces that value in place. The replacement is the
+    /// authentication-context change this adapter can detect, so it is compared after
+    /// every exchange and used to close the shared publication before the exchange's
+    /// result is delivered (DC-MP-PUB1: close before new credentials or data reach a
+    /// consumer).
+    last_credential: Option<String>,
     /// Granted scope held for one explicit snapshot refresh after a delta gap.
     refresh: Option<RefreshSnapshot>,
     /// Reply slot for one catalog fetch; the worker fills it directly.
@@ -725,6 +771,7 @@ impl Shared {
             hello: None,
             server: None,
             control: None,
+            last_credential: None,
             refresh: None,
             catalog_reply: None,
             history_reply: None,
@@ -755,7 +802,7 @@ enum Job {
     History {
         generation: u64,
         request: Box<HistoryQuery>,
-        context: ReadContextId,
+        stamp: Box<ReadStamp>,
     },
 }
 
@@ -803,8 +850,9 @@ enum WorkerAction {
     },
     Catalog,
     History {
+        generation: u64,
         request: Box<HistoryQuery>,
-        context: ReadContextId,
+        stamp: Box<ReadStamp>,
     },
     Poll(PollSession),
 }
@@ -958,13 +1006,14 @@ fn fetch_catalog_with(
 }
 
 /// Blocking history fetch over the worker thread (bound to the live read
-/// context, which the caller never supplies and cannot fabricate).
+/// stamp, which the caller never supplies and cannot fabricate).
 fn fetch_history_with(
     shared: &SharedState,
     config: &ProtocolTransportConfig,
     request: &HistoryQuery,
 ) -> Result<HistoryDocument, HistoryFetchError> {
-    let deadline = Instant::now() + Duration::from_secs(30);
+    let deadline = Instant::now() + HISTORY_FETCH_TIMEOUT;
+    let generation;
     {
         let mut state = lock(shared);
         if state.closed {
@@ -972,17 +1021,17 @@ fn fetch_history_with(
         }
         // The route is context-bound: without a live grant the Runtime would
         // answer 401, so the read is refused locally with that same class.
-        let Some(context) = state.poll.as_ref().map(|poll| poll.context.clone()) else {
+        let Some(stamp) = state.poll.as_ref().map(|poll| poll.stamp.clone()) else {
             return Err(HistoryFetchError::Unauthorized);
         };
         state.history_reply = None;
-        let generation = state.generation;
+        generation = state.generation;
         enqueue_job(
             &mut state,
             Job::History {
                 generation,
                 request: Box::new(request.clone()),
-                context,
+                stamp: Box::new(stamp),
             },
             config.max_pending_requests,
         )
@@ -996,6 +1045,10 @@ fn fetch_history_with(
         }
         if state.closed {
             return Err(HistoryFetchError::Unavailable);
+        }
+        if generation != state.generation {
+            // A stream reset invalidated the read context this page was bound to.
+            return Err(HistoryFetchError::Unauthorized);
         }
         let remaining = deadline.saturating_duration_since(Instant::now());
         if remaining.is_zero() {
@@ -1047,10 +1100,14 @@ fn run_worker<E: ProtocolHttp>(
                         },
                         Job::Catalog { .. } => WorkerAction::Catalog,
                         Job::History {
-                            generation: _,
+                            generation,
                             request,
-                            context,
-                        } => WorkerAction::History { request, context },
+                            stamp,
+                        } => WorkerAction::History {
+                            generation,
+                            request,
+                            stamp,
+                        },
                     };
                 }
                 if let Some(poll) = state.poll.clone() {
@@ -1076,18 +1133,23 @@ fn run_worker<E: ProtocolHttp>(
                 state.catalog_reply = Some(outcome);
                 shared.1.notify_all();
             }
-            WorkerAction::History { request, context } => {
-                // A history read is bound to the observation read context that
+            WorkerAction::History {
+                generation,
+                request,
+                stamp,
+            } => {
+                // A history read is bound to the observation read stamp that
                 // authorized it. A stream reset after the request was enqueued
                 // invalidates that binding: the read is answered as unauthorized
                 // instead of being presented under a context the Runtime no
-                // longer holds.
-                let generation = lock(&shared).generation;
-                let outcome = get_history(&mut executor, &config, &request, &context);
+                // longer holds. The job's own generation is the one to compare;
+                // re-reading it here would hide exactly that reset.
+                let outcome = get_history(&mut executor, &config, &request, &stamp);
                 let mut state = lock(&shared);
                 if state.closed {
                     continue;
                 }
+                note_credential_change(&mut state, &config);
                 if generation != state.generation {
                     state.history_reply = Some(Err(HistoryFetchError::Unauthorized));
                 } else {
@@ -1163,6 +1225,7 @@ fn run_worker<E: ProtocolHttp>(
                 if state.closed || generation != state.generation {
                     continue;
                 }
+                note_credential_change(&mut state, &config);
                 match outcome {
                     Ok(OpenOutcome::Document(document)) => match apply_open(
                         &mut state,
@@ -1218,6 +1281,7 @@ fn run_worker<E: ProtocolHttp>(
                 if state.closed || generation != state.generation {
                     continue;
                 }
+                note_credential_change(&mut state, &config);
                 match outcome {
                     Ok(CommandOutcome::Receipt(receipt)) => {
                         let read_stamp = Some(receipt.stamp.clone());
@@ -1258,6 +1322,7 @@ fn run_worker<E: ProtocolHttp>(
                 if state.closed || generation != state.generation {
                     continue;
                 }
+                note_credential_change(&mut state, &config);
                 match outcome {
                     Ok(LookupOutcome::Result(result)) => {
                         let read_stamp = Some(result.stamp.clone());
@@ -1311,6 +1376,7 @@ fn run_worker<E: ProtocolHttp>(
                     state.poll = None;
                     continue;
                 }
+                note_credential_change(&mut state, &config);
                 match outcome {
                     Ok(DeltaOutcome::Empty) => {}
                     Ok(DeltaOutcome::Transaction(transaction)) => {
@@ -1725,12 +1791,15 @@ fn get_history<E: ProtocolHttp>(
     executor: &mut E,
     config: &ProtocolTransportConfig,
     request: &HistoryQuery,
-    context: &ReadContextId,
+    stamp: &ReadStamp,
 ) -> Result<HistoryDocument, HistoryFetchError> {
     let path = history_path(request);
     let mut headers = vec![
         ("accept".to_owned(), "application/json".to_owned()),
-        ("x-cos-context".to_owned(), context.as_str().to_owned()),
+        (
+            "x-cos-context".to_owned(),
+            stamp.context_id.as_str().to_owned(),
+        ),
     ];
     authorize(config, &mut headers, &path);
     let response = executor
@@ -1753,11 +1822,18 @@ fn get_history<E: ProtocolHttp>(
     let document: HistoryDocument =
         serde_json::from_slice(&response.body).map_err(|_| HistoryFetchError::Malformed)?;
     document.validate()?;
+    // The page must describe exactly this request and this authorized read
+    // binding. A page for another task, request, server, epoch, scope or read
+    // revision is never accepted as this request's answer, and a non-empty
+    // stamp alone is not evidence of any of them.
     if document.task_ref != request.task_ref().as_str()
-        || document.stamp.context_id != context.as_str()
+        || document.stamp.request_id != stamp.request_id.as_str()
+        || document.stamp.server_id != stamp.server_id.as_str()
+        || document.stamp.epoch != stamp.epoch.as_str()
+        || document.stamp.context_id != stamp.context_id.as_str()
+        || document.stamp.read_revision != stamp.read_revision.as_counter().as_str()
+        || document.stamp.scope_id != stamp.scope_id.as_str()
     {
-        // A page for another task or read binding is never accepted as this
-        // request's answer.
         return Err(HistoryFetchError::Malformed);
     }
     Ok(document)

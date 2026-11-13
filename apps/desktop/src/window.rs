@@ -10,11 +10,10 @@ use desktop_protocol::ObservationScopeRequest;
 use gpui::{
     App, AppContext, Bounds, Task, TitlebarOptions, WindowBounds, WindowOptions, point, px, size,
 };
-use std::future::{Future, poll_fn};
 use std::path::Path;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
-use std::task::{Poll, Waker};
+use std::task::Waker;
 use std::time::{Duration, Instant};
 
 /// Observation-only result; no host is distinct from a confirmed driver stop.
@@ -115,59 +114,17 @@ impl ObservationHost {
 }
 
 fn persist_preferences(path: Option<&Path>, preferences: &Mutex<Preferences>) -> bool {
-    path.is_some_and(|path| {
-        preferences
-            .lock()
-            .is_ok_and(|preferences| save_atomic(path, &preferences).is_ok())
-    })
-}
-
-async fn confirm_preferences(
-    watch: ExitWatch,
-    result: Arc<Mutex<Option<bool>>>,
-) -> PreferencesExit {
-    if !watch.wait().await {
-        return PreferencesExit::Unconfirmed;
-    }
-    match result.lock() {
-        Ok(result) => match *result {
-            Some(true) => PreferencesExit::Saved,
-            Some(false) => PreferencesExit::Failed,
-            None => PreferencesExit::Unconfirmed,
-        },
-        Err(_) => PreferencesExit::Unconfirmed,
-    }
-}
-
-async fn confirm_exit(
-    observation: impl Future<Output = ObservationExit>,
-    preferences: impl Future<Output = PreferencesExit>,
-    outcome: ExitOutcome,
-) {
-    let mut observation = std::pin::pin!(observation);
-    let mut preferences = std::pin::pin!(preferences);
-    let mut observation_done = false;
-    let mut preferences_done = false;
-    poll_fn(|cx| {
-        if !observation_done && let Poll::Ready(result) = observation.as_mut().poll(cx) {
-            if let Ok(mut report) = outcome.lock() {
-                report.observation = result;
-            }
-            observation_done = true;
-        }
-        if !preferences_done && let Poll::Ready(result) = preferences.as_mut().poll(cx) {
-            if let Ok(mut report) = outcome.lock() {
-                report.preferences = result;
-            }
-            preferences_done = true;
-        }
-        if observation_done && preferences_done {
-            Poll::Ready(())
-        } else {
-            Poll::Pending
-        }
-    })
-    .await;
+    let Some(path) = path else {
+        return false;
+    };
+    // Clone under the lock and write the clone: the render path takes the same
+    // mutex, and a filesystem write must never happen inside that critical
+    // section (PROCESS_MODEL: no blocking I/O or lock wait on the UI thread).
+    let snapshot = match preferences.lock() {
+        Ok(preferences) => preferences.clone(),
+        Err(poisoned) => poisoned.into_inner().clone(),
+    };
+    save_atomic(path, &snapshot).is_ok()
 }
 
 pub fn open(
@@ -214,7 +171,7 @@ pub fn open(
     let mut save_path = path;
     let mut exit_host = host;
     let exit_outcome = Arc::clone(&outcome);
-    cx.on_app_quit(move |cx| {
+    cx.on_app_quit(move |_cx| {
         let started = Instant::now();
         let max_budget = gpui::SHUTDOWN_TIMEOUT / 2;
         let observation_budget = std::env::var("COS_DESKTOP_EXIT_BUDGET_MS")
@@ -244,37 +201,29 @@ pub fn open(
             );
             Some((host, watch))
         });
-        let saved = Arc::new(Mutex::new(None));
-        let done = Arc::new(AtomicBool::new(false));
-        let wake = Arc::new(Mutex::new(None));
-        let save_watch = ExitWatch::new(Arc::clone(&done), Arc::clone(&wake), started + max_budget);
-        let path = save_path.take();
-        let preferences = Arc::clone(&save_preferences);
-        let completion = Arc::clone(&saved);
-        let save = cx.background_executor().spawn(async move {
-            let success = persist_preferences(path.as_deref(), &preferences);
-            if let Ok(mut result) = completion.lock() {
-                *result = Some(success);
-            }
-            done.store(true, Ordering::Release);
-            if let Ok(mut slot) = wake.lock()
-                && let Some(waker) = slot.take()
-            {
-                waker.wake();
-            }
-        });
-        // The attempt must start even if the bounded wait finishes first, and a
-        // late completion must not be cancelled by dropping this quit future.
-        save.detach();
+        // Flush the permitted local preferences here, synchronously. The whole quit
+        // future is polled for at most `SHUTDOWN_TIMEOUT` (200 ms), so scheduling a
+        // background write and then watching a completion flag cannot guarantee a
+        // confirmed flush; the write is one small atomic file performed while the UI
+        // is already quitting, and its actual result is what the handshake reports.
+        let preferences_outcome =
+            if persist_preferences(save_path.take().as_deref(), &save_preferences) {
+                PreferencesExit::Saved
+            } else {
+                PreferencesExit::Failed
+            };
+        if let Ok(mut report) = exit_outcome.lock() {
+            report.preferences = preferences_outcome;
+        }
         let outcome = Arc::clone(&exit_outcome);
         async move {
-            let observation = async move {
-                match observation {
-                    Some((host, watch)) => host.confirm_shutdown(watch).await,
-                    None => ObservationExit::NotApplicable,
-                }
+            let observation = match observation {
+                Some((host, watch)) => host.confirm_shutdown(watch).await,
+                None => ObservationExit::NotApplicable,
             };
-            confirm_exit(observation, confirm_preferences(save_watch, saved), outcome).await;
+            if let Ok(mut report) = outcome.lock() {
+                report.observation = observation;
+            }
         }
     })
     .detach();
@@ -306,7 +255,6 @@ pub fn open(
 mod tests {
     use super::*;
     use std::sync::atomic::AtomicUsize;
-    use std::task::Context;
 
     struct Profile(std::path::PathBuf);
 
@@ -329,106 +277,56 @@ mod tests {
         }
     }
 
-    fn preferences_result(path: &Path, deadline: Instant) -> impl Future<Output = PreferencesExit> {
-        let saved = persist_preferences(Some(path), &Mutex::new(Preferences::default()));
-        confirm_preferences(
-            ExitWatch::new(
-                Arc::new(AtomicBool::new(true)),
-                Arc::new(Mutex::new(None)),
-                deadline,
-            ),
-            Arc::new(Mutex::new(Some(saved))),
-        )
-    }
-
+    /// The quit path reports the flush it actually performed.
     #[test]
-    fn saved_preferences_are_reported_while_observation_is_still_pending() {
+    fn a_completed_flush_is_reported_saved() {
         let profile = Profile::new();
         let path = profile.0.join("preferences.json");
-        let outcome = Arc::new(Mutex::new(ExitReport {
-            observation: ObservationExit::Unconfirmed,
-            preferences: PreferencesExit::Unconfirmed,
-        }));
-        // The synchronous save stands in for production's background save. An
-        // observation watch caps every deadline at five seconds from its own
-        // construction, so the pending window has to start at the poll that
-        // asserts it: a cold filesystem write before that poll can consume the
-        // whole budget and decide this assertion by machine speed instead of by
-        // the reported contract.
-        let mut exit = std::pin::pin!(confirm_exit(
-            async move {
-                let watch = ExitWatch::new(
-                    Arc::new(AtomicBool::new(false)),
-                    Arc::new(Mutex::new(None)),
-                    Instant::now() + Duration::from_secs(5),
-                );
-                if watch.wait().await {
-                    ObservationExit::Confirmed
-                } else {
-                    ObservationExit::Unconfirmed
-                }
-            },
-            preferences_result(&path, Instant::now() + Duration::from_secs(5)),
-            Arc::clone(&outcome),
-        ));
-        assert_eq!(
-            exit.as_mut().poll(&mut Context::from_waker(Waker::noop())),
-            Poll::Pending
+        let preferences = Mutex::new(Preferences::default());
+        assert!(persist_preferences(Some(&path), &preferences));
+        let outcome = if persist_preferences(Some(&path), &preferences) {
+            PreferencesExit::Saved
+        } else {
+            PreferencesExit::Failed
+        };
+        assert_eq!(outcome, PreferencesExit::Saved);
+        assert!(
+            path.is_file(),
+            "the permitted local preferences were flushed"
         );
-        assert_eq!(
-            *outcome.lock().expect("exit report"),
-            ExitReport {
-                observation: ObservationExit::Unconfirmed,
-                preferences: PreferencesExit::Saved,
-            }
-        );
+        // A missing profile path is an explicit failure, never a silent success.
+        assert!(!persist_preferences(None, &preferences));
     }
 
+    /// A poisoned preference lock must not turn the flush into a panic or a false
+    /// failure: the value it guards is local presentation state.
     #[test]
-    fn a_failed_atomic_save_does_not_erase_observation_confirmation() {
+    fn a_poisoned_preference_lock_still_flushes() {
         let profile = Profile::new();
-        let outcome = Arc::new(Mutex::new(ExitReport::default()));
+        let path = profile.0.join("preferences.json");
+        let preferences = Arc::new(Mutex::new(Preferences::default()));
+        let poisoned = Arc::clone(&preferences);
+        let _ = std::thread::spawn(move || {
+            let _guard = poisoned.lock().expect("test lock");
+            panic!("poison the preference lock");
+        })
+        .join();
+        assert!(preferences.is_poisoned(), "the lock is poisoned");
+        assert!(persist_preferences(Some(&path), &preferences));
+        assert!(path.is_file());
+    }
+
+    /// A failed atomic save keeps the previous file and is reported as a failure.
+    #[test]
+    fn a_failed_atomic_save_preserves_previous_bytes() {
+        let profile = Profile::new();
         // Replacing the nonempty profile directory with a file must fail.
         std::fs::write(profile.0.join("keep"), b"prior bytes").expect("existing contents");
-        let mut exit = std::pin::pin!(confirm_exit(
-            async { ObservationExit::Confirmed },
-            preferences_result(&profile.0, Instant::now() + Duration::from_secs(5)),
-            Arc::clone(&outcome),
-        ));
-        assert_eq!(
-            exit.as_mut().poll(&mut Context::from_waker(Waker::noop())),
-            Poll::Ready(())
-        );
-        assert_eq!(
-            *outcome.lock().expect("exit report"),
-            ExitReport {
-                observation: ObservationExit::Confirmed,
-                preferences: PreferencesExit::Failed,
-            }
-        );
+        let preferences = Mutex::new(Preferences::default());
+        assert!(!persist_preferences(Some(&profile.0), &preferences));
         assert_eq!(
             std::fs::read(profile.0.join("keep")).expect("preserved bytes"),
             b"prior bytes"
-        );
-    }
-
-    #[test]
-    fn a_save_completed_after_its_deadline_is_never_reported_saved() {
-        let profile = Profile::new();
-        let path = profile.0.join("preferences.json");
-        let mut result = std::pin::pin!(preferences_result(
-            &path,
-            Instant::now() - Duration::from_secs(1),
-        ));
-        assert_eq!(
-            result
-                .as_mut()
-                .poll(&mut Context::from_waker(Waker::noop())),
-            Poll::Ready(PreferencesExit::Unconfirmed)
-        );
-        assert!(
-            path.is_file(),
-            "late write completed, not deadline-confirmed"
         );
     }
 }

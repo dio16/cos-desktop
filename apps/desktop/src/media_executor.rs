@@ -144,6 +144,25 @@ impl MediaHttp {
     }
 }
 
+/// Executor used when the session has no validated origin.
+///
+/// It opens no socket: every request reports the value-free transport class, so a
+/// media pane keeps its explicit unavailable state and no credential is ever sent
+/// to a stale or unvalidated endpoint.
+pub(crate) struct MediaExecutorUnavailable;
+
+impl MediaExecutor for MediaExecutorUnavailable {
+    fn get(
+        &mut self,
+        _path: &str,
+        _headers: &[(&str, &str)],
+        _max_bytes: u64,
+        _cancellation: &Cancellation,
+    ) -> Result<MediaResponse, MediaTransportError> {
+        Err(MediaTransportError::Transport)
+    }
+}
+
 impl MediaExecutor for MediaHttp {
     fn get(
         &mut self,

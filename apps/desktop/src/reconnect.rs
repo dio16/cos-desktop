@@ -106,8 +106,8 @@ impl RuntimeReconnector {
                 // path, origin and credential are never logged.
                 eprintln!(
                     "Runtime rediscovered: server_identity={} epoch={} pid={}",
-                    descriptor.server_identity(),
-                    descriptor.epoch(),
+                    discovery::diagnostic_label(descriptor.server_identity()),
+                    discovery::diagnostic_label(descriptor.epoch()),
                     descriptor.pid()
                 );
                 Ok(descriptor.origin().to_owned())
@@ -122,28 +122,13 @@ impl RuntimeReconnector {
     /// One complete discovery + authorization + client-build attempt.
     pub(crate) fn reconnect(&self) -> Result<Box<dyn DesktopClient>, ReconnectUnavailable> {
         let endpoint = self.rediscover()?;
-        // A fresh client is built from the same resolution the startup path uses;
-        // the token value never leaves this boundary.
+        // A restarted Runtime may advertise a new port, so the protected store has
+        // no record for the new origin yet. Credential preparation must therefore
+        // run *before* the settings resolution that requires a stored credential:
+        // otherwise the only path that can mint one is unreachable and every later
+        // attempt repeats the same failure, even with the issuance secret present.
         let token = std::env::var(runtime::TOKEN_ENV).ok();
-        let settings = match runtime::plan(
-            &self.mode,
-            Some(&endpoint),
-            token.as_deref(),
-            self.store.as_ref(),
-        ) {
-            LaunchPlan::Runtime(settings) => settings,
-            LaunchPlan::RuntimeUnavailable { reason, .. } => {
-                return Err(plan_unavailable(reason));
-            }
-            // The reconnector is only built for a real Runtime session; a fixture
-            // plan here is a composition error and never a silent fallback.
-            LaunchPlan::Fixture { .. } => return Err(ReconnectUnavailable::Discovery),
-        };
-        // Bounded reauthorization inside the attempt: the restarted Runtime may no
-        // longer know the stored credential, and the issuance secret is re-read
-        // here (never retained) so a new credential can be issued. A failure is
-        // reported and then left to the client's own bounded 401 recovery.
-        if let Some(origin) = runtime::validated_origin(settings.origin()) {
+        if let Some(origin) = runtime::validated_origin(&endpoint) {
             let secret = std::env::var(credential_issuance::ISSUANCE_SECRET_ENV).ok();
             let mut exchange = (self.exchange)(&origin);
             match credential_issuance::prepare(
@@ -161,6 +146,22 @@ impl RuntimeReconnector {
                 ),
             }
         }
+        // A fresh client is built from the same resolution the startup path uses;
+        // the token value never leaves this boundary.
+        let settings = match runtime::plan(
+            &self.mode,
+            Some(&endpoint),
+            token.as_deref(),
+            self.store.as_ref(),
+        ) {
+            LaunchPlan::Runtime(settings) => settings,
+            LaunchPlan::RuntimeUnavailable { reason, .. } => {
+                return Err(plan_unavailable(reason));
+            }
+            // The reconnector is only built for a real Runtime session; a fixture
+            // plan here is a composition error and never a silent fallback.
+            LaunchPlan::Fixture { .. } => return Err(ReconnectUnavailable::Discovery),
+        };
         match runtime::observation(settings, Arc::clone(&self.store), self.session.clone()) {
             Ok(observation) => {
                 if let Ok(mut slot) = self.teardown.lock() {

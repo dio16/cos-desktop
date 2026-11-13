@@ -1905,7 +1905,7 @@ fn candidate_groups(
             iteration: None,
             index: None,
             label: "反復情報なし".into(),
-            short_label: "反復 ?".into(),
+            short_label: "反復 不明".into(),
 
             start,
             rows: unattributed.into(),

@@ -294,11 +294,32 @@ fn usable_text(value: &str) -> bool {
             .all(|byte| (0x21..=0x7e).contains(&byte) && byte != b'\\')
 }
 
+/// A discovery value rendered for a diagnostic line.
+///
+/// A descriptor is server-issued, not Desktop-controlled: it may be shaped like a
+/// private path or a signed URL even though it is printable ASCII. Only characters
+/// that cannot form a path separator or a URL survive, the result is bounded, and a
+/// value with nothing safe left renders as `unknown`. The descriptor path, origin and
+/// credential are never printed by these lines.
+pub(crate) fn diagnostic_label(value: &str) -> String {
+    let label: String = value
+        .chars()
+        .filter(|character| {
+            character.is_ascii_alphanumeric() || matches!(character, '-' | '_' | '.')
+        })
+        .take(MAX_TEXT_BYTES)
+        .collect();
+    if label.is_empty() {
+        return "unknown".to_owned();
+    }
+    label
+}
+
 #[cfg(test)]
 mod tests {
     use super::{
-        DISCOVERY_PATH_ENV, Descriptor, DiscoveryError, MAX_DESCRIPTOR_BYTES, default_path_from,
-        discover,
+        DISCOVERY_PATH_ENV, Descriptor, DiscoveryError, MAX_DESCRIPTOR_BYTES, MAX_TEXT_BYTES,
+        default_path_from, diagnostic_label, discover,
     };
     use std::path::PathBuf;
 
@@ -430,5 +451,19 @@ mod tests {
     #[test]
     fn an_absent_root_is_explicitly_unavailable() {
         assert_eq!(default_path_from(|_| None), None);
+    }
+
+    /// A server-issued descriptor value can be shaped like a private path or a signed
+    /// URL; the diagnostic line must not be able to reproduce either.
+    #[test]
+    fn a_diagnostic_label_cannot_carry_a_path_or_a_url() {
+        assert_eq!(diagnostic_label("/home/alice/private"), "homealiceprivate");
+        assert_eq!(
+            diagnostic_label("https://example.test/x?y=1"),
+            "httpsexample.testxy1"
+        );
+        assert_eq!(diagnostic_label(""), "unknown");
+        assert_eq!(diagnostic_label("///\\::"), "unknown");
+        assert_eq!(diagnostic_label(&"a".repeat(4096)).len(), MAX_TEXT_BYTES);
     }
 }

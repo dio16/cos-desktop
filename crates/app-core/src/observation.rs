@@ -488,7 +488,9 @@ impl<T> Future for OwnerReply<T> {
     fn poll(self: std::pin::Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<T> {
         let this = self.get_mut();
         if let Some((shutdown, ready)) = this.shutdown.as_ref() {
-            let mut completion = shutdown.lock().expect("shutdown lock");
+            let mut completion = shutdown
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
             if completion.done {
                 return Poll::Ready(ready());
             }
@@ -502,7 +504,9 @@ impl<T> Future for OwnerReply<T> {
             return Poll::Pending;
         }
         let state = this.state.as_ref().expect("reply state is present");
-        let mut state = state.lock().expect("reply lock");
+        let mut state = state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         if let Some(value) = state.value.take() {
             return Poll::Ready(value);
         }
@@ -517,7 +521,10 @@ struct Reply<T> {
 
 impl<T> Reply<T> {
     fn resolve(&self, value: T) {
-        let mut state = self.state.lock().expect("reply lock");
+        let mut state = self
+            .state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         state.value = Some(value);
         state.answered = true;
         if let Some(waker) = state.waker.take() {
@@ -558,6 +565,13 @@ pub struct ObservationSessionOwner {
     /// Set by a failed owner replacement: no authorization-derived publication may
     /// be admitted until a fresh authorization succeeds.
     awaiting_reauthorization: bool,
+    /// Whether the last publication admitted data.
+    ///
+    /// A history view is bound to the authorization that admitted it, so only the
+    /// transition to withheld drops it. A client that never admitted data (a
+    /// fixture or a scripted provider) therefore never invalidates a view, and a
+    /// publication that was already withheld does not clear the same view twice.
+    withheld_publication: bool,
     /// Safe diagnostic from the most recent refused read intent, with the identity
     /// whose outstanding authorization it describes.
     last_read_error: Option<(CommandId, PublicationError)>,
@@ -599,7 +613,12 @@ impl WakeSlot {
     /// Wake the owner task.
     pub fn notify(&self) {
         self.notified.store(true, Ordering::Release);
-        if let Some(waker) = self.waker.lock().expect("wake lock").take() {
+        if let Some(waker) = self
+            .waker
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .take()
+        {
             waker.wake();
         }
     }
@@ -609,7 +628,10 @@ impl WakeSlot {
         // the registration would otherwise be lost. The flag is re-checked after
         // registration so both interleavings are covered.
         {
-            let mut slot = self.waker.lock().expect("wake lock");
+            let mut slot = self
+                .waker
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
             if self.notified.swap(false, Ordering::AcqRel) {
                 return true;
             }
@@ -827,7 +849,12 @@ impl ObservationHandle {
     /// authorization change, and an unloaded view is reported as
     /// [`HistoryStatus::Idle`], never as an empty history.
     pub fn history(&self) -> Arc<HistoryPublication> {
-        Arc::clone(&self.history.lock().expect("history lock"))
+        Arc::clone(
+            &self
+                .history
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner),
+        )
     }
 
     /// Submit one create-task command through the owner thread.
@@ -894,7 +921,10 @@ impl ObservationHandle {
             // One ledger lock covers credits and pending releases: only a reference
             // the owner granted may be released, the queue stays within the bounded
             // budget, and a transfer cannot observe a half-applied release.
-            let mut ledger = self.references.lock().expect("reference ledger");
+            let mut ledger = self
+                .references
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
             let Some(credit) = ledger.credits.get_mut(&id) else {
                 return;
             };
@@ -917,7 +947,11 @@ impl ObservationHandle {
     /// so a saturated intent mailbox can neither swallow nor falsely complete it.
     pub fn shutdown(&self) -> OwnerReply<()> {
         self.request_shutdown();
-        let already_done = self.shutdown.lock().expect("shutdown lock").done;
+        let already_done = self
+            .shutdown
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .done;
         OwnerReply::shutdown(Arc::clone(&self.shutdown), already_done)
     }
 
@@ -925,7 +959,10 @@ impl ObservationHandle {
     pub fn request_shutdown(&self) {
         let _ = self.fence.close_visibility();
         {
-            let mut completion = self.shutdown.lock().expect("shutdown lock");
+            let mut completion = self
+                .shutdown
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
             completion.requested = true;
         }
         self.wake.notify();
@@ -938,7 +975,10 @@ impl ObservationHandle {
     pub fn shutdown_blocking(&self, timeout: std::time::Duration) -> bool {
         let _ = self.fence.close_visibility();
         {
-            let mut completion = self.shutdown.lock().expect("shutdown lock");
+            let mut completion = self
+                .shutdown
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
             completion.requested = true;
         }
         self.wake.notify();
@@ -947,7 +987,12 @@ impl ObservationHandle {
             if self.owner_done.load(Ordering::Acquire) {
                 return true;
             }
-            if self.shutdown.lock().expect("shutdown lock").done {
+            if self
+                .shutdown
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .done
+            {
                 return true;
             }
             if std::time::Instant::now() >= deadline {
@@ -975,7 +1020,10 @@ impl ObservationHandle {
     /// Enqueue one bounded intent; never overwrites a dispatched command.
     fn enqueue(&self, command: ObservationCommand) {
         {
-            let mut mailbox = self.mailbox.lock().expect("mailbox lock");
+            let mut mailbox = self
+                .mailbox
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
             if mailbox.closed || mailbox.intents.len() >= MAX_INTENTS {
                 drop(mailbox);
                 reject(command);
@@ -1099,6 +1147,7 @@ impl ObservationSessionOwner {
             deadline_ms: None,
             pump_saturated: false,
             shutdown_applied: false,
+            withheld_publication: false,
             history,
             history_shared: Arc::clone(&history_shared),
             handle: handle.clone(),
@@ -1140,7 +1189,10 @@ impl ObservationSessionOwner {
         // reference snapshot: a release arriving meanwhile waits, and a reference
         // can neither be released twice nor dropped during the transfer.
         let (records, references) = {
-            let mut ledger = self.references.lock().expect("reference ledger");
+            let mut ledger = self
+                .references
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
             let pending = std::mem::take(&mut ledger.pending);
             for (id, count) in pending {
                 for _ in 0..count {
@@ -1191,6 +1243,11 @@ impl ObservationSessionOwner {
         if self.apply_shutdown() {
             return true;
         }
+        // Register an admission transition before this step's intents run: a loaded
+        // history view belongs to the authorization that admitted it (DC-MP-PUB1,
+        // Protocol §2), so it is dropped as soon as the publication stops admitting
+        // data, and never after a page served under the current binding.
+        self.sync_history_admission();
         let intent_changed = self.drain_mailbox(now_ms);
         if self.shutdown_applied {
             return true;
@@ -1280,7 +1337,10 @@ impl ObservationSessionOwner {
         // failed replacement cannot keep the owner withholding after it.
         self.awaiting_reauthorization = false;
         let (records, references) = {
-            let mut ledger = self.references.lock().expect("reference ledger");
+            let mut ledger = self
+                .references
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
             let pending = std::mem::take(&mut ledger.pending);
             for (id, count) in pending {
                 for _ in 0..count {
@@ -1362,7 +1422,10 @@ impl ObservationSessionOwner {
         let mut changed = false;
         loop {
             let command = {
-                let mut mailbox = self.mailbox.lock().expect("mailbox lock");
+                let mut mailbox = self
+                    .mailbox
+                    .lock()
+                    .unwrap_or_else(std::sync::PoisonError::into_inner);
                 let command = mailbox.intents.pop_front();
                 drop(mailbox);
                 command
@@ -1377,15 +1440,17 @@ impl ObservationSessionOwner {
                 reject_stale(command);
                 continue;
             }
-            // Final acceptance and dispatch share the boundary with authorization
-            // closes: a Stop is dispatched before the close or rejected by it.
             // Final acceptance and dispatch share the command boundary: a Stop is
             // therefore either dispatched before an authorization close or rejected
             // by it, never sent after the revocation. The boundary only wraps
             // bounded work because the transport contract requires `send` to
-            // enqueue output without waiting on network or filesystem.
+            // enqueue output without waiting on network or filesystem. A pure read
+            // neither dispatches nor closes authorization, so it does not hold that
+            // boundary: a Stop queued behind a page read must not wait for the read.
             let fence = Arc::clone(&self.fence);
-            let gate = fence.enter_command_boundary();
+            let gate = self
+                .intent_needs_boundary(&command)
+                .then(|| fence.enter_command_boundary());
             if !self.intent_allowed(&command) {
                 drop(gate);
                 reject_stale(command);
@@ -1417,6 +1482,18 @@ impl ObservationSessionOwner {
         true
     }
 
+    /// Whether one intent must serialize against authorization closes.
+    ///
+    /// Reads perform no dispatch and no authorization transition; every other
+    /// intent (Stop, Retain, create, scope, authentication and replacement) shares
+    /// the boundary with closes.
+    fn intent_needs_boundary(&self, command: &ObservationCommand) -> bool {
+        !matches!(
+            command,
+            ObservationCommand::FetchCatalog { .. } | ObservationCommand::FetchHistory { .. }
+        )
+    }
+
     fn intent_changes_publication(&self, command: &ObservationCommand) -> bool {
         matches!(
             command,
@@ -1430,13 +1507,44 @@ impl ObservationSessionOwner {
 
     /// Publish the accumulator's current immutable history view.
     fn publish_history(&self) {
-        *self.history_shared.lock().expect("history lock") = self.history.publication();
+        *self
+            .history_shared
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner) = self.history.publication();
     }
 
     /// Drop the loaded history view (scope/authorization/client change, shutdown).
     fn reset_history(&mut self) {
         self.history.reset();
         self.publish_history();
+    }
+
+    /// Drop a loaded history view when the publication stops admitting data.
+    ///
+    /// Only the transition clears: a client that never admitted data (a fixture or a
+    /// scripted provider) does not invalidate a view it never made unreadable, and a
+    /// page served after the transition belongs to the new binding.
+    fn sync_history_admission(&mut self) {
+        let withheld = self.awaiting_reauthorization
+            || matches!(
+                self.client.publication_access(),
+                PublicationAccess::Withheld { .. }
+            );
+        if withheld && !self.withheld_publication {
+            self.clear_history_if_loaded();
+        }
+        self.withheld_publication = withheld;
+    }
+
+    /// Drop the loaded history view only when one is actually loaded.
+    ///
+    /// `publish` runs on every owner step, so the reset must not bump the history
+    /// sequence (and publish an identical Idle view) once nothing is loaded.
+    fn clear_history_if_loaded(&mut self) {
+        let loaded = self.history.publication();
+        if loaded.task_ref.is_some() || !loaded.entries.is_empty() {
+            self.reset_history();
+        }
     }
 
     /// Perform one history read on the owner thread and publish its outcome.
@@ -1610,7 +1718,10 @@ impl ObservationSessionOwner {
                 if result.is_ok() {
                     // Credit the granted reference: only a real reference may be
                     // released later, and the pending queue stays bounded by it.
-                    let mut ledger = self.references.lock().expect("reference ledger");
+                    let mut ledger = self
+                        .references
+                        .lock()
+                        .unwrap_or_else(std::sync::PoisonError::into_inner);
                     let entry = ledger.credits.entry(id.clone()).or_insert(0);
                     *entry = entry.saturating_add(1);
                 }
@@ -1625,7 +1736,10 @@ impl ObservationSessionOwner {
     /// Apply a pending shutdown request; returns true once disposal is complete.
     fn apply_shutdown(&mut self) -> bool {
         let requested = {
-            let completion = self.shutdown.lock().expect("shutdown lock");
+            let completion = self
+                .shutdown
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
             completion.requested && !completion.done
         };
         if !requested {
@@ -1636,7 +1750,10 @@ impl ObservationSessionOwner {
         self.fence.close_subscriptions();
         self.reset_history();
         {
-            let mut mailbox = self.mailbox.lock().expect("mailbox lock");
+            let mut mailbox = self
+                .mailbox
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
             mailbox.closed = true;
             while let Some(pending) = mailbox.intents.pop_front() {
                 reject(pending);
@@ -1645,7 +1762,10 @@ impl ObservationSessionOwner {
         // Dispose client state exactly once before completing the request.
         self.client = Box::new(ClosedClient);
         {
-            let mut completion = self.shutdown.lock().expect("shutdown lock");
+            let mut completion = self
+                .shutdown
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
             completion.done = true;
             for waker in completion.wakers.drain(..) {
                 waker.wake();
@@ -1656,7 +1776,10 @@ impl ObservationSessionOwner {
 
     /// Drain pending surface releases; a deduplicating set cannot be dropped.
     fn drain_releases(&mut self) {
-        let mut ledger = self.references.lock().expect("reference ledger");
+        let mut ledger = self
+            .references
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         let pending = std::mem::take(&mut ledger.pending);
         for (id, count) in pending {
             for _ in 0..count {
@@ -1817,7 +1940,18 @@ impl ObservationSessionOwner {
         if self.awaiting_reauthorization {
             let connection = connection_category(self.client.connection());
             let source = source_category(self.client.source());
-            let last_error = self.client.last_error().map(PublicationError::from_client);
+            // The same fallback the ordinary withheld path uses: a read diagnostic is
+            // still the operator-visible cause when the client reports no error of its
+            // own. The state stays unavailable either way; this only preserves it.
+            let last_error = self
+                .client
+                .last_error()
+                .map(PublicationError::from_client)
+                .or_else(|| {
+                    self.last_read_error
+                        .as_ref()
+                        .map(|(_, error)| error.clone())
+                });
             self.publication_version += 1;
             let withheld = ObservationPublication {
                 snapshot: None,
@@ -2021,11 +2155,18 @@ fn issue_of(record: &CommandStatus) -> Option<PublicationError> {
 pub struct DeadlineScheduler {
     deadline: Arc<Mutex<Option<Instant>>>,
     shutdown: Arc<AtomicBool>,
+    /// Handle used to wake the parked timer when a deadline is armed or cleared.
+    timer: Option<std::thread::Thread>,
     join: Option<std::thread::JoinHandle<()>>,
 }
 
 impl DeadlineScheduler {
     /// Start the waker thread for one owner handle.
+    ///
+    /// The thread parks until a deadline is armed or it is shut down, so an idle
+    /// owner produces no periodic wakes at all (ADR-0007 demand-driven idle). A
+    /// failed thread start leaves no timer: the owner still wakes on input, and a
+    /// missed deadline is reported to the owner as such rather than hidden.
     pub fn start(handle: &ObservationHandle) -> Self {
         let deadline: Arc<Mutex<Option<Instant>>> = Arc::new(Mutex::new(None));
         let shutdown = Arc::new(AtomicBool::new(false));
@@ -2036,26 +2177,32 @@ impl DeadlineScheduler {
             .name("cos-observation-timer".to_owned())
             .spawn(move || {
                 while !stop.load(Ordering::Acquire) {
-                    let next = *slot.lock().expect("deadline lock");
+                    let next = *slot
+                        .lock()
+                        .unwrap_or_else(std::sync::PoisonError::into_inner);
                     match next {
                         Some(at) => {
                             let now = Instant::now();
                             if now >= at {
-                                *slot.lock().expect("deadline lock") = None;
+                                *slot
+                                    .lock()
+                                    .unwrap_or_else(std::sync::PoisonError::into_inner) = None;
                                 wake.notify();
                             } else {
-                                let remaining = at - now;
-                                std::thread::sleep(remaining.min(Duration::from_millis(25)));
+                                std::thread::park_timeout(at - now);
                             }
                         }
-                        None => std::thread::sleep(Duration::from_millis(25)),
+                        // No deadline armed: sleep until `arm`/`shutdown` unparks.
+                        None => std::thread::park(),
                     }
                 }
             })
             .ok();
+        let timer = join.as_ref().map(|join| join.thread().clone());
         Self {
             deadline,
             shutdown,
+            timer,
             join,
         }
     }
@@ -2066,12 +2213,21 @@ impl DeadlineScheduler {
             let delta = deadline.saturating_sub(now_ms);
             Instant::now() + Duration::from_millis(delta)
         });
-        *self.deadline.lock().expect("deadline lock") = instant;
+        *self
+            .deadline
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner) = instant;
+        if let Some(timer) = self.timer.as_ref() {
+            timer.unpark();
+        }
     }
 
     /// Cancel and join the waker thread.
     pub fn shutdown(&mut self) {
         self.shutdown.store(true, Ordering::Release);
+        if let Some(timer) = self.timer.take() {
+            timer.unpark();
+        }
         if let Some(join) = self.join.take() {
             let _ = join.join();
         }

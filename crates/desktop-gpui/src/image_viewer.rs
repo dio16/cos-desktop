@@ -105,9 +105,13 @@ fn local_failure_text(error: &ImageUploadError) -> SharedString {
     format!("画像を利用できません: {}", error.limitation()).into()
 }
 
-/// A media result may be applied only when it was requested after the last applied result.
-fn media_result_is_current(request_serial: u64, applied_serial: u64) -> bool {
-    request_serial > applied_serial
+/// A media result may be applied only when it belongs to the newest request.
+///
+/// Comparing against the *latest* request, not the last applied one, also rejects a
+/// result whose selection was withdrawn (candidate change, unavailable state, close)
+/// between the request and its completion.
+fn media_result_is_current(request_serial: u64, latest_serial: u64) -> bool {
+    request_serial != 0 && request_serial == latest_serial
 }
 
 /// A retired frame may be released only after two composed scenes postdate its detach.
@@ -214,10 +218,8 @@ pub struct ImageViewer {
     status: SharedString,
     palette: Palette,
     consumer: ConsumerId,
-    /// Monotonic media request sequence; a newer requested selection outranks an older result.
+    /// Monotonic media request sequence; only the newest result may be applied.
     media_request_serial: u64,
-    /// Highest media request sequence already applied to this pane.
-    media_applied_serial: u64,
     /// Explicit media outcome plus the one manual refetch this pane may offer.
     media_refetch: MediaRefetchState,
 }
@@ -283,7 +285,6 @@ impl ImageViewer {
             },
             consumer: ConsumerId::allocate(),
             media_request_serial: 0,
-            media_applied_serial: 0,
             media_refetch: MediaRefetchState::default(),
         }
     }
@@ -648,6 +649,9 @@ impl ImageViewer {
         self.cancel.cancel();
         self.tile_cancel.cancel();
         self.serial = self.serial.saturating_add(1);
+        // The pane no longer addresses the selection its in-flight resolution was
+        // requested for, so that result must not be applied when it completes.
+        self.media_request_serial = self.media_request_serial.saturating_add(1);
         self.recovery_pending = false;
         self.recovery_attempted_generation = None;
         self.release_current(cx);
@@ -876,10 +880,9 @@ impl ImageViewer {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        if !media_result_is_current(request_serial, self.media_applied_serial) {
+        if !media_result_is_current(request_serial, self.media_request_serial) {
             return;
         }
-        self.media_applied_serial = request_serial;
         self.load_media(presentation, window, cx);
     }
 
@@ -1134,6 +1137,7 @@ impl ImageViewer {
         self.tile_cancel = Cancellation::default();
         self.demand = None;
         self.serial = self.serial.saturating_add(1);
+        self.media_request_serial = self.media_request_serial.saturating_add(1);
         self.recovery_pending = false;
         self.recovery_attempted_generation = None;
         self.requested = None;
@@ -1813,12 +1817,15 @@ mod tests {
     }
 
     #[test]
-    fn an_older_media_result_never_overwrites_a_newer_applied_selection() {
-        assert!(media_result_is_current(1, 0));
-        assert!(media_result_is_current(2, 1));
-        // A late completion of an older request keeps the newer picture and its state.
-        assert!(!media_result_is_current(1, 1));
+    fn only_the_newest_media_request_may_be_applied() {
+        assert!(media_result_is_current(1, 1));
+        assert!(media_result_is_current(2, 2));
+        // A late completion of an older request keeps the newer selection's state.
         assert!(!media_result_is_current(1, 2));
+        // A withdrawn selection (candidate change, unavailable, close) advanced the
+        // sequence, so an already completed result is not re-applied.
         assert!(!media_result_is_current(2, 3));
+        // No request has been issued yet.
+        assert!(!media_result_is_current(0, 0));
     }
 }

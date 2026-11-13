@@ -27,6 +27,9 @@ const HELPER: &str = "fake_candidate_helper";
 const HELPER_LONG_PROBE: &str = "fake_candidate_long_probe_helper";
 const HELPER_NO_PROBE: &str = "fake_candidate_no_probe_helper";
 const SLEEPER: &str = "fake_sleeper_helper";
+/// Lifetime of the descendant that inherits the capture handles (A2). The deadline
+/// assertion derives its bound from this value, so the two cannot drift apart.
+const ORPHAN_DESCENDANT_MS: u64 = 6_000;
 const SLEEP_ENV: &str = "DECODE_COMPARE_SLEEP";
 const IDENTITY: &str = "fake-decode-candidate 1.0";
 const FAKE_OUTPUT: &[u8] = b"fake-decoded-output";
@@ -296,7 +299,10 @@ fn hard_deadline_cancels_without_a_reported_exit_code() {
     let fixture = Fixture::new();
     fixture.case("slow.png", "slow");
     let mut config = harness::parse(arguments(&fixture, &[fixture.fake()])).unwrap();
-    config.timeout_ms = 150;
+    // The deadline must expire while the candidate is still sleeping its 4 s: one
+    // second stays far below that, while a tighter value measured host process
+    // creation instead of the deadline on a loaded machine.
+    config.timeout_ms = 1_000;
     config.invocation = helper_invocation(HELPER);
     let report = harness::run(&config).unwrap();
 
@@ -333,9 +339,15 @@ fn deadline_holds_when_a_descendant_inherits_the_capture_handles() {
     assert_eq!(observation.observed_outcome, OutcomeClass::Decoded);
     assert!(!observation.timeout_fired);
     let wall_ms = observation.wall_ms.unwrap();
+    // The bound is derived from the descendant's own lifetime, not from a guessed
+    // absolute: a pipe capture would return only after the descendant exits
+    // (ORPHAN_DESCENDANT_MS or later), while a correct return is candidate
+    // creation plus one write. One second below the descendant keeps most of the
+    // host's process-creation noise inside the passing band.
+    let bound = ORPHAN_DESCENDANT_MS.saturating_sub(1_000);
     assert!(
-        wall_ms < 4_000,
-        "the parent must not wait for an inherited capture handle ({wall_ms} ms)"
+        wall_ms < bound,
+        "the parent must not wait for an inherited capture handle ({wall_ms} ms, bound {bound} ms)"
     );
 }
 
@@ -5020,7 +5032,7 @@ fn fake_sleeper_helper() {
     if std::env::var_os(SLEEP_ENV).is_none() {
         return;
     }
-    std::thread::sleep(std::time::Duration::from_millis(6_000));
+    std::thread::sleep(std::time::Duration::from_millis(ORPHAN_DESCENDANT_MS));
 }
 
 /// Wall-clock milliseconds since the UNIX epoch, comparable across processes.

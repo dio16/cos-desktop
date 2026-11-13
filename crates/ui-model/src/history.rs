@@ -609,4 +609,39 @@ mod tests {
         };
         assert_eq!(outcome.label(), "この時点のローカル表示を復元しました");
     }
+
+    /// §69 regression: every History state the user sees keeps an understandable
+    /// Japanese label. A rename or a new surface that leaves only an English or
+    /// acronym label fails here instead of shipping silently.
+    #[test]
+    fn every_user_facing_history_state_stays_japanese() {
+        fn has_japanese(text: &str) -> bool {
+            text.chars()
+                .any(|character| matches!(character as u32, 0x3040..=0x30ff | 0x4e00..=0x9fff))
+        }
+        let states = [
+            HistoryLoadState::Idle,
+            HistoryLoadState::Loading,
+            HistoryLoadState::Loaded,
+            HistoryLoadState::Empty,
+            HistoryLoadState::End,
+            HistoryLoadState::Unauthorized,
+            HistoryLoadState::Error(HistoryError::NotFound),
+            HistoryLoadState::Error(HistoryError::Conflict),
+            HistoryLoadState::Error(HistoryError::InvalidRequest),
+            HistoryLoadState::Error(HistoryError::Malformed),
+            HistoryLoadState::Error(HistoryError::Oversized),
+            HistoryLoadState::Error(HistoryError::Unavailable),
+            HistoryLoadState::Error(HistoryError::Unsupported),
+        ];
+        for state in states {
+            for has_rows in [false, true] {
+                let label = state.label(has_rows);
+                assert!(
+                    has_japanese(&label),
+                    "history state {state:?} has no Japanese label: {label}"
+                );
+            }
+        }
+    }
 }

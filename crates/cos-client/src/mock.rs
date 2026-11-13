@@ -213,19 +213,25 @@ impl MockControl {
     pub fn active_stamp(&self) -> Option<ReadStamp> {
         self.state
             .lock()
-            .expect("fixture control lock")
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
             .active_stamp
             .clone()
     }
 
     /// Number of client frames the provider has consumed.
     pub fn sent_frames(&self) -> usize {
-        self.state.lock().expect("fixture control lock").sent_frames
+        self.state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .sent_frames
     }
 
     /// Number of authorized receipt lookups the provider has received.
     pub fn lookups_seen(&self) -> usize {
-        self.state.lock().expect("fixture control lock").lookups
+        self.state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .lookups
     }
 
     /// Command dispatches the provider actually received, in delivery order.
@@ -236,7 +242,7 @@ impl MockControl {
     pub fn sent_commands(&self) -> Vec<(String, String)> {
         self.state
             .lock()
-            .expect("fixture control lock")
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
             .command_sends
             .clone()
     }
@@ -244,7 +250,7 @@ impl MockControl {
     fn push(&self, command: MockCommand) {
         self.state
             .lock()
-            .expect("fixture control lock")
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
             .commands
             .push_back(command);
     }

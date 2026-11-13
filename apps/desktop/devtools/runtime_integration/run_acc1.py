@@ -97,6 +97,19 @@ def sha256_file(path: Path) -> str:
     return "sha256:" + digest.hexdigest()
 
 
+def field_of(text: str, secret: str) -> str:
+    """Name the JSON/key field that carried a capability or secret.
+
+    A finding that only names the file cannot be acted on: the point of the guard is
+    to say which recorded field leaked so the writer can stop recording it.
+    """
+    for line in text.splitlines():
+        if secret in line:
+            match = re.search(r'"([^"]+)"\s*:', line)
+            return match.group(1) if match else "unidentified field"
+    return "unidentified field"
+
+
 def short_hash(value: str) -> str:
     """Trace identity for one opaque capability (never the capability itself)."""
     return "sha256:" + hashlib.sha256(value.encode("utf-8")).hexdigest()[:16]
@@ -1190,9 +1203,18 @@ def run(args: argparse.Namespace) -> int:
                 resume_document = resume_response.get("document") or {}
                 resume_grant = resume_document.get("grant") or {}
                 resume_stamp = resume_grant.get("stamp") or {}
+                replay = resume_document.get("replay")
                 injection["resume"] = {
                     "http_status": resume_response["status"],
-                    "replay": resume_document.get("replay"),
+                    # The replay acceptance carries a capability cursor: publish a
+                    # bounded summary, never the cursor itself. The full value is also
+                    # in the secret list, so a regression here fails the leak check.
+                    "replay": None
+                    if replay is None
+                    else {
+                        "cursor_sha256_16": short_hash(str(replay.get("cursor") or "")),
+                        "fields": sorted(str(key) for key in replay),
+                    },
                     "read_revision": resume_stamp.get("read_revision"),
                     "context_sha256_16": short_hash(str(resume_stamp.get("context_id") or "")),
                     "snapshot_present": "snapshot" in resume_document,
@@ -1672,7 +1694,13 @@ def finish(
         text = path.read_text(encoding="utf-8", errors="replace")
         for secret_value in secrets_list:
             if secret_value and secret_value in text:
-                findings.append({"file": path.name, "kind": "capability_or_secret"})
+                findings.append(
+                    {
+                        "file": path.name,
+                        "kind": "capability_or_secret",
+                        "field": field_of(text, secret_value),
+                    }
+                )
         for marker in ("mh1.", "Bearer "):
             if marker in text and path.name != "runtime.log.sanitized.txt":
                 findings.append({"file": path.name, "kind": f"marker:{marker}"})

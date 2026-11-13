@@ -115,17 +115,13 @@
   "bytes": 9403,
   "sha256": "sha256:f0f96dc26e3b65503f57d363732c4f054ace426ab1fbfbdaf4b2cd29fae2f965"
  },
- "manifest.json": {
-  "bytes": 49172,
-  "sha256": "sha256:3fbdcf2e8bc8c1c8fd893cc090d76c953b2918c15678d5d51471ae3969cfce31"
- },
  "PLAN_PROPOSAL.md": {
   "bytes": 4561,
   "sha256": "sha256:6cba05ae0be36a528a1190adb94b7de712bd5ba50a1b498b2446ee0693e8b703"
  },
  "README.md": {
-  "bytes": 16866,
-  "sha256": "sha256:60e43aa34de52a9a7feac3ded4260fd2d9efa0d397ab9940a0c3af7ef36acdcc"
+  "bytes": 17835,
+  "sha256": "sha256:c53fb24d89fd2351f43fa3347ff1eb21e281b67c89c6039d26387d1df91a4fce"
  },
  "record-artifact.json": {
   "bytes": 108319,
