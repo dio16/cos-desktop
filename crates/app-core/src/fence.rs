@@ -56,7 +56,11 @@ pub struct CommandGateGuard<'a> {
 
 impl Drop for CommandGateGuard<'_> {
     fn drop(&mut self) {
-        let mut state = self.fence.command_gate.lock().expect("command gate");
+        let mut state = self
+            .fence
+            .command_gate
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         if state.owner != Some(self.thread) {
             return;
         }
@@ -172,10 +176,23 @@ impl VisibilityFence {
         self.close_internal(false)
     }
 
+    /// Close the fence; a poisoned lock is recovered instead of panicking.
+    ///
+    /// Both guarded values are cleared unconditionally before the sequence is
+    /// advanced, so recovering a poison cannot preserve a partially installed or
+    /// partially closed state, and the sequence/closed flags are atomics. A panic
+    /// raised while unwinding would otherwise turn one failure into a process-wide
+    /// crash instead of a contained close.
     fn close_internal(&self, invalidate_authorization: bool) -> u64 {
-        let mut installing = self.installing.lock().expect("installation lock");
+        let mut installing = self
+            .installing
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         *installing = None;
-        *self.state.write().expect("fence lock") = None;
+        *self
+            .state
+            .write()
+            .unwrap_or_else(std::sync::PoisonError::into_inner) = None;
         if invalidate_authorization {
             // Every authorization close invalidates candidates assembled before it,
             // including while the fence is already closed: a commit close must not
@@ -190,7 +207,10 @@ impl VisibilityFence {
         let next = self.next_odd(current);
         self.sequence.store(next, Ordering::Release);
         self.closed.store(true, Ordering::Release);
-        let mut subscribers = self.subscribers.lock().expect("subscriber lock");
+        let mut subscribers = self
+            .subscribers
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         for waker in subscribers.wakers.drain(..) {
             waker.wake();
         }
@@ -206,7 +226,10 @@ impl VisibilityFence {
     pub fn enter_command_boundary(&self) -> CommandGateGuard<'_> {
         let current = std::thread::current().id();
         loop {
-            let mut state = self.command_gate.lock().expect("command gate");
+            let mut state = self
+                .command_gate
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
             if state.owner == Some(current) {
                 state.depth += 1;
                 return CommandGateGuard {
@@ -264,7 +287,10 @@ impl VisibilityFence {
         authorization_epoch: u64,
         read_context: Option<PublicationReadContext>,
     ) -> ClosedFence {
-        let mut installing = self.installing.lock().expect("installation lock");
+        let mut installing = self
+            .installing
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         let expected_open = self.sequence.load(Ordering::Acquire) + 1;
         let installation = self.installations.fetch_add(1, Ordering::AcqRel) + 1;
         let guard = ClosedFence {
@@ -295,7 +321,10 @@ impl VisibilityFence {
     /// Candidate, sequence and closed flag are committed in one critical section
     /// shared with close and install.
     pub fn open(&self, guard: ClosedFence) -> Result<(), ClosedFence> {
-        let mut installing = self.installing.lock().expect("installation lock");
+        let mut installing = self
+            .installing
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         if !guard.closed {
             return Err(ClosedFence::consumed());
         }
@@ -320,7 +349,10 @@ impl VisibilityFence {
             return Err(ClosedFence::consumed());
         }
         let record = installing.take().expect("candidate checked above");
-        *self.state.write().expect("fence lock") = Some(record);
+        *self
+            .state
+            .write()
+            .unwrap_or_else(std::sync::PoisonError::into_inner) = Some(record);
         self.sequence.store(opened + 1, Ordering::Release);
         self.closed.store(false, Ordering::Release);
         Ok(())
@@ -397,7 +429,10 @@ impl VisibilityFence {
 
     /// Register a subscriber waker, bounded by [`MAX_SUBSCRIBERS`].
     fn register(&self, waker: &Waker) -> bool {
-        let mut subscribers = self.subscribers.lock().expect("subscriber lock");
+        let mut subscribers = self
+            .subscribers
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         if subscribers.closed {
             waker.wake_by_ref();
             return false;
@@ -422,7 +457,10 @@ impl VisibilityFence {
 
     /// Wake every subscriber because a new publication was installed.
     pub fn notify_subscribers(&self) {
-        let mut subscribers = self.subscribers.lock().expect("subscriber lock");
+        let mut subscribers = self
+            .subscribers
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         for waker in subscribers.wakers.drain(..) {
             waker.wake();
         }
@@ -430,7 +468,10 @@ impl VisibilityFence {
 
     /// Close subscriptions permanently (final shutdown).
     pub fn close_subscriptions(&self) {
-        let mut subscribers = self.subscribers.lock().expect("subscriber lock");
+        let mut subscribers = self
+            .subscribers
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         subscribers.closed = true;
         for waker in subscribers.wakers.drain(..) {
             waker.wake();

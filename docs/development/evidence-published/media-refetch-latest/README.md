@@ -31,7 +31,7 @@ native wire-410 は **blob 要求側の harness 注入遅延**で実サーバー
 |---|---|
 | Desktop repo | `C:/dev/cos-desktop` |
 | Desktop source | HEAD `885196efa5f0611a05083b8b5ef44ae2661d0a50` + 本修復 `98c45b9`（測定時は dirty worktree。`session.json` に status を記録） |
-| Desktop binary | `target/release/cos-desktop.exe`、`sha256:382e8862…05199e5f`、21,271,040 B、built `2026-11-10T23:10:21` |
+| Desktop binary | `target/release/cos-desktop.exe`、`sha256:382e8862…05919e5f`、21,271,040 B、built `2026-11-10T23:10:21` |
 | Runtime repo | `C:/AI/orchestrator` |
 | Runtime head | `06ee825eeb3be741b8a870189ed28f848c811630`（native / default-TTL とも同じ。dirty は測定前からの `dev_caller`/`devplan`/docs で本測定では未使用） |
 | 実行 | Python 3.13.14（uv-managed）で harness を実行 |

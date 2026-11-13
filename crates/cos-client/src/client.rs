@@ -164,8 +164,12 @@ impl CommandState {
         }
     }
 
-    /// Whether no further server response is expected for this command.
-    pub fn is_settled(&self) -> bool {
+    /// Whether a terminal server response was observed for this command.
+    ///
+    /// Deliberately crate-private: DC-MP-PUB1 forbids using this for the
+    /// capacity/retention classification, because `Accepted` is not canonically
+    /// reflected yet. Settlement is decided by [`unsettled`](crate::read::unsettled).
+    pub(crate) fn is_settled(&self) -> bool {
         matches!(
             self,
             Self::Accepted(_)

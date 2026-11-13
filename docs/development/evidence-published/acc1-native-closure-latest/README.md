@@ -223,8 +223,9 @@ is not listening on 8188 (prior stopped state). Ollama was untouched.
   screenshots with their SHA-256 values.
 - `logs/<run>/`, `uia/<run>/`, `shots/<run>/`, `artifact.png` — per-run
   sanitized logs and native evidence. `manifest.json` pins the committed files'
-  size and SHA-256, **except** its own self-entry (stale by construction) and
-  the gitignored raw logs, which are not in the repository.
+  size and SHA-256. It carries no entry for itself (a file cannot record its own
+  final digest) and does not cover the gitignored raw logs, which are not in the
+  repository.
 
 `record-golden-generation.json` is marked `reconstructed`: the original record
 written by the generation run was cleared before this campaign's evidence

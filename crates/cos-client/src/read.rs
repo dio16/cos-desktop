@@ -95,11 +95,9 @@ impl CommandStatus {
         match &self.status {
             crate::CommandState::Prepared | crate::CommandState::Pending { .. } => false,
             crate::CommandState::ResultUnknown { receipt, .. } => receipt.is_some(),
-            crate::CommandState::Accepted(_)
-            | crate::CommandState::Rejected(_)
-            | crate::CommandState::CanonicalReflected(_)
-            | crate::CommandState::Failed { .. }
-            | crate::CommandState::Unsupported { .. } => true,
+            // Every remaining state carries a terminal server response; reusing that
+            // one definition keeps this classification from drifting from it.
+            settled => settled.is_settled(),
         }
     }
 

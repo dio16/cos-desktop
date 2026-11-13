@@ -28,6 +28,8 @@ LINK_WITH_ANCHOR = re.compile(r"\[[^\]]+\]\((?!https?:|#)([^)#]+)(?:#([^)]*))?\)
 MERMAID = re.compile(r"```mermaid\n(.*?)```", re.DOTALL)
 PREREQS = re.compile(r"^- \*\*Hard prereqs:\*\* (.+)$", re.MULTILINE)
 DAG_EDGE = re.compile(r"\b(MP-[A-Z0-9]+)\s*-->\s*(MP-[A-Z0-9]+)\b")
+MERMAID_LABELLED = re.compile(r"([A-Za-z][A-Za-z0-9_]*)\s*\[\s*(MP-[A-Z0-9]+)\s*\]")
+MERMAID_ARROW = re.compile(r"([A-Za-z0-9_-]+)\s*-->\s*([A-Za-z0-9_-]+)")
 DAG_NODE = re.compile(r"\b(MP-[A-Z0-9]+)\b")
 UNRUN = ("NOT_RUN", "NOT_MEASURED", "NOT_VERIFIED", "NOT RUN", "未検証", "未測定")
 
@@ -188,6 +190,27 @@ def declared_edges(text: str) -> set[tuple[str, str]]:
     return edges
 
 
+def diagram_edges(block: str) -> set[tuple[str, str]]:
+    """Edges one mermaid block draws, resolving the short node aliases it declares.
+
+    The plan spells a node either literally (`MP-A --> MP-B`) or with a short alias
+    (`A[MP-A]`, then `A --> B[MP-B]`). Matching only literal identifiers silently
+    skipped every aliased diagram, so its edges were never checked at all. An arrow
+    whose endpoint names no declared alias is not guessed: it contributes no edge.
+    """
+    alias = {name: card for name, card in MERMAID_LABELLED.findall(block)}
+    # A label may sit on the arrow itself (`A1[MP-A] --> B1[MP-B]`), so rewrite every
+    # labelled node to its bare card id before scanning for arrows.
+    normalized = MERMAID_LABELLED.sub(lambda match: match.group(2), block)
+    edges = set()
+    for raw_source, raw_target in MERMAID_ARROW.findall(normalized):
+        source = raw_source if DAG_NODE.fullmatch(raw_source) else alias.get(raw_source)
+        target = raw_target if DAG_NODE.fullmatch(raw_target) else alias.get(raw_target)
+        if source and target:
+            edges.add((source, target))
+    return edges
+
+
 def check_dag(text: str) -> list[Finding]:
     """Every card referenced from a diagram must exist.
 
@@ -207,8 +230,7 @@ def check_dag(text: str) -> list[Finding]:
     declared = declared_edges(text)
     drawn = set()
     for block in MERMAID.findall(text):
-        for source, target in DAG_EDGE.findall(block):
-            drawn.add((source, target))
+        drawn.update(diagram_edges(block))
     for source, target in sorted(drawn):
         if (source, target) not in declared:
             findings.append(
@@ -321,6 +343,25 @@ def self_test() -> int:
     expect(
         any("but no card declares it" in str(f) for f in check_dag(edge_fixture)),
         "a diagram edge the cards do not declare is reported",
+    )
+
+    def two_cards(prereq_b: str) -> str:
+        return (
+            "#### MP-A — A\n- **Hard prereqs:** none.\n- **Status:** PARTIAL\n"
+            "- **Design source / acceptance:** x\n\n"
+            "#### MP-B — B\n- **Hard prereqs:** " + prereq_b + ".\n"
+            "- **Status:** PARTIAL\n- **Design source / acceptance:** x\n\n"
+        )
+
+    alias_undeclared = two_cards("none") + "```mermaid\nA1[MP-A] --> B1[MP-B]\n```\n"
+    expect(
+        any("but no card declares it" in str(f) for f in check_dag(alias_undeclared)),
+        "an edge drawn between aliased nodes is checked, not skipped",
+    )
+    alias_declared = two_cards("MP-A") + "```mermaid\nA1[MP-A]\nB1[MP-B]\nA1 --> B1\n```\n"
+    expect(
+        not any("but no card declares it" in str(f) for f in check_dag(alias_declared)),
+        "an aliased edge the cards declare is accepted",
     )
 
     dag_text = good + "\n```mermaid\nX1[MP-X1]\nX2[MP-X2]\nX1 --> X2\n```\n"

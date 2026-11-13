@@ -6,7 +6,7 @@ use app_core::{
     preferences::{Preferences, WindowGeometry},
 };
 use desktop_protocol::{
-    ArtifactDigest, ArtifactId, CapabilitiesId, Counter, EpochId, ReadContextId,
+    ArtifactDigest, ArtifactId, Availability, CapabilitiesId, Counter, EpochId, ReadContextId,
     RepresentationKind, ServerId, TaskId,
 };
 use gpui::{
@@ -119,6 +119,7 @@ actions!(
         HistoryOpen,
         HistoryClose,
         HistoryOlder,
+        HistoryReload,
         HistoryRowUp,
         HistoryRowDown,
         HistoryRowHome,
@@ -176,8 +177,8 @@ pub fn bind_keys(cx: &mut App) {
         KeyBinding::new("ctrl-tab", NextSurface, None),
         KeyBinding::new("tab", FocusNext, None),
         KeyBinding::new("shift-tab", FocusPrevious, None),
-        KeyBinding::new("enter", Activate, Some("!TaskRailInput && !TaskRailList && !FlowSearchInput && !FlowNodeList && !FlowEdgeList && !HistoryList && !HistoryOlder")),
-        KeyBinding::new("space", Activate, Some("!TaskRailInput && !TaskRailList && !FlowSearchInput && !FlowNodeList && !FlowEdgeList && !HistoryList && !HistoryOlder")),
+        KeyBinding::new("enter", Activate, Some("!TaskRailInput && !TaskRailList && !FlowSearchInput && !FlowNodeList && !FlowEdgeList && !HistoryList && !HistoryOlder && !HistoryReload")),
+        KeyBinding::new("space", Activate, Some("!TaskRailInput && !TaskRailList && !FlowSearchInput && !FlowNodeList && !FlowEdgeList && !HistoryList && !HistoryOlder && !HistoryReload")),
         KeyBinding::new("ctrl-d", Diagnostics, None),
         KeyBinding::new("enter", InspectorToggle, Some("InspectorSection")),
         KeyBinding::new("space", InspectorToggle, Some("InspectorSection")),
@@ -244,6 +245,8 @@ pub fn bind_keys(cx: &mut App) {
         KeyBinding::new("space", HistoryReopen, Some("HistoryList")),
         KeyBinding::new("enter", HistoryOlder, Some("HistoryOlder")),
         KeyBinding::new("space", HistoryOlder, Some("HistoryOlder")),
+        KeyBinding::new("enter", HistoryReload, Some("HistoryReload")),
+        KeyBinding::new("space", HistoryReload, Some("HistoryReload")),
     ]);
 }
 
@@ -695,8 +698,10 @@ fn build_support_preview(handle: &ObservationHandle, desktop_version: &str) -> S
     }
 }
 
-/// Read-only About rows for the Ctrl+D diagnostics area./// Read-only About rows for the Ctrl+D diagnostics area. Only the injected binary
-/// version is known; Runtime/Protocol/Schema stay explicitly unknown.
+/// Read-only About rows for the Ctrl+D diagnostics area.
+///
+/// Only the injected binary version is known; Runtime/Protocol/Schema stay
+/// explicitly unknown.
 fn about_lines(desktop_version: &str) -> [String; 4] {
     [
         format!("Desktop {desktop_version}"),
@@ -722,6 +727,13 @@ struct MediaLoadKey {
     artifact_ref: ArtifactId,
     artifact_digest: ArtifactDigest,
     representation: RepresentationKind,
+    /// Declared availability the request was resolved under.
+    ///
+    /// A changed availability is a different resolution: `PENDING → AVAILABLE`
+    /// must start the fetch that was previously withheld, and any change to a
+    /// non-available state must withdraw the picture instead of keeping bytes
+    /// admitted under the previous declaration.
+    availability: Availability,
     /// Capability projection the request was gated on; a new revision forces a
     /// new gate decision instead of reusing the previous offer.
     capability: Option<(CapabilitiesId, Counter)>,
@@ -836,6 +848,10 @@ pub struct Shell {
     history_focus: FocusHandle,
     history_list_focus: FocusHandle,
     history_older_focus: FocusHandle,
+    history_reload_focus: FocusHandle,
+    /// Scroll position of the bounded history list, so the keyboard cursor is
+    /// always inside the visible range instead of moving off-screen.
+    history_scroll: ScrollHandle,
     history_restore_focus: Option<FocusHandle>,
     history_active: Option<usize>,
     history_task: Option<desktop_protocol::TaskId>,
@@ -881,8 +897,6 @@ pub struct Shell {
     /// complete flow admission identity. Owned by the shell, never a global.
     flow_match_cache: flow::MatchCache,
     flow_request_generation: Arc<RailWorkSignal>,
-    /// Layering for the admitted flow revision; recomputed only when it changes.
-    flow_layers: Option<(flow::RevisionKey, Vec<Arc<flow::Layers>>)>,
     flow_jobs: Arc<Mutex<Option<flow::Job>>>,
     _flow_worker: Option<Task<()>>,
     /// Colour scheme in force: the approved normal palette or the OS system
@@ -1195,6 +1209,8 @@ impl Shell {
             history_focus: cx.focus_handle().tab_stop(true),
             history_list_focus: cx.focus_handle().tab_index(40).tab_stop(true),
             history_older_focus: cx.focus_handle().tab_index(41).tab_stop(true),
+            history_reload_focus: cx.focus_handle().tab_index(42).tab_stop(true),
+            history_scroll: ScrollHandle::new(),
             history_restore_focus: None,
             history_active: None,
             history_task: None,
@@ -1226,7 +1242,6 @@ impl Shell {
             flow_pending: None,
             flow_match_cache: flow::MatchCache::default(),
             flow_request_generation,
-            flow_layers: None,
             flow_jobs,
             _flow_worker: flow_worker,
             contrast: ContrastState::default(),
@@ -2589,6 +2604,7 @@ impl Shell {
             artifact_ref: artifact.artifact_ref.clone(),
             artifact_digest: artifact.artifact_digest.clone(),
             representation: RepresentationKind::Original,
+            availability: artifact.availability.clone(),
             capability: capability_key,
             refetch: self.media_refetch,
         };
@@ -2831,6 +2847,7 @@ impl Shell {
                         artifact_ref: selection.artifact_ref().clone(),
                         artifact_digest: selection.artifact_digest().clone(),
                         representation: RepresentationKind::Original,
+                        availability: selection.declared_availability().clone(),
                         capability,
                         // Compare sides have no manual refetch control; they
                         // re-resolve on a changed canonical identity only.
@@ -2944,6 +2961,14 @@ impl Shell {
             // not be re-admitted later under the new selection.
             self.artifact_viewer
                 .update(cx, |viewer, cx| viewer.withdraw_recovery_backup(cx));
+            // Nor may the previous candidate's picture stay on screen under the new
+            // label until the new resolution completes (DC-MP-DOCK2 D-3: an explicit
+            // selection changes the artifact surface to that candidate). The new
+            // resolution replaces this explicit preparing state with its own outcome.
+            self.withdraw_artifact_media();
+            self.artifact_viewer.update(cx, |viewer, cx| {
+                viewer.unavailable("選択した候補の画像を準備しています。".into(), cx);
+            });
             self.viewed_withheld = false;
         }
         if let Some(target) = event.surface
@@ -3939,7 +3964,10 @@ impl Render for Shell {
         // A usable scale factor yields the physical hairline; an unusable one
         // yields no separator at all (fail closed, never a substituted width).
         let hairline = shell_style::separator(&self.tokens, window.scale_factor()).ok();
-        if let Ok(mut preferences) = self.preferences.lock() {
+        // A render must never wait on the mutex the save path takes: a contended
+        // frame simply skips the local geometry capture and the next frame retries
+        // (PROCESS_MODEL: no blocking lock wait on the UI thread).
+        if let Ok(mut preferences) = self.preferences.try_lock() {
             let bounds = window.bounds();
             preferences.window = Some(WindowGeometry {
                 x: f32::from(bounds.origin.x),
@@ -4436,33 +4464,10 @@ impl Render for Shell {
                     .collect::<Vec<_>>()
             })
             .unwrap_or_default();
-        // Layering runs over the complete graph, so it is computed once per admitted
-        // revision and only while the Flow surface is shown; a revision change, a
-        // revoked publication or another surface never displays a stale drawing.
-        if surface == Surface::Flow
-            && let Some(rows) = flow_rows.as_deref()
-        {
-            let key = flow::revision_key(&rows.graphs);
-            if self
-                .flow_layers
-                .as_ref()
-                .is_none_or(|(cached, _)| cached != &key)
-            {
-                self.flow_layers = Some((
-                    key,
-                    rows.graphs
-                        .iter()
-                        .map(|graph| Arc::new(flow::layers(graph)))
-                        .collect(),
-                ));
-            }
-        }
         let diagram_key = self.flow_admission_key();
-        let flow_drawing = flow_rows.as_deref().and_then(|rows| {
-            self.flow_layers.as_ref().map(|(_, layers)| FlowDrawing {
-                rows,
-                layers: layers.as_slice(),
-            })
+        let flow_drawing = flow_rows.as_deref().map(|rows| FlowDrawing {
+            rows,
+            layers: rows.layers.as_ref(),
         });
         let flow_diagram_element = (surface == Surface::Flow)
             .then(|| {
@@ -5289,7 +5294,7 @@ impl Render for Shell {
                         index == group.start,
                     )
                 })
-                .unwrap_or_else(|| ("反復情報なし".into(), "反復 ?".into(), false))
+                .unwrap_or_else(|| ("反復情報なし".into(), "反復 不明".into(), false))
         };
         let candidate_help = match changing_side {
             Some(CompareSide::A) => {
@@ -8250,6 +8255,7 @@ mod media_refetch_tests {
             artifact_ref: ArtifactId::fixture("artifact/a"),
             artifact_digest: ArtifactDigest::fixture("digest/a"),
             representation: RepresentationKind::Original,
+            availability: desktop_protocol::Availability::Available,
             capability: None,
             refetch,
         }

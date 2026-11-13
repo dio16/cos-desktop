@@ -198,6 +198,7 @@ mod tests {
             artifact_ref: ArtifactId::fixture(format!("artifact/{label}")),
             artifact_digest: ArtifactDigest::fixture(format!("digest/{label}")),
             representation: RepresentationKind::Original,
+            availability: desktop_protocol::Availability::Available,
             capability: None,
             // Compare sides re-resolve on a changed canonical identity only.
             refetch: 0,

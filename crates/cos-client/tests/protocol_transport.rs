@@ -6,6 +6,7 @@
 //! would run against the real adapter, and a real `CosClient` is driven from
 //! `OPEN_OBSERVATION` to a published snapshot and an applied delta.
 
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Condvar, Mutex};
 use std::thread::ThreadId;
 use std::time::{Duration, Instant};
@@ -2222,5 +2223,53 @@ fn handshake_failures_after_a_live_session_keep_the_bounded_reconnect_plan() {
         ClientSource::Runtime {
             server_identity: ServerId::new(SERVER_IDENTITY).expect("server id"),
         }
+    );
+}
+
+/// (i) A replaced credential is an authentication-context change: the transport closes
+/// the shared publication at the replacement it observes, before that exchange's result
+/// is delivered to the client.
+///
+/// The launch credential seeded at construction is not a change, so an ordinary
+/// session never closes the fence on its own.
+#[test]
+fn a_replaced_credential_closes_the_shared_publication() {
+    let slot: cos_client::CredentialSlot = Arc::new(Mutex::new(Some("first-token".to_owned())));
+    let (executor, _state) = StubHttp::new();
+    let mut config = config();
+    config.credential_slot = Some(Arc::clone(&slot));
+    let mut transport = ProtocolTransport::new(executor, config, versions());
+
+    let closes = Arc::new(AtomicU64::new(0));
+    let counter = Arc::clone(&closes);
+    transport.bind_observation_control(cos_client::ObservationControl {
+        wake: std::task::Waker::noop().clone(),
+        close_visibility: Arc::new(move || counter.fetch_add(1, Ordering::AcqRel) + 1),
+    });
+
+    // One live session: handshake, grant and snapshot, then delta polling.
+    transport.send(hello_frame()).expect("hello enqueues");
+    transport
+        .send(open_frame(open_request("request-1")))
+        .expect("open enqueues");
+    for _ in 0..5 {
+        let _ = next_frame(&mut transport);
+    }
+    assert_eq!(
+        closes.load(Ordering::Acquire),
+        0,
+        "the launch credential is not a replacement"
+    );
+
+    // A bounded reauthorization installs a replacement credential.
+    *slot.lock().expect("slot") = Some("second-token".to_owned());
+    let deadline = Instant::now() + Duration::from_secs(5);
+    while Instant::now() < deadline && closes.load(Ordering::Acquire) == 0 {
+        let _ = transport.poll();
+        std::thread::sleep(Duration::from_millis(2));
+    }
+    assert!(
+        closes.load(Ordering::Acquire) >= 1,
+        "a replaced credential closes the shared publication"
     );
 }

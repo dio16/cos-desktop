@@ -283,7 +283,10 @@ mod windows_tests {
     impl CredentialStore for ScriptedStore {
         fn load(&self, _origin: &str) -> Result<Option<String>, CredentialStoreError> {
             self.loads.fetch_add(1, Ordering::SeqCst);
-            let mut reads = self.reads.lock().expect("scripted store");
+            let mut reads = self
+                .reads
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
             if reads.len() > 1 {
                 Ok(reads.pop_front().unwrap_or(None))
             } else {

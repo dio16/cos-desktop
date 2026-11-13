@@ -68,6 +68,13 @@ pub struct Rows {
     pub graphs: Arc<[Arc<GraphDisplay>]>,
     pub nodes: Arc<[NodeRow]>,
     pub edges: Arc<[EdgeRow]>,
+    /// Layering for exactly these graphs, computed on the same background pass.
+    ///
+    /// Layering traverses the complete graph (index build plus component
+    /// condensation), so it must never run on the render path: it is part of the
+    /// admitted value and is already discarded with it when the revision or the
+    /// authorization changes.
+    pub layers: Arc<[Arc<Layers>]>,
 }
 
 /// Complete identity that must still hold when filtered rows are admitted.
@@ -150,10 +157,18 @@ pub fn rows_cancellable(
     if cancelled() {
         return None;
     }
+    let mut layered: Vec<Arc<Layers>> = Vec::with_capacity(graphs.len());
+    for graph in graphs {
+        if cancelled() {
+            return None;
+        }
+        layered.push(Arc::new(layers(graph)));
+    }
     Some(Rows {
         graphs: graphs.into(),
         nodes: nodes.into(),
         edges: edges.into(),
+        layers: layered.into(),
     })
 }
 

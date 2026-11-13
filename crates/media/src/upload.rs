@@ -367,7 +367,10 @@ impl UploadPool {
     }
 
     pub fn usage(&self) -> UploadUsage {
-        let state = self.state.lock().expect("pool state");
+        let state = self
+            .state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         UploadUsage {
             staging: state.staging,
             in_flight: state.in_flight,
@@ -382,7 +385,10 @@ impl UploadPool {
     /// What is currently held for abandoned transfers. Read-only: there is no call that hands the
     /// bytes out, because a caller could drop them while a transfer still reads them.
     pub fn orphaned(&self) -> Vec<OrphanedSummary> {
-        let state = self.state.lock().expect("pool state");
+        let state = self
+            .state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         state
             .orphaned_payloads
             .iter()
@@ -403,7 +409,10 @@ impl UploadPool {
         &self,
         identity: &UploadIdentity,
     ) -> Result<(), UploadRefusal> {
-        let mut state = self.state.lock().expect("pool state");
+        let mut state = self
+            .state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         let before = state.orphaned_payloads.len();
         let mut released_bytes = None;
         state.orphaned_payloads.retain(|held| {
@@ -430,12 +439,18 @@ impl UploadPool {
 
     /// Whether any per-resource quarantine is non-empty.
     pub fn has_quarantine(&self) -> bool {
-        let state = self.state.lock().expect("pool state");
+        let state = self
+            .state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         state.staging_stuck + state.in_flight_stuck + state.resident_stuck > 0
     }
 
     fn with_state<T>(&self, body: impl FnOnce(&mut PoolState) -> T) -> T {
-        let mut state = self.state.lock().expect("pool state");
+        let mut state = self
+            .state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         body(&mut state)
     }
 }

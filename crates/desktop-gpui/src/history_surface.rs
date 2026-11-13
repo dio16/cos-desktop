@@ -216,6 +216,7 @@ impl Shell {
         }
         let rows = self.history_view().rows.len();
         self.history_active = list_cursor::stepped_index(self.history_active, rows, delta);
+        self.reveal_history_active();
         self.history_list_focus.focus(window, cx);
         cx.notify();
     }
@@ -232,8 +233,19 @@ impl Shell {
         }
         let rows = self.history_view().rows.len();
         self.history_active = rail_edge_index(rows, edge);
+        self.reveal_history_active();
         self.history_list_focus.focus(window, cx);
         cx.notify();
+    }
+
+    /// Scroll the list so the keyboard cursor is inside the visible range.
+    ///
+    /// The list is a bounded scroll region, so moving the cursor without
+    /// revealing it lets Enter reopen a row the user cannot see.
+    fn reveal_history_active(&self) {
+        if let Some(index) = self.history_active {
+            self.history_scroll.scroll_to_item(index);
+        }
     }
 
     /// Reopen the active row as a local view only.
@@ -287,6 +299,12 @@ impl Shell {
         );
         self.history_notice = Some(outcome.label().to_owned());
         self.history_list_focus.focus(window, cx);
+        // A reopen changes the local viewed candidate in place; it is the same
+        // presentation transition an explicit dock selection performs, so the
+        // artifact and compare panes must re-resolve instead of keeping the
+        // previous candidate's picture under the new label.
+        self.sync_artifact_media(cx);
+        self.sync_compare_media(cx);
         cx.notify();
     }
 
@@ -390,6 +408,7 @@ impl Shell {
             )))
             .key_context("HistoryList")
             .track_focus(&self.history_list_focus)
+            .track_scroll(&self.history_scroll)
             .flex()
             .flex_col()
             .gap_1()
@@ -470,10 +489,15 @@ impl Shell {
                     .id("history-reload")
                     .role(Role::Button)
                     .aria_label("履歴を再読み込み")
+                    .key_context("HistoryReload")
+                    .track_focus(&self.history_reload_focus)
                     .px_3()
                     .py_1()
                     .border_1()
                     .border_color(rgb(colors.border))
+                    .on_action(cx.listener(|this, _: &HistoryReload, _, cx| {
+                        this.history_reload(cx);
+                    }))
                     .on_click(cx.listener(|this, _, _, cx| this.history_reload(cx)))
                     .child("再読み込み")
                     .into_any_element(),

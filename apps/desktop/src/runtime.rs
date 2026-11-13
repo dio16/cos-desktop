@@ -54,7 +54,7 @@ use desktop_protocol::{Limits, ObservationScopeRequest, ProtocolVersions, ScopeF
 use crate::app::Mode;
 use crate::credential_issuance::CredentialExchange;
 use crate::credentials::CredentialStore;
-use crate::media_executor::MediaHttp;
+use crate::media_executor::{MediaExecutorUnavailable, MediaHttp};
 
 /// Environment variable naming the Runtime origin for runtime mode.
 pub(crate) const ENDPOINT_ENV: &str = "COS_DESKTOP_RUNTIME_ENDPOINT";
@@ -121,13 +121,6 @@ pub(crate) struct RuntimeSettings {
     token: String,
     /// Only a credential this app issued or renewed may be revoked on teardown.
     revocable: bool,
-}
-
-impl RuntimeSettings {
-    /// The validated origin this attempt talks to (never a token value).
-    pub(crate) fn origin(&self) -> &str {
-        &self.endpoint
-    }
 }
 
 /// One started observation: the client the host drives and the scope to open.
@@ -430,6 +423,12 @@ fn non_zero_port(raw: &str) -> Option<u16> {
 pub(crate) struct SessionIdentity {
     credential: CredentialSlot,
     audience: Arc<Mutex<Option<String>>>,
+    /// Origin the current session resolved to.
+    ///
+    /// Media joins every request onto this cell rather than a launch-time copy, so
+    /// a reconnect that rediscovers a restarted Runtime on another port replaces
+    /// it together with the credential instead of pinning media to the old port.
+    origin: Arc<Mutex<Option<String>>>,
 }
 
 impl SessionIdentity {
@@ -439,6 +438,7 @@ impl SessionIdentity {
         Self {
             credential: Arc::new(Mutex::new(credential)),
             audience: Arc::new(Mutex::new(audience)),
+            origin: Arc::new(Mutex::new(None)),
         }
     }
 
@@ -448,7 +448,24 @@ impl SessionIdentity {
         Self {
             credential,
             audience: Arc::new(Mutex::new(audience)),
+            origin: Arc::new(Mutex::new(None)),
         }
+    }
+
+    /// Install the origin this session currently talks to.
+    ///
+    /// Called by every client build (startup and each reconnect attempt) from the
+    /// already validated plan, so media follows the same endpoint the observation
+    /// transport uses.
+    pub(crate) fn install_origin(&self, origin: &str) {
+        if let Ok(mut slot) = self.origin.lock() {
+            *slot = Some(origin.to_owned());
+        }
+    }
+
+    /// The live session origin cell read by the media source factory.
+    pub(crate) fn origin_cell(&self) -> Arc<Mutex<Option<String>>> {
+        Arc::clone(&self.origin)
     }
 
     /// Install the credential resolved for one client build and, when the
@@ -545,19 +562,33 @@ pub(crate) fn media_binding(settings: &RuntimeSettings, session: &SessionIdentit
         eprintln!("Runtime media acquisition unavailable: bounded media cache limits were refused");
         return MediaBinding::Unavailable;
     };
-    let origin = settings.endpoint.clone();
+    let origin = session.origin_cell();
+    let startup_origin = settings.endpoint.clone();
     let session = session.clone();
     MediaBinding::Runtime(MediaRuntime::new(
         repository,
         session.audience_cell(),
         Box::new(move |server_identity, audience| {
-            let executor = MediaHttp::with_slot(&origin, session.credential_slot())
-                .expect("the composition root validated this origin and credential");
-            Box::new(MediaFetcher::new(
-                executor,
-                server_identity.as_str().to_owned(),
-                audience.to_owned(),
-            ))
+            // The session origin, not a launch-time copy: a reconnect installs the
+            // rediscovered origin before the next resolution runs. Until the first
+            // client build installs one, this attempt's validated plan is the origin.
+            let current = origin.lock().ok().and_then(|value| value.clone());
+            let endpoint = current.as_deref().unwrap_or(startup_origin.as_str());
+            let executor = MediaHttp::with_slot(endpoint, session.credential_slot());
+            match executor {
+                Some(executor) => Box::new(MediaFetcher::new(
+                    executor,
+                    server_identity.as_str().to_owned(),
+                    audience.to_owned(),
+                )),
+                // No validated origin at all: fail closed with the value-free
+                // transport class instead of contacting a stale endpoint.
+                None => Box::new(MediaFetcher::new(
+                    MediaExecutorUnavailable,
+                    server_identity.as_str().to_owned(),
+                    audience.to_owned(),
+                )),
+            }
         }),
     ))
 }
@@ -572,6 +603,9 @@ pub(crate) fn observation(
     store: Arc<dyn CredentialStore>,
     session: SessionIdentity,
 ) -> Result<RuntimeObservation, RuntimeUnavailable> {
+    // Media resolves against the same origin as this client build; a reconnect
+    // that lands on another port replaces it before any resolution runs.
+    session.install_origin(&settings.endpoint);
     let RuntimeSettings {
         endpoint,
         token,
@@ -831,6 +865,10 @@ impl<E: ProtocolHttp, X: CredentialExchange + Send> ProtocolHttp for ReauthHttp<
         if is_command_route(&request.path) {
             return Ok(response);
         }
+        // The read is retried exactly once with the replacement credential. A
+        // reissue may change the authenticated principal, so the transport closes
+        // the shared publication at the replacement it observes before delivering
+        // this exchange's result; the client then withholds and re-observes.
         self.inner.execute(with_authorization(request, &token))
     }
 }

@@ -2916,6 +2916,15 @@ def build_desktop() -> dict:
             if DESKTOP_EXE.is_file() else None}
 
 
+def field_of(text: str, secret: str) -> str:
+    """Name the recorded field that carried a capability or secret."""
+    for line in text.splitlines():
+        if secret in line:
+            match = re.search(r'"([^"]+)"\s*:', line)
+            return match.group(1) if match else "unidentified field"
+    return "unidentified field"
+
+
 def leak_scan(evidence_dir: Path, secrets_list: list[str]) -> dict:
     findings: list[str] = []
     checked = 0
@@ -2929,7 +2938,9 @@ def leak_scan(evidence_dir: Path, secrets_list: list[str]) -> dict:
         checked += 1
         for secret in secrets_list:
             if secret and secret in text:
-                findings.append(f"secret material in {path.name}")
+                findings.append(
+                    f"secret material in {path.name} (field {field_of(text, secret)})"
+                )
         for pattern, label in ((r"Bearer\s+[A-Za-z0-9._\-]{16,}", "bearer token"),
                                (r"mh1\.[A-Za-z0-9_\-]+\.[A-Za-z0-9_\-]+", "media handle")):
             if re.search(pattern, text):

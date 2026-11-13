@@ -405,9 +405,19 @@ struct PreparationQueue {
 }
 
 impl PreparationQueue {
+    /// Acquire one preparation permit.
+    ///
+    /// A poisoned lock is recovered rather than propagated: it guards the
+    /// preparation/paint bookkeeping, so a panic raised while unwinding would
+    /// abort the process instead of dropping one frame's work. The queue's
+    /// invariants are carried by the ticket/waiter fields, which recovery reads
+    /// and rewrites under the same lock.
     fn acquire(&self, cancel: &Cancellation) -> Result<PreparationPermit<'_>, ImageUploadError> {
         let entered = Instant::now();
-        let mut state = self.state.lock().expect("preparation queue");
+        let mut state = self
+            .state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         let ticket = state.next_ticket;
         state.next_ticket = state.next_ticket.wrapping_add(1);
         if state.queue.len() >= 16 {
@@ -448,7 +458,11 @@ struct PreparationPermit<'a> {
 
 impl Drop for PreparationPermit<'_> {
     fn drop(&mut self) {
-        let mut state = self.queue.state.lock().expect("preparation queue");
+        let mut state = self
+            .queue
+            .state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         state.active = false;
         self.queue.changed.notify_all();
     }
@@ -461,7 +475,7 @@ fn current_period_index() -> u128 {
 fn reserve_process_period(period_index: u128, bytes: u64, frame: Option<usize>) -> bool {
     PROCESS_ALLOWANCE
         .lock()
-        .expect("process upload allowance")
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
         .reserve(period_index, bytes, frame)
 }
 
@@ -477,14 +491,14 @@ fn period_still_current(paint_period: u128) -> bool {
 fn note_process_paint_issued(bytes: u64) {
     PROCESS_ALLOWANCE
         .lock()
-        .expect("process upload allowance")
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
         .note_paint_issued(bytes);
 }
 
 fn note_process_repaint(tiles: u64) {
     PROCESS_ALLOWANCE
         .lock()
-        .expect("process upload allowance")
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
         .note_repaint(tiles);
 }
 
@@ -631,7 +645,7 @@ impl ImageUploadService {
                     .inner
                     .state
                     .lock()
-                    .expect("image upload service state");
+                    .unwrap_or_else(std::sync::PoisonError::into_inner);
                 state.decode_calls = state.decode_calls.saturating_add(1);
             }
             let verified = decode_for_upload(&encoded, request.decode_limits, &cancel)
@@ -714,19 +728,26 @@ impl ImageUploadService {
         {
             return;
         }
-        let mut state = self.inner.state.lock().expect("image upload service state");
+        let mut state = self
+            .inner
+            .state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         for index in (0..state.frames.len()).rev() {
             if state.frames[index].identity.device_generation >= generation {
                 continue;
             }
             let frame = state.frames.swap_remove(index);
-            let mut paint = frame.paint_state.lock().expect("image frame paint state");
+            let mut paint = frame
+                .paint_state
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
             paint.complete_in_scene = false;
             paint.cancelled_before_upload = true;
             let admission = frame
                 .admission
                 .lock()
-                .expect("image frame admission")
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
                 .take();
             if let Some(mut admission) = admission {
                 if admission.stage() == UploadStage::Staged {
@@ -746,7 +767,11 @@ impl ImageUploadService {
 
     /// Record that one pane now holds a reusable CPU backup for this origin.
     pub fn claim_backup(&self, origin: u64) {
-        let mut state = self.inner.state.lock().expect("image upload service state");
+        let mut state = self
+            .inner
+            .state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         *state.backup_claims.entry(origin).or_insert(0) += 1;
     }
 
@@ -754,7 +779,11 @@ impl ImageUploadService {
     /// recovery pixels stay counted while any pane can still re-admit them.
     pub fn release_backup_claim(&self, origin: u64) -> bool {
         {
-            let mut state = self.inner.state.lock().expect("image upload service state");
+            let mut state = self
+                .inner
+                .state
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
             let Some(count) = state.backup_claims.get_mut(&origin) else {
                 return false;
             };
@@ -775,7 +804,11 @@ impl ImageUploadService {
     /// only the reusable CPU allocation is released. A frame any consumer still references, or one
     /// whose tiles were already issued, is kept.
     pub fn release_origin(&self, origin: u64) -> bool {
-        let mut state = self.inner.state.lock().expect("image upload service state");
+        let mut state = self
+            .inner
+            .state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         if state
             .backup_claims
             .get(&origin)
@@ -791,7 +824,10 @@ impl ImageUploadService {
             return false;
         };
         let frame = Arc::clone(&state.quarantined_views[index]);
-        let paint = frame.paint_state.lock().expect("image frame paint state");
+        let paint = frame
+            .paint_state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         let referenced = !paint.consumers.is_empty() || paint.issued.iter().any(|issued| *issued);
         drop(paint);
         if referenced
@@ -819,7 +855,7 @@ impl ImageUploadService {
             .inner
             .state
             .lock()
-            .expect("image upload service state")
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
             .quarantined_views
             .iter()
             .find(|frame| frame.origin == previous.origin)
@@ -885,7 +921,11 @@ impl ImageUploadService {
         // admission itself happens inside that lock, so two generations cannot each pass a
         // per-pool check and together exceed the process budget.
         let admission = {
-            let mut state = self.inner.state.lock().expect("image upload service state");
+            let mut state = self
+                .inner
+                .state
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
             self.check_device_generation(identity.device_generation)?;
             if let Some(origin) = origin
                 && let Some(existing) = state
@@ -1016,7 +1056,7 @@ impl ImageUploadService {
                 &previous
                     .paint_state
                     .lock()
-                    .expect("image frame paint state")
+                    .unwrap_or_else(std::sync::PoisonError::into_inner)
                     .tiles,
             )
         } else {
@@ -1029,7 +1069,13 @@ impl ImageUploadService {
         if cancel.is_cancelled() {
             return Err(ImageUploadError::Cancelled);
         }
-        let issued = vec![false; tiles.lock().expect("CPU tile cache").len()];
+        let issued = vec![
+            false;
+            tiles
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .len()
+        ];
         let prepared = Arc::new(PreparedImage {
             identity,
             decode_calls: AtomicU64::new(0),
@@ -1047,7 +1093,11 @@ impl ImageUploadService {
             }),
         });
 
-        let mut state = self.inner.state.lock().expect("image upload service state");
+        let mut state = self
+            .inner
+            .state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         self.check_device_generation(prepared.identity.device_generation)?;
         if recovered.is_some()
             && let Some(existing) = state
@@ -1123,7 +1173,11 @@ impl ImageUploadService {
             .as_ref()
             .ok_or(ImageUploadError::InvalidRasterLayout)?;
         let missing = {
-            let state = self.inner.state.lock().expect("image upload service state");
+            let state = self
+                .inner
+                .state
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
             self.check_device_generation(frame.identity.device_generation)?;
             if !state
                 .frames
@@ -1133,8 +1187,14 @@ impl ImageUploadService {
                 return Err(ImageUploadError::NotRetained);
             }
             let missing = {
-                let paint = frame.paint_state.lock().expect("image frame paint state");
-                let tiles = paint.tiles.lock().expect("CPU tile cache");
+                let paint = frame
+                    .paint_state
+                    .lock()
+                    .unwrap_or_else(std::sync::PoisonError::into_inner);
+                let tiles = paint
+                    .tiles
+                    .lock()
+                    .unwrap_or_else(std::sync::PoisonError::into_inner);
                 demand
                     .spans
                     .iter()
@@ -1159,7 +1219,11 @@ impl ImageUploadService {
         }
         let mip = source.mip(demand.level, cancel).map_err(map_media_error)?;
         let tiles = build_tiles(&mip, cancel, demand.level, Some(&missing))?;
-        let service = self.inner.state.lock().expect("image upload service state");
+        let service = self
+            .inner
+            .state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         self.check_device_generation(frame.identity.device_generation)?;
         if cancel.is_cancelled() {
             return Err(ImageUploadError::Cancelled);
@@ -1171,9 +1235,15 @@ impl ImageUploadService {
         {
             return Err(ImageUploadError::NotRetained);
         }
-        let mut paint = frame.paint_state.lock().expect("image frame paint state");
+        let mut paint = frame
+            .paint_state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         let count = {
-            let mut cached = paint.tiles.lock().expect("CPU tile cache");
+            let mut cached = paint
+                .tiles
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
             cached.extend(tiles);
             cached.len()
         };
@@ -1186,7 +1256,7 @@ impl ImageUploadService {
         self.inner
             .state
             .lock()
-            .expect("image upload service state")
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
             .frames
             .iter()
             .find(|frame| frame.identity == *identity)
@@ -1205,7 +1275,11 @@ impl ImageUploadService {
         consumer: ConsumerId,
         window: Option<AnyWindowHandle>,
     ) -> bool {
-        let service = self.inner.state.lock().expect("image upload service state");
+        let service = self
+            .inner
+            .state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         if self
             .check_device_generation(frame.identity.device_generation)
             .is_err()
@@ -1219,7 +1293,10 @@ impl ImageUploadService {
         {
             return false;
         }
-        let mut paint_state = frame.paint_state.lock().expect("image frame paint state");
+        let mut paint_state = frame
+            .paint_state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         if let Some(window) = window {
             match paint_state.owner_window {
                 Some(owner) if owner != window => return false,
@@ -1237,7 +1314,7 @@ impl ImageUploadService {
         frame
             .paint_state
             .lock()
-            .expect("image frame paint state")
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
             .consumers
             .remove(&consumer)
     }
@@ -1247,7 +1324,7 @@ impl ImageUploadService {
         frame
             .paint_state
             .lock()
-            .expect("image frame paint state")
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
             .consumers
             .len()
     }
@@ -1267,7 +1344,11 @@ impl ImageUploadService {
         frame: &Arc<PreparedImage>,
         window: &mut Window,
     ) -> Result<EvictionOutcome, ImageUploadError> {
-        let mut service = self.inner.state.lock().expect("image upload service state");
+        let mut service = self
+            .inner
+            .state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         if !service
             .frames
             .iter()
@@ -1291,7 +1372,7 @@ impl ImageUploadService {
         if let Some(admission) = frame
             .admission
             .lock()
-            .expect("image frame admission")
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
             .as_ref()
             && admission.stage() != UploadStage::Staged
         {
@@ -1308,7 +1389,12 @@ impl ImageUploadService {
             if owner != window.window_handle() {
                 return Err(ImageUploadError::NotOwnedByWindow);
             }
-            for tile in paint_state.tiles.lock().expect("CPU tile cache").iter() {
+            for tile in paint_state
+                .tiles
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .iter()
+            {
                 window
                     .drop_image(Arc::clone(&tile.image))
                     .map_err(|_| ImageUploadError::AtlasRelease)?;
@@ -1316,7 +1402,10 @@ impl ImageUploadService {
             }
         }
         paint_state.complete_in_scene = false;
-        let mut admission = frame.admission.lock().expect("image frame admission");
+        let mut admission = frame
+            .admission
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         if let Some(mut admitted) = admission.take() {
             let bytes = admitted.bytes();
             if admitted.stage() == UploadStage::Staged {
@@ -1341,7 +1430,7 @@ impl ImageUploadService {
             .retain(|candidate| !Arc::ptr_eq(candidate, frame));
         PROCESS_ALLOWANCE
             .lock()
-            .expect("process upload allowance")
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
             .viewer_frames_with_tile
             .iter_mut()
             .for_each(|entry| {
@@ -1370,7 +1459,11 @@ impl ImageUploadService {
     pub fn evict_owned_by(&self, window: &mut Window) -> EvictionSummary {
         let handle = window.window_handle();
         let (candidates, blocked, unattributed): (Vec<Arc<PreparedImage>>, usize, usize) = {
-            let service = self.inner.state.lock().expect("image upload service state");
+            let service = self
+                .inner
+                .state
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
             let mut candidates = Vec::new();
             let mut blocked = 0usize;
             let mut unattributed = 0usize;
@@ -1417,8 +1510,15 @@ impl ImageUploadService {
     /// was entered, transfer completion is not observable and the frame must remain retained
     /// until it is evicted after its last consumer detaches.
     pub fn discard_unpainted(&self, frame: &Arc<PreparedImage>) -> bool {
-        let mut service = self.inner.state.lock().expect("image upload service state");
-        let mut paint_state = frame.paint_state.lock().expect("image frame paint state");
+        let mut service = self
+            .inner
+            .state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let mut paint_state = frame
+            .paint_state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         // A shared frame is released only after its last consumer detaches: the same ownership
         // rule guards every release path, not only `evict`.
         if !paint_state.consumers.is_empty() {
@@ -1427,7 +1527,10 @@ impl ImageUploadService {
         if paint_state.issued.iter().any(|issued| *issued) || paint_state.cancelled_before_upload {
             return false;
         }
-        let mut admission = frame.admission.lock().expect("image frame admission");
+        let mut admission = frame
+            .admission
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         let Some(admission) = admission.as_mut() else {
             return false;
         };
@@ -1440,7 +1543,7 @@ impl ImageUploadService {
             .retain(|candidate| !Arc::ptr_eq(candidate, frame));
         PROCESS_ALLOWANCE
             .lock()
-            .expect("process upload allowance")
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
             .viewer_frames_with_tile
             .iter_mut()
             .for_each(|entry| {
@@ -1458,7 +1561,11 @@ impl ImageUploadService {
     /// one frame however many viewers paint inside it. A closed pane composes nothing, so this is
     /// the release proof it cannot produce itself.
     pub fn note_composed_frame(&self, window: u64) -> u64 {
-        let mut frames = self.inner.window_frames.lock().expect("window frames");
+        let mut frames = self
+            .inner
+            .window_frames
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         let entry = frames.entry(window).or_insert(0);
         *entry = entry.saturating_add(1);
         *entry
@@ -1467,18 +1574,30 @@ impl ImageUploadService {
     /// Forgets a window's frame ledger. Called at window teardown, after the window's frames are
     /// handled, so a long-lived process does not accumulate one entry per created window.
     pub fn forget_window(&self, window: u64) {
-        let mut frames = self.inner.window_frames.lock().expect("window frames");
+        let mut frames = self
+            .inner
+            .window_frames
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         frames.remove(&window);
     }
 
     /// Composed frames observed for `window` so far.
     pub fn composed_frames(&self, window: u64) -> u64 {
-        let frames = self.inner.window_frames.lock().expect("window frames");
+        let frames = self
+            .inner
+            .window_frames
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         frames.get(&window).copied().unwrap_or(0)
     }
 
     pub fn counters(&self) -> ImageUploadCounters {
-        let state = self.inner.state.lock().expect("image upload service state");
+        let state = self
+            .inner
+            .state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         let mut staging = 0u64;
         let mut in_flight = 0u64;
         let mut resident = 0u64;
@@ -1495,13 +1614,18 @@ impl ImageUploadService {
             resident_stuck = resident_stuck.saturating_add(usage.resident_stuck);
         }
         let period_index = current_period_index();
-        let allowance = PROCESS_ALLOWANCE.lock().expect("process upload allowance");
+        let allowance = PROCESS_ALLOWANCE
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         let reserved_bytes_this_period = if allowance.period_index == period_index {
             allowance.reserved_bytes
         } else {
             0
         };
-        let queue = PROCESS_PREPARATION.state.lock().expect("preparation queue");
+        let queue = PROCESS_PREPARATION
+            .state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         let retained = retained_bytes(&state);
         // Registry and quarantine frames are both sampled: a generation change can move a frame
         // that still has attached consumers into quarantine, and reporting zero there would read
@@ -1607,9 +1731,15 @@ fn retained_bytes(state: &ServiceState) -> RetainedBytes {
         }
 
         let (cache, bytes) = {
-            let paint = frame.paint_state.lock().expect("image frame paint state");
+            let paint = frame
+                .paint_state
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
             let cache = Arc::as_ptr(&paint.tiles);
-            let cached = paint.tiles.lock().expect("CPU tile cache");
+            let cached = paint
+                .tiles
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
             let bytes = cached.iter().fold(0u64, |total, tile| {
                 total.saturating_add(tile.transfer_bytes)
             });
@@ -1619,7 +1749,7 @@ fn retained_bytes(state: &ServiceState) -> RetainedBytes {
             let paint = retained_frame_at(state, previous_index)
                 .paint_state
                 .lock()
-                .expect("image frame paint state");
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
             Arc::as_ptr(&paint.tiles) == cache
         });
         if !already_counted {
@@ -1860,8 +1990,14 @@ impl PreparedImage {
     }
 
     pub fn progress(&self) -> FrameProgress {
-        let state = self.paint_state.lock().expect("image frame paint state");
-        let tiles = state.tiles.lock().expect("CPU tile cache");
+        let state = self
+            .paint_state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let tiles = state
+            .tiles
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         FrameProgress {
             source_revision: self.identity.source_revision,
             device_generation: self.identity.device_generation,
@@ -1917,7 +2053,10 @@ impl PreparedImage {
         } = view;
         window.paint_quad(fill(viewport, rgb(0x141820)));
         let paint_period = current_period_index();
-        let mut state = self.paint_state.lock().expect("image frame paint state");
+        let mut state = self
+            .paint_state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         state.complete_in_scene = false;
         let gpui::GpuDeviceState::Ready {
             generation: native_generation,
@@ -1957,7 +2096,10 @@ impl PreparedImage {
         if state.owner_window.is_some_and(|owner| owner != window_id) {
             return Ok(PaintStatus::DifferentWindow);
         }
-        let mut admission = self.admission.lock().expect("image frame admission");
+        let mut admission = self
+            .admission
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         let Some(admission) = admission.as_mut() else {
             return Ok(PaintStatus::Evicted);
         };
@@ -1970,7 +2112,9 @@ impl PreparedImage {
         let mut missing = 0;
         let mut owner = state.owner_window;
         let PaintState { tiles, issued, .. } = &mut *state;
-        let tiles = tiles.lock().expect("CPU tile cache");
+        let tiles = tiles
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
         let result =
             window.with_content_mask(Some(gpui::ContentMask { bounds: viewport }), |window| {
                 for span in visible_spans(image_bounds, viewport, level, self.edge) {

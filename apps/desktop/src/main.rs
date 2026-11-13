@@ -101,8 +101,8 @@ fn main() {
     if let Some(descriptor) = discovered {
         eprintln!(
             "Runtime discovered: server_identity={} epoch={} pid={}",
-            descriptor.server_identity(),
-            descriptor.epoch(),
+            discovery::diagnostic_label(descriptor.server_identity()),
+            discovery::diagnostic_label(descriptor.epoch()),
             descriptor.pid()
         );
     }
@@ -151,18 +151,13 @@ fn main() {
         .and_then(runtime::validated_origin)
         .and_then(|origin| credential_store.load(&origin).ok().flatten())
         .and_then(|raw| credential_issuance::stored_principal(&raw));
-    let launch = match &discovery {
-        Err(_) => runtime::LaunchPlan::RuntimeUnavailable {
-            endpoint_configured: false,
-            reason: runtime::RuntimeUnavailable::DiscoveryUnavailable,
-        },
-        _ => runtime::plan(
-            &startup.mode,
-            endpoint.as_deref(),
-            runtime_token.as_deref(),
-            credential_store.as_ref(),
-        ),
-    };
+    let launch = resolve_launch(
+        &startup.mode,
+        &discovery,
+        endpoint.as_deref(),
+        runtime_token.as_deref(),
+        credential_store.as_ref(),
+    );
     drop(runtime_token);
     // One live session identity for the whole process: the observation
     // transport, its bounded reauthorization, the reconnect installer and the
@@ -340,6 +335,29 @@ fn main() {
     }
 }
 
+/// Which launch one startup resolution selects.
+///
+/// An explicit fixture mode never consults Runtime discovery: the fixture is its own
+/// authorized source, so a missing descriptor must not turn the documented
+/// `--fixture` launch into a disconnected Runtime surface. A Runtime launch without a
+/// descriptor is explicitly unavailable, never a fixture fallback.
+fn resolve_launch(
+    mode: &app::Mode,
+    discovery: &Result<Option<discovery::Descriptor>, discovery::DiscoveryError>,
+    endpoint: Option<&str>,
+    token: Option<&str>,
+    store: &dyn credentials::CredentialStore,
+) -> runtime::LaunchPlan {
+    match (mode, discovery) {
+        (app::Mode::Fixture { .. }, _) => runtime::plan(mode, endpoint, token, store),
+        (_, Err(_)) => runtime::LaunchPlan::RuntimeUnavailable {
+            endpoint_configured: false,
+            reason: runtime::RuntimeUnavailable::DiscoveryUnavailable,
+        },
+        (_, Ok(_)) => runtime::plan(mode, endpoint, token, store),
+    }
+}
+
 /// The fixed exit-handshake lines for one report, in emission order.
 fn exit_outcome_lines(report: &window::ExitReport) -> [&'static str; 2] {
     let observation = match report.observation {
@@ -394,10 +412,63 @@ fn finish_shutdown<F, G>(
 
 #[cfg(test)]
 mod tests {
-    use super::finish_shutdown;
+    use super::{finish_shutdown, resolve_launch};
+    use crate::app::Mode;
+    use crate::credentials::{CredentialStore, CredentialStoreError};
+    use crate::discovery::{Descriptor, DiscoveryError};
+    use crate::runtime::{LaunchPlan, RuntimeUnavailable};
     use crate::window::{ExitOutcome, ExitReport, ObservationExit, PreferencesExit};
+    use std::path::PathBuf;
     use std::sync::{Arc, Mutex};
     use std::time::{Duration, Instant};
+
+    /// A store with no entry for any origin (the startup-before-issuance case).
+    struct NoStore;
+
+    impl CredentialStore for NoStore {
+        fn load(&self, _origin: &str) -> Result<Option<String>, CredentialStoreError> {
+            Ok(None)
+        }
+        fn store(&self, _origin: &str, _token: &str) -> Result<(), CredentialStoreError> {
+            Ok(())
+        }
+        fn delete(&self, _origin: &str) -> Result<(), CredentialStoreError> {
+            Ok(())
+        }
+    }
+
+    /// B2: an explicit fixture is its own source and never depends on Runtime
+    /// discovery, so the documented `--fixture` launch still opens the fixture.
+    #[test]
+    fn an_explicit_fixture_launch_ignores_a_missing_runtime_descriptor() {
+        let mode = Mode::Fixture {
+            path: PathBuf::from("fixture.json"),
+        };
+        let missing: Result<Option<Descriptor>, DiscoveryError> =
+            Err(DiscoveryError::PathUnavailable);
+        assert!(matches!(
+            resolve_launch(&mode, &missing, None, None, &NoStore),
+            LaunchPlan::Fixture { .. }
+        ));
+    }
+
+    /// The same missing descriptor for a Runtime launch stays explicitly unavailable;
+    /// it never becomes a fixture fallback.
+    #[test]
+    fn a_runtime_launch_without_a_descriptor_is_explicitly_unavailable() {
+        let mode = Mode::Runtime {
+            endpoint_configured: false,
+        };
+        let missing: Result<Option<Descriptor>, DiscoveryError> =
+            Err(DiscoveryError::PathUnavailable);
+        assert!(matches!(
+            resolve_launch(&mode, &missing, None, None, &NoStore),
+            LaunchPlan::RuntimeUnavailable {
+                endpoint_configured: false,
+                reason: RuntimeUnavailable::DiscoveryUnavailable,
+            }
+        ));
+    }
 
     fn confirmed() -> ExitOutcome {
         Arc::new(Mutex::new(ExitReport {
