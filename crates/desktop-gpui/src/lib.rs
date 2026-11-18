@@ -1084,7 +1084,12 @@ impl Shell {
         #[cfg(feature = "r0-s2b-instrumentation")]
         r0_probe::record_window_created(window.window_handle().window_id().as_u64());
         let artifact_viewer = cx.new(|cx| {
-            image_viewer::ImageViewer::new(image_viewer::ViewerMode::PreviewOnly, "", window, cx)
+            image_viewer::ImageViewer::new(
+                image_viewer::ViewerMode::HighResolutionPreview,
+                "",
+                window,
+                cx,
+            )
         });
         // The artifact pane's one manual media refetch is a host-owned resolution:
         // the pane records the bounded attempt and emits, and the shell re-addresses

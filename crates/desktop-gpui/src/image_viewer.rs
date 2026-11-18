@@ -1,6 +1,5 @@
-//! Local-input MP-IMG5 viewer. Runtime acquisition is deliberately not implemented here.
-//! The experimental tile mode is not an R4 adoption/residency claim; production uses an
-//! explicitly labelled bounded preview until those evidence gates and MP-IMG6 are satisfied.
+//! Bounded image viewer for admitted local and Runtime images. A high-resolution preview
+//! uses viewport-sized sampling without enabling the experimental physical 1:1 control.
 use crate::{
     contrast::{ContrastScheme, NORMAL_COLORS, Palette},
     image_upload::{
@@ -137,7 +136,36 @@ struct Retired {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ViewerMode {
     PreviewOnly,
+    HighResolutionPreview,
     ExperimentalTiles,
+}
+
+impl ViewerMode {
+    fn local_status(self) -> SharedString {
+        match self {
+            Self::PreviewOnly => {
+                "ローカル画像: 低解像度プレビュー。原寸の詳細表示・1:1ではありません。"
+            }
+            Self::HighResolutionPreview => {
+                "ローカル画像: 高解像度プレビュー。表示領域に合わせた画質です。"
+            }
+            Self::ExperimentalTiles => {
+                "ローカル画像・実験用タイル表示。GPU完了・常駐量・本番の画質受入は未計測。"
+            }
+        }
+        .into()
+    }
+
+    fn mip_for_phase(self, phase: u8, transform: &ViewTransform) -> u8 {
+        if phase == 0 {
+            return 4;
+        }
+        let viewport_mip = transform.mip_level().min(4) as u8;
+        if self == Self::PreviewOnly || (self == Self::ExperimentalTiles && phase == 1) {
+            return viewport_mip.max(2);
+        }
+        viewport_mip
+    }
 }
 
 /// Local interaction only. Applying a peer camera does not emit another event.
@@ -159,7 +187,7 @@ pub struct ViewerObservation {
     pub complete_in_scene: bool,
     pub scene_serial: u64,
     pub view_serial: u64,
-    /// 1 follows the first thumbnail composition; 2 follows a bounded-preview composition.
+    /// 1 follows the first thumbnail composition; only experimental detail advances to 2.
     pub phase: u8,
     pub dpi: f64,
     pub viewport: Size,
@@ -577,18 +605,18 @@ impl ImageViewer {
         self.demand = None;
         self.tile_attempts = 0;
         self.cancel = Cancellation::default();
-        let preview = self.mode == ViewerMode::PreviewOnly || frame.minimum_mip() > 0;
+        let status_mode = if self.mode == ViewerMode::ExperimentalTiles && frame.minimum_mip() > 0 {
+            ViewerMode::PreviewOnly
+        } else {
+            self.mode
+        };
         self.adopt_backup(Arc::clone(&frame));
         self.requested = Some((
             frame.identity().key.clone(),
             frame.identity().source_revision,
         ));
         self.current = Some(frame);
-        self.status = match preview {
-            true => "ローカル画像: 低解像度プレビュー。原寸の詳細表示・1:1ではありません。",
-            false => "ローカル画像・実験用タイル表示。GPU完了・常駐量・本番の画質受入は未計測。",
-        }
-        .into();
+        self.status = status_mode.local_status();
         cx.notify();
         true
     }
@@ -748,18 +776,10 @@ impl ImageViewer {
             );
             return;
         }
-        let preview_only = self.mode == ViewerMode::PreviewOnly;
+        let low_resolution_only = self.mode == ViewerMode::PreviewOnly;
         let preparing: SharedString =
             "ローカル画像を準備中（実行基盤の成果物ではありません）".into();
-        let success: SharedString = match self.mode {
-            ViewerMode::PreviewOnly => {
-                "ローカル画像: 低解像度プレビュー。原寸の詳細表示・1:1ではありません。"
-            }
-            ViewerMode::ExperimentalTiles => {
-                "ローカル画像・実験用タイル表示。GPU完了・常駐量・本番の画質受入は未計測。"
-            }
-        }
-        .into();
+        let success = self.mode.local_status();
         self.begin_view_preparation(
             request,
             generation,
@@ -769,7 +789,13 @@ impl ImageViewer {
             success,
             local_failure_text,
             move |service, background, request, cancel| {
-                service.prepare_view_generated(&background, request, cancel, preview_only, source)
+                service.prepare_view_generated(
+                    &background,
+                    request,
+                    cancel,
+                    low_resolution_only,
+                    source,
+                )
             },
         );
     }
@@ -818,7 +844,7 @@ impl ImageViewer {
                     }
                 };
                 let verified = admitted.identity.verified();
-                let preview_only = self.mode == ViewerMode::PreviewOnly;
+                let low_resolution_only = self.mode == ViewerMode::PreviewOnly;
                 let bytes = admitted_bytes(&admitted);
                 self.begin_view_preparation(
                     request,
@@ -826,10 +852,16 @@ impl ImageViewer {
                     window,
                     cx,
                     media_preparing_text(verified),
-                    media_success_text(verified, preview_only),
+                    media_success_text(verified, self.mode),
                     media_decode_failure_text,
                     move |service, background, request, cancel| {
-                        service.prepare_media(&background, request, cancel, preview_only, bytes)
+                        service.prepare_media(
+                            &background,
+                            request,
+                            cancel,
+                            low_resolution_only,
+                            bytes,
+                        )
                     },
                 );
             }
@@ -1032,15 +1064,7 @@ impl ImageViewer {
             self.revision = previous.identity().source_revision;
             self.generation = generation;
             self.phase = 0;
-            self.status = match self.mode {
-                ViewerMode::PreviewOnly => {
-                    "ローカル画像: 低解像度プレビュー。原寸の詳細表示・1:1ではありません。"
-                }
-                ViewerMode::ExperimentalTiles => {
-                    "ローカル画像・実験用タイル表示。GPU完了・常駐量・本番の画質受入は未計測。"
-                }
-            }
-            .into();
+            self.status = self.mode.local_status();
             cx.notify();
             return;
         }
@@ -1094,15 +1118,7 @@ impl ImageViewer {
                         this.generation = generation;
                         this.phase = 0;
                         unclaimed = None;
-                        this.status = match this.mode {
-                            ViewerMode::PreviewOnly => {
-                                "ローカル画像: 低解像度プレビュー。原寸の詳細表示・1:1ではありません。"
-                            }
-                            ViewerMode::ExperimentalTiles => {
-                                "ローカル画像・実験用タイル表示。GPU完了・常駐量・本番の画質受入は未計測。"
-                            }
-                        }
-                        .into();
+                        this.status = this.mode.local_status();
                     }
                     Ok(_) => {
                         this.status =
@@ -1446,7 +1462,8 @@ impl Render for ImageViewer {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         self.ensure_recovery(window, cx);
         let palette = self.palette;
-        let preview = self.mode == ViewerMode::PreviewOnly
+        let mode = self.mode;
+        let preview = mode != ViewerMode::ExperimentalTiles
             || self
                 .current
                 .as_ref()
@@ -1454,6 +1471,9 @@ impl Render for ImageViewer {
         let description: SharedString =
             match (self.current.as_ref(), preview, self.transform.as_ref()) {
                 (None, _, _) => "画像は未表示です".into(),
+                (_, _, _) if mode == ViewerMode::HighResolutionPreview => {
+                    "高解像度プレビュー（表示領域に合わせた画質）".into()
+                }
                 (_, true, _) => "低解像度プレビュー（原寸・1:1ではありません）".into(),
                 (_, false, Some(transform)) => {
                     let bounds = transform.image_bounds();
@@ -1526,13 +1546,7 @@ impl Render for ImageViewer {
                     ),
                     size(px(image.width as f32), px(image.height as f32)),
                 );
-                let mip = if phase == 0 {
-                    4
-                } else if phase == 1 || preview {
-                    transform.mip_level().max(2)
-                } else {
-                    transform.mip_level()
-                };
+                let mip = mode.mip_for_phase(phase, &transform);
                 let paint_ready = matches!(
                     window.gpu_device_state(),
                     GpuDeviceState::Ready { generation: active_generation }
@@ -1541,7 +1555,7 @@ impl Render for ImageViewer {
                 let needed = if paint_ready {
                     frame
                         .as_ref()
-                        .map(|frame| frame.demand(image_bounds, bounds, mip.min(4) as u8))
+                        .map(|frame| frame.demand(image_bounds, bounds, mip))
                 } else {
                     None
                 };
@@ -1551,7 +1565,7 @@ impl Render for ImageViewer {
                             ViewPaint {
                                 image_bounds,
                                 viewport: bounds,
-                                mip_level: mip.min(4) as u8,
+                                mip_level: mip,
                                 source_revision: revision,
                                 device_generation: generation,
                                 cancel: &cancel,
@@ -1788,6 +1802,32 @@ impl Render for ImageViewer {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn high_resolution_preview_promotes_to_the_physical_viewport_mip() {
+        let viewport = Size {
+            width: 420.0,
+            height: 360.0,
+        };
+        let mut transform = ViewTransform::new(
+            Size {
+                width: 1024.0,
+                height: 1024.0,
+            },
+            viewport,
+            1.0,
+        )
+        .expect("valid fitted viewport");
+        let mode = ViewerMode::HighResolutionPreview;
+        assert_eq!(mode.mip_for_phase(0, &transform), 4);
+        assert_eq!(mode.mip_for_phase(1, &transform), 1);
+
+        transform
+            .set_viewport(viewport, 1.5)
+            .expect("valid high-DPI viewport");
+        assert_eq!(mode.mip_for_phase(1, &transform), 0);
+        assert_eq!(ViewerMode::PreviewOnly.mip_for_phase(1, &transform), 2);
+    }
 
     #[test]
     fn retirement_polls_switch_from_fast_to_slow_without_stopping() {

@@ -1,3 +1,9 @@
+# Unreleased
+
+- The central Artifact view now promotes authorized Runtime images from the initial
+  thumbnail to a high-resolution preview matched to the viewport and display scale.
+  Compare retains its existing preview policy; physical 1:1 is not enabled.
+
 # COS Desktop v0.1.1 — unsigned portable release
 
 Second published build: the **unsigned portable** Windows release with the media-refetch

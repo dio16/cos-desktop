@@ -526,6 +526,7 @@ R0 Caller authorization is received; ADR-0008 ratifies declared configurable gat
 - **Priority:** P1 · **Status:** LOCAL-INPUT VIEWER IMPLEMENTED, NATIVELY OBSERVED AND REVIEW-CLEAN (LIMITED, §19.291); experimental tiling is not adopted production full detail. The local route covers Fit/zoom/pan/visible tiles/physical 1:1 and explicit preview-only/unavailable capability; Refine Gate r11 SUCCEEDED on `0504673` and Tern review round 9 returned 0/0/0. Production full detail still requires MP-IMG6 and rendering readiness/residency/fidelity evidence; ratified UX-01 decisions are recorded by ADR-0015. · **Owner:** `desktop-gpui` + `media`
 - **Consumers:** MP-CMP1, MP-ACC1.
 - **Design source / acceptance:** [DC-MP-IMG5](../architecture/DESKTOP_DESIGN_CONTRACTS.md#dc-mp-img5). This task implements that frozen contract; scope, API, failure, rollback, tests and accepted behavior may not be redefined here.
+- **Central Artifact preview:** the default follows the viewport and physical pixel density per DC-MP-IMG5, without adopting production full-detail or changing Compare. The historical MP-IMG6 live observations used the previous low-resolution mode.
 
 #### MP-CMP1 — Compare (R5)
 - **Hard prereqs:** MP-IMG5.

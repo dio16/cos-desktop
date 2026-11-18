@@ -19,7 +19,10 @@ use media::{
     RepresentationSource,
 };
 
-use crate::image_upload::{ImageUploadError, UploadRequest};
+use crate::{
+    image_upload::{ImageUploadError, UploadRequest},
+    image_viewer::ViewerMode,
+};
 
 /// Build one media source for the authenticated read context.
 ///
@@ -319,18 +322,24 @@ pub fn media_preparing_text(verified: bool) -> SharedString {
 ///
 /// Verification wording reflects the descriptor alone: an absent expected digest
 /// is never reported as verified.
-pub fn media_success_text(verified: bool, preview_only: bool) -> SharedString {
-    match (verified, preview_only) {
-        (true, true) => {
+pub fn media_success_text(verified: bool, mode: ViewerMode) -> SharedString {
+    match (verified, mode) {
+        (true, ViewerMode::PreviewOnly) => {
             "メディア画像（記述子のダイジェスト検証済み）: 低解像度プレビュー。原寸の詳細表示・1:1ではありません。"
         }
-        (true, false) => {
-            "メディア画像（記述子のダイジェスト検証済み）・実験用タイル表示。GPU完了・常駐量・本番の画質受入は未計測。"
-        }
-        (false, true) => {
+        (false, ViewerMode::PreviewOnly) => {
             "メディア画像（記述子は未検証）: 低解像度プレビュー。原寸の詳細表示・1:1ではありません。"
         }
-        (false, false) => {
+        (true, ViewerMode::HighResolutionPreview) => {
+            "メディア画像（記述子のダイジェスト検証済み）: 高解像度プレビュー。表示領域に合わせた画質です。"
+        }
+        (false, ViewerMode::HighResolutionPreview) => {
+            "メディア画像（記述子は未検証）: 高解像度プレビュー。表示領域に合わせた画質です。"
+        }
+        (true, ViewerMode::ExperimentalTiles) => {
+            "メディア画像（記述子のダイジェスト検証済み）・実験用タイル表示。GPU完了・常駐量・本番の画質受入は未計測。"
+        }
+        (false, ViewerMode::ExperimentalTiles) => {
             "メディア画像（記述子は未検証）・実験用タイル表示。検証済み・GPU完了・常駐量・本番の画質受入は未計測。"
         }
     }
@@ -594,8 +603,8 @@ mod tests {
 
     #[test]
     fn an_unverified_admitted_representation_is_never_labelled_verified() {
-        let verified = media_success_text(true, true);
-        let unverified = media_success_text(false, true);
+        let verified = media_success_text(true, ViewerMode::HighResolutionPreview);
+        let unverified = media_success_text(false, ViewerMode::HighResolutionPreview);
         assert_ne!(verified, unverified);
         assert!(verified.contains("検証済み"));
         assert!(unverified.contains("未検証"));
