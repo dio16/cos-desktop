@@ -337,6 +337,9 @@ impl Shell {
 
     /// Reload the catalog after a stale-recipe refusal (keeps the draft).
     pub(super) fn brief_reload_catalog(&mut self, cx: &mut Context<Self>) {
+        if !self.brief_form.is_editable() {
+            return;
+        }
         self.load_brief_catalog(cx);
         cx.notify();
     }
@@ -368,6 +371,16 @@ impl Shell {
         if self.brief_catalog_epoch.is_none() {
             self.brief_notice =
                 Some("カタログのエポックが不明です。再読み込みしてください".to_owned());
+            cx.notify();
+            return;
+        }
+        if !matches!(self.brief_catalog_state, BriefCatalogState::Loaded) {
+            self.brief_notice = Some("カタログの読み込みを待ってください".to_owned());
+            cx.notify();
+            return;
+        }
+        if let Some(gate) = self.brief_create_capability_denial() {
+            self.brief_notice = Some(gate.reason.to_string());
             cx.notify();
             return;
         }
@@ -492,6 +505,9 @@ impl Shell {
         command_id: &desktop_protocol::CommandId,
         observation: ReceiptObservation,
     ) {
+        if self.brief_command.as_ref() != Some(command_id) {
+            return;
+        }
         // An accepted receipt is definitive for its command. A late pending,
         // unknown, denied or canonical-effect answer must not replace (or
         // annotate) the painted acceptance; a newer accepted answer may still
@@ -528,7 +544,7 @@ impl Shell {
             }
             ReceiptObservation::Rejected { reason, message } => match reason {
                 Some(desktop_protocol::RejectReason::UnsupportedCommand) => {
-                    let _ = self.brief_form.on_stale_recipe();
+                    let _ = self.brief_form.on_stale_recipe(command_id);
                     self.brief_notice =
                         Some("レシピが利用できません。カタログを再読み込みしてください".to_owned());
                 }
@@ -549,7 +565,7 @@ impl Shell {
                 }
             },
             ReceiptObservation::Unsupported => {
-                let _ = self.brief_form.on_stale_recipe();
+                let _ = self.brief_form.on_stale_recipe(command_id);
                 self.brief_notice =
                     Some("コマンドが利用できません。カタログを再読み込みしてください".to_owned());
             }
@@ -1039,6 +1055,7 @@ fn brief_validation_label(error: &ui_model::brief::BriefValidationError) -> &'st
         E::Submitting => "送信中です",
         E::EpochUnavailable => "カタログのエポックが不明です。再読み込みしてください",
         E::AwaitingReceipt => "送信済みの受付票を待っています",
+        E::SubmissionUnavailable => "現在の状態では提出できません",
     }
 }
 

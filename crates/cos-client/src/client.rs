@@ -937,7 +937,7 @@ impl<T: TransportTrait> CosClient<T> {
         for (command_id, record) in &mut self.commands {
             if let CommandState::Pending { sent_at_ms } = &record.status {
                 let sent_at_ms = *sent_at_ms;
-                if now_ms.saturating_sub(sent_at_ms) > timeout {
+                if now_ms >= sent_at_ms.saturating_add(timeout) {
                     record.status = CommandState::ResultUnknown {
                         reason: "no receipt before timeout; execution may have happened".to_owned(),
                         receipt: None,
@@ -1179,6 +1179,13 @@ impl<T: TransportTrait> CosClient<T> {
         let mut next = self.reconnect.next_at_ms;
         for pending in self.read.pending.values() {
             next = Some(next.map_or(pending.deadline_ms, |at| at.min(pending.deadline_ms)));
+        }
+        let timeout = self.config.command_timeout_ms;
+        for record in self.commands.values() {
+            if let CommandState::Pending { sent_at_ms } = &record.status {
+                let deadline = sent_at_ms.saturating_add(timeout);
+                next = Some(next.map_or(deadline, |at| at.min(deadline)));
+            }
         }
         next
     }

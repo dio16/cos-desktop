@@ -41,6 +41,9 @@ struct ServerState {
     threads: Vec<ThreadId>,
     /// One-shot block installed before an exchange to prove `send` never waits.
     gate: Option<Gate>,
+    /// One-shot block installed before the next command submit, so credential and
+    /// deadline tests can hold that exchange open deterministically.
+    command_gate: Option<Gate>,
     /// Remaining delta polls answered with `409 RESYNC_REQUIRED`.
     resync_polls: u32,
     /// Answer the next observation open with a `409 RESYNC_REQUIRED` document.
@@ -88,6 +91,7 @@ impl ServerState {
             calls: Vec::new(),
             threads: Vec::new(),
             gate: None,
+            command_gate: None,
             resync_polls: 0,
             resync_open: false,
             replay_open: false,
@@ -187,6 +191,14 @@ impl ProtocolHttp for StubHttp {
                 Ok(json_response(snapshot_refresh_document(&mut state, path)))
             }
             (HttpMethod::Post, COMMANDS_PATH) => {
+                if let Some(gate) = state.command_gate.take() {
+                    drop(state);
+                    let mut open = gate.0.lock().expect("command gate");
+                    while !*open {
+                        open = gate.1.wait(open).expect("command gate wait");
+                    }
+                    state = self.state.lock().expect("stub state");
+                }
                 if let Some((status, body)) = state.command_error.take() {
                     return Ok(HttpResponse { status, body });
                 }
@@ -2271,5 +2283,292 @@ fn a_replaced_credential_closes_the_shared_publication() {
     assert!(
         closes.load(Ordering::Acquire) >= 1,
         "a replaced credential closes the shared publication"
+    );
+}
+
+/// (j) The credential close runs **outside** the transport state lock.
+///
+/// The owner closes from inside its command gate (a dispatch may hold that same
+/// gate and then need the transport state lock). This test models that boundary
+/// with a plain mutex: the worker enters the close callback, blocks on the gate,
+/// and the owner-side transport call that needs the state lock must still return.
+/// Holding the state lock across the callback is the ABBA deadlock the contract
+/// forbids.
+#[test]
+fn the_credential_close_runs_outside_the_transport_state_lock() {
+    let slot: cos_client::CredentialSlot = Arc::new(Mutex::new(Some("first-token".to_owned())));
+    let (executor, _state) = StubHttp::new();
+    let mut config = config();
+    config.credential_slot = Some(Arc::clone(&slot));
+    let mut transport = ProtocolTransport::new(executor, config, versions());
+
+    // The owner boundary: gate first, publication close second.
+    let gate: Arc<Mutex<()>> = Arc::new(Mutex::new(()));
+    let in_callback = Arc::new(AtomicU64::new(0));
+    let closed = Arc::new(AtomicU64::new(0));
+    {
+        let gate = Arc::clone(&gate);
+        let in_callback = Arc::clone(&in_callback);
+        let closed = Arc::clone(&closed);
+        transport.bind_observation_control(cos_client::ObservationControl {
+            wake: std::task::Waker::noop().clone(),
+            close_visibility: Arc::new(move || {
+                in_callback.fetch_add(1, Ordering::AcqRel);
+                let _gate = gate.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
+                closed.fetch_add(1, Ordering::AcqRel) + 1
+            }),
+        });
+    }
+
+    // One live session, so the worker keeps performing authenticated delta reads.
+    transport.send(hello_frame()).expect("hello enqueues");
+    transport
+        .send(open_frame(open_request("request-1")))
+        .expect("open enqueues");
+    for _ in 0..5 {
+        let _ = next_frame(&mut transport);
+    }
+
+    // The owner holds the gate and a bounded reauthorization replaces the token.
+    let held = gate.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
+    *slot.lock().expect("slot") = Some("second-token".to_owned());
+
+    let deadline = Instant::now() + Duration::from_secs(5);
+    while Instant::now() < deadline && in_callback.load(Ordering::Acquire) == 0 {
+        std::thread::sleep(Duration::from_millis(1));
+    }
+    assert!(
+        in_callback.load(Ordering::Acquire) >= 1,
+        "the replaced credential reaches the owner's close callback"
+    );
+
+    // The owner-side dispatch needs the state lock while the callback is parked on
+    // the gate. A call that cannot return here is the deadlock under test.
+    let (returned_tx, returned_rx) = std::sync::mpsc::channel();
+    let owner = std::thread::spawn(move || {
+        let returned = transport.poll().is_ok();
+        returned_tx.send(returned).ok();
+        transport
+    });
+    assert_eq!(
+        returned_rx.recv_timeout(Duration::from_secs(2)).ok(),
+        Some(true),
+        "the transport state lock is free while the close callback waits on the gate"
+    );
+
+    drop(held);
+    let transport = owner
+        .join()
+        .expect("the owner thread returns the transport");
+    let deadline = Instant::now() + Duration::from_secs(5);
+    while Instant::now() < deadline && closed.load(Ordering::Acquire) == 0 {
+        std::thread::sleep(Duration::from_millis(1));
+    }
+    assert!(
+        closed.load(Ordering::Acquire) >= 1,
+        "the close completes once the owner releases its gate"
+    );
+    assert_eq!(
+        in_callback.load(Ordering::Acquire),
+        1,
+        "one replacement produces exactly one close, not a duplicate service"
+    );
+    drop(transport);
+}
+
+/// (k) Close-before-result holds on a command exchange, not only on delta polling.
+///
+/// The command submit is held open in the stub, the credential is replaced while it
+/// is in flight, and the receipt may only become visible after the close ran.
+#[test]
+fn a_replaced_credential_closes_before_a_command_result_is_exposed() {
+    let slot: cos_client::CredentialSlot = Arc::new(Mutex::new(Some("first-token".to_owned())));
+    let (executor, state) = StubHttp::new();
+    let mut config = config();
+    config.credential_slot = Some(Arc::clone(&slot));
+    // No delta poll runs during the window, so this command exchange is the one
+    // that observes the replacement.
+    config.delta_poll_interval = Duration::from_secs(10);
+    let transport = ProtocolTransport::new(executor, config, versions());
+    let mut client = client(transport);
+
+    let closes = Arc::new(AtomicU64::new(0));
+    let counter = Arc::clone(&closes);
+    client.bind_observation_control(cos_client::ObservationControl {
+        wake: std::task::Waker::noop().clone(),
+        close_visibility: Arc::new(move || counter.fetch_add(1, Ordering::AcqRel) + 1),
+    });
+    client
+        .begin_authorized_observation(client.observation_request(ObservationScopeRequest {
+            task_ids: Vec::new(),
+            filters: vec![ScopeFilter {
+                name: "view".to_owned(),
+                value: "all".to_owned(),
+            }],
+        }))
+        .expect("observation begins");
+    drive_until(&mut client, |client| {
+        matches!(client.connection(), ConnectionState::Live)
+    });
+
+    let gate: Gate = Arc::new((Mutex::new(false), Condvar::new()));
+    state.lock().expect("stub state").command_gate = Some(Arc::clone(&gate));
+    let command_id = client
+        .stop_task(&TaskId::new("task/Task-184").expect("task id"))
+        .expect("command queued");
+
+    // Wait, barrier-like, until the submit exchange has reached the stub.
+    let deadline = Instant::now() + Duration::from_secs(5);
+    let mut now = 0u64;
+    while Instant::now() < deadline
+        && state
+            .lock()
+            .expect("stub state")
+            .calls_to(HttpMethod::Post, COMMANDS_PATH)
+            == 0
+    {
+        now += 10;
+        let _ = client.pump(now);
+        std::thread::sleep(Duration::from_millis(1));
+    }
+    assert_eq!(
+        state
+            .lock()
+            .expect("stub state")
+            .calls_to(HttpMethod::Post, COMMANDS_PATH),
+        1,
+        "the command submit reached the Runtime before the credential changed"
+    );
+
+    *slot.lock().expect("slot") = Some("second-token".to_owned());
+    {
+        let mut open = gate.0.lock().expect("gate");
+        *open = true;
+        gate.1.notify_all();
+    }
+
+    let deadline = Instant::now() + Duration::from_secs(5);
+    loop {
+        now += 10;
+        client.pump(now);
+        if matches!(
+            command_state(&client, &command_id),
+            Some(CommandState::Accepted(_))
+        ) {
+            break;
+        }
+        assert!(
+            Instant::now() < deadline,
+            "the receipt arrives after the replaced credential: state {:?}",
+            command_state(&client, &command_id)
+        );
+        std::thread::sleep(Duration::from_millis(1));
+    }
+    assert!(
+        closes.load(Ordering::Acquire) >= 1,
+        "the close already ran when the receipt became visible"
+    );
+}
+
+/// (l) A pending command's configured expiry is part of the owner's advertised wake,
+/// and an uncorrelated refusal neither fails nor resends it.
+#[test]
+fn an_uncorrelated_refusal_still_expires_at_the_pending_deadline() {
+    let (mut client, state) = live_authorized_client();
+    let timeout = ClientConfig::default().command_timeout_ms;
+    let now = 1_000u64;
+    assert_eq!(
+        client.pump_step(now, 64).next_deadline_ms,
+        None,
+        "an idle live session in this test has no other wake"
+    );
+
+    let gate: Gate = Arc::new((Mutex::new(false), Condvar::new()));
+    {
+        let mut locked = state.lock().expect("stub state");
+        locked.command_gate = Some(Arc::clone(&gate));
+        // Uncategorised: the Runtime's session-wide refusal is not a command verdict.
+        locked.command_error = Some((500, br#"{"code":"INTERNAL"}"#.to_vec()));
+    }
+    let command_id = client
+        .stop_task(&TaskId::new("task/Task-184").expect("task id"))
+        .expect("command queued");
+
+    // With the exchange still held open, nothing inbound exists, yet the pending
+    // command's expiry is the owner's next wake.
+    assert_eq!(
+        client.pump_step(now, 64).next_deadline_ms,
+        Some(now + timeout),
+        "a pending command advertises its configured expiry"
+    );
+
+    {
+        let mut open = gate.0.lock().expect("gate");
+        *open = true;
+        gate.1.notify_all();
+    }
+    let deadline = Instant::now() + Duration::from_secs(5);
+    while Instant::now() < deadline && client.last_error().is_none() {
+        let _ = client.pump(now);
+        std::thread::sleep(Duration::from_millis(1));
+    }
+    assert!(
+        client.last_error().is_some(),
+        "the uncorrelated internal refusal surfaces as an error"
+    );
+    assert!(
+        matches!(
+            command_state(&client, &command_id),
+            Some(CommandState::Pending { .. })
+        ),
+        "an uncorrelated refusal is not a command verdict: {:?}",
+        command_state(&client, &command_id)
+    );
+    assert!(
+        client.pump_step(now, 64).next_deadline_ms.is_some(),
+        "the owner still has a wake while a command is pending"
+    );
+
+    let events = client.pump_step(now + timeout, 64).events;
+    let updated = events
+        .iter()
+        .filter(|event| {
+            matches!(
+                event,
+                ClientEvent::CommandUpdated { command_id: id, .. } if id == &command_id
+            )
+        })
+        .count();
+    assert_eq!(updated, 1, "the deadline expires the command exactly once");
+    assert!(
+        matches!(
+            command_state(&client, &command_id),
+            Some(CommandState::ResultUnknown { .. })
+        ),
+        "an expiry is unknown, never failed: {:?}",
+        command_state(&client, &command_id)
+    );
+    let again = client.pump_step(now + timeout, 64);
+    let repeats = again
+        .events
+        .iter()
+        .filter(|event| {
+            matches!(
+                event,
+                ClientEvent::CommandUpdated { command_id: id, .. } if id == &command_id
+            )
+        })
+        .count();
+    assert_eq!(
+        repeats, 0,
+        "an expired deadline is not re-expired by a zero-delay wake"
+    );
+    assert_eq!(
+        state
+            .lock()
+            .expect("stub state")
+            .calls_to(HttpMethod::Post, COMMANDS_PATH),
+        1,
+        "the command is never resent automatically"
     );
 }

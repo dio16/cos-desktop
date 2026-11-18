@@ -77,7 +77,7 @@
 use std::collections::{HashSet, VecDeque};
 use std::fmt;
 use std::marker::PhantomData;
-use std::sync::{Arc, Condvar, Mutex, MutexGuard, PoisonError};
+use std::sync::{Arc, Condvar, Mutex, MutexGuard, PoisonError, Weak};
 use std::thread::{self, JoinHandle};
 use std::time::{Duration, Instant};
 
@@ -378,21 +378,48 @@ fn credential_value(config: &ProtocolTransportConfig) -> Option<String> {
     }
 }
 
-/// Close the shared publication when a bounded reauthorization replaced the credential.
-///
-/// The replacement is an authentication-context change detected at the adapter
-/// boundary: the publication is closed before this exchange's result is delivered, so
-/// no consumer receives it under the previous context. The client's own bounded
-/// recovery then re-observes with the replacement credential and a fresh grant.
-fn note_credential_change(state: &mut Shared, config: &ProtocolTransportConfig) {
+type VisibilityClose = Arc<dyn Fn() -> u64 + Send + Sync>;
+/// Record a credential replacement and return its close callback for out-of-lock invocation.
+fn note_credential_change(
+    state: &mut Shared,
+    config: &ProtocolTransportConfig,
+) -> Option<VisibilityClose> {
     let current = credential_value(config);
     if state.last_credential == current {
-        return;
+        return None;
     }
     state.last_credential = current;
-    if let Some(control) = state.control.clone() {
-        (control.close_visibility)();
+    state
+        .control
+        .as_ref()
+        .map(|control| Arc::clone(&control.close_visibility))
+}
+
+/// Close the old authorization context before exposing this exchange's result.
+///
+/// Credential detection is serialized with stream state, but the owner callback may
+/// enter its command gate; it therefore runs without the transport state lock held.
+/// The stream is revalidated after the callback before any response can be published.
+fn state_after_exchange<'a>(
+    shared: &'a SharedState,
+    config: &ProtocolTransportConfig,
+    generation: u64,
+) -> Option<MutexGuard<'a, Shared>> {
+    let close = {
+        let mut state = lock(shared);
+        if state.closed {
+            return None;
+        }
+        note_credential_change(&mut state, config)
+    };
+    if let Some(close) = close {
+        let _ = close();
     }
+    let state = lock(shared);
+    if state.closed || state.generation != generation {
+        return None;
+    }
+    Some(state)
 }
 
 /// One bounded HTTP exchange requested by the transport.
@@ -717,14 +744,14 @@ impl<E: ProtocolHttp> Transport for ProtocolTransport<E> {
             state.hello = None;
             state.server = None;
             state.refresh = None;
-            state.catalog_reply = None;
-            state.history_reply = None;
         }
         self.shared.1.notify_all();
     }
 }
 
 type SharedState = Arc<(Mutex<Shared>, Condvar)>;
+type RequestCompletion<T> = Arc<Mutex<Option<T>>>;
+type PendingCompletion<T> = Weak<Mutex<Option<T>>>;
 
 struct Shared {
     generation: u64,
@@ -750,10 +777,6 @@ struct Shared {
     last_credential: Option<String>,
     /// Granted scope held for one explicit snapshot refresh after a delta gap.
     refresh: Option<RefreshSnapshot>,
-    /// Reply slot for one catalog fetch; the worker fills it directly.
-    catalog_reply: Option<Result<CatalogDocument, TransportError>>,
-    /// Reply slot for one history fetch; the worker fills it directly.
-    history_reply: Option<Result<HistoryDocument, HistoryFetchError>>,
     limits: Limits,
 }
 
@@ -773,8 +796,6 @@ impl Shared {
             control: None,
             last_credential: None,
             refresh: None,
-            catalog_reply: None,
-            history_reply: None,
             limits,
         }
     }
@@ -798,11 +819,13 @@ enum Job {
     },
     Catalog {
         generation: u64,
+        completion: PendingCompletion<Result<CatalogDocument, TransportError>>,
     },
     History {
         generation: u64,
         request: Box<HistoryQuery>,
         stamp: Box<ReadStamp>,
+        completion: PendingCompletion<Result<HistoryDocument, HistoryFetchError>>,
     },
 }
 
@@ -813,7 +836,7 @@ impl Job {
             | Self::Open { generation, .. }
             | Self::Command { generation, .. }
             | Self::Lookup { generation, .. }
-            | Self::Catalog { generation }
+            | Self::Catalog { generation, .. }
             | Self::History { generation, .. } => *generation,
         }
     }
@@ -848,11 +871,15 @@ enum WorkerAction {
         generation: u64,
         request: Box<AuthorizedReceiptLookup>,
     },
-    Catalog,
+    Catalog {
+        generation: u64,
+        completion: PendingCompletion<Result<CatalogDocument, TransportError>>,
+    },
     History {
         generation: u64,
         request: Box<HistoryQuery>,
         stamp: Box<ReadStamp>,
+        completion: PendingCompletion<Result<HistoryDocument, HistoryFetchError>>,
     },
     Poll(PollSession),
 }
@@ -966,42 +993,111 @@ fn enqueue_job(state: &mut Shared, job: Job, capacity: usize) -> Result<(), Tran
     Ok(())
 }
 
+/// Why one blocking request stopped waiting.
+enum CompletionOutcome<T> {
+    Ready(T),
+    TimedOut,
+    Closed,
+    Reset,
+}
+
+/// Take this request's outcome, if the worker already produced it.
+fn take_completion<T>(completion: &RequestCompletion<T>) -> Option<T> {
+    completion
+        .lock()
+        .unwrap_or_else(PoisonError::into_inner)
+        .take()
+}
+
+/// Publish one exchange result to the request that is still waiting for it.
+///
+/// A request that timed out, was reset or was closed dropped its handle, so a late
+/// exchange result is discarded here instead of answering a later request.
+fn complete<T>(completion: &PendingCompletion<T>, outcome: T) {
+    if let Some(completion) = completion.upgrade() {
+        *completion.lock().unwrap_or_else(PoisonError::into_inner) = Some(outcome);
+    }
+}
+
+/// Wait for this request's own completion under the stream state lock.
+///
+/// Waiting under the state lock keeps the publisher's `complete` and the condvar
+/// wake from being missed; the completion mutex is only ever taken after it, so
+/// both sides share one lock order. A timeout, reset or close ends the wait and
+/// drops this request's handle.
+fn await_completion<T>(
+    shared: &SharedState,
+    completion: &RequestCompletion<T>,
+    deadline: Instant,
+    generation: u64,
+) -> CompletionOutcome<T> {
+    loop {
+        let state = lock(shared);
+        if let Some(outcome) = take_completion(completion) {
+            return CompletionOutcome::Ready(outcome);
+        }
+        if state.closed {
+            return CompletionOutcome::Closed;
+        }
+        if state.generation != generation {
+            return CompletionOutcome::Reset;
+        }
+        let remaining = deadline.saturating_duration_since(Instant::now());
+        if remaining.is_zero() {
+            return CompletionOutcome::TimedOut;
+        }
+        let (state, _timeout) = shared
+            .1
+            .wait_timeout(state, remaining.min(Duration::from_millis(50)))
+            .unwrap_or_else(PoisonError::into_inner);
+        drop(state);
+    }
+}
+
 /// Blocking catalog fetch over the worker thread (no observation context needed).
 fn fetch_catalog_with(
     shared: &SharedState,
     config: &ProtocolTransportConfig,
 ) -> Result<CatalogDocument, TransportError> {
-    let deadline = Instant::now() + CATALOG_FETCH_TIMEOUT;
-    {
+    fetch_catalog_with_deadline(shared, config, Instant::now() + CATALOG_FETCH_TIMEOUT)
+}
+
+/// Catalog fetch bounded by an explicit deadline.
+fn fetch_catalog_with_deadline(
+    shared: &SharedState,
+    config: &ProtocolTransportConfig,
+    deadline: Instant,
+) -> Result<CatalogDocument, TransportError> {
+    let completion: RequestCompletion<Result<CatalogDocument, TransportError>> =
+        Arc::new(Mutex::new(None));
+    let generation = {
         let mut state = lock(shared);
         if state.closed {
             return Err(TransportError::Disconnected);
         }
-        state.catalog_reply = None;
         let generation = state.generation;
         enqueue_job(
             &mut state,
-            Job::Catalog { generation },
+            Job::Catalog {
+                generation,
+                completion: Arc::downgrade(&completion),
+            },
             config.max_pending_requests,
         )?;
-    }
+        generation
+    };
     shared.1.notify_all();
-    loop {
-        let mut state = lock(shared);
-        if let Some(outcome) = state.catalog_reply.take() {
-            return outcome;
+    match await_completion(shared, &completion, deadline, generation) {
+        CompletionOutcome::Ready(outcome) => outcome,
+        CompletionOutcome::Closed => Err(TransportError::Disconnected),
+        // A reset replaced the stream this request was enqueued on; the read is
+        // not answered from a context the Runtime no longer holds.
+        CompletionOutcome::Reset => Err(TransportError::Io(
+            "catalog request invalidated by a stream reset".to_owned(),
+        )),
+        CompletionOutcome::TimedOut => {
+            Err(TransportError::Io("catalog request timed out".to_owned()))
         }
-        if state.closed {
-            return Err(TransportError::Disconnected);
-        }
-        let remaining = deadline.saturating_duration_since(Instant::now());
-        if remaining.is_zero() {
-            return Err(TransportError::Io("catalog request timed out".to_owned()));
-        }
-        let (_state, _timeout) = shared
-            .1
-            .wait_timeout(state, remaining.min(Duration::from_millis(50)))
-            .unwrap_or_else(PoisonError::into_inner);
     }
 }
 
@@ -1012,9 +1108,24 @@ fn fetch_history_with(
     config: &ProtocolTransportConfig,
     request: &HistoryQuery,
 ) -> Result<HistoryDocument, HistoryFetchError> {
-    let deadline = Instant::now() + HISTORY_FETCH_TIMEOUT;
-    let generation;
-    {
+    fetch_history_with_deadline(
+        shared,
+        config,
+        request,
+        Instant::now() + HISTORY_FETCH_TIMEOUT,
+    )
+}
+
+/// History fetch bounded by an explicit deadline.
+fn fetch_history_with_deadline(
+    shared: &SharedState,
+    config: &ProtocolTransportConfig,
+    request: &HistoryQuery,
+    deadline: Instant,
+) -> Result<HistoryDocument, HistoryFetchError> {
+    let completion: RequestCompletion<Result<HistoryDocument, HistoryFetchError>> =
+        Arc::new(Mutex::new(None));
+    let generation = {
         let mut state = lock(shared);
         if state.closed {
             return Err(HistoryFetchError::Unavailable);
@@ -1024,40 +1135,28 @@ fn fetch_history_with(
         let Some(stamp) = state.poll.as_ref().map(|poll| poll.stamp.clone()) else {
             return Err(HistoryFetchError::Unauthorized);
         };
-        state.history_reply = None;
-        generation = state.generation;
+        let generation = state.generation;
         enqueue_job(
             &mut state,
             Job::History {
                 generation,
                 request: Box::new(request.clone()),
                 stamp: Box::new(stamp),
+                completion: Arc::downgrade(&completion),
             },
             config.max_pending_requests,
         )
         .map_err(|_| HistoryFetchError::Unavailable)?;
-    }
+        generation
+    };
     shared.1.notify_all();
-    loop {
-        let mut state = lock(shared);
-        if let Some(outcome) = state.history_reply.take() {
-            return outcome;
+    match await_completion(shared, &completion, deadline, generation) {
+        CompletionOutcome::Ready(outcome) => outcome,
+        CompletionOutcome::Closed | CompletionOutcome::TimedOut => {
+            Err(HistoryFetchError::Unavailable)
         }
-        if state.closed {
-            return Err(HistoryFetchError::Unavailable);
-        }
-        if generation != state.generation {
-            // A stream reset invalidated the read context this page was bound to.
-            return Err(HistoryFetchError::Unauthorized);
-        }
-        let remaining = deadline.saturating_duration_since(Instant::now());
-        if remaining.is_zero() {
-            return Err(HistoryFetchError::Unavailable);
-        }
-        let (_state, _timeout) = shared
-            .1
-            .wait_timeout(state, remaining.min(Duration::from_millis(50)))
-            .unwrap_or_else(PoisonError::into_inner);
+        // A stream reset invalidated the read context this page was bound to.
+        CompletionOutcome::Reset => Err(HistoryFetchError::Unauthorized),
     }
 }
 
@@ -1098,15 +1197,23 @@ fn run_worker<E: ProtocolHttp>(
                             generation,
                             request,
                         },
-                        Job::Catalog { .. } => WorkerAction::Catalog,
+                        Job::Catalog {
+                            generation,
+                            completion,
+                        } => WorkerAction::Catalog {
+                            generation,
+                            completion,
+                        },
                         Job::History {
                             generation,
                             request,
                             stamp,
+                            completion,
                         } => WorkerAction::History {
                             generation,
                             request,
                             stamp,
+                            completion,
                         },
                     };
                 }
@@ -1121,22 +1228,27 @@ fn run_worker<E: ProtocolHttp>(
             }
         };
         match action {
-            WorkerAction::Catalog => {
+            WorkerAction::Catalog {
+                generation,
+                completion,
+            } => {
                 // A catalog read is credential-bound, not session-bound: it is
                 // served even while no observation grant is open, but never
                 // after the transport is closed.
                 let outcome = get_catalog(&mut executor, &config);
-                let mut state = lock(&shared);
-                if state.closed {
-                    continue;
+                // A closed transport or a reset stream discards this result: the
+                // waiting request has already been answered or dropped its handle.
+                if let Some(state) = state_after_exchange(&shared, &config, generation) {
+                    complete(&completion, outcome);
+                    drop(state);
+                    shared.1.notify_all();
                 }
-                state.catalog_reply = Some(outcome);
-                shared.1.notify_all();
             }
             WorkerAction::History {
                 generation,
                 request,
                 stamp,
+                completion,
             } => {
                 // A history read is bound to the observation read stamp that
                 // authorized it. A stream reset after the request was enqueued
@@ -1145,17 +1257,11 @@ fn run_worker<E: ProtocolHttp>(
                 // longer holds. The job's own generation is the one to compare;
                 // re-reading it here would hide exactly that reset.
                 let outcome = get_history(&mut executor, &config, &request, &stamp);
-                let mut state = lock(&shared);
-                if state.closed {
-                    continue;
+                if let Some(state) = state_after_exchange(&shared, &config, generation) {
+                    complete(&completion, outcome);
+                    drop(state);
+                    shared.1.notify_all();
                 }
-                note_credential_change(&mut state, &config);
-                if generation != state.generation {
-                    state.history_reply = Some(Err(HistoryFetchError::Unauthorized));
-                } else {
-                    state.history_reply = Some(outcome);
-                }
-                shared.1.notify_all();
             }
             WorkerAction::Hello { generation } => {
                 let outcome = get_server(&mut executor, &config);
@@ -1221,11 +1327,9 @@ fn run_worker<E: ProtocolHttp>(
                     // published; the fresh open below recovers.
                 }
                 let outcome = post_open(&mut executor, &config, versions, &request);
-                let mut state = lock(&shared);
-                if state.closed || generation != state.generation {
+                let Some(mut state) = state_after_exchange(&shared, &config, generation) else {
                     continue;
-                }
-                note_credential_change(&mut state, &config);
+                };
                 match outcome {
                     Ok(OpenOutcome::Document(document)) => match apply_open(
                         &mut state,
@@ -1277,11 +1381,9 @@ fn run_worker<E: ProtocolHttp>(
                     continue;
                 };
                 let outcome = post_command(&mut executor, &config, &envelope, &context);
-                let mut state = lock(&shared);
-                if state.closed || generation != state.generation {
+                let Some(mut state) = state_after_exchange(&shared, &config, generation) else {
                     continue;
-                }
-                note_credential_change(&mut state, &config);
+                };
                 match outcome {
                     Ok(CommandOutcome::Receipt(receipt)) => {
                         let read_stamp = Some(receipt.stamp.clone());
@@ -1318,11 +1420,9 @@ fn run_worker<E: ProtocolHttp>(
                 request,
             } => {
                 let outcome = post_lookup(&mut executor, &config, &request);
-                let mut state = lock(&shared);
-                if state.closed || generation != state.generation {
+                let Some(mut state) = state_after_exchange(&shared, &config, generation) else {
                     continue;
-                }
-                note_credential_change(&mut state, &config);
+                };
                 match outcome {
                     Ok(LookupOutcome::Result(result)) => {
                         let read_stamp = Some(result.stamp.clone());
@@ -1371,12 +1471,12 @@ fn run_worker<E: ProtocolHttp>(
                 }
                 drop(state);
                 let outcome = get_deltas(&mut executor, &config, &poll);
-                let mut state = lock(&shared);
-                if state.closed || poll.generation != state.generation {
-                    state.poll = None;
+                let Some(mut state) = state_after_exchange(&shared, &config, poll.generation)
+                else {
+                    // A closed transport or a reset stream ends this poll session.
+                    lock(&shared).poll = None;
                     continue;
-                }
-                note_credential_change(&mut state, &config);
+                };
                 match outcome {
                     Ok(DeltaOutcome::Empty) => {}
                     Ok(DeltaOutcome::Transaction(transaction)) => {
@@ -2433,6 +2533,410 @@ mod credential_route_tests {
         assert_eq!(
             recipe.parameters[0].value,
             super::CatalogParameterValue::Integer(7)
+        );
+    }
+}
+
+#[cfg(test)]
+mod request_completion_tests {
+    //! A blocking catalog or history read owns its completion: a delayed answer
+    //! can never fill another request's slot, and a timeout, reset or close
+    //! drops the waiting handle so the late answer is discarded.
+
+    use super::{
+        CATALOG_PATH, HistoryFetchError, HistoryQuery, HttpRequest, HttpResponse, PollSession,
+        ProtocolHttp, ProtocolTransport, ProtocolTransportConfig, ProtocolVersions, Transport,
+        fetch_catalog_with_deadline, fetch_history_with_deadline, lock,
+    };
+    use crate::history::HistoryCursor;
+    use desktop_protocol::{
+        Counter, Cursor, EpochId, ObservationScope, ReadContextId, ReadRequestId, ReadRevision,
+        ReadStamp, ScopeId, ServerId, TaskId, Version,
+    };
+    use std::sync::mpsc::{self, Receiver, Sender};
+    use std::sync::{Arc, Condvar, Mutex};
+    use std::thread;
+    use std::time::{Duration, Instant};
+
+    /// One-shot block installed before the next exchange.
+    type Gate = Arc<(Mutex<bool>, Condvar)>;
+
+    #[derive(Default)]
+    struct StubState {
+        /// Gate handed to the next exchange; it blocks until released.
+        gate: Option<Gate>,
+        /// When set, only a task history read takes that gate, so a live delta
+        /// poll cannot consume it first.
+        gate_history_only: bool,
+        /// Barrier signalled once the gated exchange has started.
+        started: Option<Sender<()>>,
+        /// Catalog identities answered in call order.
+        catalog: Vec<String>,
+        /// History bodies answered in call order.
+        history_bodies: Vec<Vec<u8>>,
+        /// Task-read paths served, in call order.
+        history_paths: Vec<String>,
+        /// Every exchange this stub has been asked to perform.
+        exchanges: usize,
+    }
+
+    /// A stub REST executor whose gated exchange blocks on a barrier.
+    struct Stub {
+        state: Arc<Mutex<StubState>>,
+    }
+
+    impl ProtocolHttp for Stub {
+        fn execute(&mut self, request: HttpRequest) -> Result<HttpResponse, String> {
+            let (gate, started) = {
+                let mut state = self.state.lock().expect("stub state");
+                state.exchanges += 1;
+                let gated = !state.gate_history_only || is_history(&request.path);
+                if gated {
+                    (state.gate.take(), state.started.take())
+                } else {
+                    (None, None)
+                }
+            };
+            if let Some(started) = started {
+                started.send(()).ok();
+            }
+            if let Some(gate) = gate {
+                let mut open = gate.0.lock().expect("gate");
+                while !*open {
+                    open = gate.1.wait(open).expect("gate wait");
+                }
+            }
+            let mut state = self.state.lock().expect("stub state");
+            match request.path.as_str() {
+                CATALOG_PATH => {
+                    let identity = if state.catalog.is_empty() {
+                        "current-server".to_owned()
+                    } else {
+                        state.catalog.remove(0)
+                    };
+                    Ok(json(&catalog_body(&identity)))
+                }
+                path if path.starts_with("/api/cos/desktop/tasks/") => {
+                    state.history_paths.push(path.to_owned());
+                    let body = if state.history_bodies.is_empty() {
+                        b"{}".to_vec()
+                    } else {
+                        state.history_bodies.remove(0)
+                    };
+                    Ok(HttpResponse { status: 200, body })
+                }
+                _ => Ok(HttpResponse {
+                    status: 200,
+                    body: br#"{"schema_version":1,"transaction":null}"#.to_vec(),
+                }),
+            }
+        }
+    }
+
+    /// Whether this path is a task-scoped history read.
+    fn is_history(path: &str) -> bool {
+        path.starts_with("/api/cos/desktop/tasks/")
+    }
+
+    fn json(value: &str) -> HttpResponse {
+        HttpResponse {
+            status: 200,
+            body: value.as_bytes().to_vec(),
+        }
+    }
+
+    fn catalog_body(identity: &str) -> String {
+        format!(
+            r#"{{"schema_version":1,"server":{{"server_identity":"{identity}","epoch":"epoch-1"}},
+                "catalog":{{"schema_version":1,"can_submit":true,"reason_codes":[],"recipes":[]}}}}"#
+        )
+    }
+
+    fn versions() -> ProtocolVersions {
+        ProtocolVersions {
+            protocol: Version::new(2, 0),
+            schema: Version::new(2, 0),
+        }
+    }
+
+    /// Install a gate for the next exchange and report when it has started.
+    fn block_next(state: &Arc<Mutex<StubState>>) -> (Gate, Receiver<()>) {
+        install_gate(state, false)
+    }
+
+    /// Install a gate for the next task history read only.
+    fn block_next_history(state: &Arc<Mutex<StubState>>) -> (Gate, Receiver<()>) {
+        install_gate(state, true)
+    }
+
+    fn install_gate(state: &Arc<Mutex<StubState>>, history_only: bool) -> (Gate, Receiver<()>) {
+        let gate: Gate = Arc::new((Mutex::new(false), Condvar::new()));
+        let (started, started_rx) = mpsc::channel();
+        let mut locked = state.lock().expect("stub state");
+        locked.gate = Some(Arc::clone(&gate));
+        locked.gate_history_only = history_only;
+        locked.started = Some(started);
+        drop(locked);
+        (gate, started_rx)
+    }
+
+    fn release(gate: &Gate) {
+        let (open, wake) = &**gate;
+        *open.lock().expect("gate") = true;
+        wake.notify_all();
+    }
+
+    fn transport(
+        config: ProtocolTransportConfig,
+        state: &Arc<Mutex<StubState>>,
+    ) -> ProtocolTransport<Stub> {
+        ProtocolTransport::new(
+            Stub {
+                state: Arc::clone(state),
+            },
+            config,
+            versions(),
+        )
+    }
+
+    fn task() -> TaskId {
+        TaskId::new("task/Task-184").expect("task id")
+    }
+
+    /// A live read context, so the transport admits a history read.
+    fn seed_poll(transport: &ProtocolTransport<Stub>) {
+        let scope_id = ScopeId::new("scope-1").expect("scope id");
+        let context = ReadContextId::new("context-1").expect("context");
+        lock(&transport.shared).poll = Some(PollSession {
+            generation: 0,
+            protocol: Version::new(2, 0),
+            schema: Version::new(2, 0),
+            cursor: Cursor::new("cursor-1").expect("cursor"),
+            context: context.clone(),
+            stamp: ReadStamp {
+                request_id: ReadRequestId::new("request-1").expect("request id"),
+                server_id: ServerId::new("server-1").expect("server id"),
+                epoch: EpochId::new("epoch-1").expect("epoch"),
+                context_id: context,
+                read_revision: ReadRevision::new(Counter::new("1").expect("counter")),
+                scope_id: scope_id.clone(),
+            },
+            scope: ObservationScope {
+                scope_id,
+                task_ids: Vec::new(),
+                filters: Vec::new(),
+                protocol: Version::new(2, 0),
+                schema: Version::new(2, 0),
+            },
+            first: true,
+        });
+    }
+
+    fn history(cursor: Option<&str>) -> HistoryQuery {
+        HistoryQuery::new(
+            task(),
+            20,
+            cursor.map(|cursor| HistoryCursor::new(cursor).expect("cursor")),
+        )
+        .expect("history query")
+    }
+
+    const PATIENCE: Duration = Duration::from_secs(5);
+
+    #[test]
+    fn a_delayed_catalog_answer_cannot_answer_the_next_request() {
+        let state = Arc::new(Mutex::new(StubState::default()));
+        {
+            let mut locked = state.lock().expect("stub state");
+            locked.catalog = vec!["stale-server".to_owned(), "current-server".to_owned()];
+        }
+        let transport = transport(ProtocolTransportConfig::default(), &state);
+        let (gate, _started) = block_next(&state);
+
+        let first = fetch_catalog_with_deadline(
+            &transport.shared,
+            &transport.config,
+            Instant::now() + Duration::from_millis(80),
+        );
+        match &first {
+            Err(super::TransportError::Io(message)) => assert!(
+                message.contains("timed out"),
+                "the bounded read times out instead of taking another request's answer: {message}"
+            ),
+            _ => panic!("the bounded catalog read must time out, not publish"),
+        }
+        release(&gate);
+
+        let second = fetch_catalog_with_deadline(
+            &transport.shared,
+            &transport.config,
+            Instant::now() + PATIENCE,
+        )
+        .expect("the later catalog request is answered");
+        assert_eq!(
+            second.server.server_identity, "current-server",
+            "the later request receives its own answer, never the abandoned one"
+        );
+        assert_eq!(
+            state.lock().expect("stub state").exchanges,
+            2,
+            "one exchange per request, with no retry"
+        );
+    }
+
+    #[test]
+    fn a_delayed_continuation_cannot_answer_a_first_page_reload() {
+        let state = Arc::new(Mutex::new(StubState::default()));
+        {
+            let mut locked = state.lock().expect("stub state");
+            // The abandoned continuation's answer would be visible as `Oversized`;
+            // the reload's own answer is malformed, so a cross-answer is provable.
+            locked.history_bodies = vec![vec![b'x'; 256], b"{}".to_vec()];
+        }
+        let config = ProtocolTransportConfig {
+            max_response_bytes: 64,
+            ..ProtocolTransportConfig::default()
+        };
+        let transport = transport(config, &state);
+        seed_poll(&transport);
+        let (gate, _started) = block_next_history(&state);
+
+        let continuation = fetch_history_with_deadline(
+            &transport.shared,
+            &transport.config,
+            &history(Some("continuation-cursor")),
+            Instant::now() + Duration::from_millis(80),
+        );
+        assert_eq!(
+            continuation.err(),
+            Some(HistoryFetchError::Unavailable),
+            "the continuation read ends as unavailable when its bound expires"
+        );
+        release(&gate);
+
+        let reload = fetch_history_with_deadline(
+            &transport.shared,
+            &transport.config,
+            &history(None),
+            Instant::now() + PATIENCE,
+        );
+        assert_eq!(
+            reload.err(),
+            Some(HistoryFetchError::Malformed),
+            "the first-page reload reads its own answer, not the delayed continuation"
+        );
+
+        let locked = state.lock().expect("stub state");
+        assert_eq!(locked.history_paths.len(), 2, "one exchange per read");
+        assert!(
+            locked.history_paths[0].contains("cursor=continuation-cursor"),
+            "the continuation carries its cursor: {}",
+            locked.history_paths[0]
+        );
+        assert!(
+            !locked.history_paths[1].contains("cursor="),
+            "the reload is a first page: {}",
+            locked.history_paths[1]
+        );
+    }
+
+    #[test]
+    fn a_stream_reset_ends_the_wait_and_discards_the_late_page() {
+        let state = Arc::new(Mutex::new(StubState::default()));
+        state.lock().expect("stub state").history_bodies = vec![vec![b'x'; 256]];
+        let config = ProtocolTransportConfig {
+            max_response_bytes: 64,
+            ..ProtocolTransportConfig::default()
+        };
+        let mut transport = transport(config.clone(), &state);
+        seed_poll(&transport);
+        let (gate, started) = block_next_history(&state);
+
+        let shared = Arc::clone(&transport.shared);
+        let (result_tx, result_rx) = mpsc::channel();
+        let reader = thread::spawn(move || {
+            let request = HistoryQuery::new(
+                TaskId::new("task/Task-184").expect("task id"),
+                20,
+                Some(HistoryCursor::new("continuation-cursor").expect("cursor")),
+            )
+            .expect("history query");
+            let outcome =
+                fetch_history_with_deadline(&shared, &config, &request, Instant::now() + PATIENCE);
+            result_tx.send(outcome).ok();
+        });
+        started
+            .recv_timeout(PATIENCE)
+            .expect("the read reached the executor");
+
+        transport.reset_stream();
+
+        let outcome = result_rx
+            .recv_timeout(PATIENCE)
+            .expect("a reset ends the blocked read");
+        assert_eq!(
+            outcome.err(),
+            Some(HistoryFetchError::Unauthorized),
+            "a reset invalidates the read context the page was bound to"
+        );
+        release(&gate);
+        reader.join().expect("the reader thread ends");
+        // The late page is discarded: the abandoned read is never answered twice.
+        assert_eq!(
+            state.lock().expect("stub state").history_paths.len(),
+            1,
+            "a reset read is neither repeated nor re-issued"
+        );
+    }
+
+    #[test]
+    fn closing_the_transport_ends_the_wait() {
+        let state = Arc::new(Mutex::new(StubState::default()));
+        let transport = transport(ProtocolTransportConfig::default(), &state);
+        let (gate, started) = block_next(&state);
+
+        let shared = Arc::clone(&transport.shared);
+        let config = transport.config.clone();
+        let (result_tx, result_rx) = mpsc::channel();
+        thread::spawn(move || {
+            let outcome = fetch_catalog_with_deadline(&shared, &config, Instant::now() + PATIENCE);
+            result_tx.send(outcome).ok();
+        });
+        started
+            .recv_timeout(PATIENCE)
+            .expect("the read reached the executor");
+
+        drop(transport);
+        let outcome = result_rx
+            .recv_timeout(PATIENCE)
+            .expect("a closed transport ends the blocked read");
+        assert!(
+            matches!(outcome, Err(super::TransportError::Disconnected)),
+            "a closed transport reports the read as disconnected"
+        );
+        release(&gate);
+    }
+
+    #[test]
+    fn a_delayed_answer_is_discarded_after_its_own_request_is_gone() {
+        // The completion is request-owned: once the waiter drops its handle a late
+        // answer reaches nobody, and it never becomes the next request's answer.
+        let abandoned: super::RequestCompletion<u8> = Arc::new(Mutex::new(None));
+        let weak = Arc::downgrade(&abandoned);
+        let next: super::RequestCompletion<u8> = Arc::new(Mutex::new(None));
+
+        super::complete(&weak, 7);
+        assert_eq!(super::take_completion(&next), None, "no cross-request slot");
+        assert_eq!(
+            super::take_completion(&abandoned),
+            Some(7),
+            "the answer belongs to the request that asked"
+        );
+        drop(abandoned);
+        super::complete(&weak, 9);
+        assert!(
+            weak.upgrade().is_none(),
+            "a dropped waiter leaves nothing to answer"
         );
     }
 }

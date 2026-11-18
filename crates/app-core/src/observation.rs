@@ -26,12 +26,10 @@ use crate::diagnostics::{DiagnosticBatch, DiagnosticKind, DiagnosticRing};
 use crate::history::{HistoryAccumulator, HistoryFetchReply, HistoryPublication};
 
 use crate::fence::{
-    AuthorizedCommandRead, ObservationLease, PublicationSubscription, VisibilityFence,
+    AuthorizedCommandRead, ObservationLease, PublicationSubscription, TaggedRead, VisibilityFence,
 };
-
 /// Bounded intent mailbox shared by every surface.
 pub const MAX_INTENTS: usize = 64;
-
 /// Bounded number of registered shutdown waiters.
 pub const MAX_SHUTDOWN_WAITERS: usize = 16;
 
@@ -539,6 +537,11 @@ struct Mailbox {
     closed: bool,
 }
 
+struct TaggedHistoryPublication {
+    publication: Arc<HistoryPublication>,
+    authorization_epoch: u64,
+}
+
 /// The single process-wide observation session owner.
 pub struct ObservationSessionOwner {
     client: Box<dyn DesktopClient>,
@@ -556,7 +559,7 @@ pub struct ObservationSessionOwner {
     /// Bounded history view and its request sequence (owner-side accumulator).
     history: HistoryAccumulator,
     /// Shared immutable history publication read by surfaces.
-    history_shared: Arc<Mutex<Arc<HistoryPublication>>>,
+    history_shared: Arc<Mutex<TaggedHistoryPublication>>,
     publication_version: u64,
     /// Strong last-snapshot reference: identity comparison without ABA reuse.
     last_snapshot: Option<SnapshotHandle>,
@@ -667,8 +670,8 @@ pub struct ObservationHandle {
     shutdown: Arc<Mutex<ShutdownCompletion>>,
     /// Credits and pending releases under one lock.
     references: Arc<Mutex<ReferenceLedger>>,
-    /// Shared immutable history publication for this owner.
-    history: Arc<Mutex<Arc<HistoryPublication>>>,
+    /// Shared tagged history publication for this owner.
+    history: Arc<Mutex<TaggedHistoryPublication>>,
 }
 
 /// Credits (references the owner granted) and releases awaiting application.
@@ -843,18 +846,24 @@ impl ObservationHandle {
         reply
     }
 
-    /// The current bounded history publication of this owner.
-    ///
-    /// Reading it is not a grant: the view is invalidated on every scope or
-    /// authorization change, and an unloaded view is reported as
-    /// [`HistoryStatus::Idle`], never as an empty history.
-    pub fn history(&self) -> Arc<HistoryPublication> {
-        Arc::clone(
-            &self
-                .history
-                .lock()
-                .unwrap_or_else(std::sync::PoisonError::into_inner),
-        )
+    /// Read bounded history under the current authorization and publication tag.
+    /// A new lease cannot authorize history retained from a previous binding.
+    pub fn history(&self) -> Result<TaggedRead<Arc<HistoryPublication>>, ReadUnavailable> {
+        let lease = self.fence.current()?;
+        if lease.read_context().is_none() {
+            return Err(ReadUnavailable::AuthorizationUnavailable);
+        }
+        let history = match self.history.try_lock() {
+            Ok(history) => history,
+            Err(std::sync::TryLockError::Poisoned(poisoned)) => poisoned.into_inner(),
+            Err(std::sync::TryLockError::WouldBlock) => return Err(ReadUnavailable::Superseded),
+        };
+        if history.authorization_epoch != self.fence.authorization_epoch() {
+            return Err(ReadUnavailable::Superseded);
+        }
+        let publication = Arc::clone(&history.publication);
+        drop(history);
+        lease.read(|_| publication)
     }
 
     /// Submit one create-task command through the owner thread.
@@ -1113,8 +1122,10 @@ impl ObservationSessionOwner {
         let references: Arc<Mutex<ReferenceLedger>> =
             Arc::new(Mutex::new(ReferenceLedger::default()));
         let history: HistoryAccumulator = HistoryAccumulator::default();
-        let history_shared: Arc<Mutex<Arc<HistoryPublication>>> =
-            Arc::new(Mutex::new(history.publication()));
+        let history_shared = Arc::new(Mutex::new(TaggedHistoryPublication {
+            publication: history.publication(),
+            authorization_epoch: fence.authorization_epoch(),
+        }));
         let handle = ObservationHandle {
             mailbox: Arc::clone(&mailbox),
             diagnostics: Arc::clone(&diagnostics),
@@ -1506,17 +1517,20 @@ impl ObservationSessionOwner {
     }
 
     /// Publish the accumulator's current immutable history view.
-    fn publish_history(&self) {
+    fn publish_history(&self, authorization_epoch: u64) {
         *self
             .history_shared
             .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner) = self.history.publication();
+            .unwrap_or_else(std::sync::PoisonError::into_inner) = TaggedHistoryPublication {
+            publication: self.history.publication(),
+            authorization_epoch,
+        };
     }
 
     /// Drop the loaded history view (scope/authorization/client change, shutdown).
     fn reset_history(&mut self) {
         self.history.reset();
-        self.publish_history();
+        self.publish_history(self.fence.authorization_epoch());
     }
 
     /// Drop a loaded history view when the publication stops admitting data.
@@ -1553,15 +1567,16 @@ impl ObservationSessionOwner {
     /// result that lost the race (or arrived for another task) is discarded and
     /// never published as the current view.
     fn fetch_history(&mut self, query: &HistoryQuery) -> HistoryFetchReply {
+        let authorization_epoch = self.fence.authorization_epoch();
         let sequence = self.history.begin(query.task_ref());
-        self.publish_history();
+        self.publish_history(authorization_epoch);
         let first_page = query.cursor().is_none();
         let applied = match self.client.fetch_history(query) {
             Ok(document) => self.history.apply(sequence, &document, first_page),
             Err(error) => self.history.failed_with(sequence, error),
         };
         if applied {
-            self.publish_history();
+            self.publish_history(authorization_epoch);
             HistoryFetchReply::Published
         } else {
             HistoryFetchReply::Superseded

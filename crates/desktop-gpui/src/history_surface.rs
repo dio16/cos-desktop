@@ -23,6 +23,24 @@ fn unavailable_view() -> HistoryView {
     }
 }
 
+/// The surface while the owner withholds history under its visibility boundary.
+fn withheld_view(reason: app_core::ReadUnavailable) -> HistoryView {
+    let label: Arc<str> = Arc::from(match reason {
+        app_core::ReadUnavailable::AuthorizationUnavailable
+        | app_core::ReadUnavailable::Synchronizing => "観測の許可を待っています",
+        app_core::ReadUnavailable::Superseded | app_core::ReadUnavailable::Exhausted => {
+            "観測が更新されました。開き直してください"
+        }
+        app_core::ReadUnavailable::Closed => "観測は終了しています",
+    });
+    HistoryView {
+        state: HistoryLoadState::Unauthorized,
+        status_label: Arc::clone(&label),
+        load_older_label: label,
+        ..HistoryView::default()
+    }
+}
+
 /// The load-older control decision for one render.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(super) enum OlderAction {
@@ -102,8 +120,7 @@ impl Shell {
         self.history_active = Some(0);
         self.history_notice = None;
         self.history_list_focus.focus(window, cx);
-        // A previously served view for this task is still authoritative; only an
-        // unloaded, failed or unauthorized view needs a fresh page.
+        // Only an authorized, current publication can satisfy this surface.
         let settled = self.history_publication().is_some_and(|publication| {
             publication.is_for(&task)
                 && !matches!(
@@ -135,19 +152,37 @@ impl Shell {
         cx.notify();
     }
 
-    /// The current bounded history publication, when an owner exists.
+    /// The current bounded history publication, when its authorization tag remains current.
     fn history_publication(&self) -> Option<Arc<HistoryPublication>> {
-        self.handle.as_ref().map(|handle| handle.history())
+        let tagged = self.handle.as_ref()?.history().ok()?;
+        let mut publication = None;
+        tagged
+            .consume(|value| publication = Some(Arc::clone(value)))
+            .ok()?;
+        publication
     }
 
     /// Render the publication into the view model.
     fn history_view(&self) -> HistoryView {
-        match self.history_publication() {
+        let Some(handle) = self.handle.as_ref() else {
+            return unavailable_view();
+        };
+        let tagged = match handle.history() {
+            Ok(tagged) => tagged,
+            Err(error) => return withheld_view(error),
+        };
+        let mut publication = None;
+        if tagged
+            .consume(|value| publication = Some(Arc::clone(value)))
+            .is_err()
+        {
+            return withheld_view(app_core::ReadUnavailable::Superseded);
+        }
+        match publication {
             Some(publication) => HistoryView::from_publication(&publication),
-            None => unavailable_view(),
+            None => withheld_view(app_core::ReadUnavailable::AuthorizationUnavailable),
         }
     }
-
     /// Issue one bounded history request through the owner thread.
     fn history_request(&mut self, request: HistoryRequest, cx: &mut Context<Self>) {
         let Some(handle) = self.handle.clone() else {
@@ -258,10 +293,16 @@ impl Shell {
 
     /// Reopen one row by its rendered index.
     fn history_reopen_row(&mut self, index: usize, window: &mut Window, cx: &mut Context<Self>) {
-        let Some(task) = self.history_task.clone() else {
+        let Some(publication) = self.history_publication() else {
+            self.history_active = None;
+            self.history_notice = Some("履歴は現在利用できません".to_owned());
+            cx.notify();
             return;
         };
-        let view = self.history_view();
+        let Some(task) = publication.task_ref.clone() else {
+            return;
+        };
+        let view = HistoryView::from_publication(&publication);
         let Some(row) = view.rows.get(index).cloned() else {
             return;
         };
@@ -326,14 +367,7 @@ impl Shell {
         let view = self.history_view();
         let list_focused = self.history_list_focus.is_focused(window);
         let notice = self.history_notice.clone();
-        let task_label = self
-            .history_task
-            .clone()
-            .or_else(|| self.history_publication().and_then(|p| p.task_ref.clone()))
-            .map(|task| task.as_str().to_owned())
-            .unwrap_or_else(|| "タスク未選択".to_owned());
-        let presentation =
-            presentation_for(Some(task_label.as_str()), &view, self.handle.is_some());
+        let presentation = presentation_for(view.task.as_deref(), &view, self.handle.is_some());
 
         let mut children: Vec<AnyElement> = Vec::new();
         children.push(

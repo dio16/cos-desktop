@@ -334,6 +334,21 @@ impl MediaIdentity {
     pub fn verified(&self) -> bool {
         self.expected_sha256.is_some()
     }
+
+    /// Whether this admitted identity is the currently selected canonical identity.
+    ///
+    /// The locator key alone is not enough: an artifact reference can be updated
+    /// to a new digest or read under a new epoch/principal, and those bytes must
+    /// not be reused for the replacement.
+    fn matches_selection(&self, selection: &MediaSelection) -> bool {
+        self.server_identity == *selection.session().server_identity()
+            && self.audience == selection.session().audience()
+            && self.epoch == *selection.session().epoch()
+            && self.artifact_ref == *selection.artifact_ref()
+            && self.artifact_digest == *selection.artifact_digest()
+            && self.revision == *selection.revision()
+            && self.representation == *selection.representation()
+    }
 }
 
 /// Bytes that passed remote admission under one authorized identity.
@@ -706,6 +721,11 @@ impl MediaRepository {
         let Some(identity) = self.remembered.get(&RememberKey::for_selection(selection)) else {
             return outcome;
         };
+        if !identity.matches_selection(selection) {
+            // A newer digest/epoch/revision is a different canonical identity; old
+            // bytes are not a substitute for the selected artifact.
+            return outcome;
+        }
         self.cached_presentation(identity).unwrap_or(outcome)
     }
 
@@ -1350,6 +1370,105 @@ mod tests {
         assert_eq!(replay.identity, admitted.identity);
         assert_eq!(replay.computed_digest, digest);
         assert_eq!(stub.byte_calls, 1, "no byte refetch was needed");
+    }
+
+    #[test]
+    fn an_expired_descriptor_never_serves_a_replaced_digest_or_epoch() {
+        let bytes = png(7);
+        let digest = digest_of(&bytes);
+        let mut repository = new_repository();
+        let mut stub = Stub::with(
+            [
+                Ok(descriptor(Some(digest), Availability::Available)),
+                Err(MediaFetchError::DescriptorExpired),
+                Err(MediaFetchError::DescriptorExpired),
+            ],
+            [Ok(bytes.clone())],
+        );
+        load(
+            &mut repository,
+            &mut stub,
+            &selection(AUDIENCE, Availability::Available),
+        )
+        .admitted()
+        .expect("first load admitted");
+
+        let mut updated = snapshot(Availability::Available);
+        updated.artifact_digest =
+            ArtifactDigest::new("sha256:artifact-digest-2").expect("artifact digest");
+        let replaced =
+            MediaSelection::for_artifact(&updated, session(AUDIENCE), RepresentationKind::Original);
+        let outcome = load(&mut repository, &mut stub, &replaced);
+        assert_eq!(
+            outcome.unavailable().expect("expiry explicit").availability,
+            MediaAvailability::Expired,
+            "the old digest is not the selected canonical identity"
+        );
+        assert_eq!(stub.byte_calls, 1, "no second byte fetch was attempted");
+
+        let mut repository = new_repository();
+        let mut stub = Stub::with(
+            [
+                Ok(descriptor(Some(digest), Availability::Available)),
+                Err(MediaFetchError::DescriptorExpired),
+                Err(MediaFetchError::DescriptorExpired),
+            ],
+            [Ok(bytes.clone())],
+        );
+        load(
+            &mut repository,
+            &mut stub,
+            &selection(AUDIENCE, Availability::Available),
+        )
+        .admitted()
+        .expect("first load admitted");
+        let other_epoch = MediaSelection::for_artifact(
+            &snapshot(Availability::Available),
+            MediaSessionContext::new(
+                ServerId::new(SERVER).expect("server identity"),
+                AUDIENCE,
+                EpochId::new("epoch-2").expect("epoch"),
+                "read-context-value",
+            ),
+            RepresentationKind::Original,
+        );
+        let outcome = load(&mut repository, &mut stub, &other_epoch);
+        assert_eq!(
+            outcome.unavailable().expect("expiry explicit").availability,
+            MediaAvailability::Expired,
+            "another epoch cannot reuse the previous epoch's admitted bytes"
+        );
+    }
+
+    #[test]
+    fn browsing_beyond_the_entry_limit_keeps_admitting_later_identities() {
+        let mut repository = new_repository();
+        let mut descriptors = Vec::new();
+        let mut payloads = Vec::new();
+        let mut selections = Vec::new();
+        for seed in 0..9u8 {
+            descriptors.push(Ok(descriptor(None, Availability::Available)));
+            payloads.push(Ok(png(seed)));
+            let mut artifact = snapshot(Availability::Available);
+            artifact.artifact_digest =
+                ArtifactDigest::new(format!("sha256:artifact-{seed}")).expect("artifact digest");
+            selections.push(MediaSelection::for_artifact(
+                &artifact,
+                session(AUDIENCE),
+                RepresentationKind::Original,
+            ));
+        }
+        let mut stub = Stub::with(descriptors, payloads);
+        for selection in &selections {
+            load(&mut repository, &mut stub, selection)
+                .admitted()
+                .expect("a later distinct image must still be admitted");
+        }
+        assert_eq!(
+            repository.cache_usage().expect("usage").entries,
+            8,
+            "the entry bound is enforced by eviction, not by permanent refusal"
+        );
     }
 
     #[test]

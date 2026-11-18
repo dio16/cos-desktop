@@ -308,7 +308,13 @@ impl MediaCache {
         if bytes > self.budget.limits.max_input_bytes {
             return Err(MediaError::TooLarge);
         }
-        let reservation = self.budget.reserve(bytes)?;
+        let reservation = loop {
+            match self.budget.reserve(bytes) {
+                Ok(reservation) => break reservation,
+                Err(MediaError::Capacity) if self.evict_replaceable_remote() => {}
+                Err(error) => return Err(error),
+            }
+        };
         let entry = Arc::new(CachedRemote {
             key,
             admitted,
@@ -316,6 +322,23 @@ impl MediaCache {
         });
         self.remote.insert(entry.key.clone(), Arc::clone(&entry));
         Ok(entry)
+    }
+
+    /// Drop one cache-owned remote entry so its reservation can be reused.
+    ///
+    /// Entries still held by an external `Arc` stay retained and charged; the
+    /// deterministic key order makes repeated browsing evict the same way.
+    fn evict_replaceable_remote(&mut self) -> bool {
+        let Some(key) = self
+            .remote
+            .iter()
+            .find(|(_, entry)| Arc::strong_count(entry) == 1)
+            .map(|(key, _)| key.clone())
+        else {
+            return false;
+        };
+        self.remote.remove(&key);
+        true
     }
 
     /// The caller owns the explicit local file capability. No path is read from media metadata.
@@ -582,6 +605,50 @@ mod tests {
     }
 
     #[test]
+    fn repeated_remote_admission_evicts_cache_owned_entries_without_exceeding_limits() {
+        let mut cache = MediaCache::new(limits(2)).expect("cache");
+        let bytes = png();
+        let first = key("desktop:one", None);
+        for label in ["desktop:one", "desktop:two", "desktop:three"] {
+            let entry = cache
+                .insert_remote(key(label, None), admitted(&bytes))
+                .expect("cache-owned entries make room");
+            drop(entry);
+        }
+        assert_eq!(
+            cache.usage().expect("usage"),
+            Usage {
+                bytes: bytes.len() * 2,
+                entries: 2
+            }
+        );
+        assert!(
+            cache.get_remote(&first).is_none(),
+            "the oldest entry was evicted"
+        );
+        assert!(cache.get_remote(&key("desktop:three", None)).is_some());
+    }
+
+    #[test]
+    fn an_externally_retained_entry_is_not_evicted_early() {
+        let mut cache = MediaCache::new(limits(1)).expect("cache");
+        let bytes = png();
+        let retained = cache
+            .insert_remote(key("desktop:one", None), admitted(&bytes))
+            .expect("first");
+        assert_eq!(
+            cache
+                .insert_remote(key("desktop:two", None), admitted(&bytes))
+                .err(),
+            Some(MediaError::Capacity)
+        );
+        drop(retained);
+        cache
+            .insert_remote(key("desktop:two", None), admitted(&bytes))
+            .expect("the released entry makes room");
+    }
+
+    #[test]
     fn remote_entries_are_charged_against_the_live_entry_and_byte_budget() {
         let mut cache = MediaCache::new(limits(1)).expect("cache");
         let bytes = png();
@@ -599,7 +666,15 @@ mod tests {
         );
         assert_eq!(
             cache.insert_remote(second.clone(), admitted(&bytes)).err(),
-            Some(MediaError::Capacity)
+            None,
+            "an unheld cache entry is evictable, so admission is not permanently refused"
+        );
+        assert_eq!(
+            cache.usage().expect("usage"),
+            Usage {
+                bytes: bytes.len(),
+                entries: 1
+            }
         );
         // Oversize admitted payloads are refused before any reservation.
         let mut oversized = MediaCache::new(limits(8)).expect("cache");
@@ -612,7 +687,7 @@ mod tests {
             Some(MediaError::TooLarge)
         );
         assert_eq!(oversized.usage().expect("usage"), Usage::default());
-        cache.remove_remote(&first);
+        cache.remove_remote(&second);
         assert_eq!(cache.usage().expect("usage"), Usage::default());
     }
 }

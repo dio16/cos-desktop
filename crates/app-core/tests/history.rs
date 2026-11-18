@@ -18,12 +18,10 @@ use app_core::{
 use cos_client::{
     ClientError, ClientEvent, ClientSource, CommandLookup, CommandStatus, DesktopClient,
     HistoryCursor, HistoryDocument, HistoryFetchError, HistoryItem, HistoryQuery, HistoryServer,
-    HistoryStamp, ObservationControl, ProjectionState, PublicationAccess, PumpReport,
-    SnapshotHandle,
+    HistoryStamp, MockCosClient, ObservationControl, PublicationAccess, PumpReport, SnapshotHandle,
 };
 use desktop_protocol::{
-    CommandId, ObservationScopeRequest, OpenAuthorizedObservation, OpenObservation, ReadRequestId,
-    ScopeFilter, TaskId,
+    CommandId, ObservationScopeRequest, OpenAuthorizedObservation, ScopeFilter, TaskId,
 };
 
 fn noop_waker() -> Waker {
@@ -104,61 +102,54 @@ fn document(task_label: &str, items: Vec<HistoryItem>, next: Option<&str>) -> Hi
 
 /// Scripted owner-thread client: every history request pops one answer.
 struct ScriptedHistoryClient {
-    connection: cos_client::ConnectionState,
-    source: ClientSource,
-    snapshot: SnapshotHandle,
-    statuses: BTreeMap<CommandId, CommandStatus>,
+    inner: MockCosClient,
     replies: VecDeque<Result<HistoryDocument, HistoryFetchError>>,
     requests: Vec<HistoryQuery>,
-    _control: Option<ObservationControl>,
 }
 
 impl ScriptedHistoryClient {
     fn new(replies: Vec<Result<HistoryDocument, HistoryFetchError>>) -> Self {
         Self {
-            connection: cos_client::ConnectionState::Live,
-            source: ClientSource::Runtime {
-                server_identity: desktop_protocol::ServerId::new("server").expect("server"),
-            },
-            snapshot: Arc::new(ProjectionState::default()),
-            statuses: BTreeMap::new(),
+            inner: MockCosClient::from_fixture_str(include_str!(
+                "../../cos-client/fixtures/task-184.json"
+            ))
+            .expect("authorized fixture"),
             replies: replies.into(),
             requests: Vec::new(),
-            _control: None,
         }
     }
 }
 
 impl DesktopClient for ScriptedHistoryClient {
     fn snapshot(&self) -> SnapshotHandle {
-        Arc::clone(&self.snapshot)
+        self.inner.snapshot()
     }
     fn connection(&self) -> &cos_client::ConnectionState {
-        &self.connection
+        self.inner.connection()
     }
     fn is_stale(&self) -> bool {
-        false
+        self.inner.is_stale()
     }
     fn source(&self) -> ClientSource {
-        self.source.clone()
+        self.inner.source()
     }
     fn last_error(&self) -> Option<&ClientError> {
-        None
+        self.inner.last_error()
     }
-    fn pump(&mut self, _now_ms: u64) -> Vec<ClientEvent> {
-        Vec::new()
+    fn pump(&mut self, now_ms: u64) -> Vec<ClientEvent> {
+        self.inner.pump(now_ms)
     }
     fn disconnect(&mut self) -> Vec<ClientEvent> {
-        Vec::new()
+        self.inner.disconnect()
     }
-    fn request_resync(&mut self, _reason: desktop_protocol::ResyncReason) -> Vec<ClientEvent> {
-        Vec::new()
+    fn request_resync(&mut self, reason: desktop_protocol::ResyncReason) -> Vec<ClientEvent> {
+        self.inner.request_resync(reason)
     }
-    fn stop_task(&mut self, _task_id: &TaskId) -> Result<CommandId, ClientError> {
-        Err(ClientError::NotConnected("scripted client".to_owned()))
+    fn stop_task(&mut self, task_id: &TaskId) -> Result<CommandId, ClientError> {
+        self.inner.stop_task(task_id)
     }
     fn fetch_catalog(&mut self) -> Result<cos_client::CatalogDocument, ClientError> {
-        Err(ClientError::Protocol("scripted client".to_owned()))
+        self.inner.fetch_catalog()
     }
     fn fetch_history(
         &mut self,
@@ -171,66 +162,52 @@ impl DesktopClient for ScriptedHistoryClient {
     }
     fn create_task(
         &mut self,
-        _envelope: desktop_protocol::CommandEnvelope,
+        envelope: desktop_protocol::CommandEnvelope,
     ) -> Result<CommandId, ClientError> {
-        Err(ClientError::NotConnected("scripted client".to_owned()))
+        self.inner.create_task(envelope)
     }
-    fn pump_step(&mut self, _now_ms: u64, _budget: usize) -> PumpReport {
-        PumpReport {
-            frames: 0,
-            events: Vec::new(),
-            changed: false,
-            next_deadline_ms: None,
-        }
+    fn pump_step(&mut self, now_ms: u64, budget: usize) -> PumpReport {
+        self.inner.pump_step(now_ms, budget)
     }
     fn command_statuses(&self) -> &BTreeMap<CommandId, CommandStatus> {
-        &self.statuses
+        self.inner.command_statuses()
     }
-    fn lookup_command(&self, _id: &CommandId) -> CommandLookup<'_> {
-        CommandLookup::NotRetained
+    fn lookup_command(&self, id: &CommandId) -> CommandLookup<'_> {
+        self.inner.lookup_command(id)
     }
-    fn retain_command(&mut self, _id: &CommandId) -> Result<(), ClientError> {
-        Ok(())
+    fn retain_command(&mut self, id: &CommandId) -> Result<(), ClientError> {
+        self.inner.retain_command(id)
     }
-    fn release_command(&mut self, _id: &CommandId) {}
+    fn release_command(&mut self, id: &CommandId) {
+        self.inner.release_command(id);
+    }
     fn begin_authorized_observation(
         &mut self,
-        _request: OpenAuthorizedObservation,
+        request: OpenAuthorizedObservation,
     ) -> Result<(), ClientError> {
-        Ok(())
+        self.inner.begin_authorized_observation(request)
     }
     fn publication_access(&self) -> PublicationAccess<'_> {
-        PublicationAccess::Withheld {
-            reason: cos_client::ReadUnavailable::AuthorizationUnavailable,
-        }
+        self.inner.publication_access()
     }
     fn lookup_receipt_authorized(
         &mut self,
-        _request: desktop_protocol::AuthorizedReceiptLookup,
+        request: desktop_protocol::AuthorizedReceiptLookup,
     ) -> Result<(), ClientError> {
-        Ok(())
+        self.inner.lookup_receipt_authorized(request)
     }
     fn bind_observation_control(&mut self, control: ObservationControl) {
-        self._control = Some(control);
+        self.inner.bind_observation_control(control);
     }
     fn observation_request(&self, scope: ObservationScopeRequest) -> OpenAuthorizedObservation {
-        OpenAuthorizedObservation {
-            request_id: ReadRequestId::new("request-1").expect("request id"),
-            observation: OpenObservation {
-                scope,
-                scope_id: None,
-                last_seen_cursor: None,
-                epoch: None,
-            },
-            retained_commands: Vec::new(),
-        }
+        self.inner.observation_request(scope)
     }
     fn adopt_retained_registry(
         &mut self,
-        _records: BTreeMap<CommandId, CommandStatus>,
-        _references: BTreeMap<CommandId, usize>,
+        records: BTreeMap<CommandId, CommandStatus>,
+        references: BTreeMap<CommandId, usize>,
     ) -> Result<(), ClientError> {
-        Ok(())
+        self.inner.adopt_retained_registry(records, references)
     }
 }
 
@@ -242,14 +219,24 @@ struct Live {
 
 impl Live {
     fn start(replies: Vec<Result<HistoryDocument, HistoryFetchError>>) -> Self {
-        let (mut owner, handle) =
-            ObservationSessionOwner::new(Box::new(ScriptedHistoryClient::new(replies)));
+        let client = ScriptedHistoryClient::new(replies);
+        let scope = client
+            .inner
+            .client()
+            .transport()
+            .scenario()
+            .observation_request();
+        let (mut owner, handle) = ObservationSessionOwner::new(Box::new(client));
         owner.arm_control(&handle);
-        Self {
+        let mut live = Self {
             owner,
             handle,
             now_ms: 0,
-        }
+        };
+        let reply = live.handle.change_scope(scope);
+        resolve(&mut live.owner, reply, &mut live.now_ms).expect("start observation");
+        live.settle();
+        live
     }
 
     fn fetch(&mut self, request: HistoryRequest) -> HistoryFetchReply {
@@ -260,8 +247,30 @@ impl Live {
         value
     }
 
-    fn history(&self) -> Arc<HistoryPublication> {
-        self.handle.history()
+    fn history(&self) -> Option<Arc<HistoryPublication>> {
+        let tagged = self.handle.history().ok()?;
+        let mut publication = None;
+        tagged
+            .consume(|value| publication = Some(Arc::clone(value)))
+            .ok()?;
+        publication
+    }
+
+    fn settle(&mut self) {
+        for _ in 0..24 {
+            if self
+                .handle
+                .current()
+                .ok()
+                .and_then(|lease| lease.read_context())
+                .is_some()
+            {
+                return;
+            }
+            self.now_ms += 1_000;
+            self.owner.step(self.now_ms);
+        }
+        panic!("authorized observation did not settle");
     }
 }
 
@@ -279,7 +288,7 @@ fn a_served_page_publishes_rows_and_offers_an_explicit_continuation() {
         live.fetch(HistoryRequest::first(task("Task-184"))),
         HistoryFetchReply::Published
     );
-    let page = live.history();
+    let page = live.history().expect("authorized publication");
     assert_eq!(page.task_ref, Some(task("Task-184")));
     assert_eq!(page.status, HistoryStatus::Loaded);
     assert_eq!(page.entries.len(), 2);
@@ -299,7 +308,7 @@ fn a_served_page_publishes_rows_and_offers_an_explicit_continuation() {
         HistoryFetchReply::Published,
         "the second page is applied"
     );
-    let end = live.history();
+    let end = live.history().expect("authorized publication");
     assert_eq!(end.status, HistoryStatus::End);
     assert_eq!(end.entries.len(), 3);
     assert!(!end.has_more);
@@ -314,12 +323,15 @@ fn a_served_page_publishes_rows_and_offers_an_explicit_continuation() {
 fn an_authoritative_empty_page_is_empty_not_unloaded() {
     let mut live = Live::start(vec![Ok(document("Task-184", Vec::new(), None))]);
     // Before any request the view is unloaded, never an empty history.
-    assert_eq!(live.history().status, HistoryStatus::Idle);
+    assert!(
+        live.history().is_none(),
+        "unloaded history is not an authoritative empty page"
+    );
     assert_eq!(
         live.fetch(HistoryRequest::first(task("Task-184"))),
         HistoryFetchReply::Published
     );
-    let publication = live.history();
+    let publication = live.history().expect("authorized publication");
     assert_eq!(publication.status, HistoryStatus::Empty);
     assert!(publication.entries.is_empty());
     assert!(publication.status.is_settled());
@@ -333,7 +345,7 @@ fn a_unauthorized_read_publishes_unauthorized_without_rows() {
         live.fetch(HistoryRequest::first(task("Task-184"))),
         HistoryFetchReply::Published
     );
-    let publication = live.history();
+    let publication = live.history().expect("authorized publication");
     assert_eq!(publication.status, HistoryStatus::Unauthorized);
     assert!(publication.entries.is_empty());
     assert_eq!(publication.task_ref, Some(task("Task-184")));
@@ -378,7 +390,7 @@ fn closed_failures_are_explicit_and_keep_no_partial_rows() {
             live.fetch(HistoryRequest::first(task("Task-184"))),
             HistoryFetchReply::Published
         );
-        let publication = live.history();
+        let publication = live.history().expect("authorized publication");
         assert_eq!(publication.status, expected);
         assert!(publication.entries.is_empty());
     }
@@ -395,21 +407,26 @@ fn a_scope_change_invalidates_the_loaded_history() {
         live.fetch(HistoryRequest::first(task("Task-184"))),
         HistoryFetchReply::Published
     );
-    assert_eq!(live.history().entries.len(), 1);
+    assert_eq!(
+        live.history()
+            .expect("authorized publication")
+            .entries
+            .len(),
+        1
+    );
 
+    let retained = live.handle.history().expect("authorized history");
     let reply = live.handle.change_scope(scope());
+    assert!(live.handle.history().is_err(), "scope close is immediate");
+    assert!(
+        retained
+            .consume(|_| panic!("closed history disclosed"))
+            .is_err()
+    );
     let mut now = live.now_ms;
     let result = resolve(&mut live.owner, reply, &mut now);
     live.now_ms = now;
     assert!(result.is_ok(), "the scope intent is accepted");
-    let publication = live.history();
-    assert_eq!(
-        publication.status,
-        HistoryStatus::Idle,
-        "another context's rows are not readable"
-    );
-    assert_eq!(publication.task_ref, None);
-    assert!(publication.entries.is_empty());
 }
 
 #[test]
@@ -419,21 +436,30 @@ fn an_authentication_change_invalidates_the_loaded_history() {
         vec![item("Task-184", 1)],
         None,
     ))]);
-    let reply = live.handle.change_scope(scope());
-    let mut now = live.now_ms;
-    let _ = resolve(&mut live.owner, reply, &mut now);
-    live.now_ms = now;
     assert_eq!(
         live.fetch(HistoryRequest::first(task("Task-184"))),
         HistoryFetchReply::Published
     );
 
+    let retained = live.handle.history().expect("authorized history");
     let reply = live.handle.authentication_changed();
+    assert!(
+        live.handle.history().is_err(),
+        "authentication close is immediate"
+    );
+    assert!(
+        retained
+            .consume(|_| panic!("closed history disclosed"))
+            .is_err(),
+        "a read taken before the close cannot be consumed after it"
+    );
     let mut now = live.now_ms;
     let _ = resolve(&mut live.owner, reply, &mut now);
     live.now_ms = now;
-    assert_eq!(live.history().status, HistoryStatus::Idle);
-    assert!(live.history().entries.is_empty());
+    assert!(
+        live.handle.history().is_err(),
+        "the owner's cleared publication is still withheld under the closed boundary"
+    );
 }
 
 #[test]
@@ -446,12 +472,11 @@ fn a_closed_owner_answers_closed_instead_of_publishing() {
     let shutdown = live.handle.shutdown();
     let mut now = live.now_ms;
     resolve(&mut live.owner, shutdown, &mut now);
-    live.now_ms = now;
+    assert!(live.handle.history().is_err());
     let reply = live
         .handle
         .fetch_history(HistoryRequest::first(task("Task-184")).query);
     assert_eq!(poll_once(reply), HistoryFetchReply::Closed);
-    assert_eq!(live.history().status, HistoryStatus::Idle);
 }
 
 #[test]
@@ -461,9 +486,8 @@ fn every_request_is_bounded_to_the_runtime_page_size() {
         Ok(document("Task-184", vec![item("Task-184", 0)], None)),
     ]);
     let first = HistoryRequest::first(task("Task-184"));
-    assert_eq!(first.query.limit(), cos_client::HISTORY_LIMIT_MAX);
     let _ = live.fetch(first);
-    let publication = live.history();
+    let publication = live.history().expect("authorized publication");
     let older = HistoryRequest::older(&publication, task("Task-184")).expect("continuation");
     assert_eq!(older.query.limit(), cos_client::HISTORY_LIMIT_MAX);
     let _ = live.fetch(older);

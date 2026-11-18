@@ -204,6 +204,8 @@ pub enum BriefValidationError {
     EpochUnavailable,
     /// A sent command's receipt is still pending; no second intent is allowed.
     AwaitingReceipt,
+    /// The current accepted/stale-recipe state cannot start another submission.
+    SubmissionUnavailable,
 }
 
 /// Submit state machine (accepted is a receipt, never an observed task).
@@ -352,6 +354,9 @@ impl BriefForm {
 
     /// Install a freshly authenticated catalog and keep the draft.
     pub fn set_catalog(&mut self, catalog: BriefCatalog) {
+        if !self.is_editable() {
+            return;
+        }
         self.catalog = Some(catalog);
         self.selected = None;
         self.overrides.clear();
@@ -558,11 +563,13 @@ impl BriefForm {
     /// advertises a valid dedupe window (not part of this slice). The unknown
     /// receipt stays recheckable; a later submit is a new intent.
     pub fn request_submit(&mut self) -> Result<BriefSubmission, BriefValidationError> {
-        if matches!(self.state, BriefState::Submitting { .. }) {
-            return Err(BriefValidationError::Submitting);
-        }
-        if matches!(self.state, BriefState::Sent { .. }) {
-            return Err(BriefValidationError::AwaitingReceipt);
+        match self.state {
+            BriefState::Submitting { .. } => return Err(BriefValidationError::Submitting),
+            BriefState::Sent { .. } => return Err(BriefValidationError::AwaitingReceipt),
+            BriefState::Accepted { .. } | BriefState::StaleRecipe => {
+                return Err(BriefValidationError::SubmissionUnavailable);
+            }
+            BriefState::Editing | BriefState::Rejected { .. } | BriefState::Unknown { .. } => {}
         }
         let epoch = self
             .catalog
@@ -668,11 +675,16 @@ impl BriefForm {
     }
 
     /// Apply a stale-recipe refusal; the draft is kept and the catalog refreshed.
-    pub fn on_stale_recipe(&mut self) -> bool {
-        if !matches!(
-            self.state,
-            BriefState::Submitting { .. } | BriefState::Rejected { .. } | BriefState::Editing
-        ) {
+    pub fn on_stale_recipe(&mut self, command_id: &CommandId) -> bool {
+        if !self.matches_pending(command_id)
+            || !matches!(
+                self.state,
+                BriefState::Submitting { .. }
+                    | BriefState::Sent { .. }
+                    | BriefState::Rejected { .. }
+                    | BriefState::Unknown { .. }
+            )
+        {
             return false;
         }
         self.state = BriefState::StaleRecipe;
@@ -1404,8 +1416,15 @@ mod tests {
 
         let mut stale = form_with_recipe();
         assert!(stale.set_goal("goal"));
-        let _ = stale.request_submit().expect("submit");
-        assert!(stale.on_stale_recipe());
+        let submission = stale.request_submit().expect("submit");
+        assert!(stale.on_sent(&submission.command_id));
+        assert!(!stale.on_stale_recipe(&CommandId::generate()));
+        assert!(matches!(stale.state(), BriefState::Sent { .. }));
+        assert!(stale.on_stale_recipe(&submission.command_id));
+        assert_eq!(
+            stale.request_submit().err(),
+            Some(BriefValidationError::SubmissionUnavailable)
+        );
         assert_eq!(
             stale.state_label(),
             "レシピが更新されました — 再読み込みしてください"
@@ -1438,6 +1457,15 @@ mod tests {
             "an accepted receipt is not an observed or completed task"
         );
         assert!(!form.is_editable());
+        form.refresh_catalog(sample_catalog());
+        assert_eq!(
+            form.request_submit().err(),
+            Some(BriefValidationError::SubmissionUnavailable)
+        );
+        assert!(matches!(
+            form.state(),
+            BriefState::Accepted { command_id, .. } if command_id == &submission.command_id
+        ));
 
         // A late unknown answer for the same command must not replace the
         // acceptance the Runtime already returned.
@@ -1504,7 +1532,7 @@ mod tests {
         assert!(!form.on_rejected(&submission.command_id, "INTERNAL_ERROR"));
         assert!(!form.on_unknown(&submission.command_id));
         assert!(!form.on_not_sent());
-        assert!(!form.on_stale_recipe());
+        assert!(!form.on_stale_recipe(&submission.command_id));
         assert!(!form.on_accepted(&submission.command_id, None));
 
         // An answer for another command never touches this receipt.
@@ -1519,6 +1547,29 @@ mod tests {
         );
         assert_eq!(form.state_label(), "受付済み — 観測待ち");
         assert!(!form.is_editable(), "the accepted Brief stays read-only");
+    }
+
+    #[test]
+    fn a_catalog_refresh_cannot_forget_a_submission_awaiting_its_receipt() {
+        let mut form = form_with_recipe();
+        assert!(form.set_goal("keep this draft"));
+        let submission = form.request_submit().expect("submit");
+        form.refresh_catalog(sample_catalog());
+        assert_eq!(
+            form.request_submit().err(),
+            Some(BriefValidationError::Submitting)
+        );
+        assert!(form.on_sent(&submission.command_id));
+        form.refresh_catalog(sample_catalog());
+        assert_eq!(
+            form.request_submit().err(),
+            Some(BriefValidationError::AwaitingReceipt)
+        );
+        assert_eq!(form.selected_recipe(), Some(0));
+        assert_eq!(form.goal(), "keep this draft");
+        assert!(form.on_unknown(&submission.command_id));
+        assert!(form.on_stale_recipe(&submission.command_id));
+        assert_eq!(form.goal(), "keep this draft");
     }
 
     #[test]
